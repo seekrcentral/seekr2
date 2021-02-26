@@ -46,10 +46,11 @@ setup(
 
     # Additional entries you may want simply uncomment the lines you want and fill in the data
     # url='http://www.my_package.com',  # Website
-    # install_requires=[],              # Required packages, pulls from pip if needed; do not use for Conda deployment
-    # platforms=['Linux',
+    install_requires=["numpy", "scipy", "parmed", "pytest", "matplotlib", 
+                       "nptyping"],       
+    platforms=['Linux',
     #            'Mac OS-X',
-    #            'Unix',
+                'Unix',]
     #            'Windows'],            # Valid platforms your code works on, adjust to your flavor
     # python_requires=">=3.5",          # Python version restrictions
 

@@ -1,0 +1,178 @@
+<?xml version="1.0" ?>
+<model_input class='Model_input'>
+    <calculation_type>mmvt</calculation_type>
+    <temperature>277.8</temperature>
+    <pressure>1.0</pressure>
+    <ensemble>nvt</ensemble>
+    <root_directory>~/test_mmvt_namd/</root_directory>
+    <md_program>namd</md_program> 
+    <md_output_frequency>10000</md_output_frequency>
+    <md_steps_per_anchor>100000</md_steps_per_anchor>
+    <constraints>HBonds</constraints>
+    <rigidWater>True</rigidWater>
+    <hydrogenMass/>
+    <timestep>0.002</timestep>
+    <cv_inputs>
+        <cv_input class="Spherical_cv_input">
+            <group1>[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 
+                    17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 
+                    31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 
+                    45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 
+                    59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 
+                    73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 
+                    87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 
+                    101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 
+                    112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 
+                    123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 
+                    134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 
+                    145, 146]</group1>
+            <group2>[147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 
+                    158, 159, 160, 161]</group2>
+            <input_anchors>
+                <input_anchor class="Spherical_cv_anchor">
+                    <radius>0.1</radius>
+                    <starting_amber_params class="Amber_params">
+                        <prmtop_filename>data/hostguest_for_NAMD.parm7</prmtop_filename>
+                        <inpcrd_filename>data/hostguest.rst7</inpcrd_filename>
+                        <box_vectors/>
+                        <pdb_coordinates_filename></pdb_coordinates_filename>
+                    </starting_amber_params>
+                    <bound_state>True</bound_state>
+                    <bulk_anchor>False</bulk_anchor>
+                </input_anchor>
+                <input_anchor class="Spherical_cv_anchor">
+                    <radius>0.2</radius>
+                    <starting_amber_params class="Amber_params">
+                        <prmtop_filename>data/hostguest_for_NAMD.parm7</prmtop_filename>
+                        <inpcrd_filename>data/hostguest.rst7</inpcrd_filename>
+                        <box_vectors/>
+                        <pdb_coordinates_filename>data/hostguest_at1.9.pdb</pdb_coordinates_filename>
+                    </starting_amber_params>
+                    <bound_state>False</bound_state>
+                    <bulk_anchor>False</bulk_anchor>
+                </input_anchor>
+                <input_anchor class="Spherical_cv_anchor">
+                    <radius>0.4</radius>
+                    <starting_amber_params class="Amber_params">
+                        <prmtop_filename>data/hostguest_for_NAMD.parm7</prmtop_filename>
+                        <inpcrd_filename>data/hostguest.rst7</inpcrd_filename>
+                        <box_vectors/>
+                        <pdb_coordinates_filename>data/hostguest_at3.8.pdb</pdb_coordinates_filename>
+                    </starting_amber_params>
+                    <bound_state>False</bound_state>
+                    <bulk_anchor>False</bulk_anchor>
+                </input_anchor>
+                <input_anchor class="Spherical_cv_anchor">
+                    <radius>0.5</radius>
+                    <starting_amber_params class="Amber_params">
+                        <prmtop_filename>data/hostguest_for_NAMD.parm7</prmtop_filename>
+                        <inpcrd_filename>data/hostguest.rst7</inpcrd_filename>
+                        <box_vectors/>
+                        <pdb_coordinates_filename>data/hostguest_at5.4.pdb</pdb_coordinates_filename>
+                    </starting_amber_params>
+                    <bound_state>False</bound_state>
+                    <bulk_anchor>False</bulk_anchor>
+                </input_anchor>
+                <input_anchor class="Spherical_cv_anchor">
+                    <radius>0.7</radius>
+                    <starting_amber_params class="Amber_params">
+                        <prmtop_filename>data/hostguest_for_NAMD.parm7</prmtop_filename>
+                        <inpcrd_filename>data/hostguest.rst7</inpcrd_filename>
+                        <box_vectors/>
+                        <pdb_coordinates_filename>data/hostguest_at7.0.pdb</pdb_coordinates_filename>
+                    </starting_amber_params>
+                    <bound_state>False</bound_state>
+                    <bulk_anchor>False</bulk_anchor>
+                </input_anchor>
+                <input_anchor class="Spherical_cv_anchor">
+                    <radius>0.8</radius>
+                    <starting_amber_params class="Amber_params">
+                        <prmtop_filename>data/hostguest_for_NAMD.parm7</prmtop_filename>
+                        <inpcrd_filename>data/hostguest.rst7</inpcrd_filename>
+                        <box_vectors/>
+                        <pdb_coordinates_filename>data/hostguest_at8.3.pdb</pdb_coordinates_filename>
+                    </starting_amber_params>
+                    <bound_state>False</bound_state>
+                    <bulk_anchor>False</bulk_anchor>
+                </input_anchor>
+                <input_anchor class="Spherical_cv_anchor">
+                    <radius>1.0</radius>
+                    <starting_amber_params class="Amber_params">
+                        <prmtop_filename>data/hostguest_for_NAMD.parm7</prmtop_filename>
+                        <inpcrd_filename>data/hostguest.rst7</inpcrd_filename>
+                        <box_vectors/>
+                        <pdb_coordinates_filename>data/hostguest_at9.8.pdb</pdb_coordinates_filename>
+                    </starting_amber_params>
+                    <bound_state>False</bound_state>
+                    <bulk_anchor>False</bulk_anchor>
+                </input_anchor>
+                <input_anchor class="Spherical_cv_anchor">
+                    <radius>1.1</radius>
+                    <starting_amber_params class="Amber_params">
+                        <prmtop_filename>data/hostguest_for_NAMD.parm7</prmtop_filename>
+                        <inpcrd_filename>data/hostguest.rst7</inpcrd_filename>
+                        <box_vectors/>
+                        <pdb_coordinates_filename>data/hostguest_at11.2.pdb</pdb_coordinates_filename>
+                    </starting_amber_params>
+                    <bound_state>False</bound_state>
+                    <bulk_anchor>False</bulk_anchor>
+                </input_anchor>
+                <input_anchor class="Spherical_cv_anchor">
+                    <radius>1.3</radius>
+                    <starting_amber_params class="Amber_params">
+                        <prmtop_filename>data/hostguest_for_NAMD.parm7</prmtop_filename>
+                        <inpcrd_filename>data/hostguest.rst7</inpcrd_filename>
+                        <box_vectors/>
+                        <pdb_coordinates_filename>data/hostguest_at12.8.pdb</pdb_coordinates_filename>
+                    </starting_amber_params>
+                    <bound_state>False</bound_state>
+                    <bulk_anchor>False</bulk_anchor>
+                </input_anchor>
+                <input_anchor class="Spherical_cv_anchor">
+                    <radius>1.4</radius>
+                    <starting_amber_params class="Amber_params">
+                        <prmtop_filename></prmtop_filename>
+                        <inpcrd_filename></inpcrd_filename>
+                        <box_vectors/>
+                        <pdb_coordinates_filename></pdb_coordinates_filename>
+                    </starting_amber_params>
+                    <bound_state>False</bound_state>
+                    <bulk_anchor>True</bulk_anchor>
+                </input_anchor>
+            </input_anchors>
+        </cv_input>
+    </cv_inputs>
+    <browndye_settings class="Browndye_settings_input">
+        <binary_directory>/home/lvotapka/Downloads/browndye2/bin</binary_directory>
+        <receptor_pqr_filename>data/hostguest_receptor.pqr</receptor_pqr_filename>
+        <ligand_pqr_filename>data/hostguest_ligand.pqr</ligand_pqr_filename>
+        <apbs_grid_spacing>0.5</apbs_grid_spacing>
+        <receptor_indices>[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 
+            15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 
+            31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 
+            47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 
+            63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 
+            79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 
+            95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 
+            109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 
+            122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 
+            135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 
+            146]</receptor_indices>
+        <ligand_indices>[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]</ligand_indices>
+        <ions>
+            <ion class="Ion">
+                <radius>1.2</radius>
+                <charge>-1.0</charge>
+                <conc>0.15</conc>
+            </ion>
+            <ion class="Ion">
+                <radius>0.9</radius>
+                <charge>1.0</charge>
+                <conc>0.15</conc>
+            </ion>
+        </ions>
+        <num_bd_milestone_trajectories>1000</num_bd_milestone_trajectories>
+        <num_b_surface_trajectories>10000</num_b_surface_trajectories>
+        <n_threads>1</n_threads>
+    </browndye_settings>
+</model_input>
