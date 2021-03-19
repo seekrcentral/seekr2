@@ -1,5 +1,5 @@
 """
-common/prepare.py
+common_prepare.py
 
 Common routines for preparing the model file for either Elber or MMVT
 milestoning calculations.
@@ -11,19 +11,18 @@ calculation.
 import os
 import sys
 
-import seekr2.common.filetree as filetree
-import seekr2.common.base as base
-import seekr2.mmvt.base as mmvt_base
-import seekr2.elber.base as elber_base
-import seekr2.common.collective_variables as common_cv
-import seekr2.mmvt.collective_variables as mmvt_cv
-import seekr2.elber.collective_variables as elber_cv
-from seekr2.common.base import Ion
-import seekr2.common.sim_browndye2 as sim_browndye2
-import seekr2.common.runner_browndye2 as runner_browndye2
+import seekr2.modules.filetree as filetree
+import seekr2.modules.common_base as base
+import seekr2.modules.mmvt_base as mmvt_base
+import seekr2.modules.elber_base as elber_base
+import seekr2.modules.common_cv as common_cv
+import seekr2.modules.mmvt_cv as mmvt_cv
+import seekr2.modules.elber_cv as elber_cv
+import seekr2.modules.common_sim_browndye2 as sim_browndye2
+import seekr2.modules.runner_browndye2 as runner_browndye2
 import seekr2.libraries.serializer.serializer as serializer
+from seekr2.modules.common_base import Ion
 
-from seekr2.common.base import Forcefield_params
 
 class Browndye_settings_input(serializer.Serializer):
     """
@@ -87,6 +86,36 @@ class Browndye_settings_input(serializer.Serializer):
         self.ligand_indices = []
         self.n_threads = 1
 
+class MMVT_input_settings(serializer.Serializer):
+    """
+    md_output_interval : int, default 500000
+        How many steps must elapse between outputs. This will effect
+        the interval that trajectory frames, state outputs, and
+        backup checkpoints will occur.
+        
+    md_steps_per_anchor : int, default 500000000
+        The default number of timesteps that will be simulated at each
+        anchor.
+    """
+    def __init__(self):
+        self.md_output_interval = 500000
+        self.md_steps_per_anchor = 500000000
+        
+    
+class Elber_input_settings(serializer.Serializer):
+    """
+    
+    """
+    def __init__(self):
+        #self.temperature_equil_progression = [
+        #    300., 310., 320., 330., 340., 350., 340., 330., 320., 310., 300]
+        self.temperature_equil_progression = []
+        self.num_temperature_equil_steps = 1000
+        self.num_umbrella_stage_steps = 50000
+        self.fwd_rev_interval = 500
+        self.rev_output_interval = 500
+        self.fwd_output_interval = 500
+
 class Model_input(serializer.Serializer):
     """
     The serializable object representing parameters that would be
@@ -120,15 +149,6 @@ class Model_input(serializer.Serializer):
         Which MD engine to use for the MD portion of the SEEKR
         calculation. Options include "openmm" and "namd".
         
-    md_output_frequency : int, default 500000
-        How many steps must elapse between outputs. This will effect
-        the frequency that trajectory frames, state outputs, and
-        backup checkpoints will occur.
-        
-    md_steps_per_anchor : int, default 500000000
-        The default number of timesteps that will be simulated at each
-        anchor.
-        
     run_minimization : bool, default False
         Whether to run minimizations of the initial structures before 
         beginning the MMVT simulations. This is not recommended, since 
@@ -155,6 +175,11 @@ class Model_input(serializer.Serializer):
     timestep : float, Default 0.002
         The length of time taken by a simulation step (in units of 
         picoseconds).
+        
+    nonbonded_cutoff : float, Default 0.9
+        The distance after which VDW nonbonded forces are cut off in
+        units of nanometers. This argument is supplied to the 
+        nonbondedCutoff argument of an OpenMM System() object.
     
     browndye_settings_input : Browndye_settings_input
         The Browndye_settings_input() object for this model. It 
@@ -166,18 +191,18 @@ class Model_input(serializer.Serializer):
     """
     def __init__(self):
         self.calculation_type = "Unknown"
+        self.calculation_settings = None
         self.temperature = 298.15
         self.pressure = 1.0
         self.ensemble = "nvt"
         self.root_directory = ""
         self.md_program = "openmm"
-        self.md_output_frequency = 500000
-        self.md_steps_per_anchor = 500000000
         self.run_minimization = False
         self.hydrogenMass = None
         self.constraints = "hbonds"
         self.rigidWater = True
         self.timestep = 0.002
+        self.nonbonded_cutoff = 0.9
         self.browndye_settings_input = None
         self.cv_inputs = []
         
@@ -203,14 +228,40 @@ class Model_factory():
         information.
         """
         model = base.Model()
+        calc_settings = model_input.calculation_settings
         if model_input.calculation_type.lower() == "mmvt":
             model.calculation_settings = mmvt_base.MMVT_settings()
             model.calculation_settings.num_production_steps = \
-                model_input.md_steps_per_anchor
+                calc_settings.md_steps_per_anchor
+            model.calculation_settings.energy_reporter_interval = \
+                calc_settings.md_output_interval
+            model.calculation_settings.restart_checkpoint_interval = \
+                calc_settings.md_output_interval
+            model.calculation_settings.trajectory_reporter_interval = \
+                calc_settings.md_output_interval
         elif model_input.calculation_type.lower() == "elber":
             model.calculation_settings = elber_base.Elber_settings()
+            model.calculation_settings.temperature_equil_progression = \
+                calc_settings.temperature_equil_progression
+            model.calculation_settings.num_temperature_equil_steps = \
+                calc_settings.num_temperature_equil_steps
             model.calculation_settings.num_umbrella_stage_steps = \
-                model_input.md_steps_per_anchor
+                calc_settings.num_umbrella_stage_steps
+            model.calculation_settings.fwd_rev_interval = \
+                calc_settings.fwd_rev_interval
+            model.calculation_settings.umbrella_energy_reporter_interval = \
+                calc_settings.fwd_rev_interval
+            model.calculation_settings.umbrella_trajectory_reporter_interval = \
+                calc_settings.fwd_rev_interval
+            model.calculation_settings.rev_energy_reporter_interval = \
+                calc_settings.rev_output_interval
+            model.calculation_settings.rev_trajectory_reporter_interval = \
+                calc_settings.rev_output_interval
+            model.calculation_settings.fwd_energy_reporter_interval = \
+                calc_settings.fwd_output_interval
+            model.calculation_settings.fwd_trajectory_reporter_interval = \
+                calc_settings.fwd_output_interval
+                
         else:
             raise Exception("Invalid calculation_type entered:", 
                             model_input.calculation_type)
@@ -239,13 +290,7 @@ class Model_factory():
                 mm_settings.barostat.target_temperature = temperature
                 mm_settings.barostat.target_pressure = pressure
             mm_settings.initial_temperature = temperature
-            mm_settings.energy_reporter_frequency = \
-                model_input.md_output_frequency
-            mm_settings.restart_checkpoint_frequency = \
-                model_input.md_output_frequency
-            mm_settings.trajectory_reporter_frequency = \
-                model_input.md_output_frequency
-            
+            mm_settings.nonbonded_cutoff = model_input.nonbonded_cutoff
             mm_settings.run_minimization = model_input.run_minimization
             mm_settings.hydrogenMass = model_input.hydrogenMass
             mm_settings.constraints = model_input.constraints
@@ -261,14 +306,7 @@ class Model_factory():
                 namd_settings.barostat.target_temperature = temperature
                 namd_settings.barostat.target_pressure = pressure
             namd_settings.initial_temperature = temperature
-            namd_settings.energy_reporter_frequency = \
-                model_input.md_output_frequency
-            namd_settings.restart_checkpoint_frequency = \
-                model_input.md_output_frequency
-            namd_settings.trajectory_reporter_frequency = \
-                model_input.md_output_frequency
-            namd_settings.total_simulation_length = \
-                model_input.md_steps_per_anchor
+            namd_settings.nonbonded_cutoff = model_input.nonbonded_cutoff
             namd_settings.run_minimization = model_input.run_minimization
             assert model_input.hydrogenMass is None, "hydrogen mass "\
                 "repartitioning not yet implemented in NAMD SEEKR."
@@ -432,18 +470,18 @@ def prepare_model_cvs_and_anchors(model, model_input):
     if model.get_type() == "mmvt":
         if model_input.md_program.lower() == "openmm":
             for anchor in model.anchors:
-                anchor.md_mmvt_output_glob = mmvt_base.OPENMMVT_GLOB
+                anchor.md_output_glob = mmvt_base.OPENMMVT_GLOB
         elif model_input.md_program.lower() == "namd":
             for anchor in model.anchors:
-                anchor.md_mmvt_output_glob = mmvt_base.NAMDMMVT_GLOB
+                anchor.md_output_glob = mmvt_base.NAMDMMVT_GLOB
     
     elif model.get_type() == "elber":
         if model_input.md_program.lower() == "openmm":
             for anchor in model.anchors:
-                anchor.md_mmvt_output_glob = elber_base.OPENMM_ELBER_GLOB
+                anchor.md_output_glob = elber_base.OPENMM_ELBER_GLOB
         elif model_input.md_program.lower() == "namd":
             for anchor in model.anchors:
-                anchor.md_mmvt_output_glob = elber_base.NAMD_ELBER_GLOB
+                anchor.md_output_glob = elber_base.NAMD_ELBER_GLOB
     
     model.num_anchors = num_anchors
     model.num_milestones = num_milestones
@@ -469,11 +507,11 @@ def generate_bd_files(model, rootdir):
         ghost_indices_rec = []
         ghost_indices_lig = []
         for bd_milestone in model.k_on_info.bd_milestones:
-            print("adding ghost atom to file:", receptor_pqr_filename)
+            #print("adding ghost atom to file:", receptor_pqr_filename)
             ghost_index_rec = \
                 sim_browndye2.add_ghost_atom_to_pqr_from_atoms_center_of_mass(
                     receptor_pqr_filename, bd_milestone.receptor_indices)
-            print("adding ghost atom to file:", ligand_pqr_filename)
+            #print("adding ghost atom to file:", ligand_pqr_filename)
             ghost_index_lig = \
                 sim_browndye2.add_ghost_atom_to_pqr_from_atoms_center_of_mass(
                     ligand_pqr_filename, bd_milestone.ligand_indices)

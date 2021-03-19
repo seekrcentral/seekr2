@@ -14,8 +14,6 @@ import re
 import parmed
 import numpy as np
 
-#import openmmvt.libraries.serializer.serializer as serializer
-
 BROWNDYE_TRAJ_PREFIX = "traj"
 BROWNDYE_INPUT_FILENAME = "input.xml"
 BROWNDYE_APBS_INPUT_FILENAME = "apbs_input.xml"
@@ -889,7 +887,7 @@ def make_pqrxml(input_pqr_filename, browndye2_bin="",
     pqr2xml_binary = os.path.join(browndye2_bin, "pqr2xml")
     pqr2xml_command = pqr2xml_binary + " < " + input_pqr_filename + " > " \
         + output_xml_filename
-    print("Running command:", pqr2xml_command)
+    #print("Running command:", pqr2xml_command)
     os.system(pqr2xml_command)
     assert os.path.exists(output_xml_filename), "Problem generating XML from "\
         "PQR file: file not created: %s" % output_xml_filename
@@ -917,7 +915,7 @@ def make_and_run_apbs(root, input_apbs_xml, browndye2_bin="",
     make_apbs_command = make_apbs_binary + " " + input_apbs_xml + " > " \
         + new_input_xml
     #std_out = subprocess.check_output(make_apbs_command, shell=True)
-    print("Running command:", make_apbs_command)
+    #print("Running command:", make_apbs_command)
     os.system(make_apbs_command)
     assert os.path.exists(new_input_xml), "Problem running make_apbs_input - "\
         "Output file not found: " + new_input_xml
@@ -932,13 +930,13 @@ def make_and_run_apbs(root, input_apbs_xml, browndye2_bin="",
             result = re.search("<debye_length> (.+?) </debye_length>", line)
             if result:
                 debye_length = result.group(1)
-                print("debye_length found:", debye_length)
+                #print("debye_length found:", debye_length)
                 
     assert float(debye_length) > 0.0, "Problem: debye_length not generated."
     
     run_apbs_command = run_apbs_binary + " " + new_input_xml \
         + " > run_apbs_input.out"
-    print("Running command:", run_apbs_command)
+    #print("Running command:", run_apbs_command)
     os.system(run_apbs_command)
     for mol_name in mol_name_list:
         apbs_dx_glob = mol_name + "*.dx"

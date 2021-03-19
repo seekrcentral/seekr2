@@ -6,12 +6,13 @@ including its model.xml file as well as its entire filetree.
 import os
 import argparse
 
-import seekr2.common.base as base
-import seekr2.common.prepare as common_prepare
-import seekr2.common.filetree as filetree
-from seekr2.common.base import Amber_params, Forcefield_params #, Charmm_params
-from seekr2.common.collective_variables import *
-from seekr2.common.prepare import Browndye_settings_input, Ion
+import seekr2.modules.common_base as base
+import seekr2.modules.common_prepare as common_prepare
+import seekr2.modules.filetree as filetree
+from seekr2.modules.common_base import Amber_params, Forcefield_params 
+from seekr2.modules.common_cv import *
+from seekr2.modules.common_prepare import Browndye_settings_input, Ion, \
+    MMVT_input_settings, Elber_input_settings
 
 def generate_openmmvt_model_and_filetree(model_input):
     """
@@ -33,7 +34,7 @@ def generate_openmmvt_model_and_filetree(model_input):
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser(description=__doc__)
     argparser.add_argument(
-        "model_input_file", metavar="MODEL INPUT_FILE", type=str, 
+        "model_input_file", metavar="MODEL_INPUT_FILE", type=str, 
         help="The name of input XML file for a SEEKR2 calculation.")
     """ # TODO: remove
     argparser.add_argument("-r", "--run", dest="run", default=False,

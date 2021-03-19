@@ -1,43 +1,73 @@
 """
-mmvt/base.py
+elber_base.py
 
 Base classes, objects, and constants used in multiple stages of the
-MMVT calculations.
+Elber milestoning calculations.
 """
 
 from parmed import unit
 
 import seekr2.libraries.serializer.serializer as serializer
 
-OPENMMVT_BASENAME = "mmvt"
-OPENMMVT_EXTENSION = "out"
-OPENMMVT_GLOB = "%s*.%s" % (OPENMMVT_BASENAME, OPENMMVT_EXTENSION)
-NAMDMMVT_BASENAME = "namdmmvt"
-NAMDMMVT_EXTENSION = "out"
-NAMDMMVT_GLOB = "%s*.%s*" % (NAMDMMVT_BASENAME, NAMDMMVT_EXTENSION)
+OPENMM_ELBER_BASENAME = "forward"
+OPENMM_ELBER_EXTENSION = "out"
+OPENMM_ELBER_GLOB = "%s*.%s" % (OPENMM_ELBER_BASENAME, OPENMM_ELBER_EXTENSION)
+NAMD_ELBER_BASENAME = "forward"
+NAMD_ELBER_EXTENSION = "out" # TODO: consolidate OpenMM vs. NAMD output: not necessary
+NAMD_ELBER_GLOB = "%s*.%s*" % (NAMD_ELBER_BASENAME, NAMD_ELBER_EXTENSION)
 
-class MMVT_settings(serializer.Serializer):
+ELBER_UMBRELLA_BASENAME = "umbrella"
+ELBER_FWD_BASENAME = "reverse"
+ELBER_FWD_EXTENSION = "out"
+ELBER_FWD_GLOB = "%s*.%s" % (ELBER_FWD_BASENAME, ELBER_FWD_EXTENSION)
+ELBER_REV_BASENAME = "reverse"
+ELBER_REV_EXTENSION = "out"
+ELBER_REV_GLOB = "%s*.%s" % (ELBER_REV_BASENAME, ELBER_REV_EXTENSION)
+
+class Elber_settings(serializer.Serializer):
     """
-    Settings that are specific to an MMVT calculation.
+    Settings that are specific to an Elber milestoning calculation.
     
     Attributes:
     -----------
-    num_production_steps : int
+    temperature_equil_progression : list
+        A list of temperatures (in Kelvin) to warm the simulation to
+        during the temperature equilibration stage.
+    num_temperature_equil_steps : int
+        The number of steps to do per temperature during the
+        temperature equilibration stage.
+    temperature_equil_trajectory_interval : int or None
+        The interval to write trajectory frames during the temperature
+        equilibration stage. If None, then the trajectory won't be 
+        written
+    num_umbrella_stage_steps : int
         The number of steps to take within a given MMVT production
         run for a Voronoi cell.
+    umbrella_stage_trajectory_interval : int
+        The interval to write trajectory frames during the umbrella
+        stage.
     """
     #num_equilibration_steps : int
     #    The number of steps to take during an equilibration run, where
     #    no statistics will be reported
     def __init__(self):
-        #self.num_equilibration_steps = 0 # Disregard?
-        self.num_production_steps = 30000
+        #self.temperature_equil_progression = [
+        #    300., 310., 320., 330., 340., 350., 340., 330., 320., 310., 300]
+        self.temperature_equil_progression = []
+        self.num_temperature_equil_steps = 1000
+        self.num_umbrella_stage_steps = 50000
+        self.fwd_rev_interval = 500
+        self.umbrella_energy_reporter_interval = None
+        self.umbrella_trajectory_reporter_interval = None
+        self.rev_energy_reporter_interval = None
+        self.rev_trajectory_reporter_interval = None
+        self.fwd_energy_reporter_interval = None
+        self.fwd_trajectory_reporter_interval = None
 
-class MMVT_collective_variable(serializer.Serializer):
+class Elber_collective_variable(serializer.Serializer):
     """
     Collective variables represent the function of system positions
-    and velocities along with the MMVT cells and boundaries can be
-    defined.
+    and velocities so that Elber milestones can be defined
     
     Attributes:
     -----------
@@ -48,16 +78,11 @@ class MMVT_collective_variable(serializer.Serializer):
         
     name : str
         Each type of collective variable has a shorthand 'name' for
-        quick reference and identification. Examples: 'mmvt_spherical',
-        'mmvt_planar', 'mmvt_angular', etc.
+        quick reference and identification. Example: 'elber_spherical'.
         
-    openmm_expression : str
-        The collective variable is described by a mathematical function
-        of the atomic group positions (maybe also velocities), as well
-        as other variables. The inside of the cell is defined as
-        regions of system phase space where the function described by
-        this mathematical expression is *negative*, whereas *positive*
-        regions are beyond the boundary of the MMVT cell.
+    openmm_umbrella_expression : str
+        In order to restrain a system along a milestone, an umbrella 
+        sampling potential energy expression must be applied.
         
     num_groups : int
         The number of atomic groups that are needed for the function
@@ -86,13 +111,13 @@ class MMVT_collective_variable(serializer.Serializer):
         return
 
     def __name__(self):
-        return "mmvt_baseCV"
+        return "elber_baseCV"
     
     def make_force_object(self):
         raise Exception("This base class cannot be used for creating a "\
                         "collective variable boundary definition.")
     
-    def make_namd_colvar_string(self):
+    def make_namd_colvar_umbrella_string(self):
         raise Exception("This base class cannot be used for creating a "\
                         "collective variable boundary definition.")
         
@@ -112,51 +137,53 @@ class MMVT_collective_variable(serializer.Serializer):
         raise Exception("This base class cannot be used for creating a "\
                         "collective variable boundary definition.")
 
-class MMVT_spherical_CV(MMVT_collective_variable):
+class Elber_spherical_CV(Elber_collective_variable):
     """
     A spherical collective variable represents the distance between two
     different groups of atoms.
     
-    """+MMVT_collective_variable.__doc__
+    """+Elber_collective_variable.__doc__
     
     def __init__(self, index, groups):
         self.index = index
         self.group1 = groups[0]
         self.group2 = groups[1]
-        self.name = "mmvt_spherical"
-        self.openmm_expression = "step(k*(distance(g1, g2)^2 - radius^2))"
+        self.name = "elber_spherical"
+        self.openmm_umbrella_expression = "0.5*k*(distance(g1,g2)-radius)^2"
         self.num_groups = 2
         self.per_dof_variables = ["k", "radius"]
         self.global_variables = []
+        self._mygroup_list = None
         return
 
     def __name__(self):
-        return "MMVT_spherical_CV"
+        return "Elber_spherical_CV"
     
-    def make_force_object(self):
+    def make_umbrella_force_object(self):
         """
-        Create an OpenMM force object which will be used to compute
-        the value of the CV's mathematical expression as the simulation
-        propagates. Each *milestone* in a cell, not each CV, will have
-        a force object created.
-        
-        In this implementation of MMVT in OpenMM, CustomForce objects
-        are used to provide the boundary definitions of the MMVt cell.
-        These 'forces' are designed to never affect atomic motions,
-        but are merely monitored by the plugin for bouncing event.
-        So while they are technically OpenMM force objects, we don't
-        refer to them as forces outside of this layer of the code,
-        preferring instead the term: boundary definitions.
+        Make an umbrella sampling force object, which will constrain
+        the system to the milestone.
         """
-        from simtk import openmm
+        import openmm
         assert self.num_groups == 2
         return openmm.CustomCentroidBondForce(
-            self.num_groups, self.openmm_expression)
+            self.num_groups, self.openmm_umbrella_expression)
         
-    def make_namd_colvar_string(self):
+    def make_fwd_rev_force_object(self, anchor):
         """
-        This string will be put into a NAMD colvar file for tracking
-        MMVT bounces.
+        Make a list of reversal force objects, which will  be used to
+        monitor milestone crossing during the reversal stage.
+        """
+        import openmm
+        from seekrplugin import SeekrForce
+        force = SeekrForce() # create the SEEKR force object
+        return force
+        
+    def make_namd_colvar_umbrella_string(self):
+        """
+        This string will be put into a NAMD colvar file for applying
+        an umbrella sampling force to constrain the system to the
+        milestone.
         """
         serial_group1 = [str(index+1) for index in self.group1]
         serial_group2 = [str(index+1) for index in self.group2]
@@ -174,13 +201,36 @@ colvar {{
 """.format(self.index, serial_group1_str, serial_group2_str)
         return namd_colvar_string
         
-    def add_parameters(self, force):
+    def add_fwd_rev_parameters(self, force, anchor, end_on_middle_crossing, 
+                       data_file_name):
         """
         An OpenMM custom force object needs a list of variables
         provided to it that will occur within its expression. Both
         the per-dof and global variables are combined within the
         variable_names_list. The numerical values of these variables
         will be provided at a later step.
+        """
+        if len(anchor.milestones) == 3:
+            radius1 = anchor.milestones[0].variables["radius"]
+            radius2 = anchor.milestones[1].variables["radius"]
+            radius3 = anchor.milestones[2].variables["radius"]
+        elif len(anchor.milestones) == 2:
+            radius1 = 0.0
+            radius2 = anchor.milestones[0].variables["radius"]
+            radius3 = anchor.milestones[1].variables["radius"]
+        else:
+            raise Exception(
+                "Anchor with {1} milestones found: not allowed.".format(
+                    len(anchor.milestones)))
+        assert len(self.group1) > 0
+        assert len(self.group2) > 0
+        force.addSphericalMilestone(
+            len(self.group1), len(self.group2), radius1, radius2, radius3, 
+            self.group1, self.group2, end_on_middle_crossing, data_file_name)
+    
+    def add_umbrella_parameters(self, force):
+        """
+        
         """
         variable_names_list = []
         if self.per_dof_variables is not None:
@@ -219,7 +269,7 @@ colvar {{
         
         return values_list
     
-    def get_namd_evaluation_string(self, milestone, cv_val_var="cv_val"):
+    def get_namd_fwd_rev_evaluation_string(self, milestone, cv_val_var="cv_val"):
         """
         For a given milestone, return a string that can be evaluated
         my NAMD to monitor for a crossing event. Essentially, if the 
@@ -233,92 +283,11 @@ colvar {{
         eval_string = "{0} * (${1}_{2} - {3}) > 0".format(
             k, cv_val_var, self.index, radius_in_A)
         return eval_string
-        
-"""
-class MMVT_planar_CV(CollectiveVariable):
-    def __init__(self, index, groups):
-        super(PlanarCV, self).__init__(groups)
-        self.name = "mmvt_planar"
-        self.expression = "step(k*((z2-z1) - height))"
-        self.num_groups = 2
-        self.per_dof_variables = ["height"]
-        self.global_variables = []
 
-    def __name__(self):
-        return "MMVT_planar_CV"
-    
-    def make_force_object(self):
-        assert self.num_groups == 2
-        return openmm.CustomCentroidBondForce(
-            self.num_groups, self.expression)
-        
-    def add_parameters(self, force):
-        for per_dof_variable in cv.per_dof_variables:
-            force.addPerBondParameter(per_dof_variable)
-            
-        for global_variable in cv.global_variables:
-            force.addGlobalParameter(global_variable)
-        return
-    
-    def add_groups_and_variables(self, force, group_list, variables):
-        assert len(group_list) == self.num_groups
-        force.addBond(group_list, variables)
-        return
-    
-    def get_variable_values_list(self, milestone):
-        values_list = []
-        height = milestone.variables['height'] * unit.nanometers
-        values_list.append(height)
-        
-        return values_list
-
-class MMVT_angular_CV(CollectiveVariable):
-
-    def __init__(self, groups):
-        super(PlanarCV, self).__init__(index, groups)
-        self.name = "mmvt_angular"
-        self.expression = "step(k*(angular(g1, g2, g3) - ref_angle))"
-        self.num_groups = 3
-        self.per_dof_variables = ["ref_angle"]
-        self.global_variables = []
-        
-    def __name__(self):
-        return "MMVT_angular_CV"
-    
-    def make_force_object(self):
-        assert self.num_groups == 3
-        return openmm.CustomCentroidBondForce(
-            self.num_groups, self.expression)
-        
-    def add_parameters(self, force):
-        variable_names_list = []
-        for per_dof_variable in self.per_dof_variables:
-            force.addPerBondParameter(per_dof_variable)
-            variable_names_list.append(per_dof_variable)
-            
-        for global_variable in self.global_variables:
-            force.addGlobalParameter(global_variable)
-            variable_names_list.append(global_variable)
-            
-        return variable_names_list
-    
-    def add_groups_and_variables(self, force, group_list, variables):
-        assert len(group_list) == self.num_groups
-        force.addBond(group_list, variables)
-        return
-    
-    def get_variable_values_list(self, milestone):
-        values_list = []
-        ref_angle = milestone.variables['ref_angle'] * unit.radians
-        values_list.append(ref_angle)
-        
-        return values_list
-"""
-
-class MMVT_anchor(serializer.Serializer):
+class Elber_anchor(serializer.Serializer):
     """
-    An anchor object for representing a Voronoi cell in an MMVT 
-    calculation.
+    An anchor object for representing a Voronoi cell in an Elber 
+    milestoning calculation.
     
     Attributes
     ----------
@@ -355,12 +324,8 @@ class MMVT_anchor(serializer.Serializer):
         The directory within the MD or BD directory above in which the
         simulations will be performed.
         
-    md_mmvt_output_glob : str
+    md_output_glob : str
         A glob to select all the MD output files within the production
-        directory above.
-        
-    bd_mmvt_output_glob : str
-        A glob to select all the BD output files within the production
         directory above.
         
     name : str
@@ -393,9 +358,9 @@ class MMVT_anchor(serializer.Serializer):
         self.amber_params = None
         self.charmm_params = None
         self.forcefield_params = None
-        self.production_directory = "prod"
         self.building_directory = "building"
-        self.md_mmvt_output_glob = OPENMMVT_GLOB
+        self.production_directory = "prod"
+        self.md_output_glob = OPENMM_ELBER_GLOB
         self.name = ""
         self.md = False
         self.endstate = False
@@ -467,3 +432,4 @@ class MMVT_anchor(serializer.Serializer):
             neighbor_id_key_alias_value_dict = self._make_milestone_collection()
         return id_key_alias_value_dict.keys()
     
+        

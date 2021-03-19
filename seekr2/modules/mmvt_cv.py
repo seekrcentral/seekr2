@@ -4,8 +4,8 @@ mmvt/collective_variables.py
 Define any type of collective variable (or milestone shape) that might
 be used in an MMVT calculation.
 """
-import seekr2.common.base as base
-import seekr2.mmvt.base as mmvt_base
+import seekr2.modules.common_base as base
+import seekr2.modules.mmvt_base as mmvt_base
 import seekr2.libraries.serializer.serializer as serializer
 
 def make_mmvt_spherical_cv_object(spherical_cv_input, index):

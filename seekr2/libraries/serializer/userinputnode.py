@@ -4,7 +4,7 @@ from types import ModuleType
 
 from nptyping import NDArray, Float64
 
-from openmmvt.libraries.serializer.strcast import strcast
+from seekr2.libraries.serializer.strcast import strcast
 
 
 

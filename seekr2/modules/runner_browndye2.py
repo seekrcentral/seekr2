@@ -14,8 +14,8 @@ import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from collections import defaultdict
 
-import openmmvt.base as base
-import openmmvt.sim_browndye2 as sim_browndye2
+import seekr2.modules.common_base as base
+import seekr2.modules.common_sim_browndye2 as sim_browndye2
 
 REACTION_FILENAME = "rxns.xml"
 
@@ -469,14 +469,14 @@ def make_fhpd_directories(model, bd_milestone, lig_pqr_filenames,
         if model.browndye_settings.recompute_ligand_electrostatics:
             debye_length, reaction_filename = make_browndye_input_xml(
                 model, model.anchor_rootdir, receptor_xml_filename, 
-                ligand_xml_filename, bd_milestone.num_steps, 
+                ligand_xml_filename, bd_milestone.num_trajectories, 
                 bd_directory=directory_name, make_apbs_mode=True)
         else:
             raise Exception("recompute_ligand_electrostatics=False is not yet"\
                             "implemented.")
             debye_length, reaction_filename = make_browndye_input_xml(
                 model, model.anchor_rootdir, receptor_xml_filename, 
-                ligand_xml_filename, bd_milestone.num_steps, 
+                ligand_xml_filename, bd_milestone.num_trajectories, 
                 bd_directory=directory_name, make_apbs_mode=False)
         
         directories.append(directory_name)

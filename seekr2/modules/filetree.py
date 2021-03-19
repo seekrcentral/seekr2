@@ -8,7 +8,7 @@ import os
 import shutil
 from shutil import copyfile
 
-import seekr2.common.base as base
+import seekr2.modules.common_base as base
 
 class Filetree():
     """
@@ -91,6 +91,7 @@ def generate_filetree(model, rootdir, empty_rootdir=False):
         if not anchor.md:
             continue
         anchor_dict = {}
+        """ #TODO: marked for removal
         if model.get_type() == "mmvt":
             anchor_dict[anchor.production_directory] = {}
             anchor_dict[anchor.building_directory] = {}
@@ -99,6 +100,9 @@ def generate_filetree(model, rootdir, empty_rootdir=False):
             anchor_dict[anchor.umbrella_directory] = {}
             anchor_dict[anchor.fwd_rev_directory] = {}
             anchor_dict[anchor.building_directory] = {}
+        """
+        anchor_dict[anchor.production_directory] = {}
+        anchor_dict[anchor.building_directory] = {}
         
         anchor_filetree = Filetree({anchor.name:anchor_dict})
         anchor_filetree.make_tree(rootdir)
@@ -225,13 +229,9 @@ def copy_building_files(model, input_model, rootdir):
         k_on_info = model.k_on_info
         b_surface_dir = os.path.join(rootdir, k_on_info.b_surface_directory)
         
-        print("bd_settings.ligand_pqr_filename:", 
-              bd_settings.ligand_pqr_filename)
         ligand_pqr_filename = os.path.basename(bd_settings.ligand_pqr_filename)
-        print("ligand_pqr_filename:", ligand_pqr_filename)
         ligand_pqr_dest_filename = os.path.join(
             b_surface_dir, ligand_pqr_filename)
-        print("ligand_pqr_dest_filename:", ligand_pqr_dest_filename)
         copyfile(bd_input_settings.ligand_pqr_filename, 
                  ligand_pqr_dest_filename)
         
@@ -241,5 +241,4 @@ def copy_building_files(model, input_model, rootdir):
             b_surface_dir, receptor_pqr_filename)
         copyfile(bd_input_settings.receptor_pqr_filename, 
                  receptor_pqr_dest_filename)
-        
     return

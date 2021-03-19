@@ -1,8 +1,8 @@
 """
-common/base.py
+common_base.py
 
-This module of seekr2 contains base classes, constants, and other
-objects used for both MMVT and Elber milestoning.
+Contain base classes, constants, and other objects used for both 
+MMVT and Elber milestoning.
 """
 
 import re
@@ -76,7 +76,7 @@ class Box_vectors(serializer.Serializer):
     def to_quantity(self):
         """
         Convert this object to a Quantity object that could be used
-        in OpenMM or another simtk program.
+        in OpenMM or parmed.
         """
         box_vector = unit.Quantity(
             [[self.ax, self.ay, self.az], 
@@ -272,16 +272,16 @@ class Openmm_settings(serializer.Serializer):
         The temperature to use to initialize the atomic velocities
         randomly in units of Kelvin.
         
-    energy_reporter_frequency : int or None, Default None
-        The frequency to report system state information, including
+    energy_reporter_interval : int or None, Default None
+        The interval to report system state information, including
         energy. If set to None, then this information is never printed.
         
-    restart_checkpoint_frequency : int or None, Default None
-        The frequency to write a restart checkpoint for the system to
+    restart_checkpoint_interval : int or None, Default None
+        The interval to write a restart checkpoint for the system to
         be easily restarted. None means do not write backups.
         
-    trajectory_reporter_frequency : int or None, Default None
-        The frequency to write frames of the trajectory to file.
+    trajectory_reporter_interval : int or None, Default None
+        The interval to write frames of the trajectory to file.
         None means do not write to a trajectory file.
         
     total_simulation_length : int, Default 30000
@@ -299,9 +299,6 @@ class Openmm_settings(serializer.Serializer):
         self.reference_platform = False
         self.run_minimization = False
         self.initial_temperature = 298.15
-        self.energy_reporter_frequency = None
-        self.restart_checkpoint_frequency = None
-        self.trajectory_reporter_frequency = None
         return
     
 class Namd_settings(serializer.Serializer):
@@ -337,16 +334,16 @@ class Namd_settings(serializer.Serializer):
         The temperature to use to initialize the atomic velocities
         randomly in units of Kelvin.
         
-    energy_reporter_frequency : int or None, Default None
-        The frequency to report system state information, including
+    energy_reporter_interval : int or None, Default None
+        The interval to report system state information, including
         energy. If set to None, then this information is never printed.
         
-    restart_checkpoint_frequency : int or None, Default None
-        The frequency to write a restart checkpoint for the system to
+    restart_checkpoint_interval : int or None, Default None
+        The interval to write a restart checkpoint for the system to
         be easily restarted. None means do not write backups.
         
-    trajectory_reporter_frequency : int or None, Default None
-        The frequency to write frames of the trajectory to file.
+    trajectory_reporter_interval : int or None, Default None
+        The interval to write frames of the trajectory to file.
         None means do not write to a trajectory file.
         
     total_simulation_length : int, Default 30000
@@ -364,9 +361,6 @@ class Namd_settings(serializer.Serializer):
         self.barostat = None #Barostat_settings()
         self.run_minimization = False
         self.initial_temperature = 298.15
-        self.energy_reporter_frequency = None
-        self.restart_checkpoint_frequency = None
-        self.trajectory_reporter_frequency = None
         self.eval_stride = 10
         return
     

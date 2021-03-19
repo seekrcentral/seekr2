@@ -11,13 +11,13 @@ from xml.dom import minidom
 import importlib
 from collections import deque
 
-from openmmvt.libraries.serializer.datatype import data_type
-from openmmvt.libraries.serializer.instanceattrs import InstanceAttrs
-from openmmvt.libraries.serializer.strcast import strcast
-from openmmvt.libraries.serializer.serializerutils import SerializerUtils
-from openmmvt.libraries.serializer.userinputnode import UserInputNode
-from openmmvt.libraries.serializer.serialize import Serialize
-from openmmvt.libraries.serializer.deserializeuserinput import DeserializeUserInput
+from seekr2.libraries.serializer.datatype import data_type
+from seekr2.libraries.serializer.instanceattrs import InstanceAttrs
+from seekr2.libraries.serializer.strcast import strcast
+from seekr2.libraries.serializer.serializerutils import SerializerUtils
+from seekr2.libraries.serializer.userinputnode import UserInputNode
+from seekr2.libraries.serializer.serialize import Serialize
+from seekr2.libraries.serializer.deserializeuserinput import DeserializeUserInput
 
 #Generic class type alias
 CLASS = TypeVar('CLASS')

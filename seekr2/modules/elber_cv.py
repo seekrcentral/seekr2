@@ -4,8 +4,8 @@ elber/collective_variables.py
 Define any type of collective variable (or milestone shape) that might
 be used in an Elber milestoning calculation.
 """
-import seekr2.common.base as base
-import seekr2.elber.base as elber_base
+import seekr2.modules.common_base as base
+import seekr2.modules.elber_base as elber_base
 import seekr2.libraries.serializer.serializer as serializer
 
 def make_elber_spherical_cv_object(spherical_cv_input, index):
@@ -34,7 +34,7 @@ def make_elber_milestoning_objects_spherical(
         milestone1.alias_index = milestone_alias
         milestone1.cv_index = spherical_cv_input.index
         radius = input_anchors[neighbor_index].radius
-        milestone1.variables = {"k": -1.0, "radius": radius}
+        milestone1.variables = {"k": 9000.0, "radius": radius}
         milestone_alias += 1
         #milestone_index += 1
         milestones.append(milestone1)
@@ -45,7 +45,7 @@ def make_elber_milestoning_objects_spherical(
     milestone2.alias_index = milestone_alias
     milestone2.cv_index = spherical_cv_input.index
     radius = input_anchors[index].radius
-    milestone2.variables = {"k": 1.0, "radius": radius}
+    milestone2.variables = {"k": 9000.0, "radius": radius} # TODO: have this umbrella spring constant entered by the user
     milestones.append(milestone2)
     
     if index < num_anchors-1:
@@ -56,7 +56,7 @@ def make_elber_milestoning_objects_spherical(
         milestone3.alias_index = milestone_alias+1
         milestone3.cv_index = spherical_cv_input.index
         radius = input_anchors[neighbor_index].radius
-        milestone3.variables = {"k": 1.0, "radius": radius}
+        milestone3.variables = {"k": 9000.0, "radius": radius}
         milestones.append(milestone3)
     
     return milestones, milestone_alias, milestone_index+1

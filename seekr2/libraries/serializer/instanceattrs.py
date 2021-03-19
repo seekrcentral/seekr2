@@ -7,7 +7,7 @@ import inspect
 import ast
 import textwrap
 import importlib
-from openmmvt.libraries.serializer.serializerutils import SerializerUtils
+from seekr2.libraries.serializer.serializerutils import SerializerUtils
 from functools import lru_cache as lru
 
 
