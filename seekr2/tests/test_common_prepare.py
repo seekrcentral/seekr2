@@ -10,133 +10,136 @@ import os
 import sys
 
 import seekr2.modules.common_base as base
+import seekr2.modules.mmvt_base as mmvt_base
+import seekr2.prepare as prepare
 from seekr2.modules import common_prepare
-from openmmvt.prepare_1d_spherical import Spherical_cv_input
+import seekr2.modules.common_cv as common_cv 
+from seekr2.modules.common_cv import Spherical_cv_input
 
 def create_model_input(root_dir):
     """
     TEMPORARY
     """
     this_dir = os.path.dirname(os.path.abspath(__file__))
-    print("this_dir:", this_dir)
-    model_input = prepare_1d_spherical.Model_input()
+    model_input = common_prepare.Model_input()
+    model_input.calculation_settings = mmvt_base.MMVT_settings()
     model_input.root_directory = root_dir
     model_input.temperature = 282.55
-    model_input.md_output_frequency = 12345
-    model_input.md_steps_per_anchor = 76543
-    model_input.run_minimization = False
-    cv_input1 = prepare_1d_spherical.Spherical_cv_input()
+    model_input.calculation_type = "mmvt"
+    model_input.calculation_settings.md_output_interval = 12345
+    model_input.calculation_settings.md_steps_per_anchor = 76543
+    cv_input1 = common_cv.Spherical_cv_input()
     cv_input1.group1 = list(range(147))
     cv_input1.group2 = list(range(147, 162))
     cv_input1.input_anchors = []
-    input_anchor1 = prepare_1d_spherical.Spherical_cv_anchor()
+    input_anchor1 = common_cv.Spherical_cv_anchor()
     input_anchor1.radius = 0.1
     input_anchor1.starting_amber_params = base.Amber_params()
     input_anchor1.starting_amber_params.prmtop_filename = \
-        os.path.join(this_dir, "../data/hostguest.parm7")
+        os.path.join(this_dir, "../data/hostguest_files/hostguest.parm7")
     input_anchor1.starting_amber_params.inpcrd_filename = \
-        os.path.join(this_dir, "../data/hostguest.rst7")
+        os.path.join(this_dir, "../data/hostguest_files/hostguest.rst7")
     input_anchor1.starting_amber_params.pdb_coordinates_filename = ""
     input_anchor1.bound_state = True
     cv_input1.input_anchors.append(input_anchor1)
     
-    input_anchor2 = prepare_1d_spherical.Spherical_cv_anchor()
+    input_anchor2 = common_cv.Spherical_cv_anchor()
     input_anchor2.radius = 0.2
     input_anchor2.starting_amber_params = base.Amber_params()
     input_anchor2.starting_amber_params.prmtop_filename = \
-        os.path.join(this_dir, "../data/hostguest.parm7")
+        os.path.join(this_dir, "../data/hostguest_files/hostguest.parm7")
     input_anchor2.starting_amber_params.inpcrd_filename = \
-        os.path.join(this_dir, "../data/hostguest.rst7")
+        os.path.join(this_dir, "../data/hostguest_files/hostguest.rst7")
     input_anchor2.starting_amber_params.pdb_coordinates_filename = \
-        os.path.join(this_dir, "../data/hostguest_at1.9.pdb")
+        os.path.join(this_dir, "../data/hostguest_files/hostguest_at1.9.pdb")
     input_anchor2.bound_state = False
     cv_input1.input_anchors.append(input_anchor2)
     
-    input_anchor3 = prepare_1d_spherical.Spherical_cv_anchor()
+    input_anchor3 = common_cv.Spherical_cv_anchor()
     input_anchor3.radius = 0.4
     input_anchor3.starting_amber_params = base.Amber_params()
     input_anchor3.starting_amber_params.prmtop_filename = \
-        os.path.join(this_dir, "../data/hostguest.parm7")
+        os.path.join(this_dir, "../data/hostguest_files/hostguest.parm7")
     input_anchor3.starting_amber_params.inpcrd_filename = \
-        os.path.join(this_dir, "../data/hostguest.rst7")
+        os.path.join(this_dir, "../data/hostguest_files/hostguest.rst7")
     input_anchor3.starting_amber_params.pdb_coordinates_filename = \
-        os.path.join(this_dir, "../data/hostguest_at3.8.pdb")
+        os.path.join(this_dir, "../data/hostguest_files/hostguest_at3.8.pdb")
     input_anchor3.bound_state = False
     cv_input1.input_anchors.append(input_anchor3)
     
-    input_anchor4 = prepare_1d_spherical.Spherical_cv_anchor()
+    input_anchor4 = common_cv.Spherical_cv_anchor()
     input_anchor4.radius = 0.5
     input_anchor4.starting_amber_params = base.Amber_params()
     input_anchor4.starting_amber_params.prmtop_filename = \
-        os.path.join(this_dir, "../data/hostguest.parm7")
+        os.path.join(this_dir, "../data/hostguest_files/hostguest.parm7")
     input_anchor4.starting_amber_params.inpcrd_filename = \
-        os.path.join(this_dir, "../data/hostguest.rst7")
+        os.path.join(this_dir, "../data/hostguest_files/hostguest.rst7")
     input_anchor4.starting_amber_params.pdb_coordinates_filename = \
-        os.path.join(this_dir, "../data/hostguest_at5.4.pdb")
+        os.path.join(this_dir, "../data/hostguest_files/hostguest_at5.4.pdb")
     input_anchor4.bound_state = False
     cv_input1.input_anchors.append(input_anchor4)
     
-    input_anchor5 = prepare_1d_spherical.Spherical_cv_anchor()
+    input_anchor5 = common_cv.Spherical_cv_anchor()
     input_anchor5.radius = 0.7
     input_anchor5.starting_amber_params = base.Amber_params()
     input_anchor5.starting_amber_params.prmtop_filename = \
-        os.path.join(this_dir, "../data/hostguest.parm7")
+        os.path.join(this_dir, "../data/hostguest_files/hostguest.parm7")
     input_anchor5.starting_amber_params.inpcrd_filename = \
-        os.path.join(this_dir, "../data/hostguest.rst7")
+        os.path.join(this_dir, "../data/hostguest_files/hostguest.rst7")
     input_anchor5.starting_amber_params.pdb_coordinates_filename = \
-        os.path.join(this_dir, "../data/hostguest_at7.0.pdb")
+        os.path.join(this_dir, "../data/hostguest_files/hostguest_at7.0.pdb")
     input_anchor5.bound_state = False
     cv_input1.input_anchors.append(input_anchor5)
     
-    input_anchor6 = prepare_1d_spherical.Spherical_cv_anchor()
+    input_anchor6 = common_cv.Spherical_cv_anchor()
     input_anchor6.radius = 0.8
     input_anchor6.starting_amber_params = base.Amber_params()
     input_anchor6.starting_amber_params.prmtop_filename = \
-        os.path.join(this_dir, "../data/hostguest.parm7")
+        os.path.join(this_dir, "../data/hostguest_files/hostguest.parm7")
     input_anchor6.starting_amber_params.inpcrd_filename = \
-        os.path.join(this_dir, "../data/hostguest.rst7")
+        os.path.join(this_dir, "../data/hostguest_files/hostguest.rst7")
     input_anchor6.starting_amber_params.pdb_coordinates_filename = \
-        os.path.join(this_dir, "../data/hostguest_at8.3.pdb")
+        os.path.join(this_dir, "../data/hostguest_files/hostguest_at8.3.pdb")
     input_anchor6.bound_state = False
     cv_input1.input_anchors.append(input_anchor6)
     
-    input_anchor7 = prepare_1d_spherical.Spherical_cv_anchor()
+    input_anchor7 = common_cv.Spherical_cv_anchor()
     input_anchor7.radius = 1.0
     input_anchor7.starting_amber_params = base.Amber_params()
     input_anchor7.starting_amber_params.prmtop_filename = \
-        os.path.join(this_dir, "../data/hostguest.parm7")
+        os.path.join(this_dir, "../data/hostguest_files/hostguest.parm7")
     input_anchor7.starting_amber_params.inpcrd_filename = \
-        os.path.join(this_dir, "../data/hostguest.rst7")
+        os.path.join(this_dir, "../data/hostguest_files/hostguest.rst7")
     input_anchor7.starting_amber_params.pdb_coordinates_filename = \
-        os.path.join(this_dir, "../data/hostguest_at9.8.pdb")
+        os.path.join(this_dir, "../data/hostguest_files/hostguest_at9.8.pdb")
     input_anchor7.bound_state = False
     cv_input1.input_anchors.append(input_anchor7)
     
-    input_anchor8 = prepare_1d_spherical.Spherical_cv_anchor()
+    input_anchor8 = common_cv.Spherical_cv_anchor()
     input_anchor8.radius = 1.1
     input_anchor8.starting_amber_params = base.Amber_params()
     input_anchor8.starting_amber_params.prmtop_filename = \
-        os.path.join(this_dir, "../data/hostguest.parm7")
+        os.path.join(this_dir, "../data/hostguest_files/hostguest.parm7")
     input_anchor8.starting_amber_params.inpcrd_filename = \
-        os.path.join(this_dir, "../data/hostguest.rst7")
+        os.path.join(this_dir, "../data/hostguest_files/hostguest.rst7")
     input_anchor8.starting_amber_params.pdb_coordinates_filename = \
-        os.path.join(this_dir, "../data/hostguest_at11.2.pdb")
+        os.path.join(this_dir, "../data/hostguest_files/hostguest_at11.2.pdb")
     input_anchor8.bound_state = False
     cv_input1.input_anchors.append(input_anchor8)
     
-    input_anchor9 = prepare_1d_spherical.Spherical_cv_anchor()
+    input_anchor9 = common_cv.Spherical_cv_anchor()
     input_anchor9.radius = 1.3
     input_anchor9.starting_amber_params = base.Amber_params()
     input_anchor9.starting_amber_params.prmtop_filename = \
-        os.path.join(this_dir, "../data/hostguest.parm7")
+        os.path.join(this_dir, "../data/hostguest_files/hostguest.parm7")
     input_anchor9.starting_amber_params.inpcrd_filename = \
-        os.path.join(this_dir, "../data/hostguest.rst7")
+        os.path.join(this_dir, "../data/hostguest_files/hostguest.rst7")
     input_anchor9.starting_amber_params.pdb_coordinates_filename = \
-        os.path.join(this_dir, "../data/hostguest_at12.8.pdb")
+        os.path.join(this_dir, "../data/hostguest_files/hostguest_at12.8.pdb")
     input_anchor9.bound_state = False
     cv_input1.input_anchors.append(input_anchor9)
     
-    input_anchor10 = prepare_1d_spherical.Spherical_cv_anchor()
+    input_anchor10 = common_cv.Spherical_cv_anchor()
     input_anchor10.radius = 1.4
     input_anchor10.starting_amber_params = base.Amber_params()
     input_anchor10.starting_amber_params.prmtop_filename = ""
@@ -152,15 +155,14 @@ def create_model_input(root_dir):
 def test_Input_model(tmp_path):
     model_input = create_model_input(tmp_path)
     assert model_input.temperature == 282.55
-    assert model_input.md_output_frequency == 12345
-    assert model_input.md_steps_per_anchor == 76543
-    assert model_input.run_minimization == False
+    assert model_input.calculation_settings.md_output_interval == 12345
+    assert model_input.calculation_settings.md_steps_per_anchor == 76543
     
     assert len(model_input.cv_inputs) == 1
     assert len(model_input.cv_inputs[0].input_anchors) == 10
     print("model_input.root_directory:", model_input.root_directory)
     
-    model = prepare_1d_spherical.generate_openmmvt_model_and_filetree(
+    model = prepare.generate_openmmvt_model_and_filetree(
         model_input)
     model.anchor_rootdir = tmp_path
     assert os.path.exists(os.path.join(model.anchor_rootdir, "anchor_1"))
@@ -180,10 +182,10 @@ def test_Input_model(tmp_path):
     assert len(model.anchors) == 10
     assert len(model.collective_variables) == 1
     assert model.openmm_settings.initial_temperature == 282.55
-    assert model.openmm_settings.energy_reporter_frequency == 12345
-    assert model.openmm_settings.restart_checkpoint_frequency == 12345
-    assert model.openmm_settings.trajectory_reporter_frequency == 12345
-    assert model.openmm_settings.total_simulation_length == 76543
+    assert model.calculation_settings.energy_reporter_interval == 12345
+    assert model.calculation_settings.restart_checkpoint_interval == 12345
+    assert model.calculation_settings.trajectory_reporter_interval == 12345
+    assert model.calculation_settings.num_production_steps == 76543
 
 """ # this test needs the serializer to be able to find the Spherical_cv_input 
     #class

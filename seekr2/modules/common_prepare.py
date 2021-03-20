@@ -320,29 +320,29 @@ class Model_factory():
             raise Exception("Invalid MD program entered:", 
                             model_input.md_program)
         
-        if model_input.browndye_settings is None:
+        if model_input.browndye_settings_input is None:
             # Running no BD
             pass
         
         else:
             k_on_info = base.K_on_info()
-            k_on_info.ions = model_input.browndye_settings.ions
+            k_on_info.ions = model_input.browndye_settings_input.ions
             k_on_info.b_surface_num_trajectories = \
-                model_input.browndye_settings.num_b_surface_trajectories
+                model_input.browndye_settings_input.num_b_surface_trajectories
             
             model.browndye_settings = base.Browndye_settings()
             model.browndye_settings.browndye_bin_dir = \
-                model_input.browndye_settings.binary_directory
+                model_input.browndye_settings_input.binary_directory
             model.browndye_settings.receptor_pqr_filename = \
                 os.path.basename(
-                    model_input.browndye_settings.receptor_pqr_filename)
+                    model_input.browndye_settings_input.receptor_pqr_filename)
             model.browndye_settings.ligand_pqr_filename = \
                 os.path.basename(
-                    model_input.browndye_settings.ligand_pqr_filename)
+                    model_input.browndye_settings_input.ligand_pqr_filename)
             model.browndye_settings.apbs_grid_spacing = \
-                model_input.browndye_settings.apbs_grid_spacing
+                model_input.browndye_settings_input.apbs_grid_spacing
             model.browndye_settings.n_threads = \
-                model_input.browndye_settings.n_threads
+                model_input.browndye_settings_input.n_threads
             
             model.k_on_info = k_on_info
         
@@ -446,11 +446,12 @@ def create_bd_milestones(model, model_input):
                 bd_milestone.inner_milestone = anchor.milestones[0]
             
             bd_milestone.num_trajectories = \
-                model_input.browndye_settings.num_bd_milestone_trajectories
+                model_input.browndye_settings_input\
+                    .num_bd_milestone_trajectories
             bd_milestone.receptor_indices = \
-                model_input.browndye_settings.receptor_indices
+                model_input.browndye_settings_input.receptor_indices
             bd_milestone.ligand_indices = \
-                model_input.browndye_settings.ligand_indices
+                model_input.browndye_settings_input.ligand_indices
             
             model.k_on_info.bd_milestones.append(bd_milestone)
             bd_milestone_counter += 1
@@ -485,7 +486,7 @@ def prepare_model_cvs_and_anchors(model, model_input):
     
     model.num_anchors = num_anchors
     model.num_milestones = num_milestones
-    if model_input.browndye_settings is not None:
+    if model_input.browndye_settings_input is not None:
         create_bd_milestones(
             model, model_input)
     

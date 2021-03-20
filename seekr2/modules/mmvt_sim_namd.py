@@ -263,7 +263,7 @@ for {set stepnum %d} {$stepnum < $max_steps} {incr stepnum $EVAL_STRIDE} {
         my_string += routine_tail_string
         return my_string
     
-class Sim_namd_factory():
+class MMVT_sim_namd_factory():
     """
     Create the namd_openmm objects which will be used to run MMVT
     calculations in NAMD.
@@ -315,6 +315,7 @@ class Sim_namd_factory():
             raise Exception("Charmm systems not yet implemented")
         
         else:
+            print("anchor.index", anchor.index)
             raise Exception("No Amber or Charmm input settings detected.")
         
         sim_namd.namd_root = common_sim_namd.Namd_root()

@@ -150,7 +150,7 @@
             </input_anchors>
         </cv_input>
     </cv_inputs>
-    <browndye_settings class="Browndye_settings_input">
+    <browndye_settings_input class="Browndye_settings_input">
         <binary_directory></binary_directory>
         <receptor_pqr_filename>data/hostguest_files/hostguest_receptor.pqr</receptor_pqr_filename>
         <ligand_pqr_filename>data/hostguest_files/hostguest_ligand.pqr</ligand_pqr_filename>
@@ -182,5 +182,5 @@
         <num_bd_milestone_trajectories>1000</num_bd_milestone_trajectories>
         <num_b_surface_trajectories>10000</num_b_surface_trajectories>
         <n_threads>1</n_threads>
-    </browndye_settings>
+    </browndye_settings_input>
 </model_input>
