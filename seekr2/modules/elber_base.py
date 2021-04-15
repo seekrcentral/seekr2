@@ -56,6 +56,7 @@ class Elber_settings(serializer.Serializer):
         self.temperature_equil_progression = []
         self.num_temperature_equil_steps = 1000
         self.num_umbrella_stage_steps = 50000
+        self.umbrella_force_constant = 9000.0
         self.fwd_rev_interval = 500
         self.umbrella_energy_reporter_interval = None
         self.umbrella_trajectory_reporter_interval = None
@@ -154,6 +155,7 @@ class Elber_spherical_CV(Elber_collective_variable):
         self.per_dof_variables = ["k", "radius"]
         self.global_variables = []
         self._mygroup_list = None
+        self.variable_name = "r"
         return
 
     def __name__(self):
@@ -366,6 +368,7 @@ class Elber_anchor(serializer.Serializer):
         self.endstate = False
         self.bulkstate = False
         self.milestones = []
+        self.variables = {}
         return
     
     def _make_milestone_collection(self):
@@ -379,7 +382,7 @@ class Elber_anchor(serializer.Serializer):
         
         for milestone in self.milestones:
                 index = milestone.index
-                neighbor_index = milestone.neighbor_index
+                neighbor_index = milestone.neighbor_anchor_index
                 alias_index = milestone.alias_index
                 id_key_alias_value_dict[index] = alias_index
                 neighbor_id_key_alias_value_dict[neighbor_index] = alias_index

@@ -26,6 +26,7 @@ class Elber_sim_openmm(common_sim_openmm.Common_sim_openmm):
         self.umbrella_simulation = None
         self.umbrella_traj_reporter = openmm_app.DCDReporter
         self.umbrella_energy_reporter = openmm_app.StateDataReporter
+        self.umbrella_force = None
         
         self.rev_system = None
         self.rev_integrator = None
@@ -33,6 +34,7 @@ class Elber_sim_openmm(common_sim_openmm.Common_sim_openmm):
         self.rev_traj_reporter = openmm_app.DCDReporter
         self.rev_energy_reporter = openmm_app.StateDataReporter
         self.rev_output_filename = ""
+        self.rev_seekr_force = None
         
         self.fwd_system = None
         self.fwd_integrator = None
@@ -40,6 +42,7 @@ class Elber_sim_openmm(common_sim_openmm.Common_sim_openmm):
         self.fwd_traj_reporter = openmm_app.DCDReporter
         self.fwd_energy_reporter = openmm_app.StateDataReporter
         self.fwd_output_filename = ""
+        self.fwd_seekr_force = None
         return
     
 class Elber_sim_openmm_factory(common_sim_openmm.Common_sim_openmm_factory):
@@ -102,12 +105,15 @@ class Elber_sim_openmm_factory(common_sim_openmm.Common_sim_openmm_factory):
         """
         
         """
-        umbrella_force = make_elber_umbrella_force(model, anchor)
-        self.sim_openmm.umbrella_system.addForce(umbrella_force)
-        rev_force = make_elber_rev_force(model, anchor, rev_data_file_name)
-        self.sim_openmm.rev_system.addForce(rev_force)
-        fwd_force = make_elber_fwd_force(model, anchor, fwd_data_file_name)
-        self.sim_openmm.fwd_system.addForce(fwd_force)
+        self.sim_openmm.umbrella_force = make_elber_umbrella_force(
+            model, anchor)
+        self.sim_openmm.umbrella_system.addForce(self.sim_openmm.umbrella_force)
+        self.sim_openmm.rev_seekr_force = make_elber_rev_force(
+            model, anchor, rev_data_file_name)
+        self.sim_openmm.rev_system.addForce(self.sim_openmm.rev_seekr_force)
+        self.sim_openmm.fwd_seekr_force = make_elber_fwd_force(
+            model, anchor, fwd_data_file_name)
+        self.sim_openmm.fwd_system.addForce(self.sim_openmm.fwd_seekr_force)
         return
     
     def add_simulations(self, model, topology, positions, box_vectors):

@@ -10,6 +10,8 @@ calculation.
 
 import os
 import sys
+import glob
+import shutil
 
 import seekr2.modules.filetree as filetree
 import seekr2.modules.common_base as base
@@ -20,9 +22,34 @@ import seekr2.modules.mmvt_cv as mmvt_cv
 import seekr2.modules.elber_cv as elber_cv
 import seekr2.modules.common_sim_browndye2 as sim_browndye2
 import seekr2.modules.runner_browndye2 as runner_browndye2
+import seekr2.modules.runner_openmm as runner_openmm
+import seekr2.modules.runner_namd as runner_namd
 import seekr2.libraries.serializer.serializer as serializer
 from seekr2.modules.common_base import Ion
 
+def anchor_has_files(model, anchor):
+    """
+    Returns True if simulations have already been run in this anchor.
+    """
+    output_directory = os.path.join(
+        model.anchor_rootdir, anchor.directory, anchor.production_directory)
+    output_files_glob = os.path.join(output_directory, anchor.md_output_glob)
+    output_restarts_list = glob.glob(output_files_glob)
+    if len(output_restarts_list) > 0:
+        return True
+    else:
+        return False
+
+def cleanse_anchor_outputs(model, anchor):
+    """
+    Delete all simulation outputs for an existing anchor to make way
+    for new outputs.
+    """
+    if model.openmm_settings is not None:
+        runner_openmm.cleanse_anchor_outputs(model, anchor)
+    elif model.namd_settings is not None:
+        runner_namd.cleanse_anchor_outputs(model, anchor)
+    return
 
 class Browndye_settings_input(serializer.Serializer):
     """
@@ -112,6 +139,7 @@ class Elber_input_settings(serializer.Serializer):
         self.temperature_equil_progression = []
         self.num_temperature_equil_steps = 1000
         self.num_umbrella_stage_steps = 50000
+        self.umbrella_force_constant = 9000.0
         self.fwd_rev_interval = 500
         self.rev_output_interval = 500
         self.fwd_output_interval = 500
@@ -247,6 +275,8 @@ class Model_factory():
                 calc_settings.num_temperature_equil_steps
             model.calculation_settings.num_umbrella_stage_steps = \
                 calc_settings.num_umbrella_stage_steps
+            model.calculation_settings.umbrella_force_constant = \
+                calc_settings.umbrella_force_constant
             model.calculation_settings.fwd_rev_interval = \
                 calc_settings.fwd_rev_interval
             model.calculation_settings.umbrella_energy_reporter_interval = \
@@ -403,8 +433,12 @@ def create_cvs_and_anchors(model, collective_variable_inputs):
                 milestones, milestone_alias, milestone_index = \
                     elber_cv.make_elber_milestoning_objects_spherical(
                     cv_input, milestone_alias, milestone_index, anchor_index, 
-                    cv_input.input_anchors)
+                    cv_input.input_anchors, 
+                    model.calculation_settings.umbrella_force_constant)
             anchor.milestones += milestones
+            variable_name = "{}_{}".format(cv.variable_name, i)
+            variable_value = input_anchor.radius # TODO: hard-coded
+            anchor.variables[variable_name] = variable_value
             anchors.append(anchor)
             anchor_index += 1
     
@@ -475,7 +509,8 @@ def prepare_model_cvs_and_anchors(model, model_input):
         elif model_input.md_program.lower() == "namd":
             for anchor in model.anchors:
                 anchor.md_output_glob = mmvt_base.NAMDMMVT_GLOB
-    
+        model.num_milestones = num_milestones
+        
     elif model.get_type() == "elber":
         if model_input.md_program.lower() == "openmm":
             for anchor in model.anchors:
@@ -483,9 +518,9 @@ def prepare_model_cvs_and_anchors(model, model_input):
         elif model_input.md_program.lower() == "namd":
             for anchor in model.anchors:
                 anchor.md_output_glob = elber_base.NAMD_ELBER_GLOB
-    
+        model.num_milestones = num_milestones-1
+        
     model.num_anchors = num_anchors
-    model.num_milestones = num_milestones
     if model_input.browndye_settings_input is not None:
         create_bd_milestones(
             model, model_input)
@@ -529,10 +564,150 @@ def generate_bd_files(model, rootdir):
             model, rootdir, receptor_xml_filename, ligand_xml_filename,
             model.k_on_info.b_surface_num_trajectories)
         model.browndye_settings.debye_length = debye_length
-        
         abs_reaction_path = os.path.join(b_surface_dir, 
                                          reaction_filename)
-        
         runner_browndye2.make_browndye_reaction_xml(model, abs_reaction_path)
-        
         return
+    
+def modify_model(old_model, new_model, root_directory, force_overwrite=False):
+    """
+    If someone runs the prepare stage on a model with existing
+    directories and simulation results, examine the changes to delete
+    and rename directories properly, and only overwrite simulation files
+    if forced to do so.
+    """
+    old_model.anchor_rootdir = root_directory
+    anchor_pairs = []
+    old_anchors_to_delete = []
+    new_anchors_to_create = []
+    for alpha, anchor1 in enumerate(new_model.anchors):
+        if anchor1.bulkstate:
+            continue
+        alpha_paired = False
+        for beta, anchor2 in enumerate(old_model.anchors):
+            if anchor2.bulkstate:
+                continue
+            if anchor1.variables == anchor2.variables:
+                pair = (alpha, beta)
+                anchor_pairs.append(pair)
+                alpha_paired = True
+                break
+        if not alpha_paired:
+            new_anchors_to_create.append(alpha)
+    for beta, anchor2 in enumerate(old_model.anchors):
+        if anchor2.bulkstate:
+            continue
+        beta_paired = False
+        for pair in anchor_pairs:
+            if beta == pair[1]:
+                beta_paired = True
+                break
+        if not beta_paired:
+            old_anchors_to_delete.append(beta)
+    
+    # Now check all the paired anchors to see if anyone's milestones
+    # have changed
+    old_anchors_with_changed_milestones = []
+    for pair in anchor_pairs:
+        (alpha, beta) = pair
+        anchor1 = new_model.anchors[alpha]
+        anchor2 = old_model.anchors[beta]
+        milestones_changed = False
+        milestone_pairs = []
+        for i, milestone1 in enumerate(anchor1.milestones):
+            milestone1_paired = False
+            for j, milestone2 in enumerate(anchor2.milestones):
+                if milestone1.variables == milestone2.variables:
+                    milestone_pairs.append((i,j))
+                    milestone1_paired = True
+                    break
+            if not milestone1_paired:
+                milestones_changed = True
+        for j, milestone2 in enumerate(anchor2.milestones):
+            milestone2_paired = False
+            for milestone_pair in milestone_pairs:
+                if j == milestone_pair[1]:
+                    milestone2_paired = True
+                    break
+            if not milestone2_paired:
+                milestones_changed = True
+        if milestones_changed:
+            old_anchors_with_changed_milestones.append(beta)
+    # check whether deleting directories contain simulation files
+    deleting_directories_with_files = []
+    for del_anchor_index in old_anchors_to_delete:
+        del_anchor = old_model.anchors[del_anchor_index]
+        if anchor_has_files(old_model, del_anchor):
+            deleting_directories_with_files.append(del_anchor.directory)
+    warning_msg = ""
+    if len(deleting_directories_with_files) > 0 :
+        warning_msg+="The anchor(s) {} ".format(
+                deleting_directories_with_files)\
+            +"already have existing output files "\
+            "and the entered command would overwrite them. If you desire "\
+            "to overwrite the existing files, then use the "\
+            "--force_overwrite (-f) option, and these anchors will be "\
+            "deleted in directory: " + root_directory + "\n"
+    # Check whether directories with changed milestones already contain
+    # simulation files
+    cleansing_anchors = []
+    cleansing_directories = []
+    for cleanse_anchor_index in old_anchors_with_changed_milestones:
+        cleanse_anchor = old_model.anchors[cleanse_anchor_index]
+        if anchor_has_files(old_model, cleanse_anchor):
+            cleansing_anchors.append(cleanse_anchor)
+            cleansing_directories.append(cleanse_anchor.directory)
+    
+    if len(cleansing_directories) > 0 :
+        warning_msg+="The anchor(s) {} ".format(
+                cleansing_directories)\
+            +"already have existing output files yet the milestone locations "\
+            "will be changed if this command proceeds. If you desire "\
+            "to overwrite the existing files, then use the "\
+            "--force_overwrite (-f) option, and these outputs will be "\
+            "deleted in directory: " + root_directory + "\n"
+    if warning_msg and not force_overwrite:
+        print(warning_msg)
+        raise Exception("Cannot overwrite existing outputs.")
+    
+    for del_anchor_index in old_anchors_to_delete:
+        del_anchor = old_model.anchors[del_anchor_index]
+        full_path = os.path.join(root_directory, del_anchor.directory)
+        print("removing directory: "+del_anchor.directory)
+        shutil.rmtree(full_path)
+    
+    for cleansing_anchor in cleansing_anchors:
+        print("removing output files from anchor:", cleansing_anchor.name)
+        cleanse_anchor_outputs(old_model, cleansing_anchor)
+        
+    for pair in anchor_pairs:
+        (alpha, beta) = pair
+        anchor1 = old_model.anchors[beta]
+        anchor2 = new_model.anchors[alpha]
+        full_path1 = os.path.join(root_directory, anchor1.directory)
+        full_path2 = os.path.join(root_directory, anchor2.directory)
+        if full_path1 != full_path2:
+            if os.path.exists(full_path2):
+                # then we cannot rename to this without giving this one
+                # a temporary directory
+                for problem_anchor in old_model.anchors:
+                    if problem_anchor.bulkstate:
+                        continue
+                    if problem_anchor.directory == anchor2.directory:
+                        temporary_name = problem_anchor.directory+"temp"
+                        temp_full_path1 = os.path.join(root_directory, 
+                                                  problem_anchor.directory)
+                        temp_full_path2 = os.path.join(root_directory, 
+                                                  temporary_name)
+                        print("moving directory {} to {}".format(
+                            problem_anchor.directory, temporary_name))
+                        os.rename(temp_full_path1, temp_full_path2)
+                        problem_anchor.directory = temporary_name
+                        break
+            
+            print("moving directory {} to {}".format(anchor1.directory, 
+                                                 anchor2.directory))
+            os.rename(full_path1, full_path2)
+    
+    return
+    

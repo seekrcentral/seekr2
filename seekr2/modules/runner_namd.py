@@ -59,6 +59,58 @@ def read_xsc_step_number(xsc_filename):
     
     return last_step
 
+def cleanse_anchor_outputs(model, anchor):
+    """
+    Delete all simulation outputs for an existing anchor to make way
+    for new outputs.
+    """
+    if model.get_type() == "mmvt":
+        basename = mmvt_base.NAMDMMVT_BASENAME
+        extension = mmvt_base.NAMDMMVT_EXTENSION
+    # Elber not supported in NAMD
+    #elif model.get_type() == "elber":
+    #    basename = elber_base.OPENMM_ELBER_BASENAME
+    #    extension = elber_base.OPENMM_ELBER_EXTENSION
+    output_directory = os.path.join(
+        model.anchor_rootdir, anchor.directory, anchor.production_directory)
+    output_files_glob = os.path.join(output_directory, anchor.md_output_glob)
+    output_restarts_list = glob.glob(output_files_glob)
+    for mmvt_output_file in output_restarts_list:
+        os.remove(mmvt_output_file)
+    dcd_glob = os.path.join(output_directory, "*.dcd*")
+    for dcd_file in glob.glob(dcd_glob):
+        os.remove(dcd_file)
+    colvars_glob = os.path.join(
+        output_directory, "%s*.colvars.*" % basename)
+    for colvars_file in glob.glob(colvars_glob):
+        os.remove(colvars_file)
+    coor_glob = os.path.join(
+        output_directory, "%s*.coor*" % basename)
+    for coor_file in glob.glob(coor_glob):
+        os.remove(coor_file)
+    vel_glob = os.path.join(
+        output_directory, "%s*.vel*" % basename)
+    for vel_file in glob.glob(vel_glob):
+        os.remove(vel_file)
+    xsc_glob = os.path.join(
+        output_directory, "%s*.xsc*" % basename)
+    for xsc_file in glob.glob(xsc_glob):
+        os.remove(xsc_file)
+    input_glob = os.path.join(
+        output_directory, 
+        common_sim_namd.NAMD_INPUT_FILENAME.format("*"))
+    for input_file in glob.glob(input_glob):
+        os.remove(input_file)
+    checkpoint_glob = os.path.join(
+        output_directory, RESTART_CHECKPOINT_FILENAME+"*")
+    for checkpoint_file in glob.glob(checkpoint_glob):
+        os.remove(checkpoint_file)
+    states_dir = os.path.join(
+        output_directory, SAVE_STATE_DIRECTORY)
+    if os.path.exists(states_dir):
+        shutil.rmtree(states_dir)
+    return
+
 class Runner_namd():
     """
     Prepare and run a SEEKR2 simulation using the NAMD simulation 
@@ -147,6 +199,7 @@ class Runner_namd():
                           "run.")
                     raise Exception("Cannot overwrite existing MMVT outputs.")
                 else:
+                    """
                     for mmvt_output_file in mmvt_output_restarts_list:
                         os.remove(mmvt_output_file)
                     dcd_glob = os.path.join(
@@ -182,6 +235,7 @@ class Runner_namd():
                         self.output_directory, SAVE_STATE_DIRECTORY)
                     if os.path.exists(states_dir):
                         shutil.rmtree(states_dir)
+                    """
                         
             default_output_filename = "%s%d.%s" % (
                 self.basename, 1, self.extension)
@@ -388,7 +442,7 @@ if __name__ == "__main__":
         output_file = default_output_file
     
     if mymodel.get_type() == "mmvt":
-        sim_namd_factory = mmvt_sim_namd.Sim_namd_factory()
+        sim_namd_factory = mmvt_sim_namd.MMVT_sim_namd_factory()
     elif mymodel.get_type() == "elber":
         pass
     else:

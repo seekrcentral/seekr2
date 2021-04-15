@@ -91,16 +91,6 @@ def generate_filetree(model, rootdir, empty_rootdir=False):
         if not anchor.md:
             continue
         anchor_dict = {}
-        """ #TODO: marked for removal
-        if model.get_type() == "mmvt":
-            anchor_dict[anchor.production_directory] = {}
-            anchor_dict[anchor.building_directory] = {}
-        elif model.get_type() == "elber":
-            anchor_dict[anchor.temp_equil_directory] = {}
-            anchor_dict[anchor.umbrella_directory] = {}
-            anchor_dict[anchor.fwd_rev_directory] = {}
-            anchor_dict[anchor.building_directory] = {}
-        """
         anchor_dict[anchor.production_directory] = {}
         anchor_dict[anchor.building_directory] = {}
         
@@ -185,7 +175,6 @@ def copy_building_files(model, input_model, rootdir):
                 anchor.amber_params.pdb_coordinates_filename = pdb_filename
                 
             anchor.amber_params.box_vectors = amber.box_vectors
-        
         
         try: # TODO: fix simple XML parser so this isn't necessary
             forcefield = input_anchor.starting_forcefield_params

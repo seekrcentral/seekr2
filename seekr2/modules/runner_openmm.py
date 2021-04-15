@@ -18,6 +18,7 @@ from parmed import unit
 import seekr2.modules.common_base as base
 import seekr2.modules.mmvt_base as mmvt_base
 import seekr2.modules.elber_base as elber_base
+import seekr2.modules.common_prepare as common_prepare
 import seekr2.modules.common_sim_openmm as common_sim_openmm
 import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
 import seekr2.modules.elber_sim_openmm as elber_sim_openmm
@@ -46,9 +47,10 @@ def all_boundaries_have_state(myglob, anchor):
     orig_all_milestoning_aliases = all_milestone_aliases[:]
     all_state_files = glob.glob(myglob)
     for state_file in all_state_files:
-        state_alias_index = os.path.basename(state_file).split("_")[1]
+        state_alias_index = os.path.basename(state_file).split("_")[2]
         assert state_alias_index in orig_all_milestoning_aliases, \
-            "Unknown boundary alias index found: "+state_alias_index
+            "Unknown boundary alias index found: "+state_alias_index\
+            +" orig_all_milestoning_aliases: "+str(orig_all_milestoning_aliases)
         if state_alias_index in all_milestone_aliases:
             all_milestone_aliases.remove(state_alias_index)
     if len(all_milestone_aliases) == 0:
@@ -62,12 +64,13 @@ def search_for_state_to_load(model, anchor):
     seed this anchor as a set of starting positions.
     """
     for milestone in anchor.milestones:
+        if milestone.neighbor_anchor_index is None:
+            continue
         neighbor_anchor = model.anchors[milestone.neighbor_anchor_index]
         for neighbor_milestone in neighbor_anchor.milestones:
             if neighbor_milestone.neighbor_anchor_index == anchor.index:
                 target_alias_index = str(neighbor_milestone.alias_index)
-                glob_prefix = SAVE_STATE_PREFIX + "_" + target_alias_index \
-                    + "_*"
+                glob_prefix = SAVE_STATE_PREFIX + "_*_" + target_alias_index
                 state_glob = os.path.join(
                     model.anchor_rootdir, neighbor_anchor.directory, 
                     neighbor_anchor.production_directory, SAVE_STATE_DIRECTORY,
@@ -105,11 +108,65 @@ def read_reversal_data_file_last(data_file_name):
     line = data_file.readlines()[-1]
     data_file.close()
     if line[0] != '2': # TODO: HACKY!
-        print("other boundary crossed")
+        #print("other boundary crossed") # TODO: remove
         return True
     else:
-        print("self boundary crossed")
+        #print("self boundary crossed") # TODO: remove
         return False
+
+def cleanse_anchor_outputs(model, anchor):
+    """
+    Delete all simulation outputs for an existing anchor to make way
+    for new outputs.
+    """
+    if model.get_type() == "mmvt":
+        basename = mmvt_base.OPENMMVT_BASENAME
+        extension = mmvt_base.OPENMMVT_EXTENSION
+    elif model.get_type() == "elber":
+        basename = elber_base.OPENMM_ELBER_BASENAME
+        extension = elber_base.OPENMM_ELBER_EXTENSION
+    output_directory = os.path.join(
+        model.anchor_rootdir, anchor.directory, anchor.production_directory)
+    output_files_glob = os.path.join(output_directory, anchor.md_output_glob)
+    output_restarts_list = glob.glob(output_files_glob)
+    for output_file in output_restarts_list:
+        os.remove(output_file)
+    dcd_glob = os.path.join(output_directory, "*.dcd")
+    for dcd_file in glob.glob(dcd_glob):
+        os.remove(dcd_file)
+    backup_file = os.path.join(output_directory, 
+                           RESTART_CHECKPOINT_FILENAME)
+    if os.path.exists(backup_file):
+        os.remove(backup_file)
+    states_dir = os.path.join(output_directory, 
+                              SAVE_STATE_DIRECTORY)
+    if os.path.exists(states_dir):
+        shutil.rmtree(states_dir)
+    
+    elber_rev_glob = os.path.join(
+        output_directory, elber_base.ELBER_REV_GLOB)
+    for elber_rev_file in glob.glob(elber_rev_glob):
+        os.remove(elber_rev_file)
+        
+    elber_fwd_glob = os.path.join(
+        output_directory, elber_base.ELBER_FWD_GLOB)
+    for elber_fwd_file in glob.glob(elber_fwd_glob):
+        os.remove(elber_fwd_file)
+    return
+
+def get_last_bounce(data_file_name):
+    """
+    Find the index of the last bounce and return it.
+    """
+    if not os.path.exists(data_file_name):
+        return None
+    with open(data_file_name, 'r') as data_file:
+        line = data_file.readlines()[-1]
+    if line.startswith("#"):
+        return None
+    else:
+        count = int(line.split(",")[1])+1
+    return count
 
 class Runner_openmm():
     """
@@ -168,6 +225,7 @@ class Runner_openmm():
         self.end_chunk = None
         #self.num_production_steps = None
         self.steps_per_chunk = None
+        self.start_bounce_counter = 0
     
     def prepare(self, restart=False, save_state_file=False, 
                 force_overwrite=False):
@@ -182,16 +240,27 @@ class Runner_openmm():
             output_files_glob = os.path.join(
                 self.output_directory, self.glob)
             output_restarts_list = glob.glob(output_files_glob)
+            output_restarts_list = base.order_files_numerically(
+                output_restarts_list)
+            assert len(output_restarts_list) > 0, \
+                "No simulation has yet been run: cannot use restart mode."
+            self.start_bounce_counter = get_last_bounce(
+                output_restarts_list[-1])
+            if self.start_bounce_counter is None:
+                self.start_bounce_counter = 0
             restart_index = len(output_restarts_list) + 1
             default_output_filename = os.path.join(
                 self.output_directory, 
                 "%s.restart%d.%s" % (self.basename, restart_index, 
                                      self.extension))
         else:
+            """ # TODO: remove
             output_files_glob = os.path.join(
                 self.output_directory, self.glob)
             output_restarts_list = glob.glob(output_files_glob)
             if len(output_restarts_list) > 0:
+            """
+            if common_prepare.anchor_has_files(self.model, self.anchor):
                 if not force_overwrite:
                     print("This anchor already has existing output files "\
                           "and the entered command would overwrite them. "\
@@ -201,6 +270,8 @@ class Runner_openmm():
                           "run.")
                     raise Exception("Cannot overwrite existing outputs.")
                 else:
+                    cleanse_anchor_outputs(self.model, self.anchor)
+                    """ # TODO: remove
                     for output_file in output_restarts_list:
                         os.remove(output_file)
                     dcd_glob = os.path.join(
@@ -225,6 +296,7 @@ class Runner_openmm():
                         self.output_directory, elber_base.ELBER_FWD_GLOB)
                     for elber_fwd_file in glob.glob(elber_fwd_glob):
                         os.remove(elber_fwd_file)
+                    """
                         
             default_output_filename = os.path.join(
                 self.output_directory, 
@@ -356,11 +428,20 @@ class Runner_openmm():
                 if all_boundaries_have_state(self.state_prefix+"*", 
                                              self.anchor):
                     self.sim_openmm.integrator.setSaveStateFileName("")
+                    bounce_counter = get_last_bounce(self.sim_openmm.output_filename)
+                    if bounce_counter is None:
+                        bounce_counter = self.start_bounce_counter
+                    self.sim_openmm.integrator.setBounceCounter(bounce_counter)
                     self.sim_openmm.simulation.context.reinitialize(preserveState=True)
                     self.save_one_state_for_all_boundaries = False
                 else:
                     self.sim_openmm.integrator.setSaveStateFileName(self.state_prefix)
+                    bounce_counter = get_last_bounce(self.sim_openmm.output_filename)
+                    if bounce_counter is None:
+                        bounce_counter = self.start_bounce_counter
+                    self.sim_openmm.integrator.setBounceCounter(bounce_counter)
                     self.sim_openmm.simulation.context.reinitialize(preserveState=True)
+                    
             self.sim_openmm.simulation.saveCheckpoint(self.restart_checkpoint_filename)
             self.sim_openmm.simulation.step(self.steps_per_chunk)
         return
@@ -426,7 +507,26 @@ class Runner_openmm():
             os.remove(fwd_data_file_name)
         num_errors = 0
         for chunk in range(self.start_chunk, self.end_chunk):
-            # if self.save_one_state_for_all_boundaries:...
+            if self.save_one_state_for_all_boundaries:
+                if all_boundaries_have_state(self.state_prefix+"*", 
+                                             self.anchor):
+                    self.sim_openmm.rev_seekr_force.setSaveStateFileName("")
+                    self.sim_openmm.fwd_seekr_force.setSaveStateFileName("")
+                    self.sim_openmm.rev_simulation.context.reinitialize(
+                        preserveState=True)
+                    self.sim_openmm.fwd_simulation.context.reinitialize(
+                        preserveState=True)
+                    self.save_one_state_for_all_boundaries = False
+                else:
+                    chunk_str = "_%d" % chunk
+                    self.sim_openmm.rev_seekr_force.setSaveStateFileName(
+                        self.state_prefix+chunk_str+"r")
+                    self.sim_openmm.fwd_seekr_force.setSaveStateFileName(
+                        self.state_prefix+chunk_str+"f")
+                    self.sim_openmm.rev_simulation.context.reinitialize(
+                        preserveState=True)
+                    self.sim_openmm.fwd_simulation.context.reinitialize(
+                        preserveState=True)
             umbrella_simulation.saveCheckpoint(
                 self.restart_checkpoint_filename)
             umbrella_simulation.step(self.steps_per_chunk)

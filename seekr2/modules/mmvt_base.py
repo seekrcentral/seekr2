@@ -132,6 +132,7 @@ class MMVT_spherical_CV(MMVT_collective_variable):
         self.per_dof_variables = ["k", "radius"]
         self.global_variables = []
         self._mygroup_list = None
+        self.variable_name = "r"
         return
 
     def __name__(self):
@@ -403,6 +404,7 @@ class MMVT_anchor(serializer.Serializer):
         self.endstate = False
         self.bulkstate = False
         self.milestones = []
+        self.variables = {}
         return
     
     def _make_milestone_collection(self):
@@ -416,7 +418,7 @@ class MMVT_anchor(serializer.Serializer):
         
         for milestone in self.milestones:
                 index = milestone.index
-                neighbor_index = milestone.neighbor_index
+                neighbor_index = milestone.neighbor_anchor_index
                 alias_index = milestone.alias_index
                 id_key_alias_value_dict[index] = alias_index
                 neighbor_id_key_alias_value_dict[neighbor_index] = alias_index
@@ -468,4 +470,5 @@ class MMVT_anchor(serializer.Serializer):
         id_key_alias_value_dict, alias_key_id_value_dict, \
             neighbor_id_key_alias_value_dict = self._make_milestone_collection()
         return id_key_alias_value_dict.keys()
+    
     

@@ -14,7 +14,7 @@ from seekr2.modules.common_cv import *
 from seekr2.modules.common_prepare import Browndye_settings_input, Ion, \
     MMVT_input_settings, Elber_input_settings
 
-def generate_openmmvt_model_and_filetree(model_input):
+def generate_openmmvt_model_and_filetree(model_input, force_overwrite):
     """
     Using the Model_input from the user, prepare the Model
     object and the filetree. Then prepare all building files
@@ -24,10 +24,18 @@ def generate_openmmvt_model_and_filetree(model_input):
     model = model_factory.create_model(model_input)
     common_prepare.prepare_model_cvs_and_anchors(model, model_input)
     root_directory = os.path.expanduser(model_input.root_directory)
+    xml_path = os.path.join(root_directory, "model.xml")
+    if os.path.exists(xml_path):
+        # then a model file already exists at this location: update
+        # the anchor directories.
+        old_model = base.Model()
+        old_model.deserialize(xml_path)
+        common_prepare.modify_model(old_model, model, root_directory,
+                                    force_overwrite)
+    
     filetree.generate_filetree(model, root_directory)
     filetree.copy_building_files(model, model_input, root_directory)
     common_prepare.generate_bd_files(model, root_directory)
-    xml_path = os.path.join(root_directory, "model.xml")
     model.serialize(xml_path)
     return model
 
@@ -36,19 +44,19 @@ if __name__ == "__main__":
     argparser.add_argument(
         "model_input_file", metavar="MODEL_INPUT_FILE", type=str, 
         help="The name of input XML file for a SEEKR2 calculation.")
-    """ # TODO: remove
-    argparser.add_argument("-r", "--run", dest="run", default=False,
-        help="Run the BrownDye bd_top and nam_simulation programs for the "\
-        "BD_MILESTONE indicated. By default, this mode is activated if the "\
-        "extract argument is False, otherwise, if extract is True, this "\
-        "argument must be specified in order to do both.",
-        action="store_true")
-    """
+    
+    argparser.add_argument(
+        "-f", "--force_overwrite", dest="force_overwrite", default=False,
+        help="Toggle whether to overwrite existing simulation output files "\
+        "within any anchor that might have existed in an old model that would "\
+        "be overwritten by generating this new model. If not toggled, this "\
+        "program will throw an exception instead of performing any such "\
+        "overwrite.", action="store_true")
         
     args = argparser.parse_args() # parse the args into a dictionary
     args = vars(args)
     model_input_filename = args["model_input_file"]
-    #run = args["run"]
+    force_overwrite = args["force_overwrite"]
     model_input = common_prepare.Model_input()
     model_input.deserialize(model_input_filename, user_input = True)
-    generate_openmmvt_model_and_filetree(model_input)
+    generate_openmmvt_model_and_filetree(model_input, force_overwrite)

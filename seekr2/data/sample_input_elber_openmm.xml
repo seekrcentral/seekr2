@@ -6,6 +6,7 @@
             340., 330., 320., 310., 300.]</temperature_equil_progression>
         <num_temperature_equil_steps>1000</num_temperature_equil_steps>
         <num_umbrella_stage_steps>40000</num_umbrella_stage_steps>
+        <umbrella_force_constant>5000.0</umbrella_force_constant>
         <fwd_rev_interval>400</fwd_rev_interval>
         <rev_output_interval/>
         <fwd_output_interval/>
