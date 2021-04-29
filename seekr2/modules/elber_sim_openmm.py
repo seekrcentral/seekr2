@@ -124,6 +124,12 @@ class Elber_sim_openmm_factory(common_sim_openmm.Common_sim_openmm_factory):
             topology.topology, self.sim_openmm.umbrella_system, 
             self.sim_openmm.umbrella_integrator, self.sim_openmm.platform, 
             self.sim_openmm.properties)
+        
+        #for force in self.sim_openmm.rev_system.getForces():
+        #    print("force name:", force.__class__.__name__,
+        #          "force.usesPeriodicBoundaryConditions():", 
+        #          force.usesPeriodicBoundaryConditions())
+        #exit()
         self.sim_openmm.rev_simulation = openmm_app.Simulation(
             topology.topology, self.sim_openmm.rev_system, 
             self.sim_openmm.rev_integrator, self.sim_openmm.platform, 

@@ -16,6 +16,7 @@ import seekr2.modules.common_base as base
 import seekr2.modules.common_analyze as common_analyze
 import seekr2.modules.mmvt_analyze as mmvt_analyze
 import seekr2.modules.elber_analyze as elber_analyze
+import seekr2.modules.check as check
 
 class Analysis:
     """
@@ -142,7 +143,7 @@ class Analysis:
         self.num_error_samples = num_error_samples
         return
     
-    def elber_check_anchor_stats(self):
+    def elber_check_anchor_stats(self, silent=False):
         """
         Check the anchor statistics to make sure that enough bounces
         have been observed to perform the analysis
@@ -170,20 +171,24 @@ class Analysis:
                     break
                 
         if len(anchors_missing_statistics) > 0:
-            error_warning_string = "Anchor(s) {0} are missing sufficient "\
-                "statistics. Consider running simulations of anchor(s) {0} "\
-                "for longer time scales or readjust anchor locations to "\
-                "make transitions more frequent.".format(
-                    anchors_missing_statistics)
-            if self.force_warning:
-                warnings.warn(error_warning_string)
+            if silent:
+                return False
             else:
-                raise common_analyze.MissingStatisticsError(
-                    error_warning_string)
+                error_warning_string = "Anchor(s) {0} are missing sufficient "\
+                    "statistics. Consider running simulations of anchor(s) {0} "\
+                    "for longer time scales or readjust anchor locations to "\
+                    "make transitions more frequent. You may skip this check "\
+                    "with the --skip_checks (-s) option.".format(
+                        anchors_missing_statistics)
+                if self.force_warning:
+                    warnings.warn(error_warning_string)
+                else:
+                    raise common_analyze.MissingStatisticsError(
+                        error_warning_string)
                         
-        return
+        return True
     
-    def mmvt_check_anchor_stats(self):
+    def mmvt_check_anchor_stats(self, silent=False):
         """
         Check the anchor statistics to make sure that enough transitions
         have been observed to perform the analysis
@@ -218,20 +223,24 @@ class Analysis:
                     break
         
         if len(anchors_missing_statistics) > 0:
-            error_warning_string = "Anchor(s) {0} are missing sufficient "\
-                "statistics. Consider running simulations of anchor(s) {0} "\
-                "for longer time scales or readjust anchor locations to "\
-                "make transitions more frequent.".format(
-                    anchors_missing_statistics)
-            if self.force_warning:
-                warnings.warn(error_warning_string)
+            if silent:
+                return False
             else:
-                raise common_analyze.MissingStatisticsError(
-                    error_warning_string)
+                error_warning_string = "Anchor(s) {0} are missing sufficient "\
+                    "statistics. Consider running simulations of anchor(s) {0} "\
+                    "for longer time scales or readjust anchor locations to "\
+                    "make transitions more frequent. You may skip this check "\
+                    "with the --skip_checks (-s) option.".format(
+                        anchors_missing_statistics)
+                if self.force_warning:
+                    warnings.warn(error_warning_string)
+                else:
+                    raise common_analyze.MissingStatisticsError(
+                        error_warning_string)
         
-        return
+        return True
     
-    def extract_data(self, max_step_list=None):
+    def extract_data(self, max_step_list=None, silence_errors=True):
         """
         Extract the data from simulations used in this analysis.
         """
@@ -271,8 +280,9 @@ class Analysis:
                 output_file_list = glob.glob(output_file_glob)
                 output_file_list = base.order_files_numerically(
                     output_file_list)
-                assert len(output_file_list) > 0, \
-                    "Files not found: %s" % output_file_glob
+                if not silence_errors:
+                    assert len(output_file_list) > 0, \
+                        "Files not found: %s" % output_file_glob
                 if self.model.openmm_settings is not None:
                     anchor_stats.read_output_file_list(
                         "openmm", output_file_list, max_time, anchor, timestep)
@@ -288,14 +298,19 @@ class Analysis:
             
             if not files_already_read:
                 self.anchor_stats_list.append(anchor_stats)
-            
-        if self.model.get_type() == "mmvt":
-            self.mmvt_check_anchor_stats()
-        if self.model.get_type() == "elber":
-            self.elber_check_anchor_stats()
         return
         
-    def fill_out_data_samples_mmvt(self, pre_equilibrium_approx=False):
+    def check_extraction(self, silent=False):
+        """
+        
+        """
+        if self.model.get_type() == "mmvt":
+            result = self.mmvt_check_anchor_stats(silent)
+        if self.model.get_type() == "elber":
+            result = self.elber_check_anchor_stats(silent)
+        return result
+        
+    def fill_out_data_samples_mmvt(self):
         """
         
         """
@@ -323,8 +338,12 @@ class Analysis:
                 id_alias = anchor1.alias_from_neighbor_id(anchor2.index)
                 if id_alias is None:
                     continue
-                N_alpha_beta[(alpha, beta)] = anchor_N_alpha_beta[id_alias]
-                k_alpha_beta[(alpha, beta)] = anchor_k_alpha_beta[id_alias]
+                if id_alias in anchor_N_alpha_beta:
+                    N_alpha_beta[(alpha, beta)] = anchor_N_alpha_beta[id_alias]
+                    k_alpha_beta[(alpha, beta)] = anchor_k_alpha_beta[id_alias]
+                else:
+                    N_alpha_beta[(alpha, beta)] = 0
+                    k_alpha_beta[(alpha, beta)] = 0.0
                 
             anchor_N_i_j_alpha = self.anchor_stats_list[alpha].N_i_j_alpha
             N_i_j_alpha_element = defaultdict(int)
@@ -358,10 +377,30 @@ class Analysis:
             T_alpha_total.append(anchor_T_alpha)
             T_alpha_std_dev.append(anchor_T_alpha_std)
             T_alpha_count.append(len(anchor_T_alpha_list))
-        
-        # if model.get_type() == "mmvt":
+            
         self.main_data_sample = mmvt_analyze.MMVT_data_sample(
-            self.model, k_alpha_beta, N_i_j_alpha, R_i_alpha_total, T_alpha_total)
+            self.model, N_alpha_beta, k_alpha_beta, N_i_j_alpha, 
+            R_i_alpha_total, T_alpha_total)
+        
+        for i in range(self.num_error_samples):
+            sampled_k_alpha_beta, sampled_N_i_j_alpha, \
+            sampled_R_i_alpha_total, sampled_T_alpha_total \
+                = self.resample_k_N_R_T(
+                    N_alpha_beta, N_i_j_alpha, R_i_alpha_total,
+                    R_i_alpha_average, R_i_alpha_std_dev, R_i_alpha_count,
+                    T_alpha_total, T_alpha_average, T_alpha_std_dev, 
+                    T_alpha_count)
+            data_sample = mmvt_analyze.MMVT_data_sample(
+                self.model, N_alpha_beta, sampled_k_alpha_beta, 
+                sampled_N_i_j_alpha, sampled_R_i_alpha_total, 
+                sampled_T_alpha_total)
+            self.data_sample_list.append(data_sample)
+        return
+
+    def process_data_samples_mmvt(self, pre_equilibrium_approx=False):
+        """
+        
+        """
         self.main_data_sample.calculate_pi_alpha()
         self.main_data_sample.fill_out_data_quantities()
         self.main_data_sample.compute_rate_matrix()
@@ -376,25 +415,15 @@ class Analysis:
         MFPTs_list = defaultdict(list)
         k_ons_list = defaultdict(list)
         for i in range(self.num_error_samples):
-            sampled_k_alpha_beta, sampled_N_i_j_alpha, \
-            sampled_R_i_alpha_total, sampled_T_alpha_total \
-                = self.resample_k_N_R_T(
-                    N_alpha_beta, N_i_j_alpha, R_i_alpha_total,
-                    R_i_alpha_average, R_i_alpha_std_dev, R_i_alpha_count,
-                    T_alpha_total, T_alpha_average, T_alpha_std_dev, 
-                    T_alpha_count)
-            data_sample = mmvt_analyze.MMVT_data_sample(
-                self.model, sampled_k_alpha_beta, sampled_N_i_j_alpha, 
-                sampled_R_i_alpha_total, sampled_T_alpha_total)
+            data_sample = self.data_sample_list[i]
             data_sample.calculate_pi_alpha()
             data_sample.fill_out_data_quantities()
             data_sample.compute_rate_matrix()
             data_sample.calculate_thermodynamics()
             data_sample.calculate_kinetics(pre_equilibrium_approx, 
                                            bd_sample_from_normal=True)
-            self.data_sample_list.append(data_sample)
-            k_offs.append(data_sample.k_off)
             
+            k_offs.append(data_sample.k_off)
             p_i_list.append(data_sample.p_i)
             pi_alpha_list.append(data_sample.pi_alpha)
             free_energy_profile_list.append(data_sample.free_energy_profile)
@@ -406,7 +435,8 @@ class Analysis:
         
         pi_alpha_error = np.zeros(self.main_data_sample.pi_alpha.shape[0])
         p_i_error = np.zeros(self.main_data_sample.p_i.shape)
-        free_energy_profile_err = np.zeros(self.main_data_sample.free_energy_profile.shape)
+        free_energy_profile_err = np.zeros(
+            self.main_data_sample.free_energy_profile.shape)
         k_off_error = None
         MFPTs_error = {}
         k_ons_error = {}
@@ -450,7 +480,7 @@ class Analysis:
         self.k_ons_error = k_ons_error
         return
     
-    def fill_out_data_samples_elber(self, pre_equilibrium_approx=False):
+    def fill_out_data_samples_elber(self):
         """
         
         """
@@ -493,6 +523,17 @@ class Analysis:
         self.main_data_sample = elber_analyze.Elber_data_sample(
             self.model, N_i_j_list, R_i_total)
         self.main_data_sample.fill_out_data_quantities()
+        error_sample = elber_analyze.Elber_data_sample(
+            self.model, N_i_j_list, R_i_total)
+        error_sample.fill_out_data_quantities()
+        self.data_sample_list.append(error_sample)
+        return
+        
+        
+    def process_data_samples_elber(self, pre_equilibrium_approx=False):
+        """
+        
+        """
         self.main_data_sample.compute_rate_matrix()
         #self.main_data_sample.Q = common_analyze.minor2d(
         #    self.main_data_sample.Q, bulkstate, bulkstate)
@@ -500,11 +541,7 @@ class Analysis:
         #    self.main_data_sample.K, bulkstate, bulkstate)
         self.main_data_sample.calculate_thermodynamics()
         self.main_data_sample.calculate_kinetics(pre_equilibrium_approx)
-        
-            
-        error_sample = elber_analyze.Elber_data_sample(
-            self.model, N_i_j_list, R_i_total)
-        error_sample.fill_out_data_quantities()
+        error_sample = self.data_sample_list[0]
         error_sample.compute_rate_matrix()
         #self.main_data_sample.Q = common_analyze.minor2d(
         #    self.main_data_sample.Q, bulkstate, bulkstate)
@@ -530,14 +567,24 @@ class Analysis:
         self.k_ons_error = k_ons_error
         return
         
-    def fill_out_data_samples(self, pre_equilibrium_approx=False):
+    def fill_out_data_samples(self):
         """
         
         """
         if self.model.get_type() == "mmvt":
-            self.fill_out_data_samples_mmvt(pre_equilibrium_approx)
+            self.fill_out_data_samples_mmvt()
         elif self.model.get_type() == "elber":
-            self.fill_out_data_samples_elber(pre_equilibrium_approx)
+            self.fill_out_data_samples_elber()
+        return
+    
+    def process_data_samples(self, pre_equilibrium_approx=False):
+        """
+        
+        """
+        if self.model.get_type() == "mmvt":
+            self.process_data_samples_mmvt(pre_equilibrium_approx)
+        elif self.model.get_type() == "elber":
+            self.process_data_samples_elber(pre_equilibrium_approx)
         return
     
     def resample_k_N_R_T(self, N_alpha_beta, N_i_j_alpha, R_i_alpha_total,
@@ -561,7 +608,7 @@ class Analysis:
                     R_fluctuation = np.random.normal(scale=R_i_total_std_dev)
                 else:
                     R_fluctuation = 0.0
-                element_R_i_alpha_total[key] = R_i_alpha_total[alpha][key] + R_fluctuation
+                element_R_i_alpha_total[key] = abs(R_i_alpha_total[alpha][key] + R_fluctuation)
             
             n_T = T_alpha_count[alpha]
             if n_T != 0:
@@ -569,7 +616,7 @@ class Analysis:
                 T_fluctuation = np.random.normal(scale=T_total_std_dev)
             else:
                 T_fluctuation = 0.0
-            element_T_alpha_total = T_alpha_total[alpha] + T_fluctuation
+            element_T_alpha_total = abs(T_alpha_total[alpha] + T_fluctuation)
             # This way preserves T = sum of R_i
             sampled_T_alpha_total.append(np.sum(list(element_R_i_alpha_total.values())))
             # In contrast, this way samples T and R_i independently
@@ -674,20 +721,23 @@ class Analysis:
         return
 
 def analyze(model, force_warning=False, num_error_samples=1000, 
-            pre_equilibrium_approx=False):
+            pre_equilibrium_approx=False, skip_checks=False):
     """
     
     """
     analysis = Analysis(model, force_warning, num_error_samples)
     analysis.extract_data()
-    analysis.fill_out_data_samples(pre_equilibrium_approx)
+    if not skip_checks:
+        analysis.check_extraction()
+    analysis.fill_out_data_samples()
+    analysis.process_data_samples(pre_equilibrium_approx)
     return analysis
 
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser(description=__doc__)
     argparser.add_argument(
         "input_file", metavar="INPUT_FILE", type=str, 
-        help="name of input file for OpenMMVT calculation. This would be the "\
+        help="name of model file for OpenMMVT calculation. This would be the "\
         "XML file generated in the prepare stage.")
     argparser.add_argument(
         "-f", "--force_warning", dest="force_warning", default=False, 
@@ -713,6 +763,13 @@ if __name__ == "__main__":
             "By default, graphics will be saved to the "\
             "'%s' directory in the model's anchor root directory."\
             % common_analyze.DEFAULT_IMAGE_DIR)
+    argparser.add_argument(
+        "-s", "--skip_checks", dest="skip_checks", default=False, 
+        help="By default, pre-simulation checks will be run after the "\
+        "preparation is complete, and if the checks fail, the SEEKR2 "\
+        "model will not be saved. This argument bypasses those "\
+        "checks and allows the model to be generated anyways.",
+        action="store_true")
     
     args = argparser.parse_args() # parse the args into a dictionary
     args = vars(args)
@@ -721,6 +778,7 @@ if __name__ == "__main__":
     num_error_samples = args["num_error_samples"]
     pre_equilibrium_approx = args["pre_equilibrium_approx"]
     image_directory = args["image_directory"]
+    skip_checks = args["skip_checks"]
     
     model = base.Model()
     model.deserialize(xmlfile)
@@ -733,10 +791,14 @@ if __name__ == "__main__":
                                        common_analyze.DEFAULT_IMAGE_DIR)
     if not os.path.exists(image_directory):
         os.mkdir(image_directory)
+        
+    if not skip_checks:
+        check.check_post_simulation_all(model, long_check=True)
     
     analysis = analyze(model, force_warning=force_warning, 
             num_error_samples=num_error_samples, 
-            pre_equilibrium_approx=pre_equilibrium_approx)
+            pre_equilibrium_approx=pre_equilibrium_approx, 
+            skip_checks=skip_checks)
     
     analysis.print_results()
     

@@ -13,6 +13,7 @@ from seekr2.modules.common_base import Amber_params, Forcefield_params
 from seekr2.modules.common_cv import *
 from seekr2.modules.common_prepare import Browndye_settings_input, Ion, \
     MMVT_input_settings, Elber_input_settings
+import seekr2.modules.check as check
 
 def generate_openmmvt_model_and_filetree(model_input, force_overwrite):
     """
@@ -37,7 +38,7 @@ def generate_openmmvt_model_and_filetree(model_input, force_overwrite):
     filetree.copy_building_files(model, model_input, root_directory)
     common_prepare.generate_bd_files(model, root_directory)
     model.serialize(xml_path)
-    return model
+    return model, xml_path
 
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser(description=__doc__)
@@ -52,11 +53,25 @@ if __name__ == "__main__":
         "be overwritten by generating this new model. If not toggled, this "\
         "program will throw an exception instead of performing any such "\
         "overwrite.", action="store_true")
+    argparser.add_argument(
+        "-s", "--skip_checks", dest="skip_checks", default=False, 
+        help="By default, pre-simulation checks will be run after the "\
+        "preparation is complete, and if the checks fail, the SEEKR2 "\
+        "model will not be saved. This argument bypasses those "\
+        "checks and allows the model to be generated anyways.", 
+        action="store_true")
         
     args = argparser.parse_args() # parse the args into a dictionary
     args = vars(args)
     model_input_filename = args["model_input_file"]
     force_overwrite = args["force_overwrite"]
+    skip_checks = args["skip_checks"]
     model_input = common_prepare.Model_input()
     model_input.deserialize(model_input_filename, user_input = True)
-    generate_openmmvt_model_and_filetree(model_input, force_overwrite)
+    model, xml_path = generate_openmmvt_model_and_filetree(
+        model_input, force_overwrite)
+    if model.anchor_rootdir == ".":
+        model_dir = os.path.dirname(xml_path)
+        model.anchor_rootdir = os.path.abspath(model_dir)
+    if not skip_checks:
+        check.check_pre_simulation_all(model)

@@ -162,6 +162,7 @@ def get_last_bounce(data_file_name):
         return None
     with open(data_file_name, 'r') as data_file:
         line = data_file.readlines()[-1]
+    print("line:", line)
     if line.startswith("#"):
         return None
     else:
@@ -226,6 +227,7 @@ class Runner_openmm():
         #self.num_production_steps = None
         self.steps_per_chunk = None
         self.start_bounce_counter = 0
+        self.save_all_states = False
     
     def prepare(self, restart=False, save_state_file=False, 
                 force_overwrite=False):
@@ -244,8 +246,9 @@ class Runner_openmm():
                 output_restarts_list)
             assert len(output_restarts_list) > 0, \
                 "No simulation has yet been run: cannot use restart mode."
-            self.start_bounce_counter = get_last_bounce(
-                output_restarts_list[-1])
+            if self.model.get_type() == "mmvt":
+                self.start_bounce_counter = get_last_bounce(
+                    output_restarts_list[-1])
             if self.start_bounce_counter is None:
                 self.start_bounce_counter = 0
             restart_index = len(output_restarts_list) + 1
@@ -310,11 +313,13 @@ class Runner_openmm():
         self.state_prefix = os.path.join(state_dir, SAVE_STATE_PREFIX)
         if save_state_file:
             state_prefix = self.state_prefix
-            self.save_one_state_for_all_boundaries=False
+            self.save_all_states = True
+            #self.save_one_state_for_all_boundaries=False
             if not os.path.exists(state_dir):
                 os.mkdir(state_dir)
         else:
             state_prefix = None
+            self.save_all_states = False
         
         return default_output_filename, state_prefix, restart_index
     
@@ -427,13 +432,17 @@ class Runner_openmm():
             if self.save_one_state_for_all_boundaries:
                 if all_boundaries_have_state(self.state_prefix+"*", 
                                              self.anchor):
-                    self.sim_openmm.integrator.setSaveStateFileName("")
+                    if self.save_all_states:
+                        self.sim_openmm.integrator.setSaveStateFileName(self.state_prefix)
+                    else:
+                        self.sim_openmm.integrator.setSaveStateFileName("")
+                        self.save_one_state_for_all_boundaries = False
                     bounce_counter = get_last_bounce(self.sim_openmm.output_filename)
                     if bounce_counter is None:
                         bounce_counter = self.start_bounce_counter
                     self.sim_openmm.integrator.setBounceCounter(bounce_counter)
                     self.sim_openmm.simulation.context.reinitialize(preserveState=True)
-                    self.save_one_state_for_all_boundaries = False
+                    
                 else:
                     self.sim_openmm.integrator.setSaveStateFileName(self.state_prefix)
                     bounce_counter = get_last_bounce(self.sim_openmm.output_filename)
@@ -444,6 +453,8 @@ class Runner_openmm():
                     
             self.sim_openmm.simulation.saveCheckpoint(self.restart_checkpoint_filename)
             self.sim_openmm.simulation.step(self.steps_per_chunk)
+        
+        self.sim_openmm.simulation.saveCheckpoint(self.restart_checkpoint_filename)
         return
     
     def run_elber(self, traj_filename):
@@ -481,7 +492,7 @@ class Runner_openmm():
         rev_trajectory_reporter_interval = calc_settings.rev_trajectory_reporter_interval
         rev_energy_reporter_interval = calc_settings.rev_energy_reporter_interval
         rev_traj_reporter = self.sim_openmm.rev_traj_reporter
-        
+                
         fwd_simulation = self.sim_openmm.fwd_simulation
         fwd_trajectory_reporter_interval = calc_settings.fwd_trajectory_reporter_interval
         fwd_energy_reporter_interval = calc_settings.fwd_energy_reporter_interval
@@ -510,13 +521,21 @@ class Runner_openmm():
             if self.save_one_state_for_all_boundaries:
                 if all_boundaries_have_state(self.state_prefix+"*", 
                                              self.anchor):
-                    self.sim_openmm.rev_seekr_force.setSaveStateFileName("")
-                    self.sim_openmm.fwd_seekr_force.setSaveStateFileName("")
+                    if self.save_all_states:
+                        chunk_str = "_%d" % chunk
+                        self.sim_openmm.rev_seekr_force.setSaveStateFileName(
+                            self.state_prefix+chunk_str+"r")
+                        self.sim_openmm.fwd_seekr_force.setSaveStateFileName(
+                            self.state_prefix+chunk_str+"f")
+                    else:
+                        self.sim_openmm.rev_seekr_force.setSaveStateFileName("")
+                        self.sim_openmm.fwd_seekr_force.setSaveStateFileName("")
+                        self.save_one_state_for_all_boundaries = False
                     self.sim_openmm.rev_simulation.context.reinitialize(
                         preserveState=True)
                     self.sim_openmm.fwd_simulation.context.reinitialize(
                         preserveState=True)
-                    self.save_one_state_for_all_boundaries = False
+                    
                 else:
                     chunk_str = "_%d" % chunk
                     self.sim_openmm.rev_seekr_force.setSaveStateFileName(
@@ -539,12 +558,14 @@ class Runner_openmm():
                 -1.0 * umbrella_state.getVelocities())
             rev_simulation.context.setPeriodicBoxVectors(
                 *umbrella_state.getPeriodicBoxVectors())
+            rev_simulation.context.reinitialize(preserveState=True)
             rev_data_file_length = get_data_file_length(rev_data_file_name)
             if rev_trajectory_reporter_interval is not None:
                 rev_traj_filename = os.path.join(
                     self.output_directory, "reverse_%d.dcd" % chunk)
+                print("rev_traj_filename", rev_traj_filename)
                 rev_simulation.reporters = [rev_traj_reporter(
-                    rev_traj_filename, rev_trajectory_reporter_interval)]
+                    rev_traj_filename, rev_trajectory_reporter_interval, enforcePeriodicBox=False)]
             if rev_energy_reporter_interval is not None:
                 rev_simulation.reporters.append(
                     self.sim_openmm.rev_energy_reporter(
@@ -579,6 +600,7 @@ class Runner_openmm():
                     umbrella_state.getVelocities())
                 fwd_simulation.context.setPeriodicBoxVectors(
                     *umbrella_state.getPeriodicBoxVectors())
+                fwd_simulation.context.reinitialize(preserveState=True)
                 # TODO: add reporter update here
                 
                 fwd_data_file_length = get_data_file_length(fwd_data_file_name)
@@ -612,6 +634,7 @@ class Runner_openmm():
                         break
                 
                 fwd_simulation.context.setTime(0.0)
+        umbrella_simulation.saveCheckpoint(self.restart_checkpoint_filename)
         return
     
     
@@ -684,46 +707,46 @@ if __name__ == "__main__":
     force_overwrite = args["force_overwrite"]
     
     assert os.path.exists(input_file), "A nonexistent input file was provided."
-    mymodel = base.Model()
-    mymodel.deserialize(input_file)
+    model = base.Model()
+    model.deserialize(input_file)
     
     if directory is not None:
-        mymodel.anchor_rootdir = os.path.abspath(directory)
-    elif mymodel.anchor_rootdir == ".":
+        model.anchor_rootdir = os.path.abspath(directory)
+    elif model.anchor_rootdir == ".":
         model_dir = os.path.dirname(input_file)
-        mymodel.anchor_rootdir = os.path.abspath(model_dir)
+        model.anchor_rootdir = os.path.abspath(model_dir)
         
-    assert os.path.exists(mymodel.anchor_rootdir), "An incorrect anchor "\
+    assert os.path.exists(model.anchor_rootdir), "An incorrect anchor "\
         "root directory was provided."
     
     assert anchor_index >= 0, "only positive indices allowed."
     try:
-        myanchor = mymodel.anchors[anchor_index]
+        myanchor = model.anchors[anchor_index]
     except IndexError:
         print("Invalid anchor index provided.")
         exit()
     
     if cuda_device_index is not None:
-        assert mymodel.openmm_settings.cuda_platform_settings is not None
-        mymodel.openmm_settings.cuda_platform_settings.cuda_device_index = \
+        assert model.openmm_settings.cuda_platform_settings is not None
+        model.openmm_settings.cuda_platform_settings.cuda_device_index = \
             cuda_device_index
             
     if total_simulation_length is not None:
-        mymodel.calculation_settings.num_production_steps = \
+        model.calculation_settings.num_production_steps = \
             total_simulation_length
     
-    runner = Runner_openmm(mymodel, myanchor)
+    runner = Runner_openmm(model, myanchor)
     default_output_file, state_file_prefix, restart_index = runner.prepare(
         restart, save_state_file, force_overwrite)
     if output_file is None:
         output_file = default_output_file
     
-    if mymodel.get_type() == "mmvt":
+    if model.get_type() == "mmvt":
         sim_openmm_factory = mmvt_sim_openmm.MMVT_sim_openmm_factory()
-    elif mymodel.get_type() == "elber":
+    elif model.get_type() == "elber":
         sim_openmm_factory = elber_sim_openmm.Elber_sim_openmm_factory()
     
     sim_openmm_obj = sim_openmm_factory.create_sim_openmm(
-        mymodel, myanchor, output_file, state_file_prefix)
+        model, myanchor, output_file, state_file_prefix)
         
     runner.run(sim_openmm_obj, restart, load_state_file, restart_index)

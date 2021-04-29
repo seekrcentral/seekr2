@@ -642,7 +642,7 @@ class Root():
     def __init__(self):
         self.n_threads = 1
         self.seed = 11111113
-        self.output = "results.xml"
+        self.output = "results1.xml"
         self.n_trajectories = -1
         self.n_trajectories_per_output = 1000
         self.max_n_steps = 1000000

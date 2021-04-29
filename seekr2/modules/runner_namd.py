@@ -413,44 +413,42 @@ if __name__ == "__main__":
     namd_arguments = args["namd_arguments"]
     
     assert os.path.exists(input_file), "A nonexistent input file was provided."
-    mymodel = base.Model()
-    mymodel.deserialize(input_file)
+    model = base.Model()
+    model.deserialize(input_file)
     
     if directory is not None:
-        mymodel.anchor_rootdir = os.path.abspath(directory)
-    elif mymodel.anchor_rootdir == ".":
+        model.anchor_rootdir = os.path.abspath(directory)
+    elif model.anchor_rootdir == ".":
         model_dir = os.path.dirname(input_file)
-        mymodel.anchor_rootdir = os.path.abspath(model_dir)
+        model.anchor_rootdir = os.path.abspath(model_dir)
         
-    assert os.path.exists(mymodel.anchor_rootdir), "An incorrect anchor "\
+    assert os.path.exists(model.anchor_rootdir), "An incorrect anchor "\
         "root directory was provided."
     
     assert anchor_index >= 0, "only positive indices allowed."
     try:
-        myanchor = mymodel.anchors[anchor_index]
+        myanchor = model.anchors[anchor_index]
     except IndexError:
         print("Invalid anchor index provided.")
         exit()
     
     if total_simulation_length is not None:
-        mymodel.namd_settings.total_simulation_length = \
+        model.namd_settings.total_simulation_length = \
             total_simulation_length
-    runner = Runner_namd(mymodel, myanchor, namd_command, namd_arguments)
+    runner = Runner_namd(model, myanchor, namd_command, namd_arguments)
     default_output_file, output_basename, state_file_prefix, restart_index \
         = runner.prepare(restart, save_state_file, force_overwrite)
     if output_file is None:
         output_file = default_output_file
     
-    if mymodel.get_type() == "mmvt":
+    if model.get_type() == "mmvt":
         sim_namd_factory = mmvt_sim_namd.MMVT_sim_namd_factory()
-    elif mymodel.get_type() == "elber":
-        pass
     else:
-        raise Exception("Calculation type not supported: {1}".format(
-            mymodel.get_type()))
+        raise Exception("Calculation type not supported for NAMD: {1}".format(
+            model.get_type()))
         
     sim_namd_obj = sim_namd_factory.create_sim_namd(
-        mymodel, myanchor, output_basename)
+        model, myanchor, output_basename)
     sim_namd_obj.seekr_namd_settings.save_state = save_state_file
     sim_namd_obj.seekr_namd_settings.save_one_state_for_all_boundaries\
          = runner.save_one_state_for_all_boundaries

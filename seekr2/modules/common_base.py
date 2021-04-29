@@ -6,12 +6,14 @@ MMVT and Elber milestoning.
 """
 
 import re
+import math
 
+import numpy as np
 from parmed import unit
 
 import seekr2.libraries.serializer.serializer as serializer
 
-BROWNDYE_OUTPUT = "results.xml"
+BROWNDYE_OUTPUT = "results*.xml"
 
 def strBool(bool_str):
     """
@@ -101,7 +103,45 @@ class Box_vectors(serializer.Serializer):
         self.cy = values[2][1]
         self.cz = values[2][2]
         return
-
+    
+    def from_6_vector(self, box_6_vector):
+        """
+        Sometimes box vectors are represented using 6 numbers, of which
+        the first three are vector lengths, and the next three are the
+        angles between them. Compute the full 3x3 box_vectors and assign
+        to this object.
+        """
+        self.ax = box_6_vector[0]
+        self.ay = 0.0
+        self.az = 0.0
+        self.bx = box_6_vector[1] * math.cos(box_6_vector[5]*math.pi/180.0)
+        self.by = box_6_vector[1] * math.sin(box_6_vector[5]*math.pi/180.0)
+        self.bz = 0.0
+        self.cx = box_6_vector[2] * math.cos(box_6_vector[4]*math.pi/180.0)
+        if box_6_vector[5] == 90.0:
+            self.cy = 0.0
+        else:
+            self.cy = box_6_vector[2] * (
+                math.cos(box_6_vector[3]*math.pi/180.0) \
+                - math.cos(box_6_vector[4]*math.pi/180.0) \
+                * math.cos(box_6_vector[5]*math.pi/180.0) \
+                / math.sin(box_6_vector[5]*math.pi/180.0))
+        self.cz = math.sqrt(box_6_vector[2]**2 - self.cx**2 \
+            - self.cy**2)
+        return
+    
+    def get_volume(self):
+        """
+        Compute the volume of the box defined by these box vectors.
+        """
+        A = np.array([self.ax, self.ay, self.az])
+        B = np.array([self.bx, self.by, self.bz])
+        C = np.array([self.cx, self.cy, self.cz])
+        volume = abs(np.dot(A, np.cross(B, C)))
+        return volume
+                                         
+        
+        
 class Langevin_integrator_settings(serializer.Serializer):
     """
     Contains settings used in the initialization of a Langevin-
@@ -520,7 +560,7 @@ class K_on_info(serializer.Serializer):
     b_surface_num_trajectories : int
         The number of trajectories that will be run from the b-surface.
         
-    bd_mmvt_output_glob : str
+    bd_output_glob : str
         A glob which can be used to select the output XML files
         produced by Browndye within the directory argument above.
         
@@ -532,7 +572,7 @@ class K_on_info(serializer.Serializer):
         self.bd_milestones = []
         self.b_surface_directory = "b_surface"
         self.b_surface_num_trajectories = -1
-        self.bd_mmvt_output_glob = "results.xml"
+        self.bd_output_glob = BROWNDYE_OUTPUT
         self.ions = []
         return
 
@@ -549,7 +589,7 @@ class BD_milestone(serializer.Serializer):
     directory : str
         The directory for this BD_milestone and all of its sub-files.
         
-    bd_mmvt_output_glob : str
+    bd_output_glob : str
         A glob for BrownDye output files containing transition info
         related to this milestone.
         
@@ -588,7 +628,7 @@ class BD_milestone(serializer.Serializer):
     def __init__(self):
         self.index = -1
         self.directory = ""
-        self.bd_mmvt_output_glob = BROWNDYE_OUTPUT
+        self.bd_output_glob = BROWNDYE_OUTPUT
         self.name = ""
         self.outer_milestone = None
         self.inner_milestone = None
@@ -597,6 +637,7 @@ class BD_milestone(serializer.Serializer):
         self.ligand_indices = []
         self.extracted_directory = "extracted_from_b_surface"
         self.fhpd_directory = "first_hitting_point_distribution"
+        self.max_b_surface_trajs_to_extract = -1
         return
     
 class Milestone(serializer.Serializer):
@@ -718,6 +759,7 @@ class Model(serializer.Serializer):
     
     def get_type(self):
         if self.calculation_type.lower() == "elber":
+            #raise Exception("Elber milestoning is temporarily unavailable.")
             return "elber"
         elif self.calculation_type.lower() == "mmvt":
             return "mmvt"

@@ -1,4 +1,3 @@
-
 """
 Functions and objects for extracting and predicting convergence of 
 SEEKR simulation outputs and results.
@@ -16,30 +15,34 @@ R_I_DIR = "R_i/"
 MIN_PLOT_NORM = 1e-8
 WINDOW_SIZE = 30
 
-def converge(model, k_on_state, image_directory):
+def converge(model, k_on_state=None, image_directory=None, 
+             pre_equilibrium_approx=False, verbose=False):
     """
     Perform a generic analysis of convergence of emergenct quantities
     such as N_ij, R_i, k_off, and k_on.
     """
-    k_on_conv, k_off_conv, N_ij_conv, R_i_conv, conv_intervals, \
+    k_on_conv, k_off_conv, N_ij_conv, R_i_conv, max_step_list, \
         timestep_in_ns, data_sample_list \
         = common_converge.check_milestone_convergence(
-            mymodel, k_on_state=k_on_state, 
-            pre_equilibrium_approx=pre_equilibrium_approx)
+            model, k_on_state=k_on_state, 
+            pre_equilibrium_approx=pre_equilibrium_approx, verbose=verbose)
+    
+    if image_directory is None or image_directory == "":
+        return data_sample_list
     
     k_off_fig, ax = common_converge.plot_scalar_conv(
-        k_off_conv, conv_intervals, label="k_{off} (s^{-1})", 
-        timestep_in_ns=timestep_in_ns)
+        k_off_conv, max_step_list[0,:], title="k_{off} Convergence", 
+        label="k_{off} (s^{-1})", timestep_in_ns=timestep_in_ns)
     k_on_fig, ax = common_converge.plot_scalar_conv(
-        k_on_conv, conv_intervals, label="k_{on} (s^{-1} M^{-1})", 
-        timestep_in_ns=timestep_in_ns)
+        k_on_conv, max_step_list[0,:], title="k_{on} Convergence", 
+        label="k_{on} (s^{-1} M^{-1})", timestep_in_ns=timestep_in_ns)
     N_ij_fig_list, ax, N_ij_title_list, N_ij_name_list \
         = common_converge.plot_dict_conv(
-        N_ij_conv, conv_intervals, label_base="N", 
+        N_ij_conv, max_step_list[0,:], label_base="N", 
         timestep_in_ns=timestep_in_ns)
     R_i_fig_list, ax, R_i_title_list, R_i_name_list \
         = common_converge.plot_dict_conv(
-        R_i_conv, conv_intervals, label_base="R", 
+        R_i_conv, max_step_list[0,:], label_base="R", 
         timestep_in_ns=timestep_in_ns)
     
     k_off_fig.savefig(os.path.join(image_directory, "k_off_convergence.png"))
@@ -57,22 +60,65 @@ def converge(model, k_on_state, image_directory):
     
     return data_sample_list
 
-def print_convergence_results(model, convergence_results, cutoff):
+def print_convergence_results(model, convergence_results, cutoff, 
+                              transition_results, minimum_anchor_transitions,
+                              bd_transition_counts):
     """
     Print the results of a convergence test.
     """
+    print("Molecular dynamics results:")
     for alpha, anchor in enumerate(model.anchors):
         if anchor.bulkstate:
             continue
-        if convergence_results[alpha] < cutoff:
+        if convergence_results[alpha] < cutoff \
+                and min(transition_results[alpha].values()) \
+                > minimum_anchor_transitions:
             is_converged = True
         else:
             is_converged = False
-        anchor_string = "Anchor {}: ".format(anchor.index) \
+        transition_detail = transition_results[alpha]
+        transition_string = ""
+        for key in transition_detail:
+            transition_string += " {}->{} : {}".format(
+                key[0],key[1],transition_detail[key])
+        anchor_string = " - Anchor {}: ".format(anchor.index) \
+            +"Milestone transitions:{}. ".format(transition_string) \
             +"Convergence value: " \
-            +"{}. ".format(convergence_results[alpha]) \
+            +"{:.4e}. ".format(convergence_results[alpha]) \
             +"Converged? {}".format(is_converged)
         print(anchor_string)
+        
+    if "b_surface" in bd_transition_counts:
+        print("Brownian dynamics results:")
+        print(" - b-surface reaction counts:")
+        for bd_milestone_id in bd_transition_counts["b_surface"]:
+            if bd_milestone_id in ["escaped", "stuck"]:
+                print("     to %s:" % bd_milestone_id, 
+                      bd_transition_counts["b_surface"][bd_milestone_id])
+            else:
+                print("     to milestone %d:" % bd_milestone_id, 
+                    bd_transition_counts["b_surface"][bd_milestone_id])
+        
+        bd_transition_counts.pop("b_surface")
+        
+        for bd_milestone in model.k_on_info.bd_milestones:
+            if bd_milestone.index in bd_transition_counts:
+                key = bd_milestone.index
+                print(" - BD milestone {} reaction counts:".format(key))
+                for bd_milestone_id in bd_transition_counts[key]:
+                    if bd_milestone_id in ["escaped", "stuck"]:
+                        print("     to %s:" % bd_milestone_id, 
+                              bd_transition_counts[key][bd_milestone_id])
+                    else:
+                        print("     to milestone %d:" % bd_milestone_id, 
+                            bd_transition_counts[key][bd_milestone_id])
+            else:
+                print("No results found for BD milestone {}.".format(
+                    bd_milestone.index))
+    else:
+        print("No BD results found.")
+    
+    return
 
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser(description=__doc__)
@@ -93,8 +139,13 @@ if __name__ == "__main__":
             "'%s' directory in the model's anchor root directory."\
             % common_analyze.DEFAULT_IMAGE_DIR)
     argparser.add_argument(
-        "-c", "--cutoff", dest="cutoff", default=0.01, type=float, 
+        "-c", "--cutoff", dest="cutoff", default=0.1, type=float, 
         help="")
+    argparser.add_argument(
+        "-m", "--minimum_anchor_transitions", dest="minimum_anchor_transitions",
+        default=100, type=int, help="Enter a minimum number of transitions "\
+        "that must be observed per milestone in a given anchor as a criteria "\
+        "for the simulations.")
     argparser.add_argument(
         "-p", "--pre_equilibrium_approx", dest="pre_equilibrium_approx", 
         default=False, help="Optionally use the pre-equilibrium approximation"\
@@ -108,6 +159,7 @@ if __name__ == "__main__":
     k_on_state = args["k_on_state"]
     image_directory = args["image_directory"]
     cutoff = args["cutoff"]
+    minimum_anchor_transitions = args["minimum_anchor_transitions"]
     pre_equilibrium_approx = args["pre_equilibrium_approx"]
     
     mymodel = base.Model()
@@ -120,7 +172,7 @@ if __name__ == "__main__":
         image_directory = os.path.join(mymodel.anchor_rootdir, 
                                        common_analyze.DEFAULT_IMAGE_DIR)
     
-    if not os.path.exists(image_directory):
+    if image_directory != "" and not os.path.exists(image_directory):
         os.mkdir(image_directory)
     
     if not os.path.exists(os.path.join(image_directory, N_IJ_DIR)):
@@ -141,6 +193,7 @@ if __name__ == "__main__":
             if anchor.endstate:
                 for milestone_id in anchor.get_ids():
                     end_milestones.append(milestone_id)
+                    continue
         assert len(end_milestones) > 0, "No end-state milestones for this "\
             "model: k-on convergence cannot be computed."
         print("All available options for --k_on_state include:", end_milestones)
@@ -152,8 +205,14 @@ if __name__ == "__main__":
             assert k_on_state in end_milestones, "The provided "\
                 "milestone of %d for k_on_state is not available." % k_on_state
     
-    data_sample_list = converge(mymodel, k_on_state, image_directory)
+    data_sample_list = converge(mymodel, k_on_state, image_directory, 
+                                verbose=True)
         
-    rmsd_convergence_results = common_converge.calc_mmvt_RMSD_conv_amount(
+    rmsd_convergence_results = common_converge.calc_RMSD_conv_amount(
         mymodel, data_sample_list)
-    print_convergence_results(mymodel, rmsd_convergence_results, cutoff)
+    transition_minima, transition_details \
+        = common_converge.calc_transition_steps(
+        mymodel, data_sample_list[-1])
+    print_convergence_results(mymodel, rmsd_convergence_results, cutoff, 
+                              transition_details, minimum_anchor_transitions,
+                              data_sample_list[-1].bd_transition_counts)

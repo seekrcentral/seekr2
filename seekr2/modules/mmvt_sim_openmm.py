@@ -45,7 +45,7 @@ class MMVT_sim_openmm_factory(common_sim_openmm.Common_sim_openmm_factory):
         self.sim_openmm = MMVT_sim_openmm()
         return
     
-    def add_integrator(self, model, output_filename, state_prefix=None):
+    def add_integrator(self, model, output_filename="", state_prefix=None):
         """
         
         """

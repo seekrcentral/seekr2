@@ -5,7 +5,9 @@ Base classes, objects, and constants used in multiple stages of the
 MMVT calculations.
 """
 
+import numpy as np
 from parmed import unit
+import mdtraj
 
 import seekr2.libraries.serializer.serializer as serializer
 
@@ -112,6 +114,15 @@ class MMVT_collective_variable(serializer.Serializer):
                         "collective variable boundary definition.")
         
     def get_namd_evaluation_string(self):
+        raise Exception("This base class cannot be used for creating a "\
+                        "collective variable boundary definition.")
+        
+    def check_mdtraj_within_boundary(self, parmed_structure, 
+                                               milestone_variables):
+        raise Exception("This base class cannot be used for creating a "\
+                        "collective variable boundary definition.")
+    
+    def get_atom_groups(self):
         raise Exception("This base class cannot be used for creating a "\
                         "collective variable boundary definition.")
 
@@ -243,6 +254,68 @@ colvar {{
         eval_string = "{0} * (${1}_{2} - {3}) > 0".format(
             k, cv_val_var, self.index, radius_in_A)
         return eval_string
+    
+    def check_mdtraj_within_boundary(self, traj, milestone_variables, 
+                                     verbose=False):
+        """
+        
+        """
+        traj1 = traj.atom_slice(self.group1)
+        traj2 = traj.atom_slice(self.group2)
+        com1_array = mdtraj.compute_center_of_mass(traj1)
+        com2_array = mdtraj.compute_center_of_mass(traj2)
+        for frame_index in range(traj.n_frames):
+            com1 = com1_array[frame_index,:]
+            com2 = com2_array[frame_index,:]
+            radius = np.linalg.norm(com2-com1)
+            milestone_k = milestone_variables["k"]
+            milestone_radius = milestone_variables["radius"]
+            if milestone_k*(radius - milestone_radius) > 0.0:
+                if verbose:
+                    warnstr = """The center of masses of atom group1 and atom
+group2 were found to be {:.4f} nm apart.
+This distance falls outside of the milestone
+boundary at {:.4f} nm.""".format(radius, milestone_radius)
+                    print(warnstr)
+                return False
+            
+        return True
+    
+    def check_mdtraj_close_to_boundary(self, traj, milestone_variables, 
+                                     verbose=False, max_avg=0.03, max_std=0.05):
+        """
+        
+        """
+        traj1 = traj.atom_slice(self.group1)
+        traj2 = traj.atom_slice(self.group2)
+        com1_array = mdtraj.compute_center_of_mass(traj1)
+        com2_array = mdtraj.compute_center_of_mass(traj2)
+        distances = []
+        for frame_index in range(traj.n_frames):
+            com1 = com1_array[frame_index,:]
+            com2 = com2_array[frame_index,:]
+            radius = np.linalg.norm(com2-com1)
+            milestone_radius = milestone_variables["radius"]
+            distances.append(radius - milestone_radius)
+            
+        avg_distance = np.mean(distances)
+        std_distance = np.std(distances)
+        if abs(avg_distance) > max_avg or std_distance > max_std:
+            if verbose:
+                warnstr = """The distance between the system and central 
+    milestone were found on average to be {:.4f} nm apart.
+    The standard deviation was {:.4f} nm.""".format(avg_distance, std_distance)
+                print(warnstr)
+            return False
+            
+        return True
+    
+    def get_atom_groups(self):
+        """
+        
+        """
+        return[self.group1, self.group2]
+            
         
 """
 class MMVT_planar_CV(CollectiveVariable):

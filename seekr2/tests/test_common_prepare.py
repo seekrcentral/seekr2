@@ -163,7 +163,7 @@ def test_Input_model(tmp_path):
     print("model_input.root_directory:", model_input.root_directory)
     
     model = prepare.generate_openmmvt_model_and_filetree(
-        model_input)
+        model_input, True)
     model.anchor_rootdir = tmp_path
     assert os.path.exists(os.path.join(model.anchor_rootdir, "anchor_1"))
     assert os.path.exists(os.path.join(model.anchor_rootdir, "anchor_1", 

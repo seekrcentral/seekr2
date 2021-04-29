@@ -38,7 +38,7 @@
                         <prmtop_filename>data/hostguest_files/hostguest.parm7</prmtop_filename>
                         <inpcrd_filename>data/hostguest_files/hostguest.rst7</inpcrd_filename>
                         <box_vectors/>
-                        <pdb_coordinates_filename></pdb_coordinates_filename>
+                        <pdb_coordinates_filename>data/hostguest_files/hostguest_at0.4.pdb</pdb_coordinates_filename>
                     </starting_amber_params>
                     <bound_state>True</bound_state>
                     <bulk_anchor>False</bulk_anchor>
@@ -166,16 +166,17 @@
             <ion class="Ion">
                 <radius>1.2</radius>
                 <charge>-1.0</charge>
-                <conc>0.15</conc>
+                <conc>0.0</conc>
             </ion>
             <ion class="Ion">
                 <radius>0.9</radius>
                 <charge>1.0</charge>
-                <conc>0.15</conc>
+                <conc>0.0</conc>
             </ion>
         </ions>
         <num_bd_milestone_trajectories>1000</num_bd_milestone_trajectories>
         <num_b_surface_trajectories>10000</num_b_surface_trajectories>
+        <max_b_surface_trajs_to_extract>1000</max_b_surface_trajs_to_extract>
         <n_threads>1</n_threads>
     </browndye_settings_input>
 </model_input>

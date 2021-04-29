@@ -5,6 +5,7 @@ Routines for the analysis stage of an MMVT calculation
 from collections import defaultdict
 
 import numpy as np
+import scipy.linalg as la
 
 import seekr2.modules.common_analyze as common_analyze
 
@@ -57,7 +58,10 @@ def openmm_read_output_file_list(output_file_list, max_time=None,
                     if start_time is None:
                         start_time = dest_time
                 
-                start_times.append(start_time)
+                if start_time is None:
+                    start_times.append(0.0)
+                else:
+                    start_times.append(start_time)
             
             files_lines.append(file_lines)
                 
@@ -74,7 +78,7 @@ def openmm_read_output_file_list(output_file_list, max_time=None,
                 counter = 0
                 while float(file_lines[-1][2]) > next_start_time:
                     file_lines.pop()
-                    if counter > MAX_ITER:
+                    if counter > MAX_ITER or len(file_lines)==0:
                         break
                     counter += 1
                 
@@ -332,6 +336,7 @@ def namd_read_output_file_list(output_file_list, anchor, timestep,
     N_alpha_beta = defaultdict(int)
     T_alpha_list = []
     last_bounce_time = -1.0
+    alias_src = None
         
     for counter, line in enumerate(lines):
         if line[1].startswith("Cell"):
@@ -347,9 +352,10 @@ def namd_read_output_file_list(output_file_list, anchor, timestep,
                     break
                 
             for milestone in anchor.milestones:
-                if milestone.neighbor_index == next_anchor:
+                if milestone.neighbor_anchor_index == next_anchor:
                     dest_boundary = milestone.index
                     alias_dest = milestone.alias_index
+                    alias_src = alias_dest
                     
             assert dest_boundary is not None
             
@@ -431,11 +437,11 @@ def namd_read_output_file_list(output_file_list, anchor, timestep,
     T_alpha_std_dev = np.std(T_alpha_list)
     T_alpha_total = np.sum(T_alpha_list)
     
-    if len(R_i_alpha_list) == 0:
-        R_i_alpha_average[src_boundary] = T_alpha_average
-        R_i_alpha_std_dev[src_boundary] = T_alpha_std_dev
-        R_i_alpha_total[src_boundary] = T_alpha_total
-        R_i_alpha_list[src_boundary] = T_alpha_list
+    if len(R_i_alpha_list) == 0 and alias_src is not None:
+        R_i_alpha_average[alias_src] = T_alpha_average
+        R_i_alpha_std_dev[alias_src] = T_alpha_std_dev
+        R_i_alpha_total[alias_src] = T_alpha_total
+        R_i_alpha_list[alias_src] = T_alpha_list
         
         
     return N_i_j_alpha, R_i_alpha_list, R_i_alpha_average, \
@@ -525,6 +531,7 @@ class MMVT_anchor_statistics():
                             "'namd', or 'browndye'.")
         for key in self.N_alpha_beta:
             self.k_alpha_beta[key] = self.N_alpha_beta[key] / self.T_alpha_total
+        assert self.T_alpha_total >= 0.0
         #assert len(self.k_alpha_beta) > 0, \
         #    "Missing statistics for anchor %d" % anchor.index
         return
@@ -583,8 +590,10 @@ class MMVT_data_sample(common_analyze.Data_sample):
     
     free_energy_profile : 
     """
-    def __init__(self, model, k_alpha_beta, N_i_j_alpha, R_i_alpha, T_alpha):
+    def __init__(self, model, N_alpha_beta, k_alpha_beta, N_i_j_alpha, 
+                 R_i_alpha, T_alpha):
         self.model = model
+        self.N_alpha_beta = N_alpha_beta
         self.k_alpha_beta = k_alpha_beta
         self.k_alpha = []
         self.N_i_j_alpha = N_i_j_alpha
@@ -605,18 +614,23 @@ class MMVT_data_sample(common_analyze.Data_sample):
         self.MFPTs = {}
         self.k_off = None
         self.k_ons = {}
+        self.bd_transition_counts = {}
         
         # Fill out N_alpha
         for alpha, anchor in enumerate(model.anchors):
             if anchor.bulkstate:
                 continue
-            self.N_alpha.append(np.sum(list(self.N_i_j_alpha[alpha].values())))
+            self.N_alpha.append(0)
+            for key in self.N_i_j_alpha[alpha]:
+                self.N_alpha[alpha] += self.N_i_j_alpha[alpha][key]
+            
             k_alpha = 0.0
             for beta, anchor2 in enumerate(model.anchors):
                 key = (alpha, beta)
                 if key in self.k_alpha_beta:
                     k_alpha += self.k_alpha_beta[key]
             self.k_alpha.append(k_alpha)
+            
         return
     
     def calculate_pi_alpha(self):
@@ -673,7 +687,8 @@ class MMVT_data_sample(common_analyze.Data_sample):
             
         prob_equil = np.zeros((flux_matrix_dimension,1))
         prob_equil[bulk_index] = 1.0
-        self.pi_alpha = np.linalg.solve(flux_matrix.T, prob_equil)
+        #self.pi_alpha = np.linalg.solve(flux_matrix.T, prob_equil)
+        self.pi_alpha = abs(la.solve(flux_matrix.T, prob_equil))
         return
     
     def fill_out_data_quantities(self):
@@ -695,22 +710,42 @@ class MMVT_data_sample(common_analyze.Data_sample):
                 / self.T_alpha[alpha]
         
         self.T = 1.0 / sum_pi_alpha_over_T_alpha
+        assert self.T >= 0.0, "self.T should be positive: {}".format(self.T)
         for alpha, anchor in enumerate(self.model.anchors):
             if anchor.bulkstate:
                 continue
             #anchor_stats = self._anchor_stats_list[counter]
             this_anchor_pi_alpha = float(self.pi_alpha[alpha])
             T_alpha = self.T_alpha[alpha]
+            assert T_alpha >= 0.0, \
+                "T_alpha should be positive: {}".format(T_alpha)
             time_fraction = self.T / T_alpha
             #time_fraction = 1.0 / T_alpha
             N_i_j_alpha = self.N_i_j_alpha[alpha]
+            
             for key in N_i_j_alpha:
+                assert time_fraction >= 0.0, \
+                    "time_fraction should be positive: {}".format(time_fraction)
+                assert this_anchor_pi_alpha >= 0.0, \
+                    "this_anchor_pi_alpha should be positive: {}".format(
+                        this_anchor_pi_alpha)
+                assert N_i_j_alpha[key] >= 0.0, \
+                    "N_i_j_alpha[key] should be positive: {}".format(
+                        N_i_j_alpha[key])
                 self.N_ij[key] += time_fraction * \
                     this_anchor_pi_alpha * N_i_j_alpha[key]
             
             R_i_alpha = self.R_i_alpha[alpha]
             if len(R_i_alpha) > 0:
                 for key in R_i_alpha:
+                    assert time_fraction >= 0.0, \
+                        "time_fraction should be positive: {}".format(time_fraction)
+                    assert this_anchor_pi_alpha >= 0.0, \
+                        "this_anchor_pi_alpha should be positive: {}".format(
+                            this_anchor_pi_alpha)
+                    assert R_i_alpha[key] >= 0.0, \
+                        "R_i_alpha[key] should be positive: {}".format(
+                            R_i_alpha[key])
                     self.R_i[key] += time_fraction * this_anchor_pi_alpha * \
                         R_i_alpha[key]
                         

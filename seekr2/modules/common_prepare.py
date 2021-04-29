@@ -109,6 +109,7 @@ class Browndye_settings_input(serializer.Serializer):
         self.ions = []
         self.num_b_surface_trajectories = -1
         self.num_bd_milestone_trajectories = -1
+        self.max_b_surface_trajs_to_extract = -1
         self.receptor_indices = []
         self.ligand_indices = []
         self.n_threads = 1
@@ -482,6 +483,9 @@ def create_bd_milestones(model, model_input):
             bd_milestone.num_trajectories = \
                 model_input.browndye_settings_input\
                     .num_bd_milestone_trajectories
+            bd_milestone.max_b_surface_trajs_to_extract = \
+                model_input.browndye_settings_input\
+                    .max_b_surface_trajs_to_extract
             bd_milestone.receptor_indices = \
                 model_input.browndye_settings_input.receptor_indices
             bd_milestone.ligand_indices = \
@@ -709,5 +713,88 @@ def modify_model(old_model, new_model, root_directory, force_overwrite=False):
                                                  anchor2.directory))
             os.rename(full_path1, full_path2)
     
+    # TODO: check for BD milestone changes
+    if old_model.k_on_info is not None:
+        bd_milestones_to_check = []
+        bd_milestones_to_cleanse = []
+        if new_model.k_on_info is None:
+            warning_msg = "The new model does not have any BD settings "\
+            "provided, while the old model does. This would delete all "\
+            "existing BD simulation files in {}. Use the --force_overwrite "\
+            "(-f) option if you wish to proceed anyway.".format(
+                old_model.anchor_rootdir)
+            print(warning_msg)
+            if not force_overwrite:
+                raise Exception("Cannot overwrite existing BD outputs.")
+            
+            b_surface_directory = os.path.join(
+                old_model.anchor_rootdir, 
+                old_model.k_on_info.b_surface_directory)
+            print("Deleting folder:", b_surface_directory)
+            shutil.rmtree(b_surface_directory)
+            for bd_milestone in old_model.k_on_info.bd_milestones:
+                bd_milestone_directory = os.path.join(
+                    old_model.anchor_rootdir, bd_milestone.directory)
+                print("Deleting folder:", bd_milestone_directory)
+                shutil.rmtree(bd_milestone_directory)
+                
+            return
+        
+        if len(old_model.k_on_info.bd_milestones) \
+                != len(new_model.k_on_info.bd_milestones):
+            warning_msg = "A different number of bd_milestones have been defined"\
+                "in this model's modifications. You should probably generate an"\
+                "entirely new model for this system. Use the --force_overwrite "\
+                "(-f) option if you wish to proceed anyway."
+            print(warning_msg)
+            if not force_overwrite:
+                raise Exception("Cannot define a new number of BD milestones.")
+        
+            for bd_milestone in old_model.k_on_info.bd_milestones:
+                bd_milestones_to_check.append(bd_milestone)
+        
+        # check to see if bd milestone variables changed
+        warnstr = "One or more BD milestones has had variables changed. "\
+            "If BD simulations have already been run, they will be "\
+            "overwritten. Use the --force_overwrite (-f) option if you "\
+            "wish to proceed anyway."
+        for old_bd_milestone, new_bd_milestone in zip(
+                old_model.k_on_info.bd_milestones, 
+                new_model.k_on_info.bd_milestones):
+            
+            if old_bd_milestone.outer_milestone.variables \
+                    != new_bd_milestone.outer_milestone.variables:
+                bd_milestones_to_check.append(old_bd_milestone)
+                continue
+            
+            if old_bd_milestone.inner_milestone.variables \
+                    != new_bd_milestone.outer_milestone.variables:
+                bd_milestones_to_check.append(old_bd_milestone)
+                continue
+        
+        for bd_milestone in bd_milestones_to_check:
+            bd_milestone_directory = os.path.join(
+                old_model.anchor_rootdir, bd_milestone.directory)
+            files_will_be_removed = runner_browndye2.cleanse_bd_outputs(
+                bd_milestone_directory)
+            if files_will_be_removed:
+                bd_milestones_to_cleanse.append(bd_milestone)
+        
+        if len(bd_milestones_to_cleanse) > 0:
+            print(warnstr)
+            if not force_overwrite:
+                raise Exception("Cannot overwrite existing BD milestones.")
+            
+            b_surface_directory = os.path.join(
+                old_model.anchor_rootdir, 
+                old_model.k_on_info.b_surface_directory)
+            runner_browndye2.cleanse_bd_outputs(b_surface_directory, 
+                                                check_mode=True)
+        
+        for bd_milestone in bd_milestones_to_cleanse:
+            bd_milestone_directory = os.path.join(
+                old_model.anchor_rootdir, bd_milestone.directory)
+            runner_browndye2.cleanse_bd_outputs(bd_milestone_directory, 
+                                                check_mode=True)
     return
     

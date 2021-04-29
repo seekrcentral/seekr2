@@ -171,7 +171,7 @@ def pretty_string_value_error(value, error, error_digits=2, use_unicode=True):
     return new_string
 
 def browndye_run_compute_rate_constant(compute_rate_constant_program,
-                                       results_filename, 
+                                       results_filename_list, 
                                        sample_error_from_normal=False):
     # common
     """
@@ -184,7 +184,7 @@ def browndye_run_compute_rate_constant(compute_rate_constant_program,
         The exact command to use to run the Browndye 
         compute_rate_constant program.
     
-    results_filename : str
+    results_filename_list : list
         A path to the results XML file, which is an output from
         running the BrownDye program.
     
@@ -216,53 +216,82 @@ def browndye_run_compute_rate_constant(compute_rate_constant_program,
         reaching those states from the b-surface.
     
     """
-    cmd = "%s < %s" % (compute_rate_constant_program, 
-                       results_filename)
-    #print("running command:", cmd)
-    output_string = subprocess.check_output(cmd, shell=True)
-    root = ET.fromstring(output_string)
-    k_ons = {}
-    k_on_errors = {}
-    reaction_probabilities = {}
-    reaction_probability_errors = {}
+    k_ons = defaultdict(float)
+    k_on_errors = defaultdict(float)
+    reaction_probabilities = defaultdict(float)
+    reaction_probability_errors = defaultdict(float)
+    transition_counts = defaultdict(int)
     k_b = None
-    for rate in root.iter("rate"):
-        name = int(rate.find("name").text.strip())
-        rate_constant = rate.find("rate_constant")
-        k_on_tag = rate_constant.find("mean")
-        k_on_tag_high = rate_constant.find("high")
-        assert k_on_tag is not None
-        assert k_on_tag_high is not None
-        k_on = float(k_on_tag.text)
-        k_on_error = 0.5*(float(k_on_tag_high.text) - k_on)
-        reaction_probability = rate.find("reaction_probability")
-        beta_tag = reaction_probability.find("mean")
-        beta_tag_high = reaction_probability.find("high")
-        assert beta_tag is not None
-        assert beta_tag_high is not None
-        beta = float(beta_tag.text)
-        beta_error = float(beta_tag_high.text) - beta
-        reaction_probabilities[name] = beta
-        reaction_probability_errors[name] = beta_error
-        if beta != 0.0:
-            k_b = k_on / beta
-        
-        if sample_error_from_normal:
-            k_on = np.random.normal(loc=k_on, scale=k_on_error)
-            
-        k_ons[name] = k_on
-        k_on_errors[name] = k_on_error
+    total_n_trajectories = 0
     
+    for results_filename in results_filename_list:
+        cmd = "%s < %s" % (compute_rate_constant_program, 
+                           results_filename)
+        output_string = subprocess.check_output(cmd, shell=True)
+        root = ET.fromstring(output_string)
+        
+        # first, obtain counts directly from the results file
+        results_root = ET.parse(results_filename)
+        reactions = results_root.find("reactions")
+        n_trajectories = int(reactions.find("n_trajectories").text.strip())
+        total_n_trajectories += n_trajectories
+        stuck = int(reactions.find("stuck").text.strip())
+        escaped = int(reactions.find("escaped").text.strip())
+        for completed in reactions.iter("completed"):
+            name = int(completed.find("name").text.strip())
+            n = int(completed.find("n").text.strip())
+            transition_counts[name] += n
+        transition_counts["escaped"] += escaped
+        transition_counts["stuck"] += stuck
+        
+        # now obtain probabilities and rates
+        for rate in root.iter("rate"):
+            name = int(rate.find("name").text.strip())
+            rate_constant = rate.find("rate_constant")
+            k_on_tag = rate_constant.find("mean")
+            k_on_tag_high = rate_constant.find("high")
+            assert k_on_tag is not None
+            assert k_on_tag_high is not None
+            k_on = float(k_on_tag.text)
+            k_on_error = 0.5*(float(k_on_tag_high.text) - k_on)
+            reaction_probability = rate.find("reaction_probability")
+            beta_tag = reaction_probability.find("mean")
+            beta_tag_high = reaction_probability.find("high")
+            assert beta_tag is not None
+            assert beta_tag_high is not None
+            beta = float(beta_tag.text)
+            beta_error = 0.5*(float(beta_tag_high.text) - beta)
+            if beta != 0.0:
+                k_b = k_on / beta
+            
+            if sample_error_from_normal:
+                k_on = np.random.normal(loc=k_on, scale=k_on_error)
+            
     assert k_b is not None, "No BD reactions from the b-surface " \
         "successfully reached any of the milestone surfaces."
-    #k_ons["b_surface"] = k_b
-    #k_on_errors["b_surface"] = 0.0
-    #reaction_probabilities["b_surface"] = 1.0
-    #reaction_probability_errors["b_surface"] = 0.0
-    return k_ons, k_on_errors, reaction_probabilities, \
-        reaction_probability_errors
+    
+    for key in transition_counts:
+        reaction_probabilities[key] \
+            = transition_counts[key] / total_n_trajectories
+        k_ons[key] = k_b * reaction_probabilities[key]
         
-def browndye_parse_bd_milestone_results(results_filename, 
+        if transition_counts[key] > 1:
+            reaction_probability_errors[key] = reaction_probabilities[key] \
+                / np.sqrt(transition_counts[key]-1)
+            k_on_errors[key] = k_b * reaction_probability_errors[key]
+        else:
+            reaction_probability_errors[key] = 1e99
+            k_on_errors[key] = 1e99
+        
+        if sample_error_from_normal:
+            k_ons[key] = np.random.normal(loc=k_ons[key], 
+                                          scale=k_on_errors[key])
+    
+    assert k_ons.keys() == transition_counts.keys()
+    return k_ons, k_on_errors, reaction_probabilities, \
+        reaction_probability_errors, transition_counts
+        
+def browndye_parse_bd_milestone_results(results_filename_list, 
                                         sample_error_from_normal=False):
     # common
     """
@@ -270,7 +299,7 @@ def browndye_parse_bd_milestone_results(results_filename,
     
     Parameters:
     -----------
-    results_filename : str
+    results_filename_list : list
         A path to the results XML file for a BD milestone, which 
         is an output from running the BrownDye program.
         
@@ -285,26 +314,31 @@ def browndye_parse_bd_milestone_results(results_filename,
     transition_probabilities : dict
         The probabilities of transitions.
     """
-    transition_counts = {}
-    transition_probabilities = {}
-    assert os.path.exists(results_filename), "You must perform successful "\
-        "extractions and runs of all BD milestones if k-on settings are "\
-        "provided in the model XML. Missing file: " \
-        + results_filename
-    root = ET.parse(results_filename)
-    reactions = root.find("reactions")
-    n_trajectories = int(reactions.find("n_trajectories").text.strip())
-    stuck = int(reactions.find("stuck").text.strip())
-    escaped = int(reactions.find("escaped").text.strip())
+    transition_counts = defaultdict(int)
+    transition_probabilities = defaultdict(float)
     completed_prob = 0.0
     completed_count = 0
-    for completed in root.iter("completed"):
-        name = int(completed.find("name").text.strip())
-        n = int(completed.find("n").text.strip())
-        transition_counts[name] = n
-        completed_count += n
+    
+    for results_filename in results_filename_list:
+        assert os.path.exists(results_filename), "You must perform successful "\
+            "extractions and runs of all BD milestones if k-on settings are "\
+            "provided in the model XML. Missing file: " \
+            + results_filename
+        root = ET.parse(results_filename)
+        reactions = root.find("reactions")
+        n_trajectories = int(reactions.find("n_trajectories").text.strip())
+        stuck = int(reactions.find("stuck").text.strip())
+        escaped = int(reactions.find("escaped").text.strip())
         
-    transition_counts["escaped"] = escaped
+        for completed in reactions.iter("completed"):
+            name = int(completed.find("name").text.strip())
+            n = int(completed.find("n").text.strip())
+            transition_counts[name] += n
+            completed_count += n
+            
+        transition_counts["escaped"] += escaped
+        transition_counts["stuck"] += stuck
+    
     for key in transition_counts:
         n = transition_counts[key]
         avg = n / (completed_count + escaped)
@@ -313,14 +347,73 @@ def browndye_parse_bd_milestone_results(results_filename,
             std_dev = avg / np.sqrt(n-1)
             transition_probabilities[key] = np.random.normal(
                 loc=avg, scale=std_dev)
-            
         else:
             transition_probabilities[key] = avg
             
         completed_prob += transition_probabilities[key]
-        
+    
     transition_probabilities["escaped"] = 1.0 - completed_prob
-    return transition_probabilities
+    return transition_probabilities, transition_counts
+
+def combine_fhpd_results(bd_milestone, fhpd_directories, 
+                         combined_results_filename):
+    """
+    
+    """
+    reaction_dict = defaultdict(float)
+    number_escaped = 0
+    number_stuck = 0
+    number_total = 0
+    number_total_check = 0
+    results_filename_list = []
+    if len(fhpd_directories) == 0:
+        return
+    
+    for fhpd_directory in fhpd_directories:
+        results_glob = os.path.join(fhpd_directory, 
+                                    "results*.xml")
+        results_filename_list += glob.glob(results_glob)
+    
+    if len(results_filename_list) == 0:
+        print("No BD output files found.")
+        return
+    
+    for results_filename in results_filename_list:
+        tree = ET.parse(results_filename)
+        root = tree.getroot()
+        reactions_XML = root.find("reactions")
+        number_total += int(reactions_XML.find("n_trajectories").text.strip())
+        number_stuck += int(reactions_XML.find("stuck").text.strip())
+        number_escaped += int(reactions_XML.find("escaped").text.strip())
+        for completed_XML in reactions_XML.iter("completed"):
+            name = completed_XML.find("name").text.strip()
+            n = int(completed_XML.find("n").text.strip())
+            reaction_dict[name] += n
+            number_total_check += n
+        
+    assert number_total == number_total_check + number_stuck + number_escaped
+    for completed_XML in reactions_XML.iter("completed"):
+        reactions_XML.remove(completed_XML)
+    
+    reactions_XML.find("n_trajectories").text = str(number_total)
+    reactions_XML.find("stuck").text = str(number_stuck)
+    reactions_XML.find("escaped").text = str(number_escaped)
+    for key in reaction_dict:
+        completed_XML = ET.SubElement(reactions_XML, "completed")
+        completed_XML.text = "\n      "
+        completed_XML.tail = "\n  "
+        name_XML = ET.SubElement(completed_XML, "name")
+        name_XML.text = key
+        name_XML.tail = "\n      "
+        n_XML = ET.SubElement(completed_XML, "n")
+        n_XML.text = str(int(reaction_dict[key]))
+        n_XML.tail = "\n    "
+        
+    xmlstr = ET.tostring(root).decode("utf-8")
+    with open(combined_results_filename, 'w') as f:
+        f.write(xmlstr)
+        
+    return
 
 class Data_sample():
     # common
@@ -366,6 +459,7 @@ class Data_sample():
         self.MFPTs = None
         self.k_off = None
         self.k_ons = {}
+        self.bd_transition_counts = {}
     
     def compute_rate_matrix(self):
         """
@@ -379,6 +473,7 @@ class Data_sample():
                     self.Q[i,j] = 0.0
                 else:
                     self.Q[i,j] = self.N_ij[i,j] / self.R_i[i]
+                assert self.Q[i,j] >= 0.0, "self.Q[i,j]: {}".format(self.Q[i,j])
                     
         for i in range(self.model.num_milestones):
             self.Q[i][i] = -np.sum(self.Q[i])
@@ -579,39 +674,56 @@ class Data_sample():
             output_file_glob = os.path.join(
                 self.model.anchor_rootdir,
                 self.model.k_on_info.b_surface_directory, 
-                self.model.k_on_info.bd_mmvt_output_glob)
+                self.model.k_on_info.bd_output_glob)
             output_file_list = glob.glob(output_file_glob)
             output_file_list = base.order_files_numerically(output_file_list)
             #assert len(output_file_list) > 0, "No BD output file found"
             if len(output_file_list) > 0:
-                assert len(output_file_list) == 1, "More than one BD output file "\
-                    "in b_surface folder not yet supported"
-                results_filename = output_file_list[0]
                 if self.model.browndye_settings is not None:
                     k_ons_src, k_on_errors_src, reaction_probabilities, \
-                        reaction_probability_errors = \
+                        reaction_probability_errors, transition_counts = \
                         browndye_run_compute_rate_constant(os.path.join(
                             self.model.browndye_settings.browndye_bin_dir,
-                            "compute_rate_constant"), results_filename, 
+                            "compute_rate_constant"), output_file_list, 
                             sample_error_from_normal=bd_sample_from_normal)
+                    self.bd_transition_counts["b_surface"] = transition_counts
                 else:
                     raise Exception("No valid BD program settings provided.")
                 
                 if len(bulk_milestones) > 0:
                     bulk_milestone = bulk_milestones[0]
                     for bd_milestone in self.model.k_on_info.bd_milestones:
+                        
+                        bd_results_file = os.path.join(
+                            self.model.anchor_rootdir, bd_milestone.directory, 
+                            "results.xml")
+                        
+                        if not os.path.exists(bd_results_file):
+                            bd_directory_list_glob = os.path.join(
+                                self.model.anchor_rootdir, 
+                                bd_milestone.directory, 
+                                "first_hitting_point_distribution", "lig*/")
+                            bd_directory_list = glob.glob(
+                                bd_directory_list_glob)
+                            if len(bd_directory_list) == 0:
+                                continue
+                            combine_fhpd_results(bd_milestone, 
+                                                 bd_directory_list, 
+                                                 bd_results_file)
+                        
                         source_vec[bd_milestone.outer_milestone.index] = \
                             k_ons_src[bd_milestone.outer_milestone.index]
-                        results_filename = os.path.join(
-                            self.model.anchor_rootdir, bd_milestone.directory,
-                            bd_milestone.bd_mmvt_output_glob)
-                        transition_probabilities = \
-                            browndye_parse_bd_milestone_results(results_filename)
+                        results_filename_list = [bd_results_file]
+                        transition_probabilities, transition_counts = \
+                            browndye_parse_bd_milestone_results(
+                                results_filename_list)
+                        self.bd_transition_counts[bd_milestone.index] \
+                            = transition_counts
                         src_index = bd_milestone.outer_milestone.index
                         K_hat[src_index, :] = 0.0
                         for key in transition_probabilities:
                             value = transition_probabilities[key]
-                            if key == "escaped":
+                            if key in ["escaped", "stuck"]:
                                 pass
                             else:
                                 K_hat[src_index, key] = value

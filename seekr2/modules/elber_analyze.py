@@ -69,9 +69,12 @@ def openmm_read_output_file_list(output_file_list, max_time=None,
     for counter, line in enumerate(lines):
         dest_boundary = int(line[0])
         incubation_time = float(line[1])
-        if max_time is not None:
-            if counter > max_time:
-                break
+        
+        # TODO: fix this once the new Elber plugin is created.
+        # Absolute time will need to be written by the plugin
+        #if max_time is not None:
+        #    if counter > max_time:
+        #        break
             
         if not skip_restart_check:
             assert incubation_time >= 0.0, "incubation times cannot be "\
@@ -85,7 +88,7 @@ def openmm_read_output_file_list(output_file_list, max_time=None,
     R_i_average = np.mean(R_i_list)
     R_i_std_dev = np.std(R_i_list)
     R_i_total = np.sum(R_i_list)
-    
+        
     return N_i_j, R_i_list, R_i_average, R_i_std_dev, R_i_total, lines
         
 # def openmm_read_statistics_file(statistics_file_name): ?
@@ -142,8 +145,8 @@ class Elber_anchor_statistics():
             raise Exception("Engine not allowed: {}. Must be 'openmm' "\
                             "or 'browndye'.")
                 
-        assert len(self.N_i_j) > 0, \
-            "Missing statistics for anchor %d" % anchor.index
+        #assert len(self.N_i_j) > 0, \
+        #    "Missing statistics for anchor %d" % anchor.index
         return
     
     def print_stats(self):
@@ -202,6 +205,7 @@ class Elber_data_sample(common_analyze.Data_sample):
         self.MFPTs = {}
         self.k_off = None
         self.k_ons = {}
+        self.bd_transition_counts = {}
         return
     
     
