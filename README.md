@@ -35,13 +35,13 @@ This is only a quickstart guide to get SEEKR2 up and running as soon as
 possible. To see more detailed instructions and tutorials, please see the
 docs/ subfolder and OTHER RESOURCES HERE.
 
-### Install
+## Install
 
-#### Dependencies
+### Dependencies
 Many of the dependencies for SEEKR2 will be installed automatically, but
 some must be installed separately
 
-##### OpenMM
+#### OpenMM
 
 OpenMM is recommended for the MD stage of SEEKR2.
 
@@ -51,13 +51,13 @@ INSTRUCTIONS FOR seekr2plugin INSTALLATION COMING SOON...
 Alternatively, NAMD2 may be used for MD if desired. See the NAMD2 section
 below for installation of NAMD2.
 
-##### Browndye2
+#### Browndye2
 
 SEEKR2 needs Browndye2 if BD simulations will be run (necessary for k-on
 calculations). Please see BROWNDYE2 LINK HERE for Browndye installation
 instructions.
 
-##### NAMD2
+#### NAMD2
 
 If OpenMM is not desirable or available for the MD simulations, SEEKR2 may 
 use NAMD2 in order to run MD simulations. NAMD2 is frequently already 
@@ -67,7 +67,7 @@ Not all SEEKR2 options may be available using NAMD2.
 If you wish to install NAMD2 yourself, please see NAMD2 LINK HERE for 
 installation of NAMD.
 
-#### Install SEEKR2
+### Install SEEKR2
 To install SEEKR2, clone this repository and install the package:
 
 ```
@@ -76,7 +76,7 @@ cd seekr2
 python setup.py install
 ```
 
-#### Testing SEEKR2
+### Testing SEEKR2
 To test SEEKR2, run the following command in the seekr2/ directory:
 
 ```
@@ -86,7 +86,7 @@ python setup.py test
 Additional continuous integration tests may be run from the
 seekr2/seekr2/continuous_integration/ directory.
 
-### Run
+## Run
 
 A SEEKR2 calculation needs a "Model Input File" to run. Several examples may
 be found in seekr2/seekr2/data. Execute the following commands within the 
@@ -102,14 +102,14 @@ python converge.py ~/test_mmvt_openmm/model.xml
 python analyze.py ~/test_mmvt_openmm/model.xml
 ```
 
-#### Important Options
+### Important Options
 
 In general, SEEKR2 programs can be run with the '-h' argument to see all
 available options.
 
 MORE HERE
 
-### Authors and Contributors
+## Authors and Contributors
 
 The following people have contributed directly to the coding and validation
 efforts of SEEKR2. Thanks also to everyone who has
