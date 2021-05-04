@@ -1,7 +1,8 @@
 """
 filetree.py
 
-Generate the necessary filetree to execute simulations.
+Generate the necessary directories and files to execute SEEKR2 
+simulations.
 """
 
 import os

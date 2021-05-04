@@ -1,23 +1,25 @@
 """
-mmvt/sim_openmm.py
+mmvt_sim_openmm.py
 
 Create the Sim_openmm object which contains the objects needed for an
 openmm simulation based on the settings provided by a user. These
 objects are specific to MMVT only.
 """
 
-import os
-
-import openmm
 import openmm.app as openmm_app
 from parmed import unit
 
-from mmvtplugin import MmvtLangevinIntegrator, vectori, vectord
-import mmvtplugin
+from mmvtplugin import MmvtLangevinIntegrator
 import seekr2.modules.common_sim_openmm as common_sim_openmm
 
 class MMVT_sim_openmm(common_sim_openmm.Common_sim_openmm):
     """
+    system : The OpenMM system object for this simulation.
+    
+    integrator : the OpenMM integrator object for this simulation.
+    
+    simulation : the OpenMM simulation object.
+    
     traj_reporter : openmm.DCDReporter
         The OpenMM Reporter object to which the trajectory will be
         written.
@@ -36,142 +38,128 @@ class MMVT_sim_openmm(common_sim_openmm.Common_sim_openmm):
         self.energy_reporter = openmm_app.StateDataReporter
         return
         
-class MMVT_sim_openmm_factory(common_sim_openmm.Common_sim_openmm_factory):
+def add_integrator(sim_openmm, model, output_filename="", 
+                   state_prefix=None):
     """
-    Create the sim_openmm objects which will be used to run MMVT
-    calculations in OpenMM.
+    Assign the proper integrator to this OpenMM simulation.
     """
-    def __init__(self):
-        self.sim_openmm = MMVT_sim_openmm()
-        return
+    if model.openmm_settings.langevin_integrator is not None:
+        target_temperature = \
+            model.openmm_settings.langevin_integrator.target_temperature
+        friction_coefficient = \
+            model.openmm_settings.langevin_integrator.friction_coefficient
+        random_seed = \
+            model.openmm_settings.langevin_integrator.random_seed
+        timestep = \
+            model.openmm_settings.langevin_integrator.timestep
+        rigid_constraint_tolerance = \
+            model.openmm_settings.langevin_integrator\
+            .rigid_tolerance
+            
+        sim_openmm.timestep = timestep
+        
+        sim_openmm.integrator = MmvtLangevinIntegrator(
+            target_temperature*unit.kelvin, 
+            friction_coefficient/unit.picoseconds, 
+            timestep*unit.picoseconds, 
+            sim_openmm.output_filename)
+        
+        if random_seed is not None:
+            sim_openmm.integrator.setRandomNumberSeed(random_seed)
+            
+        if rigid_constraint_tolerance is not None:
+            sim_openmm.integrator.setConstraintTolerance(
+                rigid_constraint_tolerance)
+        
+        if state_prefix is not None:
+            sim_openmm.integrator.setSaveStateFileName(state_prefix)
+            
+    else:
+        raise Exception("Settings not provided for available "\
+                        "integrator type(s).")
+    return
+
+def add_forces(sim_openmm, model, anchor):
+    """
+    Add the proper forces for this MMVT simulation.
+    """
+    for milestone in anchor.milestones:
+        cv = milestone.get_CV(model)
+        myforce = make_mmvt_boundary_definitions(
+            cv, milestone)
+        sim_openmm.integrator.addMilestoneGroup(milestone.alias_index)
+        forcenum = sim_openmm.system.addForce(myforce)
+    return
+
+def add_simulation(sim_openmm, model, topology, positions, box_vectors):
+    """
+    Assign the OpenMM simulation object for MMVT.
+    """
+    sim_openmm.simulation = openmm_app.Simulation(
+        topology.topology, sim_openmm.system, 
+        sim_openmm.integrator, sim_openmm.platform, 
+        sim_openmm.properties)
     
-    def add_integrator(self, model, output_filename="", state_prefix=None):
-        """
-        
-        """
-        if model.openmm_settings.langevin_integrator is not None:
-            target_temperature = \
-                model.openmm_settings.langevin_integrator.target_temperature
-            friction_coefficient = \
-                model.openmm_settings.langevin_integrator.friction_coefficient
-            random_seed = \
-                model.openmm_settings.langevin_integrator.random_seed
-            timestep = \
-                model.openmm_settings.langevin_integrator.timestep
-            rigid_constraint_tolerance = \
-                model.openmm_settings.langevin_integrator\
-                .rigid_tolerance
-                
-            self.sim_openmm.timestep = timestep
-            
-            self.sim_openmm.integrator = MmvtLangevinIntegrator(
-                target_temperature*unit.kelvin, 
-                friction_coefficient/unit.picoseconds, 
-                timestep*unit.picoseconds, 
-                self.sim_openmm.output_filename)
-            
-            if random_seed is not None:
-                self.sim_openmm.integrator.setRandomNumberSeed(random_seed)
-                
-            if rigid_constraint_tolerance is not None:
-                self.sim_openmm.integrator.setConstraintTolerance(
-                    rigid_constraint_tolerance)
-            
-            if state_prefix is not None:
-                self.sim_openmm.integrator.setSaveStateFileName(state_prefix)
-                
-            # For testing purposes:
-            #self.sim_openmm.integrator.setSaveStatisticsFileName(
-            #    os.path.join(os.path.dirname(output_filename), 
-            #                 "test_stats.txt"))
-            
-        else:
-            raise Exception("Settings not provided for available "\
-                            "integrator type(s).")
-        return
+    sim_openmm.simulation.context.setPositions(positions.positions)
+    if box_vectors is not None:
+        sim_openmm.simulation.context.setPeriodicBoxVectors(*box_vectors)
+    if model.openmm_settings.run_minimization:
+        print("Warning: running minimizations. It is recommended that "\
+              "structures are minimized and verified by the user before "\
+              "running SEEKR, since minimizations might cause the system "\
+              "to drift out of the MMVT cell.")
+        sim_openmm.simulation.minimizeEnergy()
     
-    def add_forces(self, model, anchor):
-        """
-        
-        """
-        for milestone in anchor.milestones:
-            cv = milestone.get_CV(model)
-            myforce = make_mmvt_boundary_definitions(
-                cv, milestone)
-            self.sim_openmm.integrator.addMilestoneGroup(milestone.alias_index)
-            forcenum = self.sim_openmm.system.addForce(myforce)
-        return
+    sim_openmm.simulation.context.setVelocitiesToTemperature(
+        model.openmm_settings.initial_temperature * unit.kelvin)
+    assert sim_openmm.timestep is not None
+    return
+
+def create_sim_openmm(model, anchor, output_filename, 
+                      state_prefix=None):
+    """
+    Take all relevant model and anchor information and generate
+    the necessary OpenMM objects to run the simulation.
     
-    def add_simulation(self, model, topology, positions, box_vectors):
-        """
+    Parameters
+    ----------
+    model : Model()
+        The Model which contains the anchor and all settings for
+        the simulation that is about to be run.
         
-        """
-        self.sim_openmm.simulation = openmm_app.Simulation(
-            topology.topology, self.sim_openmm.system, 
-            self.sim_openmm.integrator, self.sim_openmm.platform, 
-            self.sim_openmm.properties)
+    anchor : Anchor()
+        The anchor object that this OpenMM simulation applies to.
         
-        self.sim_openmm.simulation.context.setPositions(positions.positions)
-        if box_vectors is not None:
-            self.sim_openmm.simulation.context.setPeriodicBoxVectors(*box_vectors)
-        if model.openmm_settings.run_minimization:
-            print("Warning: running minimizations. It is recommended that "\
-                  "structures are minimized and verified by the user before "\
-                  "running SEEKR, since minimizations might cause the system "\
-                  "to drift out of the MMVT cell.")
-            self.sim_openmm.simulation.minimizeEnergy()
+    output_filename : str
+        The name of the file that will be written by the plugin as
+        the MMVT simulation proceeds, recording every 'bounce'.
         
-        self.sim_openmm.simulation.context.setVelocitiesToTemperature(
-            model.openmm_settings.initial_temperature * unit.kelvin)
-        assert self.sim_openmm.timestep is not None
-        return
-    
-    def create_sim_openmm(self, model, anchor, output_filename, 
-                          state_prefix=None):
-        """
-        Take all relevant model and anchor information and generate
-        the necessary OpenMM objects to run the simulation.
+    state_prefix : str or None
+        The plugin can optionally save every state during a
+        bounce. These can be used to seed simulations in other
+        cells. This argument provides the file prefix for these
+        saved states. If None, then no states will be written.
         
-        Parameters
-        ----------
-        model : Model()
-            The Model which contains the anchor and all settings for
-            the simulation that is about to be run.
-            
-        anchor : Anchor()
-            The anchor object that this OpenMM simulation applies to.
-            
-        output_filename : str
-            The name of the file that will be written by the plugin as
-            the MMVT simulation proceeds, recording every 'bounce'.
-            
-        state_prefix : str or None
-            The plugin can optionally save every state during a
-            bounce. These can be used to seed simulations in other
-            cells. This argument provides the file prefix for these
-            saved states. If None, then no states will be written.
-            
-        Returns
-        -------
-        sim_openmm : Sim_openmm()
-            The sim_openmm object, which contains everything needed
-            to run an MMVT simulation within OpenMM.
-            
-        """
-        super(MMVT_sim_openmm_factory, self).fill_generic_parameters(
-            self.sim_openmm, model, anchor, output_filename)
-        system, topology, positions, box_vectors = super(
-            MMVT_sim_openmm_factory, self).create_openmm_system(
-                self.sim_openmm, model, anchor)
-        self.sim_openmm.system = system
-        self.add_integrator(model, output_filename, state_prefix=state_prefix)
-        super(MMVT_sim_openmm_factory, self).add_barostat(
-            self.sim_openmm, model)
-        super(MMVT_sim_openmm_factory, self).add_platform(
-            self.sim_openmm, model)
-        self.add_forces(model, anchor)
-        self.add_simulation(model, topology, positions, box_vectors)
-        return self.sim_openmm
+    Returns
+    -------
+    sim_openmm : Sim_openmm()
+        The sim_openmm object, which contains everything needed
+        to run an MMVT simulation within OpenMM.
+        
+    """
+    sim_openmm = MMVT_sim_openmm()
+    common_sim_openmm.fill_generic_parameters(
+        sim_openmm, model, anchor, output_filename)
+    system, topology, positions, box_vectors \
+        = common_sim_openmm.create_openmm_system(sim_openmm, model, anchor)
+    sim_openmm.system = system
+    add_integrator(sim_openmm, model, output_filename, 
+                   state_prefix=state_prefix)
+    common_sim_openmm.add_barostat(sim_openmm, model)
+    common_sim_openmm.add_platform(sim_openmm, model)
+    add_forces(sim_openmm, model, anchor)
+    add_simulation(sim_openmm, model, topology, positions, box_vectors)
+    return sim_openmm
 
 def make_mmvt_boundary_definitions(cv, milestone):
     """
@@ -203,14 +191,7 @@ def make_mmvt_boundary_definitions(cv, milestone):
         position.
     """
     myforce = cv.make_force_object()
-    #mygroup_list = []
-    #mygroup1 = myforce.addGroup(cv.group1)
-    #mygroup_list.append(mygroup1)
-    #mygroup2 = myforce.addGroup(cv.group2)
-    #mygroup_list.append(mygroup2)
-        
     myforce.setForceGroup(milestone.alias_index)
-    
     variable_names_list = cv.add_parameters(myforce)
     cv.add_groups_and_variables(myforce, cv.get_variable_values_list(
                                     milestone))

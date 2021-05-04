@@ -27,7 +27,13 @@ def make_empty_pqrxml(directory, filename="empty.pqrxml"):
     """
     Create an empty pqrxml which is used in the Extraction phase to 
     generate new ligand encounter complex PQRs.
+    
+    Returns
+    -------
+    empty_pqrxml_path: str
+        Generated path of empty pqrxml file.
     """
+    
     empty_pqrxml_path = os.path.join(directory, filename)
     with open(empty_pqrxml_path, "w") as f:
         empty_pqrxml_string = "<roottag> \n</roottag>"
@@ -64,9 +70,41 @@ def make_browndye_input_xml(model, rootdir, receptor_xml_filename,
                             ligand_xml_filename, num_bd_steps, 
                             bd_directory=None, make_apbs_mode=True):
     """
+    Creates Browndye input file with all input parameters set.
+    If bd_directory is None, then b_surface is assumed.
     
-    If bd_directory is None, then b_surface is assumed
-    """    
+    Parameters
+    ----------
+    model : Model()
+        The SEEKR2 model.
+        
+    rootdir : str
+        The model's root directory.
+           
+    receptor_xml_filename : str
+        receptor PQRXML structure.
+    
+    ligand_xml_filename : str
+        ligand PQRXML structure.
+    
+    num_bd_steps : int
+        The number of BD steps to run
+    
+    bd_directory : Directory
+        Browndye directory
+    
+    make_apbs_mode : bool
+        Whether to use Browndye2's automatic APBS grid generator.
+    
+    Returns
+    -------
+    debye_length : float
+        The Debye length of the system based on calculation by APBS.
+        
+    reaction_filename : str
+        A path to the reaction file.
+    """
+    
     root = sim_browndye2.Root()
     if bd_directory is None:
         # B-surface
@@ -136,8 +174,7 @@ def make_browndye_input_xml(model, rootdir, receptor_xml_filename,
     
 def make_browndye_reaction_xml(model, abs_reaction_path, bd_milestone=None):
     """
-    
-    If bd_directory is None, then b_surface is assumed
+    Creates Browndye2 reaction file.
     """
     rxnroot = sim_browndye2.Reaction_root()
     if bd_milestone is None:
@@ -183,7 +220,7 @@ def make_browndye_reaction_xml(model, abs_reaction_path, bd_milestone=None):
 def run_bd_top(browndye_bin_dir, bd_directory, restart=False,
                force_overwrite=False):
     """
-    
+    Prepare Browndye2 input files for simulation.
     """
     curdir = os.getcwd()
     print("moving to directory:", bd_directory)
@@ -218,9 +255,7 @@ def modify_variables(bd_milestone_directory, bd_output_glob,
                      n_trajectories, n_threads=None, seed=None, 
                      output_file=None, restart=False, 
                      n_trajectories_per_output=None):
-    """
-    
-    """
+    """Modify several variables at runtime based on user inputs."""
     simulation_filename_base = sim_browndye2.BROWNDYE_RECEPTOR + "_" \
         + sim_browndye2.BROWNDYE_LIGAND + "_simulation.xml"
     simulation_filename = os.path.join(bd_milestone_directory, 
@@ -291,9 +326,7 @@ def modify_variables(bd_milestone_directory, bd_output_glob,
     return
 
 def run_nam_simulation(browndye_bin_dir, bd_directory, bd_output_glob):
-    """
-    
-    """
+    """Run the Browndye2 simulation."""
     curdir = os.getcwd()
     print("moving to directory:", bd_directory)
     os.chdir(bd_directory)
@@ -340,10 +373,8 @@ def make_proc_file_last_frame(input_filename, output_filename,
 def extract_bd_surface(model, bd_milestone, max_b_surface_trajs_to_extract,
                        force_overwrite=False, restart=False):
     """
-    
-    TODO: create a function to generate the correct trajectory file
-    for PQR extraction.
-    
+    Given the processed trajectories output XML files, extract the
+    encounter complex PQR files from the b-surface simulation(s).
     """
     lig_pqr_filenames = []
     rec_pqr_filenames = []
@@ -502,7 +533,9 @@ def extract_bd_surface(model, bd_milestone, max_b_surface_trajs_to_extract,
 
 def make_big_fhpd_trajectory(directory, lig_pqr_filenames, rec_pqr_filenames):
     """
-    
+    Combine all extracted PQR files from the b-surface simulation 
+    encounter complexes, and make one big PDB trajectory representing
+    the first hitting point distribution (FHPD).
     """
     fhpd_traj_filename = os.path.join(directory, "fhpd.pdb")
     temporary_pdb_filenames = []
@@ -526,7 +559,9 @@ def make_big_fhpd_trajectory(directory, lig_pqr_filenames, rec_pqr_filenames):
 def make_fhpd_directories(model, bd_milestone, lig_pqr_filenames, 
                           rec_pqr_filenames, force_overwrite=False):
     """
-    
+    For each of the extracted first hitting point distribution (FHPD)
+    PQR files, generate a directory to run its own Browndye2 
+    simulation(s).
     """
     b_surface_dir = os.path.join(model.anchor_rootdir, 
                                  model.k_on_info.b_surface_directory)
@@ -592,7 +627,9 @@ def make_fhpd_directories(model, bd_milestone, lig_pqr_filenames,
 
 def combine_fhpd_results(model, bd_milestone, fhpd_directories):
     """
-    
+    For each of the simulations performed within a BD milestone,
+    combine their outputs and results into a single results file
+    for analysis.
     """
     reaction_dict = defaultdict(float)
     number_escaped = 0
@@ -746,8 +783,6 @@ if __name__ == "__main__":
             model.anchor_rootdir, bd_milestone.directory)
     
     if not b_surface:
-        #assert not b_surface, "Extraction may not be performed on the "\
-        #    "b-surface."
         lig_pqr_filenames, rec_pqr_filenames = extract_bd_surface(
             model, bd_milestone, max_b_surface_trajs_to_extract, 
             force_overwrite)
@@ -756,11 +791,9 @@ if __name__ == "__main__":
             force_overwrite)
         
     else:
-        #run = True
         bd_directory_list = [bd_milestone_directory]
         
     for bd_directory in bd_directory_list:
-        print("bd_directory:", bd_directory)
         run_bd_top(model.browndye_settings.browndye_bin_dir, 
                    bd_directory, restart, force_overwrite)
         n_trajectories_per_output = DEFAULT_N_TRAJ_PER_OUT

@@ -1,5 +1,8 @@
 """
-Functions and objects for analyzing SEEKR2 simulation outputs
+common_analyze.py
+
+Classes, functions and other objects used for analyzing SEEKR2 
+simulation outputs common to MMVT and Elber calculation types.
 """
 
 import os
@@ -10,32 +13,29 @@ import random
 from collections import defaultdict
 
 import numpy as np
-#from numpy import log, exp
 from scipy import linalg as la
 from scipy.stats import gamma
 
 import seekr2.modules.common_base as base
 
+# The power to raise a matrix to when computing stationary probabilities
 MATRIX_EXPONENTIAL = 9999999
+
 GAS_CONSTANT = 0.0019872 # in kcal/mol*K
-BOLTZMANN = 1.3806488e-23
-MAX_MATRIX_CONDITION = 1e16
 DEFAULT_IMAGE_DIR = "images_and_plots/"
 
 class MissingStatisticsError(Exception):
-    # TODO: replace with generic error
-    pass
-
-class IllCondMatrixError(Exception):
-    # TODO: replace with generic error
+    """Catch a very specific type of error in analysis stage."""
+    
     pass
 
 def solve_rate_matrix(Q_hat, max_iter=100, ETOL=1e-10):
     """
     Use an infinite series combined with a divide-and-conquer method
-    to solve the Q-matrix in case the numpy/scipy solver has numerical
-    instabilities.
+    to solve the Q-matrix since the numpy/scipy solver tends to have 
+    numerical instabilities.
     """
+    
     K_hat = Q_to_K(Q_hat)
     sum_of_series = np.identity(K_hat.shape[0], dtype=np.longdouble)
     for i in range(max_iter):
@@ -56,10 +56,8 @@ def solve_rate_matrix(Q_hat, max_iter=100, ETOL=1e-10):
     return times
 
 def Q_to_K(Q):
-    """
-    Given a rate matrix Q, compute the probability transition matrix
-    K.
-    """
+    """Given a rate matrix Q, compute probability transition matrix K."""
+    
     K = np.zeros(Q.shape, dtype=np.longdouble)
     for i in range(Q.shape[0]):
         for j in range(Q.shape[0]):
@@ -70,24 +68,22 @@ def Q_to_K(Q):
     return K
 
 def quadriture(err1, err2):
-    """
-    Add two errors in quadriture.
-    """
+    """Add two errors in quadriture."""
+    
     return float(np.sqrt(err1**2 + err2**2))
 
 def minor1d(array1d, i):
-    """
-    Accept 1D array array1d and return a new array with element i 
-    removed.
-    """
+    """Accept 1D array and return a new array with element i removed."""
+    
     range1 = list(range(i)) + list(range(i+1, array1d.shape[0]))
     return array1d[np.array(range1)]
     
 def minor2d(array2d, i, j):
     """
-    Accept matrix array2d and returns a new matrix with row i and 
+    Accept matrix array2d and return a new matrix with row i and 
     column j removed.
     """
+    
     range1 = list(range(i)) + list(range(i+1, array2d.shape[0]))
     range2 = list(range(j)) + list(range(j+1,array2d.shape[1]))
     return array2d[np.array(range1)[:,np.newaxis], np.array(range2)]
@@ -131,9 +127,8 @@ def pretty_string_value_error(value, error, error_digits=2, use_unicode=True):
     
         >>> pretty_string_value_error(5.6e-2, 2.0e-3, error_digits=1)
         "5.6 +/- 0.2 * 10^-02"
-    
-    
     """
+    
     if value is None:
         return "None"
     if error is None or not np.isfinite(error):
@@ -173,7 +168,6 @@ def pretty_string_value_error(value, error, error_digits=2, use_unicode=True):
 def browndye_run_compute_rate_constant(compute_rate_constant_program,
                                        results_filename_list, 
                                        sample_error_from_normal=False):
-    # common
     """
     run the BrownDye program compute_rate_constant to find k_ons
     and the value k(b).
@@ -185,37 +179,41 @@ def browndye_run_compute_rate_constant(compute_rate_constant_program,
         compute_rate_constant program.
     
     results_filename_list : list
-        A path to the results XML file, which is an output from
-        running the BrownDye program.
+        A list of string paths to the results XML file, which is an 
+        output from running the BrownDye program.
     
     sample_error_from_normal : bool, default False
         Add a fluctuation to the k-on value(s) sampled from a
         normal distribution with a standard deviation equal to the
-        k-on's error. This is used by the Monte Carlo error
-        estimator to incorporate the error in the k_b value
-        obtained from BrownDye.
+        k-on's error. This is used by the error estimators to 
+        incorporate the error in the k_b value obtained from BrownDye.
     
     Results:
     --------
-    k_ons : dict
+    k_ons : defaultdict
         dictionary whose keys are various milestoning states and
         whose values are the k-ons to those states.
     
-    k_on_errors : dict
+    k_on_errors : defaultdict
         dictionary whose keys are various milestoning states and
         whose values are the errors in the k-ons to those states.
     
-    reaction_probabilities : dict
+    reaction_probabilities : defaultdict
         dictionary whose keys are various milestoning states and
         whose values are the probabilities of reaching those states
         from the b-surface.
     
-    reaction_probability_errors : dict
+    reaction_probability_errors : defaultdict
         dictionary whose keys are various milestoning states and
         whose values are the errors in the probabilities of 
         reaching those states from the b-surface.
-    
+        
+    transition_counts : defaultdict
+        dictionary whose keys are the various milestone states and 
+        also the "escaped" and "stuck" states. The values are the 
+        counts of crossings of these various states.
     """
+    
     k_ons = defaultdict(float)
     k_on_errors = defaultdict(float)
     reaction_probabilities = defaultdict(float)
@@ -300,20 +298,24 @@ def browndye_parse_bd_milestone_results(results_filename_list,
     Parameters:
     -----------
     results_filename_list : list
-        A path to the results XML file for a BD milestone, which 
-        is an output from running the BrownDye program.
+        A list of paths to the results XML files for a BD milestone,
+        which is an output from running the BrownDye program.
         
     sample_error_from_normal : bool, default False
         Add a fluctuation to the probabilities sampled from a
         normal distribution with a standard deviation equal to
-        1/sqrt(n-1). This is used by the Monte Carlo error
-        estimator to incorporate the error in the probabilities.
+        1/sqrt(n-1). This is used by the error estimators to 
+        incorporate the error in the probabilities.
     
     Results:
     --------
-    transition_probabilities : dict
+    transition_probabilities : defaultdict
         The probabilities of transitions.
+    
+    transition_counts : defaultdict
+        The counts of transitions to all visited states.    
     """
+    
     transition_counts = defaultdict(int)
     transition_probabilities = defaultdict(float)
     completed_prob = 0.0
@@ -358,8 +360,11 @@ def browndye_parse_bd_milestone_results(results_filename_list,
 def combine_fhpd_results(bd_milestone, fhpd_directories, 
                          combined_results_filename):
     """
-    
+    Read all results files in the first-hitting-point-distribution 
+    (FHPD) directories and combine them into a single results file
+    to be placed in the bd_milestone directory.
     """
+    
     reaction_dict = defaultdict(float)
     number_escaped = 0
     number_stuck = 0
@@ -416,7 +421,6 @@ def combine_fhpd_results(bd_milestone, fhpd_directories,
     return
 
 class Data_sample():
-    # common
     """
     Represent a set of data needed to compute kinetic or thermodynamic
     quantities of interest using the SEEKR method. The Data_sample may
@@ -426,25 +430,69 @@ class Data_sample():
     Attributes:
     -----------
     model : Model()
+        The model contains all the settings, parameters, directories,
+        and file names used to perform a SEEKR2 simulation.
+        
+    N_ij : numpy.array()
+        2-dimensional array of transition counts from milestone i to 
+        milestone j.
     
-    N_ij :
+    R_i : numpy.array()
+        1-dimensional array of incubation times for each milestone i.
     
-    R_i :
+    Q : numpy.array()
+        The rate matrix constructed from transition counts and times.
+        No sink state is defined - probability is conserved for 
+        thermodynamics calculations.
     
-    Q : 
+    Q_hat : numpy.array()
+        Same as attribute Q, but one or more sink states are defined - 
+        probability is not conserved, allowing kinetics calculations.
     
-    Q_hat : 
+    K : numpy.array()
+        The probability transition matrix made only from transition
+        counts - it is equivalent to a Markov transition matrix.
+        Probability is conserved for thermodynamics calculations.
     
-    K : 
+    K_hat : numpy.array()
+        Same as attribute Q, except one or more sink states are defined
+        and probability is not conserved, allowing kinetics 
+        calculations.
     
-    K_hat :
+    p_i : numpy.array()
+        Stationary probability distribution along the milestones, 
+        which can be used to compute other thermodynamic quantities, 
+        such as the attribute free_energy_profile.
     
-    p_i : 
-    
-    p_i_hat : 
-    
-    free_energy_profile : 
+    free_energy_profile : numpy.array()
+        The stationary free energy profile along the milestones.
+        
+    MFPTs : dict
+        A dictionary whose keys are 2-tuples of milestone indices
+        (source milestone, destination milestone) and whose values
+        are mean first passage times (MFPTs) between these states.
+        States can be added to this dictionary by being either end
+        states or the bulk state.
+        
+    k_off : float
+        The off-rate constant from a stationary distribution across
+        all the milestones to the bulk state.
+        
+    k_on : dict
+        A dictionary whose keys are milestone indices (which are end
+        states) and whose values represent the 2nd-order on-rate 
+        constant.
+        
+    bd_transition_counts : dict
+        Keep track of transition counts for each BD state. This is a
+        dictionary of dictionaries, with keys of "b_surface" or 
+        integers representing BD milestones. The values are 
+        dictionaries whose keys are states such as milestone indices
+        or the string "escaped", "stuck", and whose values are counts
+        of transitions. This attribute is primarily used for 
+        convergence estimates.
     """
+    
     def __init__(self, model):
         self.model = model
         self.N_ij = None
@@ -454,7 +502,7 @@ class Data_sample():
         self.K = None
         self.K_hat = None
         self.p_i = None
-        self.p_i_hat = None
+        #self.p_i_hat = None
         self.free_energy_profile = None
         self.MFPTs = None
         self.k_off = None
@@ -483,7 +531,8 @@ class Data_sample():
     
     def calculate_thermodynamics(self):
         """
-        With the rate matrix computed, make a probability matrix
+        Use this data sample's statistics to construct the 
+        thermodynamic quantities.
         """
         eigvals, eigvecs = la.eig(self.K.T)
         closest_eigval = -1e9
@@ -499,7 +548,6 @@ class Data_sample():
         q_i = q_i / np.sum(q_i)
         incubation_times = np.zeros(self.model.num_milestones)
         p_i = np.zeros(self.model.num_milestones)
-        
         for i in range(self.model.num_milestones):
             N_i = 0
             for j in range(self.model.num_milestones):
@@ -518,7 +566,6 @@ class Data_sample():
         self.p_i = p_i
         self.free_energy_profile = np.zeros(self.p_i.shape)
         highest_p_i = max(self.p_i)
-                
         for i, p_i_val in enumerate(self.p_i):
             free_energy = -GAS_CONSTANT*self.model.temperature*np.log(
                 p_i_val / highest_p_i)
@@ -530,47 +577,33 @@ class Data_sample():
                            bd_sample_from_normal=False):
         """
         Once the rate matrix Q is computed, determine the timescales 
-        and probabilities of transfers between different states.
+        and probabilities of transfers between different states. Fill
+        out all kinetics quantities.
         
         Parameters:
         -----------
         
-        assign_to_self : bool, default True
-            Assign all results from this calculation, including MFPT
-            values, k-off, and k-on values to this Analyze object. This
-            parameter would only be False if a different Q, p_i, or K
-            are needed to, say, sample a distribution of those 
-            quantities in an error estimation.
-            
-        Q : numpy.array or None, default None
-            If provided, then a different rate matrix Q will be used
-            to compute kinetics and thermodynamics than self.Q.
-            
-        p_i : numpy.array or None, default None
-            If provided, then a different probability distribution p_i
-            than self.p_i will be used to compute thermodynamics.
-            
-        K : numpy.array or None, default None
-            If provided, then a different transition probability matrix
-            K will be used instead of self.K to compute thermodynamics
-            and kinetics.
+        pre_equilibrium_approx : bool, default False
+            Whether to use the pre-equilibrium approximation for
+            computing kinetics.
             
         bd_sample_from_normal : bool, default False
             If set to True, then k-on quantities will have a random
             fluctuation introduced in a magnitude proportional to k-on
             errors. This is used only for error estimations.
         """
+        
         end_milestones = []
         bulk_milestones = []
         MFPTs = {}
         k_off = 0.0
         k_ons = {}
-        
         for alpha, anchor in enumerate(self.model.anchors):
             if anchor.endstate:
                 for milestone_id in anchor.get_ids():
                     if self.model.get_type() == "elber":
-                        if anchor.alias_from_id(milestone_id) == 3:
+                        if anchor.alias_from_id(milestone_id) == 3: 
+                            # TODO: hacky
                             continue
                     end_milestones.append(milestone_id)
             if anchor.bulkstate:
@@ -601,23 +634,6 @@ class Data_sample():
             bulk_times = np.ones(p_i_hat.shape) / k_off
             
         else:
-            """
-            if np.linalg.cond(Q_hat) > MAX_MATRIX_CONDITION:
-                warnstr="The MMVT rate matrix Q_hat is ill-conditioned. This "\
-                      "is most likely caused by very long-timescale kinetics "\
-                      "within this system. It is now recommended to use the "\
-                      "--pre_equilibrium_approx (-p) option, which does not "\
-                      "use the Q_mat matrix. Alternatively, you can use the "\
-                      "--force_warning (-f) option to forge ahead, at your "\
-                      "own risk, with normal MMVT. When choosing the latter "\
-                      "option, keep in mind that ill-conditioned matrices "\
-                      "have been observed to produce inaccurate and/or "\
-                      "nonphysical kinetics."
-                if self.force_warning:
-                    warnings.warn(warnstr)
-                else:
-                    raise IllCondMatrixError(warnstr)
-            """
             #negative_unity = np.zeros((len(Q_hat)), dtype=np.longdouble)    
             #negative_unity[:] = -1.0
             #bulk_times = la.solve(Q_hat, negative_unity)
@@ -642,7 +658,7 @@ class Data_sample():
         
         # convert to 1/s
         k_off = 1.0e12 / MFPT_to_bulk
-            
+        
         # Next, compute the MFPTs between different states
         for end_milestone_dest in end_milestones:
             if end_milestone_dest in bulk_milestones:
@@ -654,8 +670,7 @@ class Data_sample():
             end_state_times = solve_rate_matrix(Q_hat)
             for end_milestone_src in end_milestones:
                 if end_milestone_dest == end_milestone_src:
-                    # doesn't make sense to get the MFPT from a milestone to
-                    #  itself
+                    # don't get the MFPT from a milestone to itself
                     continue
                 if end_milestone_src in bulk_milestones:
                     # a bulk milestone will never be a source
@@ -664,7 +679,6 @@ class Data_sample():
                 MFPTs[(end_milestone_src, end_milestone_dest)] = mfpt
         
         if self.model.k_on_info:
-            #K_hat = self.K[:,:]
             p_i_hat = self.p_i[:]
             for end_milestone in end_milestones:
                 K_hat[end_milestone, :] = 0.0
@@ -677,7 +691,6 @@ class Data_sample():
                 self.model.k_on_info.bd_output_glob)
             output_file_list = glob.glob(output_file_glob)
             output_file_list = base.order_files_numerically(output_file_list)
-            #assert len(output_file_list) > 0, "No BD output file found"
             if len(output_file_list) > 0:
                 if self.model.browndye_settings is not None:
                     k_ons_src, k_on_errors_src, reaction_probabilities, \
@@ -693,7 +706,6 @@ class Data_sample():
                 if len(bulk_milestones) > 0:
                     bulk_milestone = bulk_milestones[0]
                     for bd_milestone in self.model.k_on_info.bd_milestones:
-                        
                         bd_results_file = os.path.join(
                             self.model.anchor_rootdir, bd_milestone.directory, 
                             "results.xml")
@@ -729,7 +741,6 @@ class Data_sample():
                                 K_hat[src_index, key] = value
                 
                 K_hat_inf = np.linalg.matrix_power(K_hat, MATRIX_EXPONENTIAL)
-                
                 end_k_ons = np.dot(K_hat_inf.T, source_vec)
                 for end_milestone in end_milestones:
                     k_ons[end_milestone] = end_k_ons[end_milestone]
@@ -737,27 +748,9 @@ class Data_sample():
                 self.k_ons = k_ons
         
         self.Q_hat = Q_hat
-        self.p_i_hat = p_i_hat
+        #self.p_i_hat = p_i_hat # TODO: remove after successful CI test
         self.MFPTs = MFPTs
         self.k_off = k_off
-        
-        """
-        self.p_i_error = np.zeros(p_i.shape)
-        for i in range(self.p_i_error.shape[0]):
-            p_i_val_list = []
-            for j in range(len(p_i_list)):
-                p_i_val_list.append(p_i_list[j][i])
-            self.p_i_error[i] = np.std(p_i_val_list)
-        
-        self.free_energy_profile_err = np.zeros(self.p_i.shape)
-        highest_p_i = max(self.p_i)
-        for i, p_i_val in enumerate(self.p_i):
-            p_i_val_err = self.p_i_error[i]
-            free_energy_err = GAS_CONSTANT*self.model.temperature*highest_p_i\
-                *p_i_val_err/p_i_val
-            self.free_energy_profile_err[i] = free_energy_err
-        """
-        
         return
     
     def monte_carlo_milestoning_error(self, num=1000, skip=100, stride=1, 
@@ -788,7 +781,10 @@ class Data_sample():
             
         verbose : bool, default False
             allow additional verbosity/printing
-            
+        
+        pre_equilibrium_approx : bool, default False
+            Whether to use the pre-equilibrium approximation for
+            computing kinetics.
         """
         N = self.N_ij
         R = self.R_i

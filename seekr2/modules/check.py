@@ -1,11 +1,16 @@
 """
+check.py
+
 Check SEEKR2 calculations for common problems both before and after
 simulations.
 
-Checks to include before simulation:
+check_pre_simulation_all : 
+    These are checks that should be done before running any
+    simulations (run stage). They are automatically run by prepare.py.
  - Check for bubbles in starting structures, or unusually low densities
    (high densities will probably fail on their own). Check that box
-   boundaries aren't significantly larger than starting structure boxes.
+   boundaries aren't significantly larger than starting structure 
+   boxes.
  - Check to ensure that the same (or similar) salt concentrations exist
    between the MD and BD stages.
  - Check that the system exists within the expected Voronoi cell and
@@ -15,7 +20,10 @@ Checks to include before simulation:
  - Check that BD milestone's atom selections are the same between
    MD and BD.
 
-Checks to include after simulation:
+check_post_simulation_all : 
+    These are checks that should be performed after any or all
+    simulations are performed, and before the analysis stage.
+    They are automatically run by analyze.py
  - Check that all simulation trajectories keep the system where
    expected: 
     - Elber umbrella stage stays close to milestone.
@@ -25,8 +33,10 @@ Checks to include after simulation:
       close to the boundary recorded by the crossing.
   - Re-check simulation density? ***
   - Check that BD simulations end on the correct milestone
-    
+  
+This module maybe also be run from the command line. Example:
 
+$ python check.py /path/to/model.xml
 """
 
 import os
@@ -44,23 +54,21 @@ import seekr2.modules.common_base as base
 import seekr2.modules.elber_base as elber_base
 import seekr2.modules.mmvt_base as mmvt_base
 
+# The charges of common ions
 ION_CHARGE_DICT = {"li":1.0, "na":1.0, "k":1.0, "rb":1.0, "cs":1.0, "fr":1.0,
                    "be":2.0, "mg":2.0, "ca":2.0, "sr":2.0, "ba":2.0, "ra":2.0,
                    "f":-1.0, "cl":-1.0, "br":-1.0, "i":-1.0, "at":-1.0,
                    "he":0.0, "ne":0.0, "ar":0.0, "kr":0.0, "xe":0.0, "rn":0.0}
-# TODO: marked for removal:
-#VALENCE_ELECTRON_DICT = {"H": 1, "C": 4, "N": 5, "O": 6, "F": 7, "Si": 4,
-#                         "P": 5, "S": 6, "Cl": 7, "Br": 7, "I": 7}
-#CAN_VIOLATE_OCTET_RULE = ["P", "S", "Cl", "Br", "I", "U"]
 
 AVOGADROS_NUMBER = 6.022e23
 SAVE_STATE_DIRECTORY = "states/"
 
 def load_structure_with_parmed(model, anchor):
     """
-    Given whatever the simulation inputs, will load an anchor's structure
-    to check something.
+    Given the simulation inputs, load an anchor's structure for one of
+    the checks and return the parmed structure object.
     """
+    
     if anchor.amber_params is not None:
         building_directory = os.path.join(
             model.anchor_rootdir, anchor.directory, 
@@ -81,7 +89,6 @@ def load_structure_with_parmed(model, anchor):
             pdb_filename = os.path.join(
                 building_directory, 
                 anchor.amber_params.pdb_coordinates_filename)
-            #structure = parmed.load_file(prmtop_filename, xyz=pdb_filename)
             structure = parmed.load_file(pdb_filename)
         elif inpcrd_filename is not None and inpcrd_filename != "":
             #structure = parmed.load_file(prmtop_filename, xyz=inpcrd_filename)
@@ -117,8 +124,10 @@ def load_structure_with_parmed(model, anchor):
 
 def load_structure_with_mdtraj(model, anchor, mode="pdb", coords_filename=None):
     """
-    
+    Given the simulation inputs, load an anchor's structure for one of
+    the checks and return the mdtraj Trajectory() object.
     """
+    
     building_directory = os.path.join(
         model.anchor_rootdir, anchor.directory, anchor.building_directory)
     prod_directory = os.path.join(
@@ -183,8 +192,6 @@ def load_structure_with_mdtraj(model, anchor, mode="pdb", coords_filename=None):
                 pdb_filename = os.path.join(
                     building_directory, 
                     anchor.amber_params.pdb_coordinates_filename)
-                #structure = parmed.load_file(prmtop_filename, xyz=pdb_filename)
-                #structure = parmed.load_file(pdb_filename)
                 traj = mdtraj.load(pdb_filename) #, top=prmtop_filename)
             elif inpcrd_filename is not None and inpcrd_filename != "":
                 #structure = parmed.load_file(prmtop_filename, xyz=inpcrd_filename)
@@ -217,9 +224,6 @@ def load_structure_with_mdtraj(model, anchor, mode="pdb", coords_filename=None):
             forcefield_filenames)
         pdb_filename = os.path.join(building_directory, 
                                anchor.forcefield_params.pdb_filename)
-        #structure = parmed.load_file(parameter_set)
-        #pdb_structure = parmed.load_file(pdb_filename)
-        #structure.coordinates = pdb_structure.coordinates
         if mode == "pdb":
             traj = mdtraj.load(pdb_filename)
         elif mode == "elber_umbrella":
@@ -236,11 +240,12 @@ def load_structure_with_mdtraj(model, anchor, mode="pdb", coords_filename=None):
         return None
 
 def is_ion(atom):
+    """If a lone atom has no bonds, assume it's an ion."""
+    
     if len(atom.bond_partners) == 0:
         return True
     else:
         return False
-
 
 def check_pre_sim_bubbles(model):
     print("Warning: Bubble check not yet implemented.")
@@ -248,8 +253,14 @@ def check_pre_sim_bubbles(model):
 
 def check_pre_sim_MD_and_BD_salt_concentration(model):
     """
-    
+    Users might inadvertently define different salt concentrations 
+    between the MD and BD stages. 
+    Examine BD settings and count the numbers of ions in MD starting
+    structures to ensure that ion concentrations are relatively 
+    consistent to avoid situations where different salt concentrations
+    exist between the various anchors and scales.
     """
+    
     RELATIVE_TOLERANCE = 0.25
     ABSOLUTE_TOLERANCE = 0.1
     if model.k_on_info:
@@ -294,14 +305,19 @@ def check_pre_sim_MD_and_BD_salt_concentration(model):
                                  md_ionic_strength,
                                  anchor.index))
             return False
-            
-    
+        
     return True
 
 def check_systems_within_Voronoi_cells(model):
     """
-    
+    Users might provide the wrong starting structure for a given 
+    anchor, and the structure may actually belong in a different one.
+    When the model defines Voronoi cells (such as in MMVT), check that
+    the starting structures lie within the expected Voronoi cells, and
+    suggest corrections if the check fails. Otherwise, the SEEKR2
+    backend would fail with a non-helpful error message.
     """
+    
     if model.get_type() != "mmvt":
         # only apply to MMVT systems
         return True
@@ -343,8 +359,11 @@ def check_systems_within_Voronoi_cells(model):
 
 def recurse_atoms(atom, _visited_indices=set()):
     """
-    
+    Recursively visit all atoms within a molecule for the purposes
+    of determining the molecules (all sets of atoms connected by bonds)
+    in the system.
     """
+    
     _visited_indices.add(atom.idx)
     for bonded_atom in atom.bond_partners:
         if not bonded_atom.idx in _visited_indices:
@@ -354,8 +373,12 @@ def recurse_atoms(atom, _visited_indices=set()):
 
 def check_atom_selections_on_same_molecule(model):
     """
-    
+    The user might accidentally define atom selections that span
+    multiple molecules. Check this possibility by finding all molecules
+    in the system and ensure that atom selections only exist on one
+    molecule.
     """
+    
     warnstr1 = """CHECK FAILURE: the atom selection for collective variable 
     (CV) number {} is split over multiple molecules. Atom index {}, 
     which has the name {} and serial id {}, was the first atom to 
@@ -415,8 +438,10 @@ def check_atom_selections_on_same_molecule(model):
 
 def check_atom_selections_MD_BD(model):
     """
-    
+    Users might accidentally select atoms that are not equivalent
+    between the MD and BD stages. Detect whether this is the case.
     """
+    
     warnstr1 = """CHECK FAILURE: The atom selection as defined for BD
     milestone {} includes atom index {} that does not exist 
     in the file {}. Please check the atom indices in Browndye
@@ -429,7 +454,6 @@ def check_atom_selections_MD_BD(model):
     mind that SEEKR2 requires atom indexing to start from 0 in 
     each molecular structure input file, but PDB and PQR files
     might start their numbering at 1 or another number."""
-    
     if model.browndye_settings is not None:
         b_surface_dir = os.path.join(
             model.anchor_rootdir, model.k_on_info.b_surface_directory)
@@ -454,7 +478,6 @@ def check_atom_selections_MD_BD(model):
                     print(warnstr1.format(bd_index, ligand_index, 
                                           lig_pqr_path))
                     return False
-            
     else:
         # No BD to check
         return True
@@ -517,13 +540,23 @@ def check_atom_selections_MD_BD(model):
                         md_err_str += this_str
                     print(warnstr2.format(bd_err_str, md_err_str))
                     return False
-                    
     return True
 
 def check_pre_simulation_all(model):
     """
+    After the completion of the prepare stage, check inputs for some
+    of the most common problems and mistakes a user is likely to 
+    encounter. If a check fails, raise an Exception.
     
+    Parameters:
+    -----------
+    model : Model()
+        The SEEKR2 model object containing all calculation information.
+        
+    Returns:
+    None
     """
+    
     check_passed_list = []
     check_passed_list.append(check_pre_sim_bubbles(model))
     check_passed_list.append(check_pre_sim_MD_and_BD_salt_concentration(model))
@@ -551,14 +584,19 @@ def check_pre_simulation_all(model):
 
 def check_elber_umbrella_stage(model):
     """
-    
+    If an umbrella force is improperly constructed or because of a bug,
+    a system may deviate too far from the milestone during an umbrella
+    stage. Detect this situation to alert the user.
     """
+    
     warnstr = """CHECK FAILURE: Elber umbrella stage trajectory for anchor {} 
     deviates significantly from the location of the central milestone.
-    This could be caused if the model.xml file was improperly modified,
+    This could be caused by a bad umbrella force constant (too large or
+    too small) umbrella_force_constant value.
+    If may also happen if the model.xml file was improperly modified,
     or perhaps due to a bug."""
     if model.get_type() != "elber":
-        # irrelevant test
+        # this test would be irrelevant
         return True
     for anchor in model.anchors:
         traj = load_structure_with_mdtraj(model, anchor, mode="elber_umbrella")
@@ -575,6 +613,12 @@ def check_elber_umbrella_stage(model):
     return True
 
 def check_xml_boundary_states(model):
+    """
+    SEEKR2 calculations generate OpenMM XML state files when 
+    boundaries are encountered. Ensure that these boundary encounters
+    are properly accounted and that they exist where expected.
+    """
+    
     warnstr = """CHECK FAILURE: Saved boundary states in anchor {} were not
     saved close to the expected milestone(s). File name: {}. 
     This could be caused if the model.xml file was improperly 
@@ -610,8 +654,10 @@ def check_xml_boundary_states(model):
 
 def check_mmvt_in_Voronoi_cell(model):
     """
-    
+    For some reason, a MMVT system may drift out of a Voronoi cell.
+    This would most likely indicate a bug, so detect this situation.
     """
+    
     if model.get_type() != "mmvt":
         # irrelevant test
         return True
@@ -636,8 +682,10 @@ def check_mmvt_in_Voronoi_cell(model):
 
 def find_parmed_structure_com(structure, indices):
     """
-    
+    For a parmed structure, find the center of mass (COM) of a set
+    of atoms defined by "indices".
     """
+    
     total_mass = 0.0
     com_vector = np.zeros(3)
     for i, atom in enumerate(structure.atoms):
@@ -649,8 +697,12 @@ def find_parmed_structure_com(structure, indices):
 
 def check_bd_simulation_end_state(model):
     """
-    
+    The BD stage simulation program, Browndye2, can save encounter
+    complexes when the system encounters a milestone. Check these
+    encounter complex structures to ensure that they exist close to
+    the expected milestone.
     """
+    
     ATOL = 0.1
     if model.k_on_info:
         bd_ionic_strength = 0.0
@@ -685,13 +737,28 @@ def check_bd_simulation_end_state(model):
     Expected distance: {}.""".format(bd_milestone.index, distance, outer_radius)
                 print(warnstr)
                 return False
-    
     return True
 
 def check_post_simulation_all(model, long_check=False):
     """
+    After the completion of the run stage, check simulation files
+    for some of the most common problems and mistakes a user is likely 
+    to encounter. If a check fails, raise an Exception.
     
+    Parameters:
+    -----------
+    model : Model()
+        The SEEKR2 model object containing all calculation information.
+    
+    long_check : bool, Default False
+        Whether to conduct a detailed check of post-simulation outputs.
+        If set to True, the checks are likely to take a significantly
+        longer amount of time, but is more likely to detect problems.
+    
+    Returns:
+    None
     """
+    
     check_passed_list = []
     check_passed_list.append(check_elber_umbrella_stage(model))
     check_passed_list.append(check_mmvt_in_Voronoi_cell(model))

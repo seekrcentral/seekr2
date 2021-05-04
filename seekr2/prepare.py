@@ -1,4 +1,6 @@
 """
+prepare.py
+
 Accept arguments and settings for creating a seekr2 calculation, 
 including its model.xml file as well as its entire filetree.
 """
@@ -9,10 +11,6 @@ import argparse
 import seekr2.modules.common_base as base
 import seekr2.modules.common_prepare as common_prepare
 import seekr2.modules.filetree as filetree
-from seekr2.modules.common_base import Amber_params, Forcefield_params 
-from seekr2.modules.common_cv import *
-from seekr2.modules.common_prepare import Browndye_settings_input, Ion, \
-    MMVT_input_settings, Elber_input_settings
 import seekr2.modules.check as check
 
 def generate_openmmvt_model_and_filetree(model_input, force_overwrite):
@@ -21,8 +19,7 @@ def generate_openmmvt_model_and_filetree(model_input, force_overwrite):
     object and the filetree. Then prepare all building files
     for each anchor and serialize the Model to XML.
     """
-    model_factory = common_prepare.Model_factory()
-    model = model_factory.create_model(model_input)
+    model = common_prepare.model_factory(model_input)
     common_prepare.prepare_model_cvs_and_anchors(model, model_input)
     root_directory = os.path.expanduser(model_input.root_directory)
     xml_path = os.path.join(root_directory, "model.xml")

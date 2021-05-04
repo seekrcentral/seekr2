@@ -1,11 +1,12 @@
 """
+common_converge.py
+
 Contain functions used by converge.py script to determine the
 convergence of SEEKR2 calculations.
 """
 
 import os
 import glob
-import time
 import math
 from collections import defaultdict
 import functools
@@ -15,13 +16,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 from parmed import unit
 
-import seekr2.modules.common_base as base
 import seekr2.analyze as analyze
 import seekr2.modules.common_analyze as common_analyze
 
+# The default number of points to include in convergence plots
 DEFAULT_NUM_POINTS = 100
+
+# How many steps to skip before computing the convergence values
 DEFAULT_SKIP = 0
+
+# The threshold beneath which to skip plotting the convergence
 MIN_PLOT_NORM = 1e-8
+
+# The interval between which to update the user on convergence script progress
 PROGRESS_UPDATE_INTERVAL = DEFAULT_NUM_POINTS // 10
 
 def analyze_kinetics(model, analysis, max_step_list, k_on_state=None, 
@@ -34,17 +41,21 @@ def analyze_kinetics(model, analysis, max_step_list, k_on_state=None,
     -----------
     model : Model()
         milestoning model object containing all milestone and 
-        transition information
+        transition information.
+        
     analysis : Analysis()
         The object which enables calculation of kinetic and 
-        thermodynamic quantities
+        thermodynamic quantities.
+        
     max_step_list : list
         A list of integers representing the maximum number of steps
-        to analyze per anchor.
+        to analyze per anchor. Used for convergence purposes.
+        
     k_on_state : int or None, default None
         If not None, then assume then this is the bound state to 
         assume for k-on calculations. A value of None will skip the
-        k-on convergence.
+        k-on convergence..
+        
     pre_equilibrium_approx : bool
         Whether to use the pre-equilibrium approximation for kinetics
         calculations.
@@ -54,16 +65,19 @@ def analyze_kinetics(model, analysis, max_step_list, k_on_state=None,
     k_on : float
         The k-on value computing using data up to the number of steps 
         in max_step_list for each milestone.
+        
     k_off : float
         The k-k_off value computing using data up to the number of 
         steps in max_step_list for each milestone.
+        
     N_ij : dict
         The n x n dict matrix representing how many transitions have
         occurred between milestones.
+        
     R_i : dict
         An n dict representing the incubation times at each milestone.
-    
     """
+    
     try:
         analysis.extract_data(max_step_list, silence_errors=True)
         analysis.fill_out_data_samples()
@@ -82,7 +96,8 @@ def analyze_kinetics(model, analysis, max_step_list, k_on_state=None,
 
 def get_mmvt_max_steps(model, dt):
     """
-    Extract the largest simulation time of all the sims in the anchors
+    Extract the largest simulation step number for all the sims in 
+    the anchors.
     """
     max_step_list = np.zeros((model.num_anchors, DEFAULT_NUM_POINTS))
     for alpha, anchor in enumerate(model.anchors):
@@ -137,7 +152,8 @@ def get_mmvt_max_steps(model, dt):
     
 def get_elber_max_steps(model, dt):
     """
-    Extract the largest step number of all the sims in the anchors
+    Extract the largest simulation step number for all the sims in 
+    the anchors.
     """
     max_step_list = np.zeros((model.num_anchors, DEFAULT_NUM_POINTS))
     for alpha, anchor in enumerate(model.anchors):
@@ -178,33 +194,44 @@ def check_milestone_convergence(model, k_on_state=None,
     model : Model()
         milestoning model object containing all milestone and 
         transition information.
+        
     k_on_state: int or None, default None
         If not None, then assume then this is the bound state to 
         assume for k-on calculations. A value of None will skip the
         k-on convergence.
+        
     pre_equilibrium_approx : bool
         Whether to use the pre-equilibrium approximation for kinetics
         calculations.
+        
+    verbose : bool, Default False
+        Whether to provide more verbose output information.
 
     Returns
     -------
-    N_conv: list
-        list of transition count matrix N for each convergence interval
-    R_conv : list
-        list of transition time matrix R for each convergence interval
-    k_off_conv : list
-        list of calculated off rate at each convergence interval
     k_on_conv : list
         list of calculated on rate at each convergence interval
-    conv_intervals : list
-        list of step numbers used for each convergence sample
+    
+    k_off_conv : list
+        list of calculated off rate at each convergence interval
+    
+    N_ij_conv: list
+        list of transition count matrix N for each convergence interval
+        
+    R_i_conv : list
+        list of transition time matrix R for each convergence interval
+        
+    max_step_list : list
+        list of maximum step numbers used for each convergence sample
+        
     timestep_in_ns : float
         The length of the timestep in units of nanoseconds
+        
     data_sample_list : list
         A list of Data_sample objects that can be used to
         quantitatively monitor convergence.
-        
     """
+    
     data_sample_list = []
     if model.openmm_settings is not None:
         dt = model.openmm_settings.langevin_integrator.timestep
@@ -215,10 +242,8 @@ def check_milestone_convergence(model, k_on_state=None,
     timestep_in_ns = unit.Quantity(dt, unit.picosecond).value_in_unit(
         unit.nanoseconds)
     if model.get_type() == "mmvt":
-        #max_steps = get_mmvt_max_steps(model, dt)
         max_step_list = get_mmvt_max_steps(model, dt)
     elif model.get_type() == "elber":
-        #max_steps = get_elber_max_steps(model)
         max_step_list = get_elber_max_steps(model, dt)
         
     k_off_conv = np.zeros(DEFAULT_NUM_POINTS)
@@ -231,9 +256,9 @@ def check_milestone_convergence(model, k_on_state=None,
             print("Processing interval {} of {}".format(interval_index, 
                                                         DEFAULT_NUM_POINTS))
         k_on, k_off, N_ij, R_i = analyze_kinetics(
-            model, analysis, max_step_list[:, interval_index], k_on_state, pre_equilibrium_approx)
+            model, analysis, max_step_list[:, interval_index], k_on_state, 
+            pre_equilibrium_approx)
         data_sample_list.append(analysis.main_data_sample)
-        
         k_on_conv[interval_index] = k_on
         k_off_conv[interval_index] = k_off
         for N_ij_key in N_ij:
@@ -247,20 +272,28 @@ def check_milestone_convergence(model, k_on_state=None,
 def plot_scalar_conv(conv_values, conv_intervals, label, title, timestep_in_ns, 
                      y_axis_logarithmic=True):
     """
-    Plot convergence of off/on rate as a function of simulation time
+    Plot convergence of off/on rate or other scalar values as a 
+    function of simulation time.
 
     Parameters
     ----------
     conv_values : list
         list of calculated scalar values for each convergence interval
+        
     conv_intervals : list
         list of convergence interval step numbers for which samples 
-        are taken
+        are taken.
+        
     label : str
         The label to give this plot.
+    
+    title : str
+        The title of this plot.
+    
     timestep_in_ns : float
-        The length of the timestep in units of nanoseconds
-    y_axis_logarithmic : bool
+        The length of the timestep in units of nanoseconds.
+        
+    y_axis_logarithmic : bool, default True
         Whether the y-axis will be plotted on a logarithmic scale.
 
     Returns
@@ -269,8 +302,8 @@ def plot_scalar_conv(conv_values, conv_intervals, label, title, timestep_in_ns,
         matplotlib figure plotting N convergence for each milestone
     ax : object
         matplotlib Axes object
-
     """
+    
     fig, ax = plt.subplots()
     ax.plot(np.multiply(conv_intervals, timestep_in_ns), conv_values, 
             linestyle='-', marker="o", markersize = 1)
@@ -284,35 +317,49 @@ def plot_scalar_conv(conv_values, conv_intervals, label, title, timestep_in_ns,
 def plot_dict_conv(conv_dict, conv_intervals, label_base, timestep_in_ns, 
                    skip_null=True, y_axis_logarithmic=True):
     """
-    Plot convergence of off/on rate as a function of simulation time
+    Plot convergence of N_ij or R_i or other dictionary-based value 
+    as a function of simulation time.
 
     Parameters
     ----------
     conv_dict : dict
         dict of lists of calculated off rates for each convergence 
-        interval
+        interval.
+        
     conv_interval : list
         list of convergence interval step numbers for which samples 
-        are taken
+        are taken.
+        
     label_base : str
         The base of the label to give this plot, though the dictionary
         keys will be appended to the label.
-    skip_null : bool
-        If true, than empty convergence lists will be omitted from
-        any plots.
+    
     timestep_in_ns : float
         The length of the timestep in units of nanoseconds
-    y_axis_logarithmic : bool
+    
+    skip_null : bool, Default True
+        If true, than empty convergence lists will be omitted from
+        any plots.
+    
+    y_axis_logarithmic : bool, True
         Whether the y-axis will be plotted on a logarithmic scale.
     
     Returns
     -------
-    fig : matplotlib figure
-        matplotlib figure plotting convergence for each milestone
-    ax : object
-        matplotlib Axes object
-
+    fig_list : list
+        A list of matplotlib figures plotting convergence for each 
+        milestone.
+        
+    ax_list : list
+        A list of matplotlib Axes objects.
+        
+    title_list : list
+        A list of the plots' titles.
+    
+    name_list : list
+        A list of the plots' file names.
     """
+    
     fig_list = []
     ax_list = []
     title_list = []
@@ -364,7 +411,8 @@ def make_windows(seq, n):
         
 def calc_window_rmsd(conv_values):
     """
-    
+    For a window of convergence values, compute the RMSD and average
+    of those values.
     """
     average = np.mean(conv_values)
     RMSD_sum = 0.0
@@ -376,7 +424,7 @@ def calc_window_rmsd(conv_values):
 def find_conv_min(conv_values, conv_intervals, window_size, cutoff, 
                    conv_windows):
     """
-    
+    Find the time at which the convergence values converged, if ever.
     """
     conv_times = defaultdict(float)
     for key in conv_values:
@@ -407,7 +455,8 @@ def find_conv_min(conv_values, conv_intervals, window_size, cutoff,
 
 def calc_transition_steps(model, data_sample):
     """
-    
+    For a given data_sample object, return the number of transitions
+    and the minimum transitions between a pair of milestones.
     """
     transition_minima = []
     transition_details = []
@@ -444,7 +493,6 @@ def calc_transition_steps(model, data_sample):
                 
             elif model.get_type() == "elber":
                 transition_dict = data_sample.N_i_j_list[alpha]
-                print("transition_dict:", transition_dict)
                 
             if len(transition_dict) == 0:
                 transition_quantity = 0
@@ -462,7 +510,8 @@ def calc_transition_steps(model, data_sample):
 def calc_RMSD_conv_amount(model, data_sample_list, window_size=30,
                                number_of_convergence_windows=20):
     """
-    
+    Calculate the RMSD convergence of window spanning a portion of
+    a list of data samples.
     """
     convergence_results = []
     for alpha, anchor in enumerate(model.anchors):
@@ -575,7 +624,6 @@ def calc_RMSD_conv_time(model, N_conv, R_conv, conv_intervals, window_size,
                                   conv_windows)
     r_conv_times = find_conv_min(R_conv, conv_intervals, window_size, cutoff,
                                   conv_windows)
-    
     for anchor in model.anchors:
         n_steps = 0
         r_steps = 0
@@ -604,5 +652,4 @@ def calc_RMSD_conv_time(model, N_conv, R_conv, conv_intervals, window_size,
         else:
             print("Anchor %i converged after time %f ns" \
                   % (anchor.index, timestep_in_ns * max(n_steps, r_steps)))
-    
     return

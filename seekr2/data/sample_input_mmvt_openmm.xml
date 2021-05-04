@@ -34,6 +34,8 @@
             <input_anchors>
                 <input_anchor class="Spherical_cv_anchor">
                     <radius>0.1</radius>
+                    <lower_milestone_radius/>
+                    <upper_milestone_radius>0.14</upper_milestone_radius>
                     <starting_amber_params class="Amber_params">
                         <prmtop_filename>data/hostguest_files/hostguest.parm7</prmtop_filename>
                         <inpcrd_filename>data/hostguest_files/hostguest.rst7</inpcrd_filename>
@@ -45,6 +47,8 @@
                 </input_anchor>
                 <input_anchor class="Spherical_cv_anchor">
                     <radius>0.2</radius>
+                    <lower_milestone_radius>0.14</lower_milestone_radius>
+                    <upper_milestone_radius/>
                     <starting_amber_params class="Amber_params">
                         <prmtop_filename>data/hostguest_files/hostguest.parm7</prmtop_filename>
                         <inpcrd_filename>data/hostguest_files/hostguest.rst7</inpcrd_filename>
@@ -56,6 +60,8 @@
                 </input_anchor>
                 <input_anchor class="Spherical_cv_anchor">
                     <radius>0.4</radius>
+                    <lower_milestone_radius/>
+                    <upper_milestone_radius/>
                     <starting_amber_params class="Amber_params">
                         <prmtop_filename>data/hostguest_files/hostguest.parm7</prmtop_filename>
                         <inpcrd_filename>data/hostguest_files/hostguest.rst7</inpcrd_filename>
@@ -67,6 +73,8 @@
                 </input_anchor>
                 <input_anchor class="Spherical_cv_anchor">
                     <radius>0.5</radius>
+                    <lower_milestone_radius/>
+                    <upper_milestone_radius/>
                     <starting_amber_params class="Amber_params">
                         <prmtop_filename>data/hostguest_files/hostguest.parm7</prmtop_filename>
                         <inpcrd_filename>data/hostguest_files/hostguest.rst7</inpcrd_filename>
@@ -78,6 +86,8 @@
                 </input_anchor>
                 <input_anchor class="Spherical_cv_anchor">
                     <radius>0.7</radius>
+                    <lower_milestone_radius/>
+                    <upper_milestone_radius/>
                     <starting_amber_params class="Amber_params">
                         <prmtop_filename>data/hostguest_files/hostguest.parm7</prmtop_filename>
                         <inpcrd_filename>data/hostguest_files/hostguest.rst7</inpcrd_filename>
@@ -89,6 +99,8 @@
                 </input_anchor>
                 <input_anchor class="Spherical_cv_anchor">
                     <radius>0.8</radius>
+                    <lower_milestone_radius/>
+                    <upper_milestone_radius/>
                     <starting_amber_params class="Amber_params">
                         <prmtop_filename>data/hostguest_files/hostguest.parm7</prmtop_filename>
                         <inpcrd_filename>data/hostguest_files/hostguest.rst7</inpcrd_filename>
@@ -100,6 +112,8 @@
                 </input_anchor>
                 <input_anchor class="Spherical_cv_anchor">
                     <radius>1.0</radius>
+                    <lower_milestone_radius/>
+                    <upper_milestone_radius/>
                     <starting_amber_params class="Amber_params">
                         <prmtop_filename>data/hostguest_files/hostguest.parm7</prmtop_filename>
                         <inpcrd_filename>data/hostguest_files/hostguest.rst7</inpcrd_filename>
@@ -111,6 +125,8 @@
                 </input_anchor>
                 <input_anchor class="Spherical_cv_anchor">
                     <radius>1.1</radius>
+                    <lower_milestone_radius/>
+                    <upper_milestone_radius/>
                     <starting_amber_params class="Amber_params">
                         <prmtop_filename>data/hostguest_files/hostguest.parm7</prmtop_filename>
                         <inpcrd_filename>data/hostguest_files/hostguest.rst7</inpcrd_filename>
@@ -122,6 +138,8 @@
                 </input_anchor>
                 <input_anchor class="Spherical_cv_anchor">
                     <radius>1.3</radius>
+                    <lower_milestone_radius/>
+                    <upper_milestone_radius/>
                     <starting_amber_params class="Amber_params">
                         <prmtop_filename>data/hostguest_files/hostguest.parm7</prmtop_filename>
                         <inpcrd_filename>data/hostguest_files/hostguest.rst7</inpcrd_filename>
@@ -133,6 +151,8 @@
                 </input_anchor>
                 <input_anchor class="Spherical_cv_anchor">
                     <radius>1.4</radius>
+                    <lower_milestone_radius/>
+                    <upper_milestone_radius/>
                     <starting_amber_params class="Amber_params">
                         <prmtop_filename></prmtop_filename>
                         <inpcrd_filename></inpcrd_filename>

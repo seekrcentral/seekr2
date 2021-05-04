@@ -10,15 +10,12 @@ from shutil import copyfile
 
 import seekr2.modules.common_base as base
 import seekr2.modules.mmvt_base as mmvt_base
-import seekr2.modules.elber_base as elber_base
 import seekr2.modules.filetree as filetree
 
 def make_browndye_params_b_surface(model, b_surface_dir):
     this_dir = os.path.dirname(os.path.realpath(__file__))
-    receptor_src = os.path.join(
-        this_dir, "../data/hostguest_files/hostguest_receptor.pqr")
-    ligand_src = os.path.join(
-        this_dir, "../data/hostguest_files/hostguest_ligand.pqr")
+    receptor_src = os.path.join(this_dir, "../data/hostguest_files/hostguest_receptor.pqr")
+    ligand_src = os.path.join(this_dir, "../data/hostguest_files/hostguest_ligand.pqr")
     
     receptor_dest = os.path.join(b_surface_dir, "hostguest_receptor.pqr")
     ligand_dest = os.path.join(b_surface_dir, "hostguest_ligand.pqr")
@@ -36,17 +33,13 @@ def make_amber_params(anchor, building_dir, engine="openmm"):
     this_dir = os.path.dirname(os.path.realpath(__file__))
     
     if engine == "openmm":
-        prmtop_src = os.path.join(
-            this_dir, "../data/hostguest_files/hostguest.parm7")
+        prmtop_src = os.path.join(this_dir, "../data/hostguest_files/hostguest.parm7")
     elif engine == "namd":
-        prmtop_src = os.path.join(
-            this_dir, "../data/hostguest_files/hostguest_for_NAMD.parm7")
+        prmtop_src = os.path.join(this_dir, "../data/hostguest_files/hostguest_for_NAMD.parm7")
     else:
         raise Exception("Engine not implemented: %s" % engine)
-    inpcrd_src = os.path.join(
-        this_dir, "../data/hostguest_files/hostguest.rst7")
-    pdb_coord_src = os.path.join(
-        this_dir, "../data/hostguest_files/hostguest_at1.9.pdb")
+    inpcrd_src = os.path.join(this_dir, "../data/hostguest_files/hostguest.rst7")
+    pdb_coord_src = os.path.join(this_dir, "../data/hostguest_files/hostguest_at1.9.pdb")
     
     prmtop_dest = os.path.join(building_dir, "hostguest.parm7")
     inpcrd_dest = os.path.join(building_dir, "hostguest.rst7")
@@ -68,8 +61,7 @@ def make_forcefield_params(anchor, building_dir):
     this_dir = os.path.dirname(os.path.realpath(__file__))
     
     xml_src = os.path.join(this_dir, "../data/hostguest_files/hostguest.xml")
-    pdb_coord_src = os.path.join(
-        this_dir, "../data/hostguest_files/hostguest_for_xml.pdb")
+    pdb_coord_src = os.path.join(this_dir, "../data/hostguest_files/hostguest_for_xml.pdb")
     
     xml_dest = os.path.join(building_dir, "hostguest.xml")
     pdb_coord_dest = os.path.join(building_dir, "hostguest_for_xml.pdb")
@@ -85,8 +77,7 @@ def make_forcefield_params(anchor, building_dir):
     return
 
 def make_test_model(tmp_dir, num_anchors=3, milestone_type="spherical", 
-                    make_dir=True, mode="amber", engine="openmm", no_BD=False,
-                    calculation_type="mmvt"):
+                    make_dir=True, mode="amber", engine="openmm", no_BD=False):
     
     if milestone_type == "spherical":
         #group1 = [2478, 2489, 2499, 2535, 2718, 2745, 2769, 2787, 2794, 2867, 
@@ -95,13 +86,7 @@ def make_test_model(tmp_dir, num_anchors=3, milestone_type="spherical",
         #group2 = [3221, 3222, 3223, 3224, 3225, 3226, 3227, 3228, 3229]
         group2 = list(range(147, 162))
         groups = [group1, group2]
-        if calculation_type == "mmvt":
-            cv1 = mmvt_base.MMVT_spherical_CV(index=0, groups=groups)
-        elif calculation_type == "elber":
-            cv1 = elber_base.Elber_spherical_CV(index=0, groups=groups)
-        else:
-            raise Exception(
-                "Calculation type not available: {1}".format(calculation_type))
+        cv1 = mmvt_base.MMVT_spherical_CV(index=0, groups=groups)
         cvs = [cv1]
         
     else:
@@ -109,13 +94,9 @@ def make_test_model(tmp_dir, num_anchors=3, milestone_type="spherical",
     
     mymodel = base.Model()
     mymodel.temperature = 277.8
-    if calculation_type == "mmvt":
-        mymodel.calculation_type="MMVT"
-        mymodel.calculation_settings = mmvt_base.MMVT_settings()
-    elif calculation_type == "elber":
-        mymodel.calculation_type="Elber"
-        mymodel.calculation_settings = elber_base.Elber_settings()
-    
+    mymodel.calculation_type="MMVT"
+    mymodel.calculation_settings = mmvt_base.MMVT_settings()
+    mymodel.calculation_settings.num_production_steps = 100
     mymodel.anchor_rootdir = tmp_dir
     mymodel.num_anchors = num_anchors
     mymodel.num_milestones = num_anchors-1
@@ -182,7 +163,7 @@ def make_test_model(tmp_dir, num_anchors=3, milestone_type="spherical",
         if i > 0:
             milestone1 = base.Milestone()
             milestone1.index = i-1
-            milestone1.neighbor_index = i-1
+            milestone1.neighbor_anchor_index = i-1
             milestone1.alias_index = num_milestones+1
             milestone1.cv_index = 0
             milestone1.variables = {"k": -1.0, "radius": 0.05 + 0.1*i}
@@ -195,7 +176,7 @@ def make_test_model(tmp_dir, num_anchors=3, milestone_type="spherical",
         if i < num_anchors - 1:
             milestone2 = base.Milestone()
             milestone2.index = i
-            milestone2.neighbor_index = i+1
+            milestone2.neighbor_anchor_index = i+1
             milestone2.alias_index = num_milestones + 1
             milestone2.cv_index = 0
             milestone2.variables = {"k": 1.0, "radius": 0.05 + 0.1*(i+1)}
@@ -219,16 +200,7 @@ def make_test_model(tmp_dir, num_anchors=3, milestone_type="spherical",
         
         #anchor = base.Anchor(name, index, directory, md_glob, md, bd, 
         #         endstate, bulkstate, len(milestone_list), milestone_list)
-        
-        if calculation_type == "mmvt":
-            #cv1 = mmvt_base.MMVT_spherical_CV(index=0, groups=groups)
-            anchor = mmvt_base.MMVT_anchor()
-        elif calculation_type == "elber":
-            anchor = elber_base.Elber_anchor()
-        else:
-            raise Exception(
-                "Calculation type not available: {1}".format(calculation_type))
-        
+        anchor = mmvt_base.MMVT_anchor()
         anchor.name = name
         anchor.index = index
         anchor.directory = directory
@@ -240,12 +212,13 @@ def make_test_model(tmp_dir, num_anchors=3, milestone_type="spherical",
         #anchor.num_milestones = len(milestone_list)
         anchor.milestones = milestone_list
         
-        if mode == "amber":
+        if mode == 'amber':
             make_amber_params(anchor, building_dir, engine=engine)
-        elif mode == "forcefield":
+        elif mode == 'forcefield':
             make_forcefield_params(anchor, building_dir)
         else:
             raise Exception("mode not implemented:"+mode)
+        
         mymodel.anchors.append(anchor)
     
     if not no_BD:

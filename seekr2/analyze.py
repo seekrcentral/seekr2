@@ -1,4 +1,6 @@
 """
+analyze.py
+
 Functions and objects for analyzing MMVT simulation outputs
 """
 
@@ -35,6 +37,9 @@ class Analysis:
         The pi_alpha quantity in MMVT theory - it represents the
         relative probability of finding the system within anchor alpha.
         It is an array of floats.
+        
+    pi_alpha_error : numpy.array
+        The uncertainty for each value in pi_alpha.
         
     N_ij : defaultdict
         The N_ij quantity in MMVT theory - It represents an estimate of
@@ -77,9 +82,15 @@ class Analysis:
         milestone i. Therefore, p_i can be used to obtain thermodynamic
         quantities such as the free energy of milestone i.
         
+    p_i_error : numpy.array
+        The uncertainty for each value in p_i.
+        
     free_energy_profile : numpy.array
         The free energy profile as computed from the Boltzmann 
         distribution of p_i.
+        
+    free_energy_profile_err : numpy.array
+        The uncertainty of each value in p_i.
         
     MFPTs : dict
         The mean first passage times (MFPTs) between various end states
@@ -108,21 +119,22 @@ class Analysis:
     k_on_errors : dict
         The errors in the k-on values. The keys are structured in an
         identical manner as the k_ons dictionary.
+    
+    force_warning : bool
+        Whether to bypass certain errors with a mere warning.
         
+    num_error_samples : int
+        The number of data samples to create for generating uncertainty
+        values.
     """
+    
     def __init__(self, model, force_warning=False, num_error_samples=0):
         """
         Creates the Analyze() object, which applies transition 
         statistics and times, as well as MMVT theory, to compute 
         kinetics and thermodynamics quantities.
-    
-        Parameters
-        ----------
-        model : base.Model()
-            The base.Model() object that was used to read transition 
-            statistics and timescales.
-            
         """
+        
         self.model = model
         self.anchor_stats_list = []
         self.main_data_sample = None
@@ -148,6 +160,7 @@ class Analysis:
         Check the anchor statistics to make sure that enough bounces
         have been observed to perform the analysis
         """
+        
         anchors_missing_statistics = []
         for i, anchor in enumerate(self.model.anchors):
             if anchor.bulkstate:
@@ -193,6 +206,7 @@ class Analysis:
         Check the anchor statistics to make sure that enough transitions
         have been observed to perform the analysis
         """
+        
         anchors_missing_statistics = []
         for i, anchor in enumerate(self.model.anchors):
             if anchor.bulkstate:
@@ -244,6 +258,7 @@ class Analysis:
         """
         Extract the data from simulations used in this analysis.
         """
+        
         # If possible, avoid expensive I/O
         files_already_read = False
         if len(self.anchor_stats_list) > 0:
@@ -302,7 +317,8 @@ class Analysis:
         
     def check_extraction(self, silent=False):
         """
-        
+        Check whether sufficient and correct anchor statistics can 
+        be used for analysis.
         """
         if self.model.get_type() == "mmvt":
             result = self.mmvt_check_anchor_stats(silent)
@@ -312,7 +328,9 @@ class Analysis:
         
     def fill_out_data_samples_mmvt(self):
         """
-        
+        Now that the statistics for each anchor have been extracted
+        from the output files, construct the global transition
+        statistics objects. Applies to systems using MMVT milestoning.
         """
         N_alpha_beta = defaultdict(int)
         k_alpha_beta = defaultdict(float)
@@ -399,7 +417,9 @@ class Analysis:
 
     def process_data_samples_mmvt(self, pre_equilibrium_approx=False):
         """
-        
+        Since the global, system-side statistics have been gathered, 
+        compute the thermodynamic and kinetic quantities and their
+        uncertainties. Applies to systems using MMVT milestoning.
         """
         self.main_data_sample.calculate_pi_alpha()
         self.main_data_sample.fill_out_data_quantities()
@@ -422,12 +442,10 @@ class Analysis:
             data_sample.calculate_thermodynamics()
             data_sample.calculate_kinetics(pre_equilibrium_approx, 
                                            bd_sample_from_normal=True)
-            
             k_offs.append(data_sample.k_off)
             p_i_list.append(data_sample.p_i)
             pi_alpha_list.append(data_sample.pi_alpha)
             free_energy_profile_list.append(data_sample.free_energy_profile)
-            
             for key in data_sample.MFPTs:
                 MFPTs_list[key].append(data_sample.MFPTs[key])
             for key in data_sample.k_ons:
@@ -482,7 +500,9 @@ class Analysis:
     
     def fill_out_data_samples_elber(self):
         """
-        
+        Now that the statistics for each anchor have been extracted
+        from the output files, construct the global transition
+        statistics objects. Applies to systems using Elber milestoning.
         """
         N_i_j_list = []
         R_i_total = []
@@ -532,7 +552,9 @@ class Analysis:
         
     def process_data_samples_elber(self, pre_equilibrium_approx=False):
         """
-        
+        Since the global, system-side statistics have been gathered, 
+        compute the thermodynamic and kinetic quantities and their
+        uncertainties. Applies to systems using Elber milestoning.
         """
         self.main_data_sample.compute_rate_matrix()
         #self.main_data_sample.Q = common_analyze.minor2d(
@@ -569,7 +591,8 @@ class Analysis:
         
     def fill_out_data_samples(self):
         """
-        
+        Based on the type of milestoning, construct the data samples
+        and fill out their statistics.
         """
         if self.model.get_type() == "mmvt":
             self.fill_out_data_samples_mmvt()
@@ -579,7 +602,8 @@ class Analysis:
     
     def process_data_samples(self, pre_equilibrium_approx=False):
         """
-        
+        Based on the type of milestoning, use the data samples to 
+        compute thermo and kinetics quantities and their uncertainties.
         """
         if self.model.get_type() == "mmvt":
             self.process_data_samples_mmvt(pre_equilibrium_approx)
@@ -592,7 +616,8 @@ class Analysis:
                          T_alpha_total, T_alpha_average, T_alpha_std_dev, 
                          T_alpha_count):
         """
-        
+        Create data samples from a distribution for computing the
+        uncertainties of the thermo and kinetics.
         """
         sampled_k_alpha_beta = {}
         sampled_T_alpha_total = []
@@ -634,9 +659,7 @@ class Analysis:
             sampled_R_i_alpha_total, sampled_T_alpha_total
     
     def print_results(self):
-        """
-        Print all results of the analysis calculation
-        """
+        """Print all results of the analysis calculation."""
         print("Printing results from MMVT SEEKR calculation")
         print("k_off (1/s):", common_analyze.pretty_string_value_error(
             self.k_off, self.k_off_error))
@@ -683,6 +706,9 @@ class Analysis:
                 
     def save_plots(self, image_directory):
         """
+        Save a potentially useful series of plots of some quantities
+        obtained during the analysis.
+        
         TODO: interact with model, because the way these plots are saved
         depends on the structure of the CVs.
         """
@@ -722,9 +748,7 @@ class Analysis:
 
 def analyze(model, force_warning=False, num_error_samples=1000, 
             pre_equilibrium_approx=False, skip_checks=False):
-    """
-    
-    """
+    """Perform all the analysis steps at once."""
     analysis = Analysis(model, force_warning, num_error_samples)
     analysis.extract_data()
     if not skip_checks:

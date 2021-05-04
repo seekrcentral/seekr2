@@ -26,7 +26,9 @@ def choose_next_simulation_browndye2(
         force_overwrite, min_b_surface_encounters=None, 
         min_bd_milestone_encounters=None):
     """
-    
+    Examine the model and all Browndye2 simulations that have run so
+    far (if any), then construct a list of which BD milestones to
+    run, in order.
     """
     if instruction == "any_md":
         return []
@@ -138,7 +140,10 @@ def choose_next_simulation_openmm(
         max_total_simulation_length, convergence_cutoff, 
         minimum_anchor_transitions, force_overwrite):
     """
-    
+    Examine the model and all MD simulations that have run so far.
+    Using this information, as well as the specified criteria (minimum
+    number of steps, minimum convergence, maximum number of steps,
+    etc.), construct a list of anchors to run, in order.
     """
     import seekr2.modules.runner_openmm as runner_openmm
     import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
@@ -154,10 +159,6 @@ def choose_next_simulation_openmm(
             try:
                 integer_instruction = int(instruction)
             except ValueError:
-                #print("Invalid argument for INSTRUCTION provided: "\
-                #      "'{}'. ".format(instruction)\
-                #      +"Allowed arguments: 'any', 'any_md', 'any_bd'.")
-                #exit()
                 return []
                 
             if alpha != integer_instruction:
@@ -179,13 +180,11 @@ def choose_next_simulation_openmm(
         if os.path.exists(restart_checkpoint_filename) and not force_overwrite:
             dummy_file = tempfile.NamedTemporaryFile()
             if model.get_type() == "mmvt":
-                sim_openmm_factory = mmvt_sim_openmm.MMVT_sim_openmm_factory()
-                sim_openmm_obj = sim_openmm_factory.create_sim_openmm(
+                sim_openmm_obj = mmvt_sim_openmm.create_sim_openmm(
                     model, anchor, dummy_file.name)
                 simulation = sim_openmm_obj.simulation
             elif model.get_type() == "elber":
-                sim_openmm_factory = elber_sim_openmm.Elber_sim_openmm_factory()
-                sim_openmm_obj = sim_openmm_factory.create_sim_openmm(
+                sim_openmm_obj = elber_sim_openmm.create_sim_openmm(
                     model, anchor, dummy_file.name)
                 simulation = sim_openmm_obj.umbrella_simulation
             
@@ -269,7 +268,10 @@ def choose_next_simulation_namd(
         max_total_simulation_length, convergence_cutoff, 
         minimum_anchor_transitions, force_overwrite):
     """
-    
+    Examine the model and all MD simulations that have run so far.
+    Using this information, as well as the specified criteria (minimum
+    number of steps, minimum convergence, maximum number of steps,
+    etc.), construct a list of anchors to run, in order.
     """
     import seekr2.modules.runner_namd as runner_namd
     import seekr2.modules.mmvt_sim_namd as mmvt_sim_namd
@@ -379,9 +381,7 @@ def choose_next_simulation_namd(
 
 def run_browndye2(model, bd_milestone_index, restart, n_trajectories, 
                   force_overwrite=False, max_b_surface_trajs_to_extract=1000):
-    """
-    
-    """
+    """Run a Browndye2 simulation."""
     import seekr2.modules.runner_browndye2 as runner_browndye2
     
     if bd_milestone_index == "b_surface":
@@ -432,9 +432,7 @@ def run_browndye2(model, bd_milestone_index, restart, n_trajectories,
 def run_openmm(model, anchor_index, restart, total_simulation_length, 
                cuda_device_index=False, force_overwrite=False,
                save_state_file=False):
-    """
-    
-    """
+    """Run an OpenMM simulation."""
     import seekr2.modules.runner_openmm as runner_openmm
     import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
     import seekr2.modules.elber_sim_openmm as elber_sim_openmm
@@ -468,13 +466,12 @@ def run_openmm(model, anchor_index, restart, total_simulation_length,
         restart, save_state_file, force_overwrite)
     
     if model.get_type() == "mmvt":
-        sim_openmm_factory = mmvt_sim_openmm.MMVT_sim_openmm_factory()
+        sim_openmm_obj = mmvt_sim_openmm.create_sim_openmm(
+            model, myanchor, default_output_file, state_file_prefix)
     elif model.get_type() == "elber":
-        sim_openmm_factory = elber_sim_openmm.Elber_sim_openmm_factory()
+        sim_openmm_obj = elber_sim_openmm.create_sim_openmm(
+            model, myanchor, default_output_file, state_file_prefix)
     
-    sim_openmm_obj = sim_openmm_factory.create_sim_openmm(
-        model, myanchor, default_output_file, state_file_prefix)
-        
     runner.run(sim_openmm_obj, restart, None, restart_index)
     if model.get_type() == "mmvt":
         model.calculation_settings.num_production_steps \
@@ -485,10 +482,8 @@ def run_openmm(model, anchor_index, restart, total_simulation_length,
 
 def run_namd(model, anchor_index, restart, total_simulation_length, 
                     cuda_device_index=False, force_overwrite=False,
-                    save_state_file=False, namd_command="", namd_argument=""):
-    """
-    
-    """
+                    save_state_file=False, namd_command="namd2", namd_arguments=""):
+    """Run a NAMD simulation."""
     import seekr2.modules.runner_namd as runner_namd
     import seekr2.modules.mmvt_sim_namd as mmvt_sim_namd
         
@@ -516,12 +511,11 @@ def run_namd(model, anchor_index, restart, total_simulation_length,
         = runner.prepare(restart, save_state_file, force_overwrite)
     
     if model.get_type() == "mmvt":
-        sim_namd_factory = mmvt_sim_namd.MMVT_sim_namd_factory()
+        sim_namd_obj = mmvt_sim_namd.create_sim_namd(
+            model, myanchor, output_basename)
     else:
         raise Exception("Method not implemented for NAMD:", model.get_type())
     
-    sim_namd_obj = sim_namd_factory.create_sim_namd(
-        model, myanchor, output_basename)
     sim_namd_obj.seekr_namd_settings.save_state = save_state_file
     sim_namd_obj.seekr_namd_settings.save_one_state_for_all_boundaries\
          = runner.save_one_state_for_all_boundaries
@@ -535,12 +529,13 @@ def run(model, instruction, min_total_simulation_length=None,
         max_total_simulation_length=None, convergence_cutoff=None, 
         directory=None, minimum_anchor_transitions=None, 
         cuda_device_index=None, force_overwrite=False, save_state_file=False,
-        namd_command="", namd_argument="", min_b_surface_simulation_length=None,
+        namd_command="namd2", namd_arguments="", min_b_surface_simulation_length=None,
         min_bd_milestone_simulation_length=None, 
         max_b_surface_trajs_to_extract=None, min_b_surface_encounters=None, 
         min_bd_milestone_encounters=None):
     """
-    
+    Run all simulations, both MD and BD, as specified by the user 
+    inputs.
     """
     md_complete = False
     bd_complete = False
@@ -592,7 +587,7 @@ def run(model, instruction, min_total_simulation_length=None,
                          force_overwrite=force_overwrite, 
                          save_state_file=save_state_file, 
                          namd_command=namd_command,
-                         namd_argument=namd_argument)
+                         namd_arguments=namd_arguments)
             else:
                 raise Exception("No OpenMM or NAMD simulation settings in "\
                                 "model.")

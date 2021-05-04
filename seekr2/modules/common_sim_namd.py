@@ -1,5 +1,5 @@
 """
-common/sim_namd.py
+common_sim_namd.py
 
 Base objects and routines for preparing NAMD simulations
 to run.
@@ -9,9 +9,6 @@ import os
 import datetime
 
 from parmed import unit
-import parmed
-
-import seekr2.modules.common_base as base
 
 dt_date = datetime.datetime.now()
 
@@ -50,6 +47,8 @@ class Amber_input_files():
     ambercoor : str
         The name of the AMBER inpcrd or rst7 file to use, possibly, as
         coordinates.
+    coordinates : str
+        The name of a coordinates file, usually in PDB format.
     readExclusions : str or None, Default None
         Whether to read 1-4 exclusions from the prmtop file. It is
         recommended to put "yes". None gives yes by default. Setting
@@ -138,14 +137,18 @@ class Input_files():
         Settings for the Amber forcefield in NAMD.
     charmm_input_files : Charmm_input_files or None, Default None
         Settings for the Charmm forcefield in NAMD.
-    coordinates : str, Default ""
-        The name of a PDB file from which to read starting coordinates.
     binCoordinates : str, Default ""
         NAMD produces a binary output file that may be used as
         input for atomic coordinates.
+    binVelocities : str, Default ""
+        NAMD produces a binary output file that may be used as
+        input for atomic velocities.
     extendedSystem : str, Default ""
         NAMD can produce and read an extended system file which
         contains information about box origin and vectors.
+    try_to_load_state : bool, Default False
+        Whether to try and load a saved state from an adjacent 
+        anchor.
     """
     def __init__(self):
         self.amber_input_files = None
@@ -265,9 +268,10 @@ class Output_files():
             .restart_checkpoint_interval
         if self.restartfreq is None:
             self.restartfreq = 0
-        self.outputEnergies = model.calculation_settings.energy_reporter_interval
-        if self.outputEnergies is None:
-            self.outputEnergies = 0
+        self.outputEnergies \
+            = model.calculation_settings.energy_reporter_interval
+        if self.outputEnergies is None or self.outputEnergies == 0:
+            self.outputEnergies = 1000000
         self.outputTiming = 10 * self.outputEnergies
         return
     
@@ -287,11 +291,11 @@ class Output_files():
         my_string += add_string_buffer("dcdfile", self.dcdfile)
         assert self.dcdfreq >= 0
         my_string += add_string_buffer("dcdfreq", str(self.dcdfreq))
-        if self.restartname:
+        if self.restartname and self.restartfreq is not None:
             my_string += add_string_buffer("restartname", self.restartname)
             assert self.restartfreq >= 0
             my_string += add_string_buffer("restartfreq", str(self.restartfreq))
-        assert self.outputEnergies >= 0
+        assert self.outputEnergies > 0, "outputEnergies must be positive."
         my_string += add_string_buffer("outputEnergies", 
                                        str(self.outputEnergies))
         assert self.outputTiming >= 0
@@ -340,6 +344,9 @@ class Simulation_parameters():
         Whether to use SETTLE instead of SHAKE to constrain bonds.
     seed : int or None
         Sets the random seed.
+    firsttimestep : int, Default 0
+        The value of the first time step, modify to cause the
+        simulation to start at a different timestep than zero.
     """
     def __init__(self):
         self.temperature = -1.0
@@ -488,7 +495,6 @@ class Integrator_parameters():
                                            str(self.langevinDamping))
             my_string += add_string_buffer("langevinHydrogen", 
                                            self.langevinHydrogen)
-        
         return my_string
 
 class Pressure_control():
@@ -543,7 +549,6 @@ class Pressure_control():
             .target_temperature
         return
         
-    
     def to_string(self):
         """
         Write all settings in this object to a format which can be
@@ -576,7 +581,6 @@ class Pressure_control():
             assert self.langevinPistonTemp >= 0.0
             my_string += add_string_buffer("langevinPistonTemp", 
                                            str(self.langevinPistonTemp))
-        
         return my_string
             
 class Periodic_boundary_conditions():
@@ -830,7 +834,8 @@ class Sim_namd():
         All settings for the external Colvars script in NAMD.
     seekr_namd_settings : Seekr_namd_settings()
         All SEEKR-relevant settings for NAMD input script.
-    
+    header : str
+        An informative string to put at the top of the input file.
     """
     def __init__(self):
         self.namd_root = Namd_root()

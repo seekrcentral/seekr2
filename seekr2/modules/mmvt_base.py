@@ -1,5 +1,5 @@
 """
-mmvt/base.py
+mmvt_base.py
 
 Base classes, objects, and constants used in multiple stages of the
 MMVT calculations.
@@ -27,12 +27,21 @@ class MMVT_settings(serializer.Serializer):
     num_production_steps : int
         The number of steps to take within a given MMVT production
         run for a Voronoi cell.
+        
+    energy_reporter_interval : int or None, Default None
+        The interval to report system state information, including
+        energy. If set to None, then this information is never printed.
+        
+    restart_checkpoint_interval : int or None, Default None
+        The interval to write a restart checkpoint for the system to
+        be easily restarted. None means do not write backups.
+        
+    trajectory_reporter_interval : int or None, Default None
+        The interval to write frames of the trajectory to file.
+        None means do not write to a trajectory file.
     """
-    #num_equilibration_steps : int
-    #    The number of steps to take during an equilibration run, where
-    #    no statistics will be reported
+    
     def __init__(self):
-        #self.num_equilibration_steps = 0 # Disregard?
         self.num_production_steps = 30000
         self.energy_reporter_interval = None
         self.trajectory_reporter_interval = None
@@ -258,7 +267,9 @@ colvar {{
     def check_mdtraj_within_boundary(self, traj, milestone_variables, 
                                      verbose=False):
         """
-        
+        Check if an mdtraj Trajectory describes a system that remains
+        within the expected anchor. Return True if passed, return
+        False if failed.
         """
         traj1 = traj.atom_slice(self.group1)
         traj2 = traj.atom_slice(self.group2)
@@ -284,7 +295,9 @@ boundary at {:.4f} nm.""".format(radius, milestone_radius)
     def check_mdtraj_close_to_boundary(self, traj, milestone_variables, 
                                      verbose=False, max_avg=0.03, max_std=0.05):
         """
-        
+        Given an mdtraj Trajectory, check if the system lies close
+        to the MMVT boundary. Return True if passed, return False if 
+        failed.
         """
         traj1 = traj.atom_slice(self.group1)
         traj2 = traj.atom_slice(self.group2)
@@ -312,7 +325,7 @@ boundary at {:.4f} nm.""".format(radius, milestone_radius)
     
     def get_atom_groups(self):
         """
-        
+        Return a 2-list of this CV's atomic groups.
         """
         return[self.group1, self.group2]
             
@@ -424,16 +437,6 @@ class MMVT_anchor(serializer.Serializer):
         Settings if this anchor starts the simulation using an XML
         forcefield file and a PDB.
     
-    md_directory : str or None
-        The directory within the 'directory' argument above which 
-        contains the MD simulation information. If None, then no MD
-        is performed for this anchor.
-        
-    bd_directory : str or None
-        The directory within the 'directory' argument above which
-        contains the BD simulation information. If None, then no BD
-        is performed for this anchor.
-        
     production_directory : str
         The directory within the MD or BD directory above in which the
         simulations will be performed.

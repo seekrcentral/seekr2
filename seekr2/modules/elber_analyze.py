@@ -1,5 +1,7 @@
 """
-Routines for the analysis stage of an Elber milestoning calculation
+elber_analyze.py
+
+Routines for the analysis stage of an Elber milestoning calculation.
 """
 
 from collections import defaultdict
@@ -13,29 +15,6 @@ def openmm_read_output_file_list(output_file_list, max_time=None,
     """
     Read the output files produced by the plugin (backend) of 
     openmmvt and extract transition statistics and times
-
-    Parameters
-    ----------
-    output_file_list : list
-        The names of the openmmvt output file to read for 
-        extracting transition statistics
-
-    Returns
-    -------
-    N_i_j_alpha_dict : dict
-        dictionary of counts of transitions within cell alpha 
-        between boundaries i and j.
-        
-    R_i_alpha_dict : dict
-        dictionary of transition incubation times spent before 
-        touching surface i
-    
-    N_alpha_beta_dict : dict
-        dictionary array of counts that a transition between cell 
-        alpha and beta
-        
-    T_alpha : float
-        Total time spent within this cell.
     """
     MAX_ITER = 200000
     if len(existing_lines) == 0:
@@ -101,24 +80,37 @@ class Elber_anchor_statistics():
     Attributes:
     -----------
     N_i_j : dict
-        Represents the N_i_j_alpha quantities in the MMVT calculation.
+        Represents the N_i_j_alpha quantities in the Elber calculation.
         The attribute represents the number of times a transition was
         observed within cell alpha going from surface i to surface j.
         The keys of the dict are a tuple (i,j) composed of two ints,
         and the value is an int count of transitions.
         
     R_i_list : dict
-        Represents the R_i_alpha quantities in the MMVT calculation.
+        Represents the R_i_alpha quantities in the Elber calculation.
         The attribute represents the total time a transition spent
         after bouncing off of surface i before touching another 
         surface, and was observed within cell alpha. The keys of the 
         dict are an int i, and the value is a float representing time.
+    
+    R_i_average : dict
+        The averages of the values in R_i_list.
         
+    R_i_std_dev : dict
+        The standard deviations of the values in R_i_list.
+        
+    R_i_total : dict
+        The sum total of the values in R_i_list.
+    
     i : int
         The index of the milestone whose transition statistics are 
         represented by this object.
     
+    existing_lines : list
+        If the output files for this anchor has already been read, then
+        those lines will be stored here to save on I/O.
     """
+    
     def __init__(self, i):
         self.N_i_j = None
         self.R_i_list = None
@@ -131,9 +123,7 @@ class Elber_anchor_statistics():
     
     def read_output_file_list(self, engine, output_file_list, max_time, anchor, 
                               timestep):
-        """
-        
-        """
+        """Parse the statistics from the plugin's output file."""
         if engine == "openmm":
             self.N_i_j, self.R_i_list, self.R_i_average, self.R_i_std_dev, \
             self.R_i_total, self.existing_lines \
@@ -161,34 +151,52 @@ class Elber_anchor_statistics():
 
 class Elber_data_sample(common_analyze.Data_sample):
     """
-    Represent a data sample specific to an MMVT calculation.
+    Represent a data sample specific to an Elber calculation.
     
     Attributes:
     -----------
     model : Model()
-    
-    N_ij : 
-    
-    R_i :
-    
-    Q : 
-    
-    Q_hat : 
-    
-    K : 
-    
-    K_hat :
-    
-    p_i : 
-    
-    free_energy_profile : 
-    
-    MFPTs : 
-    
-    k_off : 
-    
-    k_ons : 
+        The SEEKR2 model the calculation is being performed on.
+    N_i_j_list : list
+        A list whose indices are milestones, and each value is a dictionary
+        of transitions to adjacent milestones.
+    R_i_list : list
+        A list whose indices are milestones, and each value is the 
+        average incubation time spent in that milestone.
+    N_ij : dict
+        A dictionary with keys of 2-tupes of source and destination
+        milestone, and whose values are the counts of transitions.
+    R_i : dict
+        A dictionary with keys of source milestone indices, and whose
+        values are incubation times spent at those milestones.
+    Q : numpy.array()
+        A 2x2 rate matrix for a milestoning calculation. No sink states.
+    Q_hat : numpy.array()
+        A 2x2 rate matrix for a milestoning calculation. Sink state(s) 
+        included.
+    K : numpy.array()
+        A Markov transition probability matrix constructed from Q. No
+        sink states.
+    K_hat : numpy.array()
+        A Markov transition probability matrix constructed from Q. 
+        Sink state(s) included.
+    p_i : numpy.array()
+        Stationary probabilities along the milestones.
+    free_energy_profile : numpy.array()
+        The free energy profile as computed by the stationary 
+        probabilities.
+    MFPTs : dict
+        A dictionary whose keys are 2-tuples of milestone end states, 
+        and whose values are mean first passage times (MFPTs) between
+        those states.
+    k_off : float
+        The overall k-off (in s^-1) from a stationary distribution to 
+        the bulk state.
+    k_ons : dict
+        A set of k-ons (in M^-1 * s^-1) from the bulk state to each of
+        the end states.
     """
+    
     def __init__(self, model, N_i_j_list, R_i_list):
         self.model = model
         self.N_i_j_list = N_i_j_list
@@ -200,7 +208,6 @@ class Elber_data_sample(common_analyze.Data_sample):
         self.K = None
         self.K_hat = None
         self.p_i = None
-        self.p_i_hat = None
         self.free_energy_profile = None
         self.MFPTs = {}
         self.k_off = None
@@ -208,10 +215,9 @@ class Elber_data_sample(common_analyze.Data_sample):
         self.bd_transition_counts = {}
         return
     
-    
     def fill_out_data_quantities(self):
         """
-        Compute quantities such as N_ij, R_i, and T for eventual 
+        Compute quantities such as N_ij and R_i for eventual 
         construction of rate matrix Q.
         """
         

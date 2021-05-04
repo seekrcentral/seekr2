@@ -1,6 +1,8 @@
 """
+converge.py
+
 Functions and objects for extracting and predicting convergence of 
-SEEKR simulation outputs and results.
+SEEKR2 simulation outputs and results.
 """
 
 import os
@@ -12,15 +14,14 @@ import seekr2.modules.common_converge as common_converge
 
 N_IJ_DIR = "N_ij/"
 R_I_DIR = "R_i/"
-MIN_PLOT_NORM = 1e-8
-WINDOW_SIZE = 30
 
 def converge(model, k_on_state=None, image_directory=None, 
              pre_equilibrium_approx=False, verbose=False):
     """
-    Perform a generic analysis of convergence of emergenct quantities
-    such as N_ij, R_i, k_off, and k_on.
+    Perform all convergence steps: a generic analysis of convergence 
+    of quantities such as N_ij, R_i, k_off, and k_on.
     """
+    
     k_on_conv, k_off_conv, N_ij_conv, R_i_conv, max_step_list, \
         timestep_in_ns, data_sample_list \
         = common_converge.check_milestone_convergence(
@@ -63,9 +64,8 @@ def converge(model, k_on_state=None, image_directory=None,
 def print_convergence_results(model, convergence_results, cutoff, 
                               transition_results, minimum_anchor_transitions,
                               bd_transition_counts):
-    """
-    Print the results of a convergence test.
-    """
+    """Print the results of a convergence test."""
+    
     print("Molecular dynamics results:")
     for alpha, anchor in enumerate(model.anchors):
         if anchor.bulkstate:
@@ -162,14 +162,14 @@ if __name__ == "__main__":
     minimum_anchor_transitions = args["minimum_anchor_transitions"]
     pre_equilibrium_approx = args["pre_equilibrium_approx"]
     
-    mymodel = base.Model()
-    mymodel.deserialize(input_file)
-    if mymodel.anchor_rootdir == ".":
+    model = base.Model()
+    model.deserialize(input_file)
+    if model.anchor_rootdir == ".":
         model_dir = os.path.dirname(input_file)
-        mymodel.anchor_rootdir = os.path.abspath(model_dir)
+        model.anchor_rootdir = os.path.abspath(model_dir)
     
     if image_directory is None:
-        image_directory = os.path.join(mymodel.anchor_rootdir, 
+        image_directory = os.path.join(model.anchor_rootdir, 
                                        common_analyze.DEFAULT_IMAGE_DIR)
     
     if image_directory != "" and not os.path.exists(image_directory):
@@ -181,7 +181,7 @@ if __name__ == "__main__":
     if not os.path.exists(os.path.join(image_directory, R_I_DIR)):
         os.mkdir(os.path.join(image_directory, R_I_DIR))
     
-    if mymodel.k_on_info is None:
+    if model.k_on_info is None:
         assert k_on_state is None, "--k_on_state cannot be defined for "\
             "this model. The model was not initialized to compute k-on "\
             "quantities."
@@ -189,7 +189,7 @@ if __name__ == "__main__":
               "k-on convergence will be skipped.")
     else:
         end_milestones = []
-        for anchor in mymodel.anchors:
+        for anchor in model.anchors:
             if anchor.endstate:
                 for milestone_id in anchor.get_ids():
                     end_milestones.append(milestone_id)
@@ -205,14 +205,14 @@ if __name__ == "__main__":
             assert k_on_state in end_milestones, "The provided "\
                 "milestone of %d for k_on_state is not available." % k_on_state
     
-    data_sample_list = converge(mymodel, k_on_state, image_directory, 
+    data_sample_list = converge(model, k_on_state, image_directory, 
                                 verbose=True)
         
     rmsd_convergence_results = common_converge.calc_RMSD_conv_amount(
-        mymodel, data_sample_list)
+        model, data_sample_list)
     transition_minima, transition_details \
         = common_converge.calc_transition_steps(
-        mymodel, data_sample_list[-1])
-    print_convergence_results(mymodel, rmsd_convergence_results, cutoff, 
+        model, data_sample_list[-1])
+    print_convergence_results(model, rmsd_convergence_results, cutoff, 
                               transition_details, minimum_anchor_transitions,
                               data_sample_list[-1].bd_transition_counts)

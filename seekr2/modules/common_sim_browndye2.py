@@ -1,5 +1,5 @@
 """
-sim_browndye2
+common_sim_browndye2
 
 Base objects and routines for preparing and running Browndye2 
 simulations.
@@ -35,6 +35,7 @@ class Ion():
         The concentration of the ion in solution in units of moles per
         liter.
     """
+    
     def __init__(self):
         self.radius = -1.0
         self.charge = -1.0
@@ -50,6 +51,7 @@ class Ion():
         xmlIon : ElementTree.SubElement
             All sub elements get added to this root.
         """
+        
         assert self.radius >= 0.0, "Ion radius must be set"
         xmlIonRadius = ET.SubElement(xmlIon, 'radius')
         xmlIonRadius.text = str(self.radius)
@@ -80,6 +82,7 @@ class Solvent():
     ions : list
         A list of Ion() objects for APBS input
     """
+    
     def __init__(self):
         self.debye_length = -1.0
         self.dielectric = 78.0
@@ -101,6 +104,7 @@ class Solvent():
             Whether this object should be serialized for the
             make_apbs_inputs program.
         """
+        
         if not make_apbs_mode:
             assert self.debye_length > 0.0, "Solvent Debye length must be assigned."
             xmlSolventDebye = ET.SubElement(xmlSolvent, 'debye_length')
@@ -151,8 +155,8 @@ class Time_step_tolerances():
         here.
     minimum_chain_reaction_dt : float or None, default None
         This has the same relation to minimum_chain_dt.
-        
     """
+    
     def __init__(self):
         self.force = None
         self.reaction = None
@@ -171,6 +175,7 @@ class Time_step_tolerances():
         xmlTime : ElementTree.SubElement
             All sub elements get added to this root.
         """
+        
         if self.force is not None:
             assert self.force > 0.0
             xmlTimeForce = ET.SubElement(xmlTime, "force")
@@ -207,23 +212,11 @@ class Electric_field():
         A list of DX file names output from APBS.
     multipole_field : str or None, Default None
         A file of multipole extension outside grids.
-    desolvation_field : str or None
-        This block describes the desolvation field; it is just like the
-        electric-field block but does not use the multipole field.
-    eff_charges : str or None
-        A file with effective charges and lumping information; output
-        of lumped_charges.
-    eff_charges_squared : str or None
-        File like eff_charges above, but with the charges squared.
-        
     """
+    
     def __init__(self):
         self.grid_list = []
         self.multipole_field = None
-        self.desolvation_field = None
-        self.eff_charges = None
-        self.eff_charges_squared = None
-        self.copy = None
         return
     
     def serialize(self, xmlE):
@@ -235,6 +228,7 @@ class Electric_field():
         xmlE : ElementTree.SubElement
             All sub elements get added to this root.
         """
+        
         for grid in self.grid_list:
             xmlGrid_i = ET.SubElement(xmlE, 'grid')
             xmlGrid_i.text = grid
@@ -242,21 +236,6 @@ class Electric_field():
             assert self.multipole_field
             xmlEMultipole = ET.SubElement(xmlE, "multipole_field")
             xmlEMultipole.text = self.multipole_field
-        if self.desolvation_field is not None:
-            assert self.desolvation_field
-            xmlEDesolv = ET.SubElement(xmlE, "desolvation_field")
-            xmlEDesolv.text = self.desolvation_field
-        if self.eff_charges is not None:
-            assert self.eff_charges
-            xmlEEff = ET.SubElement(xmlE, "eff_charges")
-            xmlEEff.text = self.eff_charges
-        if self.eff_charges_squared is not None:
-            assert self.eff_charges_squared
-            xmlEEff2 = ET.SubElement(xmlE, "eff_charges_squared")
-            xmlEEff2.text = self.eff_charges_squared
-        if self.copy is not None:
-            xmlECopy = ET.SubElement(xmlE, 'copy')
-            xmlECopy.text = self.copy.serialize(xmlECopy)
         return
 
 class Link():
@@ -272,6 +251,7 @@ class Link():
     chain_residue : int
         The residue index within the chain to link to.
     """
+    
     def __init__(self):
         self.core_name = ""
         self.core_residue = -1
@@ -287,6 +267,7 @@ class Link():
         xmlLink : ElementTree.SubElement
             All sub elements get added to this root.
         """
+        
         assert self.core_name, "A name for the core must be provided"
         xmlLinkCoreName = ET.SubElement(xmlLink, "core_name")
         xmlLinkCoreName.text = self.core_name
@@ -316,8 +297,8 @@ class Chain():
         A list of Links, or connections between the chain and core. The
         name of the core, the number of the linking residue, and the
         number of the chain's linking residue are specified.
-        
     """
+    
     def __init__(self):
         self.name = ""
         self.atoms = ""
@@ -333,6 +314,7 @@ class Chain():
         xmlChain : ElementTree.SubElement
             All sub elements get added to this root.
         """
+        
         assert self.name, "A name for this chain must be provided"
         xmlChainName = ET.SubElement(xmlChain, "name")
         xmlChainName.text = self.name
@@ -362,17 +344,32 @@ class Core():
     electric_field : Electric_field() or None
         Object containing APBS grids, desolvation grids, and other
         information pertaining to electrical forces.
+    desolvation_field : str or None
+        This block describes the desolvation field; it is just like the
+        electric-field block but does not use the multipole field.
+    eff_charges : str or None
+        A file with effective charges and lumping information; output
+        of lumped_charges.
+    eff_charges_squared : str or None
+        File like eff_charges above, but with the charges squared.
+    copy : CoreCopy() or None
+        One can specify a copy of a previously defined core.
     is_protein : str or None, Default "false"
         If this is true, then it affects how the effective charges are
         generated.
     dielectric : float, default 4.0
         The interior dielectric of the core.
     """
+    
     def __init__(self):
         self.name = ""
         self.atoms = ""
         self.all_in_surface = "false"
         self.electric_field = Electric_field()
+        self.desolvation_field = None
+        self.eff_charges = None
+        self.eff_charges_squared = None
+        self.copy = None
         self.is_protein = "false"
         self.dielectric = 4.0
         self.grid_spacing = 0.5
@@ -390,6 +387,7 @@ class Core():
             Whether this object should be serialized for the
             make_apbs_inputs program.
         """
+        
         assert self.name, "A name must be assigned to a Core"
         xmlCoreName = ET.SubElement(xmlCore, "name")
         xmlCoreName.text = self.name
@@ -405,7 +403,21 @@ class Core():
                 xmlCoreElecField = ET.SubElement(xmlCore, 'electric_field')
                 xmlCoreElecField.text = self.electric_field.serialize(
                     xmlCoreElecField)
-        
+        if self.desolvation_field is not None:
+            assert self.desolvation_field
+            xmlEDesolv = ET.SubElement(xmlCore, "desolvation_field")
+            xmlEDesolv.text = self.desolvation_field
+        if self.eff_charges is not None:
+            assert self.eff_charges
+            xmlEEff = ET.SubElement(xmlCore, "eff_charges")
+            xmlEEff.text = self.eff_charges
+        if self.eff_charges_squared is not None:
+            assert self.eff_charges_squared
+            xmlEEff2 = ET.SubElement(xmlCore, "eff_charges_squared")
+            xmlEEff2.text = self.eff_charges_squared
+        if self.copy is not None:
+            xmlECopy = ET.SubElement(xmlCore, 'copy')
+            xmlECopy.text = self.copy.serialize(xmlECopy)
         if self.is_protein is not None:
             assert self.is_protein.lower() in ["true","false"]
             xmlCoreIsProt = ET.SubElement(xmlCore, "is_protein")
@@ -433,6 +445,7 @@ class CoreCopy():
     rotation : list
         A list of 9 floats that describes the new rotation.
     """
+    
     def __init__(self):
         self.parent = ""
         self.translation = []
@@ -451,10 +464,10 @@ class CoreCopy():
         assert self.parent, "A name must be assigned to a CoreCopy"
         xmlCoreCpName = ET.SubElement(xmlCoreCopy, "parent")
         xmlCoreCpName.text = self.parent
-        assert len(translation) == 3
+        assert len(self.translation) == 3
         xmlCoreCpTrans = ET.SubElement(xmlCoreCopy, "translation")
         xmlCoreCpTrans.text = " ".join([str(i) for i in self.translation])
-        assert len(translation) == 9
+        assert len(self.translation) == 9
         xmlCoreCpRot = ET.SubElement(xmlCoreCopy, "rotation")
         xmlCoreCpRot.text = " ".join([str(i) for i in self.rotation])
         return
@@ -477,6 +490,7 @@ class Group():
     chain_list : list, Default []
         A list of Chain() objects for this group
     """
+    
     def __init__(self):
         self.name = ""
         self.core_list = []
@@ -492,6 +506,7 @@ class Group():
         xmlCoreCopy : ElementTree.SubElement
             All sub elements get added to this root.
         """
+        
         assert self.name, "A name must be assigned to a Group"
         xmlGroupName = ET.SubElement(xmlGroup, "name")
         xmlGroupName.text = self.name
@@ -541,6 +556,7 @@ class System():
     group_list : list
         A list of Group() objects for the system.
     """
+    
     def __init__(self):
         self.force_field = None
         self.parameters = None
@@ -571,6 +587,7 @@ class System():
             Whether this object should be serialized for the
             make_apbs_inputs program.
         """
+        
         if self.force_field is not None:
             xmlSysFF = ET.SubElement(xmlSys, "force_field")
             xmlSysFF.text = self.force_field
@@ -639,6 +656,7 @@ class Root():
         Information about the physical system and its motions are
         described inside this section.
     """
+    
     def __init__(self):
         self.n_threads = 1
         self.seed = 11111113
@@ -667,6 +685,7 @@ class Root():
             Whether this object should be serialized for the
             make_apbs_inputs program.
         """
+        
         xmlRoot = ET.Element('root')
         if self.n_threads is not None:
             assert self.n_threads > 0
@@ -717,6 +736,7 @@ class Root():
             Whether this object should be serialized for the
             make_apbs_inputs program.
         """
+        
         root = self.serialize(make_apbs_mode)
         xmlstr = minidom.parseString(ET.tostring(root)).toprettyxml(
             indent="   ")
@@ -726,8 +746,9 @@ class Root():
     
 class Reaction():
     """
-    
+    A Browndye2 reaction block in an XML file.
     """
+    
     def __init__(self):
         self.name = ""
         self.state_before = ""
@@ -738,11 +759,13 @@ class Reaction():
         self.molecule1_core = ""
         self.n_needed = 1
         self.pair_list = []
+        return
         
     def serialize(self, xmlRoot):
         """
-        
+        Convert this object to XML form.
         """
+        
         assert self.name, "reaction name must be provided"
         xmlName = ET.SubElement(xmlRoot, "name")
         xmlName.text = self.name
@@ -772,8 +795,9 @@ class Reaction():
         
 class Pair():
     """
-    
+    A Browndye2 reaction pair.
     """
+    
     def __init__(self):
         self.atom1_index = -1
         self.atom2_index = -1
@@ -782,8 +806,9 @@ class Pair():
     
     def serialize(self, xmlPair):
         """
-        
+        Convert this object to XML output.
         """
+        
         assert self.atom1_index >= 0, "Pair atom1_index must be assigned."
         assert self.atom2_index >= 0, "Pair atom2_index must be assigned."
         xmlAtoms = ET.SubElement(xmlPair, "atoms")
@@ -795,8 +820,9 @@ class Pair():
     
 class Reaction_root():
     """
-    
+    The root XML of the simulation reaction file.
     """
+    
     def __init__(self):
         self.first_state = ""
         self.reaction_list = []
@@ -804,8 +830,9 @@ class Reaction_root():
     
     def serialize(self):
         """
-        
+        Convert this object to an XML file.
         """
+        
         xmlRoot = ET.Element("roottag")
         assert self.first_state
         xmlFirstState = ET.SubElement(xmlRoot, "first_state")
@@ -826,6 +853,7 @@ class Reaction_root():
         filename : str
             The name of the file to write XML to.
         """
+        
         root = self.serialize()
         xmlstr = minidom.parseString(ET.tostring(root)).toprettyxml(
             indent="   ")
@@ -854,6 +882,7 @@ def add_ghost_atom_to_pqr_from_atoms_center_of_mass(
         If None, the pqr_filename will be overwritten. Otherwise, the
         new PQR with the ghost atom will be written to this file.
     """
+    
     if new_pqr_filename is None:
         new_pqr_filename = pqr_filename
     pqr_struct = parmed.load_file(pqr_filename, skip_bonds=True)
@@ -872,22 +901,18 @@ def add_ghost_atom_to_pqr_from_atoms_center_of_mass(
     complex = pqr_struct + ghost_structure
     complex.save(new_pqr_filename, overwrite=True)
     ghost_index = len(complex.atoms)
-    #ghost_index = complex.atoms[-1].number
-    #assert complex.atoms[-1].name == "GHO"
-    #print("ghost_index:", ghost_index)
     return ghost_index
 
 def make_pqrxml(input_pqr_filename, browndye2_bin="", 
                 output_xml_filename=None):
     """
-    
+    Given a PQR file name, convert the file to a PQRXML file.
     """
     if output_xml_filename is None:
         output_xml_filename = os.path.splitext(input_pqr_filename)[0] + ".xml"
     pqr2xml_binary = os.path.join(browndye2_bin, "pqr2xml")
     pqr2xml_command = pqr2xml_binary + " < " + input_pqr_filename + " > " \
         + output_xml_filename
-    #print("Running command:", pqr2xml_command)
     os.system(pqr2xml_command)
     assert os.path.exists(output_xml_filename), "Problem generating XML from "\
         "PQR file: file not created: %s" % output_xml_filename
@@ -896,7 +921,8 @@ def make_pqrxml(input_pqr_filename, browndye2_bin="",
 def make_and_run_apbs(root, input_apbs_xml, browndye2_bin="", 
                       new_input_xml_base="input.xml"):
     """
-    
+    Given an entire BD calculation Root() object, prepare and run
+    APBS calculations.
     """
     assert root.system.solvent.ions is not None, \
         "Ions must be included for APBS calculations"
@@ -914,8 +940,6 @@ def make_and_run_apbs(root, input_apbs_xml, browndye2_bin="",
     run_apbs_binary = os.path.join(browndye2_bin, "run_apbs_inputs")
     make_apbs_command = make_apbs_binary + " " + input_apbs_xml + " > " \
         + new_input_xml
-    #std_out = subprocess.check_output(make_apbs_command, shell=True)
-    #print("Running command:", make_apbs_command)
     os.system(make_apbs_command)
     assert os.path.exists(new_input_xml), "Problem running make_apbs_input - "\
         "Output file not found: " + new_input_xml
@@ -930,13 +954,10 @@ def make_and_run_apbs(root, input_apbs_xml, browndye2_bin="",
             result = re.search("<debye_length> (.+?) </debye_length>", line)
             if result:
                 debye_length = result.group(1)
-                #print("debye_length found:", debye_length)
                 
     assert float(debye_length) > 0.0, "Problem: debye_length not generated."
-    
     run_apbs_command = run_apbs_binary + " " + new_input_xml \
         + " > run_apbs_input.out"
-    #print("Running command:", run_apbs_command)
     os.system(run_apbs_command)
     for mol_name in mol_name_list:
         apbs_dx_glob = mol_name + "*.dx"

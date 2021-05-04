@@ -1,5 +1,5 @@
 """
-mmvt/sim_namd.py
+mmvt_sim_namd.py
 
 Base objects and routines for preparing NAMD simulations
 to run for MMVT calculations.
@@ -8,10 +8,8 @@ to run for MMVT calculations.
 import os
 import datetime
 
-from parmed import unit
 import parmed
 
-import seekr2.modules.common_base as base
 import seekr2.modules.common_sim_namd as common_sim_namd
 from seekr2.modules.common_sim_namd import add_string_buffer
 
@@ -39,6 +37,7 @@ class Colvars_config():
         define the collective variables to monitor. These strings are
         written to the colvars script.
     """
+    
     def __init__(self):
         self.colvarstrajfrequency = 0
         self.colvarsrestartfrequency = 0
@@ -50,6 +49,7 @@ class Colvars_config():
         Use the SEEKR Model() object settings to fill out this object
         with relevant quantities.
         """
+        
         self.colvars_string_list = []
         for cv in model.collective_variables:
             cv_string = cv.make_namd_colvar_string()
@@ -61,6 +61,7 @@ class Colvars_config():
         Convert all settings in this object to a format which can be
         provided to NAMD colvar input file.
         """
+        
         my_string = ""
         assert self.colvarstrajfrequency >= 0
         my_string += add_string_buffer("colvarstrajfrequency", 
@@ -84,6 +85,7 @@ class Colvars_config():
         filename : str
             The name of the colvars script file to write to.
         """
+        
         my_string = self.to_string()
         with open(filename, "w") as f:
             f.write(my_string)
@@ -101,8 +103,17 @@ class Seekr_namd_settings():
     eval_stride : int
         How many steps to take between evaluations of the colvars and
         possible bounce events.
-        
+    save_state : bool
+        Whether to save the system state upon collision with a boundary.
+    save_one_state_for_all_boundaries : bool
+        Whether to save at least one state for each of the boundaries
+        in the simulation.
+    check_state_interval : float
+        If one state is being saved for all boundaries, define an 
+        interval at which to check each of the boundaries to see
+        if a state is saved for it. If so, then stop saving states.
     """
+    
     def __init__(self):
         self.max_steps = -1
         self.eval_stride = -1
@@ -116,6 +127,7 @@ class Seekr_namd_settings():
         Use the SEEKR Model() object settings to fill out this object
         with relevant quantities.
         """
+        
         self.max_steps = model.calculation_settings.num_production_steps
         self.eval_stride = model.namd_settings.eval_stride
         return
@@ -125,6 +137,7 @@ class Seekr_namd_settings():
         Convert all settings in this object to a format which can be
         provided to the SEEKR portion of the NAMD script.
         """
+        
         my_string = "\n# SEEKR variables\n"
         my_string += add_string_buffer("set crossing", "0")
         my_string += add_string_buffer("set whoami", "none")
@@ -137,6 +150,7 @@ class Seekr_namd_settings():
         
         for milestone in anchor.milestones:
             assert milestone.alias_index >= 0
+            print("milestone.neighbor_anchor_index:", milestone.neighbor_anchor_index)
             assert milestone.neighbor_anchor_index >= 0
             anchor_index_set = "set ANCHOR_{0}".format(milestone.alias_index)
             my_string += add_string_buffer(anchor_index_set, 
@@ -263,68 +277,60 @@ for {set stepnum %d} {$stepnum < $max_steps} {incr stepnum $EVAL_STRIDE} {
         my_string += routine_tail_string
         return my_string
     
-class MMVT_sim_namd_factory():
+def create_sim_namd(model, anchor, output_filename):
     """
-    Create the namd_openmm objects which will be used to run MMVT
-    calculations in NAMD.
+    Take all relevant model and anchor information and generate
+    the necessary NAMD scripts to run the simulation.
+    
+    Parameters
+    ----------
+    model : Model()
+        The Model which contains the anchor and all settings for
+        the simulation that is about to be run.
+        
+    anchor : Anchor()
+        The anchor object that this NAMD simulation applies to.
+        
+    output_filename : str
+        The base name of various output files produced by NAMD.
     """
-    def __init__(self):
-        return
-        
-    def create_sim_namd(self, model, anchor, output_filename):
-        """
-        Take all relevant model and anchor information and generate
-        the necessary NAMD scripts to run the simulation.
-        
-        Parameters
-        ----------
-        model : Model()
-            The Model which contains the anchor and all settings for
-            the simulation that is about to be run.
+    
+    sim_namd = common_sim_namd.Sim_namd()
+    building_directory = os.path.join(
+        model.anchor_rootdir, anchor.directory, anchor.building_directory)
+    box_vectors = None
+    if anchor.amber_params is not None:
+        inpcrd = None
+        if anchor.amber_params.inpcrd_filename is not None \
+                and anchor.amber_params.inpcrd_filename != "":
+            inpcrd_filename = os.path.join(
+                building_directory, anchor.amber_params.inpcrd_filename)
+            inpcrd = parmed.amber.Rst7(inpcrd_filename)
             
-        anchor : Anchor()
-            The anchor object that this NAMD simulation applies to.
-            
-        output_filename : str
-            The base name of various output files produced by NAMD.
-        """
-        sim_namd = common_sim_namd.Sim_namd()
-        building_directory = os.path.join(
-            model.anchor_rootdir, anchor.directory, anchor.building_directory)
-        box_vectors = None
-        if anchor.amber_params is not None:
-            inpcrd = None
-            if anchor.amber_params.inpcrd_filename is not None \
-                    and anchor.amber_params.inpcrd_filename != "":
-                inpcrd_filename = os.path.join(
-                    building_directory, anchor.amber_params.inpcrd_filename)
-                inpcrd = parmed.amber.Rst7(inpcrd_filename)
-                
-            if anchor.amber_params.box_vectors is None:
-                assert inpcrd is not None, "If box_vectors field is "\
-                    "empty, then an inpcrd must be provided."
-                assert inpcrd.box_vectors is not None, "The provided "\
-                    "inpcrd file contains no box vectors: "+inpcrd_filename
-                box_vectors = inpcrd.box_vectors
-            else:
-                box_vectors = anchor.amber_params.box_vectors
-                
-            assert box_vectors is not None, "No source of box vectors provided."
-        
-        elif anchor.charmm_params is not None:
-            raise Exception("Charmm systems not yet implemented")
-        
+        if anchor.amber_params.box_vectors is None:
+            assert inpcrd is not None, "If box_vectors field is "\
+                "empty, then an inpcrd must be provided."
+            assert inpcrd.box_vectors is not None, "The provided "\
+                "inpcrd file contains no box vectors: "+inpcrd_filename
+            box_vectors = inpcrd.box_vectors
         else:
-            print("anchor.index", anchor.index)
-            raise Exception("No Amber or Charmm input settings detected.")
-        
-        sim_namd.namd_root = common_sim_namd.Namd_root()
-        sim_namd.namd_root.fill_out_from_model(model, anchor, output_filename)
-        sim_namd.namd_root.periodic_boundary_conditions\
-            .assign_cell_basis_vectors(box_vectors)
-        sim_namd.colvars_config = Colvars_config()
-        sim_namd.colvars_config.fill_out_from_model(model)
-        sim_namd.seekr_namd_settings = Seekr_namd_settings()
-        sim_namd.seekr_namd_settings.fill_out_from_model(model)
-        return sim_namd
-
+            box_vectors = anchor.amber_params.box_vectors
+            
+        assert box_vectors is not None, "No source of box vectors provided."
+    
+    elif anchor.charmm_params is not None:
+        raise Exception("Charmm systems not yet implemented")
+    
+    else:
+        print("anchor.index", anchor.index)
+        raise Exception("No Amber or Charmm input settings detected.")
+    
+    sim_namd.namd_root = common_sim_namd.Namd_root()
+    sim_namd.namd_root.fill_out_from_model(model, anchor, output_filename)
+    sim_namd.namd_root.periodic_boundary_conditions\
+        .assign_cell_basis_vectors(box_vectors)
+    sim_namd.colvars_config = Colvars_config()
+    sim_namd.colvars_config.fill_out_from_model(model)
+    sim_namd.seekr_namd_settings = Seekr_namd_settings()
+    sim_namd.seekr_namd_settings.fill_out_from_model(model)
+    return sim_namd

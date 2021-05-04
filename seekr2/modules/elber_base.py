@@ -5,6 +5,9 @@ Base classes, objects, and constants used in multiple stages of the
 Elber milestoning calculations.
 """
 
+# TODO: update this code and documentation once the Elber plugin is
+# fixed.
+
 import numpy as np
 from parmed import unit
 import mdtraj

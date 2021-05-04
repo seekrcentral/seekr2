@@ -13,31 +13,9 @@ def openmm_read_output_file_list(output_file_list, max_time=None,
                                  existing_lines=[], skip_restart_check=False):
     """
     Read the output files produced by the plugin (backend) of 
-    openmmvt and extract transition statistics and times
-
-    Parameters
-    ----------
-    output_file_list : list
-        The names of the openmmvt output file to read for 
-        extracting transition statistics
-
-    Returns
-    -------
-    N_i_j_alpha_dict : dict
-        dictionary of counts of transitions within cell alpha 
-        between boundaries i and j.
-        
-    R_i_alpha_dict : dict
-        dictionary of transition incubation times spent before 
-        touching surface i
-    
-    N_alpha_beta_dict : dict
-        dictionary array of counts that a transition between cell 
-        alpha and beta
-        
-    T_alpha : float
-        Total time spent within this cell.
+    SEEKR2 and extract transition statistics and times
     """
+    
     MAX_ITER = 200000
     if len(existing_lines) == 0:
         files_lines = []
@@ -83,7 +61,6 @@ def openmm_read_output_file_list(output_file_list, max_time=None,
                     counter += 1
                 
             lines += file_lines
-        
         
     else:
         lines = existing_lines
@@ -143,9 +120,6 @@ def openmm_read_output_file_list(output_file_list, max_time=None,
     R_i_alpha_average = defaultdict(float)
     R_i_alpha_std_dev = defaultdict(float)
     R_i_alpha_total = defaultdict(float)
-    T_alpha_average = 0.0
-    T_alpha_std_dev = 0.0
-    T_alpha_total = 0.0
     
     for key in R_i_alpha_list:
         R_i_alpha_average[key] = np.mean(R_i_alpha_list[key])
@@ -169,7 +143,7 @@ def openmm_read_output_file_list(output_file_list, max_time=None,
 def openmm_read_statistics_file(statistics_file_name):
     """
     Read the statistics file produced by the plugin (backend) of
-    openmmvt and extract transition statistics and times.
+    SEEKR2 and extract transition statistics and times.
 
     Parameters
     ----------
@@ -239,7 +213,7 @@ def namd_read_output_file_list(output_file_list, anchor, timestep,
                                skip_restart_check=False):
     """
     Read the output files produced by the plugin (backend) of 
-    namd and extract transition statistics and times
+    NAMD and extract transition statistics and times
 
     Parameters
     ----------
@@ -326,7 +300,6 @@ def namd_read_output_file_list(output_file_list, anchor, timestep,
                     counter += 1
                 
             lines += file_lines
-        
         
     else:
         lines = existing_lines
@@ -424,10 +397,6 @@ def namd_read_output_file_list(output_file_list, anchor, timestep,
     R_i_alpha_average = defaultdict(float)
     R_i_alpha_std_dev = defaultdict(float)
     R_i_alpha_total = defaultdict(float)
-    T_alpha_average = 0.0
-    T_alpha_std_dev = 0.0
-    T_alpha_total = 0.0
-    
     for key in R_i_alpha_list:
         R_i_alpha_average[key] = np.mean(R_i_alpha_list[key])
         R_i_alpha_std_dev[key] = np.std(R_i_alpha_list[key])
@@ -468,25 +437,57 @@ class MMVT_anchor_statistics():
         after bouncing off of surface i before touching another 
         surface, and was observed within cell alpha. The keys of the 
         dict are an int i, and the value is a float representing time.
+    
+    R_i_average : dict
+        The averages of the values in R_i_list.
         
+    R_i_std_dev : dict
+        The standard deviations of the values in R_i_list.
+        
+    R_i_total : dict
+        The sum total of the values in R_i_list.
+    
     N_alpha_beta_dict : dict
         Represents the N_alpha_beta quantities in the MMVT calculation.
         The attribute represents the number of times the system bounced
         off of the surface between the current cell alpha and another
         cell beta.
+    
+    T_alpha_list : list
+        A list of times between bounces within anchor alpha, regardless
+        of the identity of the source or destination milestones.
         
-    T_alpha : float
+    T_alpha_average : float
+        The average of the values in T_alpha_list.
+        
+    T_alpha_std_dev : float
+        The standard deviation of the values in in T_alpha_list.
+    
+    T_alpha_total : float
         Represents the quantity T_alpha in the MMVT calculation. The
         attribute represents the total time spent within the simulation
         not counting the time at the beginning spent before any bounces
         occurred, and also not counting the time spent at the end after
-        the last bounce occurred.
+        the last bounce occurred. This is equivalent to the sum total
+        of the values in T_alpha_list.
+    
+    N_alpha_beta : dict
+        A dictionary whose keys are the indices of adjacent anchors and
+        whose values are the counts of bounces against those anchors.
         
+    k_alpha_beta : dict
+        A dictionary whose keys are the indices of adjacent anchors and
+        whose values are the rate of transitions between those anchors.
+    
     alpha : int
         The index of the anchor whose transition statistics are 
         represented by this object.
     
+    existing_lines : list
+        If the output files for this anchor has already been read, then
+        those lines will be stored here to save on I/O.
     """
+    
     def __init__(self, alpha):
         
         self.N_i_j_alpha = None
@@ -507,7 +508,8 @@ class MMVT_anchor_statistics():
     def read_output_file_list(self, engine, output_file_list, max_time, anchor, 
                               timestep):
         """
-        
+        Depending on the engine and other settings, read the SEEKR2 
+        output files to fill out transition statistics.
         """
         if engine == "openmm":
             self.N_i_j_alpha, self.R_i_alpha_list, self.R_i_alpha_average, \
@@ -557,38 +559,84 @@ class MMVT_data_sample(common_analyze.Data_sample):
     Attributes:
     -----------
     model : Model()
+        The SEEKR2 model the calculation is being performed on.
+        
+    k_alpha_beta : defaultdict
+        A dictionary whose keys are 2-tuples of source/destination
+        anchor indices and whose values are the rates between those
+        anchors.
     
-    k_alpha_beta :
+    N_i_j_alpha : list
+        A list where each entry corresponds to anchor index alpha, and
+        are defaultdicts whose keys are 2-tuples of source/destination
+        milestone indices, and whose values are counts of transitions
+        between those milestones.
     
-    N_i_j_alpha : 
+    R_i_alpha : list
+        A list where each entry corresponds to anchor index alpha, and
+        are defaultdicts whose keys are integers of source
+        milestone indices, and whose values are incubation times of
+        transitions between milestones.
+        
+    T_alpha : list
+        A list of total times spent in each anchor.
     
-    R_i_alpha :
+    pi_alpha : numpy.array()
+        For each anchor alpha, contains the stationary distribution
+        within that anchor.
     
-    T_alpha : 
+    N_ij : dict
+        A dictionary with keys of 2-tupes of source and destination
+        milestone, and whose values are the counts of transitions.
+        
+    R_i : dict
+        A dictionary with keys of source milestone indices, and whose
+        values are incubation times spent at those milestones.
+        
+    T : float
+        Total time: nothing more than a normalization factor for the 
+        calculations.
     
-    pi_alpha : 
-    
-    N_ij :
-    
-    R_i :
-    
-    T :
-    
-    Q : 
-    
-    Q_hat : 
-    
-    K : 
-    
-    K_hat :
-    
-    N_ij : 
-    
-    R_i :
-    
-    p_i : 
-    
-    free_energy_profile : 
+    Q : numpy.array()
+        A 2x2 rate matrix for a milestoning calculation. No sink states.
+        
+    Q_hat : numpy.array()
+        A 2x2 rate matrix for a milestoning calculation. Sink state(s) 
+        included.
+        
+    K : numpy.array()
+        A Markov transition probability matrix constructed from Q. No
+        sink states.
+        
+    K_hat : numpy.array()
+        A Markov transition probability matrix constructed from Q. 
+        Sink state(s) included.
+        
+    p_i : numpy.array()
+        Stationary probabilities along the milestones.
+        
+    free_energy_profile : numpy.array()
+        The free energy profile as computed by the stationary 
+        probabilities.
+        
+    MFPTs : dict
+        A dictionary whose keys are 2-tuples of milestone end states, 
+        and whose values are mean first passage times (MFPTs) between
+        those states.
+        
+    k_off : float
+        The overall k-off (in s^-1) from a stationary distribution to 
+        the bulk state.
+        
+    k_ons : dict
+        A set of k-ons (in M^-1 * s^-1) from the bulk state to each of
+        the end states.
+        
+    bd_transition_counts : dict
+        A dictionary whose keys are bd_milestones, and whose values are
+        more dictionaries, whose keys are states the BD simulations 
+        can end at, and whose values are the counts of encountering
+        those states.
     """
     def __init__(self, model, N_alpha_beta, k_alpha_beta, N_i_j_alpha, 
                  R_i_alpha, T_alpha):
@@ -687,7 +735,6 @@ class MMVT_data_sample(common_analyze.Data_sample):
             
         prob_equil = np.zeros((flux_matrix_dimension,1))
         prob_equil[bulk_index] = 1.0
-        #self.pi_alpha = np.linalg.solve(flux_matrix.T, prob_equil)
         self.pi_alpha = abs(la.solve(flux_matrix.T, prob_equil))
         return
     
@@ -704,7 +751,6 @@ class MMVT_data_sample(common_analyze.Data_sample):
         for alpha, anchor in enumerate(self.model.anchors):
             if anchor.bulkstate:
                 continue
-            #anchor_stats = self._anchor_stats_list[i]
             this_anchor_pi_alpha = float(self.pi_alpha[alpha])
             sum_pi_alpha_over_T_alpha += this_anchor_pi_alpha \
                 / self.T_alpha[alpha]
@@ -714,13 +760,11 @@ class MMVT_data_sample(common_analyze.Data_sample):
         for alpha, anchor in enumerate(self.model.anchors):
             if anchor.bulkstate:
                 continue
-            #anchor_stats = self._anchor_stats_list[counter]
             this_anchor_pi_alpha = float(self.pi_alpha[alpha])
             T_alpha = self.T_alpha[alpha]
             assert T_alpha >= 0.0, \
                 "T_alpha should be positive: {}".format(T_alpha)
             time_fraction = self.T / T_alpha
-            #time_fraction = 1.0 / T_alpha
             N_i_j_alpha = self.N_i_j_alpha[alpha]
             
             for key in N_i_j_alpha:
@@ -751,6 +795,5 @@ class MMVT_data_sample(common_analyze.Data_sample):
                         
             else:
                 raise Exception("R_i_alpha should always be set.")
-                #for milestone_id in anchor.get_ids():
-                #    self.R_i[milestone_id] += self.T * this_anchor_pi_alpha
+                
         return

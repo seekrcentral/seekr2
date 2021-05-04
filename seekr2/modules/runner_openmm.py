@@ -19,7 +19,6 @@ import seekr2.modules.common_base as base
 import seekr2.modules.mmvt_base as mmvt_base
 import seekr2.modules.elber_base as elber_base
 import seekr2.modules.common_prepare as common_prepare
-import seekr2.modules.common_sim_openmm as common_sim_openmm
 import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
 import seekr2.modules.elber_sim_openmm as elber_sim_openmm
 
@@ -83,12 +82,20 @@ def search_for_state_to_load(model, anchor):
     return None
 
 def get_data_file_length(data_file_name):
-    '''Open a file, and read the number of lines in it
-    Input:
-     - data_file_name: A string of the file name to read the length of
-    Output:
-     - file_length: An integer of the number of lines within the file
-    '''
+    """
+    Open a file, and read the number of lines in it.
+    
+    Parameters
+    -----------
+    data_file_name : str
+        A path to the file name to read the length of.
+    
+    Returns
+    -------
+    file_length : int
+        The number of lines within the file.
+    """
+    
     if not os.path.exists(data_file_name): # if the file doesn't exist, return 0
         return 0
     data_file = open(data_file_name, 'r') # open the file for reading
@@ -97,21 +104,27 @@ def get_data_file_length(data_file_name):
     return file_length 
 
 def read_reversal_data_file_last(data_file_name):
-    '''Open the data file, read the final transition, and return whether the
+    """
+    Open the data file, read the final transition, and return whether the
     latest reversal was successful.
-    Input:
-     - data_file_name: A string of the file name to read the transitions from
-    Output:
-     - success: A boolean about whether the latest trajectory was successful
-    '''
+    
+    Parameters
+    -----------
+    data_file_name : str
+        A path to the file name to read the transitions from
+    
+    Returns
+    -------
+    success : bool
+        Whether the latest trajectory was successful
+    """
+    
     data_file = open(data_file_name, 'r')
     line = data_file.readlines()[-1]
     data_file.close()
     if line[0] != '2': # TODO: HACKY!
-        #print("other boundary crossed") # TODO: remove
         return True
     else:
-        #print("self boundary crossed") # TODO: remove
         return False
 
 def cleanse_anchor_outputs(model, anchor):
@@ -162,7 +175,6 @@ def get_last_bounce(data_file_name):
         return None
     with open(data_file_name, 'r') as data_file:
         line = data_file.readlines()[-1]
-    print("line:", line)
     if line.startswith("#"):
         return None
     else:
@@ -187,7 +199,10 @@ class Runner_openmm():
         
     anchor : Anchor()
         The anchor is the spatial object for this simulation.
-        
+    
+    output_directory : str
+        A path to the directory where output will be written.
+    
     state_prefix : str or None
         If str, then this will be the prefix for the MMVT openMM plugin
         to generate state files.
@@ -201,6 +216,7 @@ class Runner_openmm():
         substantial) speed gain may be obtained if set to False but
         starting structures must exist for all adjacent anchors.
     """
+    
     def __init__(self, model, anchor):
         self.model = model
         self.sim_openmm = None
@@ -257,12 +273,6 @@ class Runner_openmm():
                 "%s.restart%d.%s" % (self.basename, restart_index, 
                                      self.extension))
         else:
-            """ # TODO: remove
-            output_files_glob = os.path.join(
-                self.output_directory, self.glob)
-            output_restarts_list = glob.glob(output_files_glob)
-            if len(output_restarts_list) > 0:
-            """
             if common_prepare.anchor_has_files(self.model, self.anchor):
                 if not force_overwrite:
                     print("This anchor already has existing output files "\
@@ -274,32 +284,6 @@ class Runner_openmm():
                     raise Exception("Cannot overwrite existing outputs.")
                 else:
                     cleanse_anchor_outputs(self.model, self.anchor)
-                    """ # TODO: remove
-                    for output_file in output_restarts_list:
-                        os.remove(output_file)
-                    dcd_glob = os.path.join(
-                        self.output_directory, '%s*.dcd' % self.basename)
-                    for dcd_file in glob.glob(dcd_glob):
-                        os.remove(dcd_file)
-                    backup_file = os.path.join(self.output_directory, 
-                                           RESTART_CHECKPOINT_FILENAME)
-                    if os.path.exists(backup_file):
-                        os.remove(backup_file)
-                    states_dir = os.path.join(self.output_directory, 
-                                              SAVE_STATE_DIRECTORY)
-                    if os.path.exists(states_dir):
-                        shutil.rmtree(states_dir)
-                    
-                    elber_rev_glob = os.path.join(
-                        self.output_directory, elber_base.ELBER_REV_GLOB)
-                    for elber_rev_file in glob.glob(elber_rev_glob):
-                        os.remove(elber_rev_file)
-                        
-                    elber_fwd_glob = os.path.join(
-                        self.output_directory, elber_base.ELBER_FWD_GLOB)
-                    for elber_fwd_file in glob.glob(elber_fwd_glob):
-                        os.remove(elber_fwd_file)
-                    """
                         
             default_output_filename = os.path.join(
                 self.output_directory, 
@@ -314,7 +298,6 @@ class Runner_openmm():
         if save_state_file:
             state_prefix = self.state_prefix
             self.save_all_states = True
-            #self.save_one_state_for_all_boundaries=False
             if not os.path.exists(state_dir):
                 os.mkdir(state_dir)
         else:
@@ -325,9 +308,7 @@ class Runner_openmm():
     
     def run(self, sim_openmm_obj, restart=False, load_state_file=None, 
             restart_index=1):
-        """
-        Run the MMVT OpenMM simulation.
-        """
+        """Run the SEEKR simulation."""
         self.sim_openmm = sim_openmm_obj
         settings = self.model.openmm_settings
         calc_settings = self.model.calculation_settings
@@ -390,9 +371,7 @@ class Runner_openmm():
         return
     
     def run_mmvt(self, traj_filename):
-        """
-        
-        """
+        """Run the SEEKR2 MMVT calculation."""
         settings = self.model.openmm_settings
         calc_settings = self.model.calculation_settings
         simulation = self.sim_openmm.simulation
@@ -458,10 +437,7 @@ class Runner_openmm():
         return
     
     def run_elber(self, traj_filename):
-        """
-        
-        """
-        settings = self.model.openmm_settings
+        """Run the SEEKR2 Elber calculation."""
         calc_settings = self.model.calculation_settings
         umbrella_simulation = self.sim_openmm.umbrella_simulation
         umbrella_trajectory_reporter_interval = calc_settings.umbrella_trajectory_reporter_interval
@@ -637,7 +613,6 @@ class Runner_openmm():
         umbrella_simulation.saveCheckpoint(self.restart_checkpoint_filename)
         return
     
-    
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser(description=__doc__)
     argparser.add_argument(
@@ -742,11 +717,10 @@ if __name__ == "__main__":
         output_file = default_output_file
     
     if model.get_type() == "mmvt":
-        sim_openmm_factory = mmvt_sim_openmm.MMVT_sim_openmm_factory()
+        sim_openmm_obj = mmvt_sim_openmm.create_sim_openmm(
+            model, myanchor, output_file, state_file_prefix)
     elif model.get_type() == "elber":
-        sim_openmm_factory = elber_sim_openmm.Elber_sim_openmm_factory()
+        sim_openmm_factory = elber_sim_openmm.create_sim_openmm(
+            model, myanchor, output_file, state_file_prefix)
     
-    sim_openmm_obj = sim_openmm_factory.create_sim_openmm(
-        model, myanchor, output_file, state_file_prefix)
-        
     runner.run(sim_openmm_obj, restart, load_state_file, restart_index)

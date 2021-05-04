@@ -162,7 +162,7 @@ def test_Input_model(tmp_path):
     assert len(model_input.cv_inputs[0].input_anchors) == 10
     print("model_input.root_directory:", model_input.root_directory)
     
-    model = prepare.generate_openmmvt_model_and_filetree(
+    model, xml_path = prepare.generate_openmmvt_model_and_filetree(
         model_input, True)
     model.anchor_rootdir = tmp_path
     assert os.path.exists(os.path.join(model.anchor_rootdir, "anchor_1"))

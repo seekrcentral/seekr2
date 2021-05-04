@@ -13,13 +13,15 @@ from parmed import unit
 
 import seekr2.libraries.serializer.serializer as serializer
 
+# A glob for BrownDye output files
 BROWNDYE_OUTPUT = "results*.xml"
 
 def strBool(bool_str):
     """
-    Take the string "true" or "false" of any case and returns a 
+    Take the string "true" or "false" of any case and return a 
     boolean object.
     """
+    
     if bool_str.lower() == "true":
         return True
     elif bool_str.lower() == "false":
@@ -45,6 +47,7 @@ def order_files_numerically(file_list):
     sorted_file_list : list
         A new list of strings sorted numerically
     """
+    
     sorted_file_list = []
     numerical_dict = {}
     for i, file_name in enumerate(file_list):
@@ -64,6 +67,7 @@ class Box_vectors(serializer.Serializer):
     A box vector object that contains the a, b, and c vectors in units
     of nanometers.
     """
+    
     def __init__(self):
         self.ax = 1.0
         self.ay = 0.0
@@ -91,6 +95,7 @@ class Box_vectors(serializer.Serializer):
         Fill out the entries within this object from a Quantity
         object representing box vectors.
         """
+        
         values = quantity.value_in_unit(unit.nanometer)
         print("values:", values)
         self.ax = values[0][0]
@@ -111,6 +116,7 @@ class Box_vectors(serializer.Serializer):
         angles between them. Compute the full 3x3 box_vectors and assign
         to this object.
         """
+        
         self.ax = box_6_vector[0]
         self.ay = 0.0
         self.az = 0.0
@@ -134,6 +140,7 @@ class Box_vectors(serializer.Serializer):
         """
         Compute the volume of the box defined by these box vectors.
         """
+        
         A = np.array([self.ax, self.ay, self.az])
         B = np.array([self.bx, self.by, self.bz])
         C = np.array([self.cx, self.cy, self.cz])
@@ -164,7 +171,12 @@ class Langevin_integrator_settings(serializer.Serializer):
     timestep : float, Default 0.002
         The length of time taken by a simulation step (in units of 
         picoseconds).
+        
+    rigid_tolerance :  float, Default 1e-6
+        The acceptable tolerance when placing atoms of a rigid bond
+        length or angle.
     """
+    
     def __init__(self):
         self.friction_coefficient = 1.0
         self.target_temperature = 298.15
@@ -191,9 +203,9 @@ class Barostat_settings_openmm(serializer.Serializer):
         
     frequency : int, Default 25
         the Monte Carlo frequency (in time steps) at which pressure 
-        changes should be attempted. This only affects OpenMM's 
-        barostat.
+        changes should be attempted. 
     """
+    
     def __init__(self):
         self.target_pressure = 1.0
         self.target_temperature = 298.15
@@ -223,8 +235,8 @@ class Barostat_settings_namd(serializer.Serializer):
     decay_timescale : float, Default 0.1
         Describes the barostat damping time scale (in ps) for the 
         Langevin piston method.
-        
     """
+    
     def __init__(self):
         self.target_pressure = 1.0
         self.target_temperature = 298.15
@@ -240,12 +252,15 @@ class Cuda_platform_settings(serializer.Serializer):
     -----------
     cuda_device_index : str, Default "0"
         The indices of the GPU device(s) on which to perform the 
-        simulation. Example: "0", "1", "0,1", etc...
+        simulation. Examples: "0", "1", "0,1", etc... Inputs
+        are the same as they would be for the CudaDeviceIndex
+        argument of an OpenMM simulation.
         
     cuda_precision : str, Default "mixed"
         The precision to use within the CUDA kernels. Options which
         OpenMM accepts include: "single", "mixed", and "double".
     """
+    
     def __init__(self):
         self.cuda_device_index = "0"
         self.cuda_precision = "mixed"
@@ -284,7 +299,7 @@ class Openmm_settings(serializer.Serializer):
         This parameter may be used for hydrogen mass repartitioning.
         If a float is provided, then mass will be shifted from every
         hydrogen atom's bonded heavy atom to the hydrogen, such that
-        the hydrogen atoms will have that value (in AMU) for their
+        the hydrogen atoms will have this value (in AMU) for their
         masses. If None, then the default hydrogen mass is used.
         
     rigidWater : bool, Default True
@@ -309,23 +324,8 @@ class Openmm_settings(serializer.Serializer):
         calculations.
         
     initial_temperature : float, Default 298.15
-        The temperature to use to initialize the atomic velocities
-        randomly in units of Kelvin.
-        
-    energy_reporter_interval : int or None, Default None
-        The interval to report system state information, including
-        energy. If set to None, then this information is never printed.
-        
-    restart_checkpoint_interval : int or None, Default None
-        The interval to write a restart checkpoint for the system to
-        be easily restarted. None means do not write backups.
-        
-    trajectory_reporter_interval : int or None, Default None
-        The interval to write frames of the trajectory to file.
-        None means do not write to a trajectory file.
-        
-    total_simulation_length : int, Default 30000
-        The total number of time steps to simulate.
+        The temperature (in units of Kelvin) to use to initialize the 
+        atomic velocities randomly .
     """
     def __init__(self):
         self.nonbonded_method = "PME"
@@ -334,7 +334,7 @@ class Openmm_settings(serializer.Serializer):
         self.hydrogenMass = None
         self.rigidWater = True
         self.langevin_integrator = Langevin_integrator_settings()
-        self.barostat = None #Barostat_settings()
+        self.barostat = None
         self.cuda_platform_settings = Cuda_platform_settings()
         self.reference_platform = False
         self.run_minimization = False
@@ -371,27 +371,13 @@ class Namd_settings(serializer.Serializer):
         Whether to run minimizations before doing any calculations.
         
     initial_temperature : float, Default 298.15
-        The temperature to use to initialize the atomic velocities
-        randomly in units of Kelvin.
-        
-    energy_reporter_interval : int or None, Default None
-        The interval to report system state information, including
-        energy. If set to None, then this information is never printed.
-        
-    restart_checkpoint_interval : int or None, Default None
-        The interval to write a restart checkpoint for the system to
-        be easily restarted. None means do not write backups.
-        
-    trajectory_reporter_interval : int or None, Default None
-        The interval to write frames of the trajectory to file.
-        None means do not write to a trajectory file.
-        
-    total_simulation_length : int, Default 30000
-        The total number of time steps to simulate.
-        
+        The temperature (in units of Kelvin) to use to initialize 
+        the atomic velocities randomly .
+    
     eval_stride : int, default 10
         How frequently (in timesteps) to check for boundary crossings.
     """
+    
     def __init__(self):
         self.watermodel = ""
         self.PMEGridSpacing = 0.1
@@ -407,19 +393,19 @@ class Namd_settings(serializer.Serializer):
 class Browndye_settings(serializer.Serializer):
     """
     Read and parse the outputs from the BrownDye program, which runs
-    the BD stage of the MMVT SEEKR calculation
+    the BD stage of the SEEKR2 calculation
     
     Attributes:
     -----------
     browndye_bin_dir : str, Default ""
-        A path to the BrownDye programs. If added to sytem $PATH, then
-        this string can be empty.
+        A path to the BrownDye programs. If Browndye's bin/ directory 
+        has been added to system $PATH, then this string can be empty.
         
     receptor_pqr_filename : str
-        The path to the receptor molecule's filename.
+        The path to the receptor molecule's PQR-format file.
         
     ligand_pqr_filename : str
-        The path to the ligand molecule's filename.
+        The path to the ligand molecule's PQR-format file.
         
     apbs_grid_spacing : float
         The resolution (in Angstroms) of the APBS (electrostatics) 
@@ -428,7 +414,7 @@ class Browndye_settings(serializer.Serializer):
     n_threads : int, Default 1
         The number of cores to use for the BrownDye calculation.
         
-    recompute_ligand_electrostatics : boo, Default True
+    recompute_ligand_electrostatics : bool, Default True
         Whether ligand electrostatics should be computed for the
         bd_milestone portions of the calculation.
         
@@ -443,8 +429,8 @@ class Browndye_settings(serializer.Serializer):
         
     ghost_indices_lig : list
         Similar to ghost_indices_rec, only these exist on the ligand.
-    
     """
+    
     def __init__(self):
         self.browndye_bin_dir = ""
         self.receptor_pqr_filename = ""
@@ -478,8 +464,8 @@ class Amber_params(serializer.Serializer):
         The path to the PDB file from which to obtain the atomic
         coordinates. If it's an empty string or None, then the
         coordinates are taken from the inpcrd file.
-    
     """
+    
     def __init__(self):
         self.prmtop_filename = ""
         self.inpcrd_filename = ""
@@ -489,7 +475,7 @@ class Amber_params(serializer.Serializer):
     
 class Forcefield_params(serializer.Serializer):
     """
-    Contains parameters for an openmm simulation starting from a set
+    Contains parameters for an OpenMM simulation starting from a set
     of XML forcefields.
     
     Attributes:
@@ -522,12 +508,12 @@ class Forcefield_params(serializer.Serializer):
 
 class Ion(serializer.Serializer):
     """
-    An input XML file ion for input to BrownDye and APBS calculations.
+    An ion for input to BrownDye and APBS calculations.
     
     Attributes:
     -----------
     radius : float
-        The radius (in nanometers)
+        The radius (in Angstroms)
     
     charge : float
         The charge (in proton charge) of the ion.
@@ -535,6 +521,7 @@ class Ion(serializer.Serializer):
     conc : float
         The concentration (in moles/liter) of the ion in the solution.
     """
+    
     def __init__(self):
         self.radius = -1.0
         self.charge = -1.0
@@ -547,10 +534,9 @@ class K_on_info(serializer.Serializer):
     
     Attributes:
     -----------
-    source_milestones : list
-        A list of milestones which act as 'sources' for the ligand. 
-        This will be a list of integers whose indices apply to the 
-        model's milestones.
+    bd_milestones : list
+        A list of BD_milestone() objects which act as reaction 
+        surfaces in the Browndye simulations.
         
     b_surface_directory : str
         The directory where to find the results XML file output by
@@ -568,6 +554,7 @@ class K_on_info(serializer.Serializer):
         A list of Ion() objects which will be provided for APBS
         calculations.
     """
+    
     def __init__(self):
         self.bd_milestones = []
         self.b_surface_directory = "b_surface"
@@ -613,7 +600,7 @@ class BD_milestone(serializer.Serializer):
     
     ligand_indices : list
         The atom indices (starting from zero) whose center of mass
-        defines the center of the ligand (or an import part of the 
+        defines the center of the ligand (or an important part of the 
         ligand).
         
     extracted_directory : str
@@ -624,7 +611,14 @@ class BD_milestone(serializer.Serializer):
         The directory where the FHPD simulations will be run from for
         this BD_milestone.
     
+    max_b_surface_trajs_to_extract : int
+        After the b-surface simulation, members of the encounter 
+        complexes will be extracted to construct the FHPD. Then, these
+        will be run as their own independent BD simulations. This
+        parameter defines the maximum number of structures to extract
+        from the FHPD and run simulations for.
     """
+    
     def __init__(self):
         self.index = -1
         self.directory = ""
@@ -643,25 +637,25 @@ class BD_milestone(serializer.Serializer):
 class Milestone(serializer.Serializer):
     """
     Milestones represent the boundaries within the simulation.
-    A given Anchor() object may contain any number of Milestone() 
+    A given anchor object may contain any number of milestone
     objects.
     
     Attributes:
     -----------
     index : int
-        This is index of a Milestone() instance across the entire model.
-        Two Milestone() instances in different Anchor() objects should
+        This is index of a milestone instance across the entire model.
+        Two milestone instances in different anchor objects should
         share the same index if the milestones represent the same
-        boundary between two adjacent Anchors.
+        boundary between two adjacent anchors.
         
     neighbor_anchor_index : int
-        The index of the Anchor() instance on the other side of this
-        milestone from the Anchor() instance that contains this
-        Milestone() object.
+        The index of the anchor instance on the other side of this
+        milestone from the anchor instance that contains this
+        milestone object.
         
     alias_index : int
         This field can be used to represent a simpler numbering scheme
-        within an Anchor(). This is convenient for the low-level 
+        within an anchor. This is convenient for the backend 
         plugins.
         
     cv_index : int
@@ -686,6 +680,7 @@ class Milestone(serializer.Serializer):
         Obtain and return the collective variable object which
         applies to this milestone.
         """
+        
         return model.collective_variables[self.cv_index]
 
 class Model(serializer.Serializer): 
@@ -703,6 +698,10 @@ class Model(serializer.Serializer):
     calculation_type : str
         A string representing the type of calculation that is being
         done by this Model object. Options include "MMVT" or "Elber"
+        
+    calculation_settings : MMVT_settings() or Elber_settings()
+        Settings general to any MD engine, including the number of
+        timesteps to run, backup intervals, etc.
         
     anchor_rootdir : str
         The directory which contains all the anchor directories. If
@@ -740,8 +739,8 @@ class Model(serializer.Serializer):
         
     anchors : list
         A list of Anchor() object instances for this model.
-        
     """
+    
     def __init__(self):
         self.temperature = 0.0
         self.calculation_type = "Unknown"
@@ -758,13 +757,18 @@ class Model(serializer.Serializer):
         return
     
     def get_type(self):
+        """
+        Return the calculation_type of this model, and check for
+        erronious entries to this field.
+        """
         if self.calculation_type.lower() == "elber":
-            #raise Exception("Elber milestoning is temporarily unavailable.")
+            raise Exception("Elber milestoning is temporarily unavailable.")
             return "elber"
         elif self.calculation_type.lower() == "mmvt":
             return "mmvt"
         else:
             error_msg = "Calculation type not available: "\
-                + "{1}. Available types are 'elber' and 'mmvt'.".format(
+                + "{}. Available types are 'elber' and 'mmvt'.".format(
                     self.calculation_type)
             raise Exception(error_msg)
+        

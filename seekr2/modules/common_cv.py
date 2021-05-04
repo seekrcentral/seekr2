@@ -1,8 +1,8 @@
 """
-mmvt/collective_variables.py
+common_cv.py
 
-Define any type of collective variable (or milestone shape) that might
-be used in an MMVT calculation.
+Define collective variable superclasses (also known as milestone 
+shapes) that might be used in SEEKR2 calculations.
 """
 
 import seekr2.libraries.serializer.serializer as serializer
@@ -10,13 +10,21 @@ import seekr2.libraries.serializer.serializer as serializer
 class Spherical_cv_anchor(serializer.Serializer):
     """
     This object represents an anchor within the concentric spherical
-    CV.
+    CV. Used for input purposes only.
     
     Attributes:
     -----------
     radius : float
         The radius of this spherical anchor in units of nanometers.
+    
+    lower_milestone_radius : float
+        Optionally define the locations of the milestones for each
+        anchor. This is the radius of the lower milestone.
         
+    upper_milestone_radius : float
+        Optionally define the locations of the milestones for each
+        anchor. This is the radius of the lower milestone.
+    
     starting_amber_params : Amber_params or None
         If Amber inputs are used for this anchor, this object contains
         the necessary inputs to start a new simulation.
@@ -33,8 +41,11 @@ class Spherical_cv_anchor(serializer.Serializer):
         Whether this anchor acts as a bulk state of a ligand-receptor
         system.
     """
+    
     def __init__(self):
         self.radius = 0.0
+        self.lower_milestone_radius = None
+        self.upper_milestone_radius = None
         self.starting_amber_params = None
         self.starting_forcefield_params = None
         self.bound_state = False
@@ -62,6 +73,7 @@ class Spherical_cv_input(serializer.Serializer):
         A list of Spherical_cv_anchor objects which specify inputs for
         the spherical anchors.
     """
+    
     def __init__(self):
         self.index = 0
         self.group1 = []
@@ -73,6 +85,7 @@ class Spherical_cv_input(serializer.Serializer):
         """
         Read a plain input file (as opposed to an XML)
         """
+        
         raise Exception("Reading a plain text file is not yet implemented. "\
                         "Only an XML CV input may be read at this time.")
         return
@@ -81,6 +94,7 @@ class Spherical_cv_input(serializer.Serializer):
         """
         Check user inputs to ensure they have been entered properly.
         """
+        
         last_radius = -1e9
         found_bulk_anchor = False
         for i, input_anchor in enumerate(self.input_anchors):

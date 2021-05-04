@@ -15,7 +15,6 @@ import seekr2.modules.mmvt_base as mmvt_base
 import seekr2.modules.elber_base as elber_base
 import seekr2.modules.common_sim_namd as common_sim_namd
 import seekr2.modules.mmvt_sim_namd as mmvt_sim_namd
-import seekr2.modules.elber_sim_namd as elber_sim_namd
 
 RESTART_CHECKPOINT_FILENAME = "backup_checkpoint"
 SAVE_STATE_DIRECTORY = "states/"
@@ -26,6 +25,7 @@ def search_for_state_to_load(model, anchor):
     Find an existing state in an adjacent anchor that could be used to
     seed this anchor as a set of starting positions.
     """
+    
     for milestone in anchor.milestones:
         neighbor_anchor = model.anchors[milestone.neighbor_anchor_index]
         for neighbor_milestone in neighbor_anchor.milestones:
@@ -50,6 +50,7 @@ def read_xsc_step_number(xsc_filename):
     Read a NAMD .xsc file to extract the latest step to use as input
     for restarts and such.
     """
+    
     last_step = 0
     with open(xsc_filename, "r") as f:
         for line in f.readlines():
@@ -64,6 +65,7 @@ def cleanse_anchor_outputs(model, anchor):
     Delete all simulation outputs for an existing anchor to make way
     for new outputs.
     """
+    
     if model.get_type() == "mmvt":
         basename = mmvt_base.NAMDMMVT_BASENAME
         extension = mmvt_base.NAMDMMVT_EXTENSION
@@ -129,7 +131,32 @@ class Runner_namd():
     anchor : Anchor()
         The anchor is the Voronoi Cell (MMVT) or milestoning (Elber) 
         within which the simulation will be run.
+        
+    namd_command : str
+        The command used to call NAMD. This would probably be "namd2"
+        under most circumstances, but could also allow the user to
+        run NAMD using "charmrun", for instance.
+        
+    namd_arguments : str
+        A string of arguments to pass to NAMD when the anchor's input
+        file is run.
+        
+    seekr2_output_files_glob : str
+        A glob of output files used to restart simulations.
+        
+    basename : str
+        The basename of this anchor's output files.
+        
+    extension : str
+        The extension of this anchor's output files.
+        
+    glob : str
+        A glob of the NAMD SEEKR output files.
+        
+    output_directory : str
+        A path to the directory where output will be written.
     """
+    
     def __init__(self, model, anchor, namd_command, namd_arguments):
         self.model = model
         self.sim_namd = None
@@ -139,7 +166,6 @@ class Runner_namd():
         self.seekr2_output_files_glob = ""
         self.basename = ""
         self.extension = ""
-        self.namd_input_filename = ""
         
         if model.get_type() == "mmvt":
             self.glob = mmvt_base.NAMDMMVT_GLOB
@@ -153,12 +179,7 @@ class Runner_namd():
             self.glob = elber_base.OPENMM_ELBER_GLOB
             self.basename = elber_base.OPENMM_ELBER_BASENAME
             self.extension = elber_base.OPENMM_ELBER_EXTENSION
-            #assert stage in ["temp_equil", "umbrella", "fwd_rev"], \
-            #    "stage not allowed for Elber milestoning: {1}.".format(stage) \
-            #    + "Stage must be one of ['temp_equil', 'umbrella', 'fwd_rev']"
-            #self.output_directory = os.path.join(
-            #    self.model.anchor_rootdir, self.anchor.directory, 
-            #    stage)
+            
             self.output_directory = os.path.join(
                 self.model.anchor_rootdir, self.anchor.directory)
             self.header = elber_sim_namd.SEEKR_ELBER_PROD_HEADER
@@ -171,12 +192,9 @@ class Runner_namd():
         This function gets run before the sim_namd object is created
         so that the proper paths can be found, etc.
         """
+        
         settings = self.model.namd_settings
         assert settings is not None, "This model was not prepared for NAMD."
-        
-        #output_directory = os.path.join(
-        #    self.model.anchor_rootdir, self.anchor.directory, 
-        #    self.anchor.production_directory)
         restart_index = 1
         seekr2_output_files_glob = os.path.join(
             self.output_directory, self.anchor.md_output_glob)
@@ -199,7 +217,6 @@ class Runner_namd():
                           "run.")
                     raise Exception("Cannot overwrite existing MMVT outputs.")
                 else:
-                    """
                     for mmvt_output_file in mmvt_output_restarts_list:
                         os.remove(mmvt_output_file)
                     dcd_glob = os.path.join(
@@ -235,7 +252,6 @@ class Runner_namd():
                         self.output_directory, SAVE_STATE_DIRECTORY)
                     if os.path.exists(states_dir):
                         shutil.rmtree(states_dir)
-                    """
                         
             default_output_filename = "%s%d.%s" % (
                 self.basename, 1, self.extension)
@@ -263,6 +279,7 @@ class Runner_namd():
         """
         Run the MMVT NAMD simulation.
         """
+        
         self.sim_namd = sim_namd_obj
         settings = self.model.namd_settings
         calc_settings = self.model.calculation_settings
@@ -442,13 +459,12 @@ if __name__ == "__main__":
         output_file = default_output_file
     
     if model.get_type() == "mmvt":
-        sim_namd_factory = mmvt_sim_namd.MMVT_sim_namd_factory()
+        sim_namd_obj = mmvt_sim_namd.create_sim_namd(
+            model, myanchor, output_basename)
     else:
         raise Exception("Calculation type not supported for NAMD: {1}".format(
             model.get_type()))
         
-    sim_namd_obj = sim_namd_factory.create_sim_namd(
-        model, myanchor, output_basename)
     sim_namd_obj.seekr_namd_settings.save_state = save_state_file
     sim_namd_obj.seekr_namd_settings.save_one_state_for_all_boundaries\
          = runner.save_one_state_for_all_boundaries
