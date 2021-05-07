@@ -27,7 +27,7 @@ and kinetics.
 
 Prepare and run milestoning calculations in the OpenMM, NAMD, and/or Browndye2
 simulation engines for the purposes of obtaining the kinetics and 
-thermodynamics of molecular processes such as, for instance, ligand-receptor 
+thermodynamics of molecular processes such as: ligand-receptor 
 binding and unbinding, membrane permeability, internal molecular dynamics, 
 and many other situations.
 

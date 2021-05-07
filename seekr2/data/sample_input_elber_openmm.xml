@@ -2,8 +2,7 @@
 <model_input class='Model_input'>
     <calculation_type>elber</calculation_type>
     <calculation_settings class="Elber_input_settings">
-        <temperature_equil_progression>[300., 310., 320., 330., 340., 350.,
-            340., 330., 320., 310., 300.]</temperature_equil_progression>
+        <temperature_equil_progression>[300., 310., 320., 330., 340., 350., 340., 330., 320., 310., 300.]</temperature_equil_progression>
         <num_temperature_equil_steps>1000</num_temperature_equil_steps>
         <num_umbrella_stage_steps>40000</num_umbrella_stage_steps>
         <umbrella_force_constant>5000.0</umbrella_force_constant>

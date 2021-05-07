@@ -192,7 +192,11 @@ if __name__ == "__main__":
         for anchor in model.anchors:
             if anchor.endstate:
                 for milestone_id in anchor.get_ids():
-                    end_milestones.append(milestone_id)
+                    if model.get_type() == "mmvt":
+                        end_milestones.append(milestone_id)
+                    else:
+                        if anchor.milestones[milestone_id].is_source_milestone:
+                            end_milestones.append(milestone_id)
                     continue
         assert len(end_milestones) > 0, "No end-state milestones for this "\
             "model: k-on convergence cannot be computed."

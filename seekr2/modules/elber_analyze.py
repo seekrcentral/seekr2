@@ -25,7 +25,7 @@ def openmm_read_output_file_list(output_file_list, max_time=None,
                 for counter, line in enumerate(output_file):
                     if line.startswith("#") or len(line.strip()) == 0:
                         continue
-                    line_list = line.strip().split(" ")
+                    line_list = line.strip().split(",")
                     dest_boundary = line_list[0]
                     incubation_time = float(line_list[1])
                     if dest_boundary.endswith("*"):

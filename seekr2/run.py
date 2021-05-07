@@ -7,6 +7,7 @@ Run any and all simulations required for the SEEKR2 calculation.
 import os
 import argparse
 import tempfile
+import math
 
 from parmed import unit
 
@@ -59,7 +60,8 @@ def choose_next_simulation_browndye2(
         if "b_surface" not in bd_transition_counts:
             bd_milestone_info_to_run_unsorted.append(
                 [min_b_surface_simulation_length, 0, "b_surface", False, 
-                 min_b_surface_simulation_length])
+                 min_b_surface_simulation_length, 
+                 max_b_surface_trajs_to_extract])
         else:
             # see how many simulations need to be run in b_surface
             total_b_surface_sims = sum(
@@ -71,7 +73,8 @@ def choose_next_simulation_browndye2(
             if steps_to_go_minimum > 0:
                 bd_milestone_info_to_run_unsorted.append(
                     [steps_to_go_minimum, total_b_surface_encounters, \
-                     "b_surface", True, steps_to_go_minimum])
+                     "b_surface", True, steps_to_go_minimum, \
+                     max_b_surface_trajs_to_extract])
             
             elif min_b_surface_encounters is not None:
                 if total_b_surface_encounters < min_b_surface_encounters:
@@ -82,7 +85,8 @@ def choose_next_simulation_browndye2(
                     bd_milestone_info_to_run_unsorted.append(
                         [total_bd_simulation_length-total_b_surface_sims, \
                          total_b_surface_encounters, "b_surface", True, \
-                         total_bd_simulation_length])
+                         total_bd_simulation_length, \
+                         max_b_surface_trajs_to_extract])
     
     for i, bd_milestone in enumerate(model.k_on_info.bd_milestones):
         if instruction == "b_surface": break
@@ -108,7 +112,8 @@ def choose_next_simulation_browndye2(
         if bd_milestone.index not in bd_transition_counts:
             bd_milestone_info_to_run_unsorted.append(
                 [min_bd_milestone_simulation_length, 0, bd_milestone.index, 
-                 False, min_bd_milestone_simulation_length])
+                 False, min_bd_milestone_simulation_length, 
+                 max_b_surface_trajs_to_extract])
         else:
             # see how many simulations need to be run in b_surface
             total_b_surface_sims = sum(
@@ -121,7 +126,8 @@ def choose_next_simulation_browndye2(
                 bd_milestone_info_to_run_unsorted.append(
                     [steps_to_go_minimum, total_b_surface_encounters, \
                      bd_milestone.index, True, \
-                     min_bd_milestone_simulation_length])
+                     min_bd_milestone_simulation_length, \
+                     max_b_surface_trajs_to_extract])
             
             elif min_bd_milestone_encounters is not None:
                 if total_b_surface_encounters < min_bd_milestone_encounters:
@@ -131,14 +137,15 @@ def choose_next_simulation_browndye2(
                         * BD_MILESTONE_CONVERGENCE_INTERVAL
                     bd_milestone_info_to_run_unsorted.append(
                         [0, total_b_surface_encounters, \
-                         bd_milestone.index, True, total_bd_simulation_length])
+                         bd_milestone.index, True, total_bd_simulation_length, \
+                         max_b_surface_trajs_to_extract])
             
     return bd_milestone_info_to_run_unsorted
 
 def choose_next_simulation_openmm(
         model, instruction, min_total_simulation_length, 
         max_total_simulation_length, convergence_cutoff, 
-        minimum_anchor_transitions, force_overwrite):
+        minimum_anchor_transitions, force_overwrite, umbrella_restart_mode):
     """
     Examine the model and all MD simulations that have run so far.
     Using this information, as well as the specified criteria (minimum
@@ -177,7 +184,8 @@ def choose_next_simulation_openmm(
             anchor.production_directory)
         restart_checkpoint_filename = os.path.join(
             output_directory, runner_openmm.RESTART_CHECKPOINT_FILENAME)
-        if os.path.exists(restart_checkpoint_filename) and not force_overwrite:
+        if os.path.exists(restart_checkpoint_filename) and not force_overwrite\
+                and not umbrella_restart_mode:
             dummy_file = tempfile.NamedTemporaryFile()
             if model.get_type() == "mmvt":
                 sim_openmm_obj = mmvt_sim_openmm.create_sim_openmm(
@@ -189,9 +197,9 @@ def choose_next_simulation_openmm(
                 simulation = sim_openmm_obj.umbrella_simulation
             
             simulation.loadCheckpoint(restart_checkpoint_filename)
-            currentStep = int(simulation.context.getState().getTime()\
+            currentStep = int(math.ceil(simulation.context.getState().getTime()\
                               .value_in_unit(unit.picoseconds) \
-                              // sim_openmm_obj.timestep)
+                              / sim_openmm_obj.timestep))
             dummy_file.close()
             restart = True
         else:
@@ -431,7 +439,8 @@ def run_browndye2(model, bd_milestone_index, restart, n_trajectories,
 
 def run_openmm(model, anchor_index, restart, total_simulation_length, 
                cuda_device_index=False, force_overwrite=False,
-               save_state_file=False):
+               save_state_file=False, num_rev_launches=1, 
+               umbrella_restart_mode=False):
     """Run an OpenMM simulation."""
     import seekr2.modules.runner_openmm as runner_openmm
     import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
@@ -460,10 +469,11 @@ def run_openmm(model, anchor_index, restart, total_simulation_length,
                 model.calculation_settings.num_umbrella_stage_steps
             model.calculation_settings.num_umbrella_stage_steps = \
                 total_simulation_length
+            model.calculation_settings.num_rev_launches = num_rev_launches
     
     runner = runner_openmm.Runner_openmm(model, myanchor)
     default_output_file, state_file_prefix, restart_index = runner.prepare(
-        restart, save_state_file, force_overwrite)
+        restart, save_state_file, force_overwrite, umbrella_restart_mode)
     
     if model.get_type() == "mmvt":
         sim_openmm_obj = mmvt_sim_openmm.create_sim_openmm(
@@ -532,14 +542,21 @@ def run(model, instruction, min_total_simulation_length=None,
         namd_command="namd2", namd_arguments="", min_b_surface_simulation_length=None,
         min_bd_milestone_simulation_length=None, 
         max_b_surface_trajs_to_extract=None, min_b_surface_encounters=None, 
-        min_bd_milestone_encounters=None):
+        min_bd_milestone_encounters=None, num_rev_launches=1, 
+        umbrella_restart_mode=False):
     """
     Run all simulations, both MD and BD, as specified by the user 
     inputs.
     """
     md_complete = False
     bd_complete = False
-    bd_force_overwrite = force_overwrite
+    
+    # Only cleanse BD files if BD is being run in this instance
+    if (instruction in ["any", "any_bd"]) or instruction.startswith("b"):
+        bd_force_overwrite = force_overwrite
+    else:
+        bd_force_overwrite = False
+        
     if directory is not None:
         model.anchor_rootdir = os.path.abspath(directory)
     elif model.anchor_rootdir == ".":
@@ -555,7 +572,8 @@ def run(model, instruction, min_total_simulation_length=None,
             anchor_info_to_run = choose_next_simulation_openmm(
                 model, instruction, min_total_simulation_length, 
                 max_total_simulation_length, convergence_cutoff, 
-                minimum_anchor_transitions, force_overwrite)
+                minimum_anchor_transitions, force_overwrite, 
+                umbrella_restart_mode)
         elif model.namd_settings is not None:
             anchor_info_to_run = choose_next_simulation_namd(
                 model, instruction, min_total_simulation_length, 
@@ -579,7 +597,9 @@ def run(model, instruction, min_total_simulation_length=None,
                            total_simulation_length, 
                            cuda_device_index=cuda_device_index, 
                            force_overwrite=force_overwrite, 
-                           save_state_file=save_state_file)
+                           save_state_file=save_state_file,
+                           num_rev_launches=num_rev_launches,
+                           umbrella_restart_mode=umbrella_restart_mode)
             elif model.namd_settings is not None:
                 run_namd(model, anchor_index, restart, 
                          total_simulation_length, 
@@ -600,6 +620,7 @@ def run(model, instruction, min_total_simulation_length=None,
         if counter > MAX_ITER:
             raise Exception("MD while loop appears to be stuck.")
         force_overwrite = False
+        umbrella_restart_mode = False
     
     counter = 0
     while not bd_complete:
@@ -607,7 +628,9 @@ def run(model, instruction, min_total_simulation_length=None,
             break
         
         #if max_b_surface_trajs_to_extract is None:
-        #    max_b_surface_trajs_to_extract = 1e99
+        #    #max_b_surface_trajs_to_extract = 1e99
+        #    max_b_surface_trajs_to_extract = model.
+            
         bd_milestone_info_to_run = choose_next_simulation_browndye2(
             model, instruction, min_b_surface_simulation_length, 
             min_bd_milestone_simulation_length, 
@@ -616,7 +639,8 @@ def run(model, instruction, min_total_simulation_length=None,
         
         for bd_milestone_info in bd_milestone_info_to_run:
             steps_to_go_to_minimum, num_transitions, bd_milestone_index, \
-            restart, total_num_trajs = bd_milestone_info
+                restart, total_num_trajs, max_b_surface_trajs_to_extract \
+                = bd_milestone_info
             if bd_force_overwrite and restart:
                 restart = False
             print("running BD:", bd_milestone_index, "restart:", 
@@ -754,6 +778,20 @@ if __name__ == "__main__":
                            "must be observed for the BD milestone "\
                            "as a criteria to finish running simulations.",
                            type=int)
+    argparser.add_argument("-l", "--num_rev_launches", dest="num_rev_launches",
+                          default=1, help="In Elber milestoning, this "\
+                          "parameter defines how many reversals to launch "\
+                          "for each equilibrium configuration generated by "\
+                          "the umbrella stage. For each launch, the positions "\
+                          "will be identical, but the velocities will be "\
+                          "resampled from a Maxwell-Boltzmann distribution.",
+                          type=int)
+    argparser.add_argument("-u", "--umbrella_restart_mode", 
+                           dest="umbrella_restart_mode", default=False,
+                          help="In Elber milestoning, this option allows one"\
+                          "to use the umbrella simulations that already exist "\
+                          "in the anchor, and just re-run the reversals and "\
+                          "forwards simulations.", action="store_true")
     
     args = argparser.parse_args()
     args = vars(args)
@@ -775,6 +813,8 @@ if __name__ == "__main__":
     max_b_surface_trajs_to_extract = args["max_b_surface_trajs_to_extract"]
     min_b_surface_encounters = args["min_b_surface_encounters"]
     min_bd_milestone_encounters = args["min_bd_milestone_encounters"]
+    num_rev_launches = args["num_rev_launches"]
+    umbrella_restart_mode = args["umbrella_restart_mode"]
     
     assert os.path.exists(input_file), "A nonexistent input file was provided."
     model = base.Model()
@@ -786,5 +826,5 @@ if __name__ == "__main__":
         force_overwrite, save_state_file, namd_command, namd_arguments,
         minimum_b_surface_trajectories, minimum_bd_milestone_trajectories,
         max_b_surface_trajs_to_extract, min_b_surface_encounters, 
-        min_bd_milestone_encounters)
+        min_bd_milestone_encounters, num_rev_launches, umbrella_restart_mode)
         

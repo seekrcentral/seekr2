@@ -674,6 +674,7 @@ class Milestone(serializer.Serializer):
         self.alias_index = -1
         self.cv_index = -1
         self.variables = {}
+        self.is_source_milestone = False
         
     def get_CV(self, model):
         """
@@ -762,7 +763,6 @@ class Model(serializer.Serializer):
         erronious entries to this field.
         """
         if self.calculation_type.lower() == "elber":
-            raise Exception("Elber milestoning is temporarily unavailable.")
             return "elber"
         elif self.calculation_type.lower() == "mmvt":
             return "mmvt"

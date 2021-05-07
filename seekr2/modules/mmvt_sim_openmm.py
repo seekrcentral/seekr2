@@ -9,7 +9,7 @@ objects are specific to MMVT only.
 import openmm.app as openmm_app
 from parmed import unit
 
-from mmvtplugin import MmvtLangevinIntegrator
+import seekr2plugin
 import seekr2.modules.common_sim_openmm as common_sim_openmm
 
 class MMVT_sim_openmm(common_sim_openmm.Common_sim_openmm):
@@ -38,8 +38,7 @@ class MMVT_sim_openmm(common_sim_openmm.Common_sim_openmm):
         self.energy_reporter = openmm_app.StateDataReporter
         return
         
-def add_integrator(sim_openmm, model, output_filename="", 
-                   state_prefix=None):
+def add_integrator(sim_openmm, model, state_prefix=None):
     """
     Assign the proper integrator to this OpenMM simulation.
     """
@@ -58,7 +57,7 @@ def add_integrator(sim_openmm, model, output_filename="",
             
         sim_openmm.timestep = timestep
         
-        sim_openmm.integrator = MmvtLangevinIntegrator(
+        sim_openmm.integrator = seekr2plugin.MmvtLangevinIntegrator(
             target_temperature*unit.kelvin, 
             friction_coefficient/unit.picoseconds, 
             timestep*unit.picoseconds, 
@@ -115,8 +114,7 @@ def add_simulation(sim_openmm, model, topology, positions, box_vectors):
     assert sim_openmm.timestep is not None
     return
 
-def create_sim_openmm(model, anchor, output_filename, 
-                      state_prefix=None):
+def create_sim_openmm(model, anchor, output_filename, state_prefix=None):
     """
     Take all relevant model and anchor information and generate
     the necessary OpenMM objects to run the simulation.
@@ -153,8 +151,7 @@ def create_sim_openmm(model, anchor, output_filename,
     system, topology, positions, box_vectors \
         = common_sim_openmm.create_openmm_system(sim_openmm, model, anchor)
     sim_openmm.system = system
-    add_integrator(sim_openmm, model, output_filename, 
-                   state_prefix=state_prefix)
+    add_integrator(sim_openmm, model, state_prefix=state_prefix)
     common_sim_openmm.add_barostat(sim_openmm, model)
     common_sim_openmm.add_platform(sim_openmm, model)
     add_forces(sim_openmm, model, anchor)

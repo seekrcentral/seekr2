@@ -63,6 +63,7 @@ class Elber_settings(serializer.Serializer):
         self.num_umbrella_stage_steps = 50000
         self.umbrella_force_constant = 9000.0
         self.fwd_rev_interval = 500
+        self.num_rev_launches = 1
         self.umbrella_energy_reporter_interval = None
         self.umbrella_trajectory_reporter_interval = None
         self.rev_energy_reporter_interval = None
@@ -165,6 +166,8 @@ class Elber_spherical_CV(Elber_collective_variable):
         self.group2 = groups[1]
         self.name = "elber_spherical"
         self.openmm_umbrella_expression = "0.5*k*(distance(g1,g2)-radius)^2"
+        self.openmm_fwd_rev_expression \
+            = "step(k*(distance(g1, g2)^2 - radius^2))"
         self.num_groups = 2
         self.per_dof_variables = ["k", "radius"]
         self.global_variables = []
@@ -185,15 +188,15 @@ class Elber_spherical_CV(Elber_collective_variable):
         return openmm.CustomCentroidBondForce(
             self.num_groups, self.openmm_umbrella_expression)
         
-    def make_fwd_rev_force_object(self, anchor):
+    def make_fwd_rev_force_object(self):
         """
         Make a list of reversal force objects, which will  be used to
         monitor milestone crossing during the reversal stage.
         """
         import openmm
-        from seekrplugin import SeekrForce
-        force = SeekrForce() # create the SEEKR force object
-        return force
+        assert self.num_groups == 2
+        return openmm.CustomCentroidBondForce(
+            self.num_groups, self.openmm_fwd_rev_expression)
         
     def make_namd_colvar_umbrella_string(self):
         """
@@ -217,8 +220,7 @@ colvar {{
 """.format(self.index, serial_group1_str, serial_group2_str)
         return namd_colvar_string
         
-    def add_fwd_rev_parameters(self, force, anchor, end_on_middle_crossing, 
-                       data_file_name):
+    def add_fwd_rev_parameters(self, force):
         """
         An OpenMM custom force object needs a list of variables
         provided to it that will occur within its expression. Both
@@ -226,29 +228,23 @@ colvar {{
         variable_names_list. The numerical values of these variables
         will be provided at a later step.
         """
-        if len(anchor.milestones) == 3:
-            radius1 = anchor.milestones[0].variables["radius"]
-            radius2 = anchor.milestones[1].variables["radius"]
-            radius3 = anchor.milestones[2].variables["radius"]
-        elif len(anchor.milestones) == 2:
-            radius1 = 0.0
-            radius2 = anchor.milestones[0].variables["radius"]
-            radius3 = anchor.milestones[1].variables["radius"]
-        else:
-            raise Exception(
-                "Anchor with {1} milestones found: not allowed.".format(
-                    len(anchor.milestones)))
-        assert len(self.group1) > 0
-        assert len(self.group2) > 0
-        #print("Adding Elber fwd_rev 'force'. len(self.group1):", len(self.group1),
-        #      "len(self.group2):", len(self.group2), "radius1:", radius1,
-        #      "radius2:", radius2, "radius3:", radius3, 
-        #    "self.group1:", self.group1, "self.group2:", self.group2, 
-        #    "end_on_middle_crossing:", end_on_middle_crossing, 
-        #    "data_file_name:", data_file_name)
-        force.addSphericalMilestone(
-            len(self.group1), len(self.group2), radius1, radius2, radius3, 
-            self.group1, self.group2, end_on_middle_crossing, data_file_name)
+        self._mygroup_list = []
+        mygroup1 = force.addGroup(self.group1)
+        self._mygroup_list.append(mygroup1)
+        mygroup2 = force.addGroup(self.group2)
+        self._mygroup_list.append(mygroup2)
+        variable_names_list = []
+        if self.per_dof_variables is not None:
+            for per_dof_variable in self.per_dof_variables:
+                force.addPerBondParameter(per_dof_variable)
+                variable_names_list.append(per_dof_variable)
+        
+        if self.global_variables is not None:
+            for global_variable in self.global_variables:
+                force.addGlobalParameter(global_variable)
+                variable_names_list.append(global_variable)
+            
+        return variable_names_list, self._mygroup_list
     
     def add_umbrella_parameters(self, force):
         """

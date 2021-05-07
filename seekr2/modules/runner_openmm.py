@@ -21,6 +21,7 @@ import seekr2.modules.elber_base as elber_base
 import seekr2.modules.common_prepare as common_prepare
 import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
 import seekr2.modules.elber_sim_openmm as elber_sim_openmm
+import seekr2.modules.check as check
 
 RESTART_CHECKPOINT_FILENAME = "backup.checkpoint"
 SAVE_STATE_DIRECTORY = "states/"
@@ -56,6 +57,22 @@ def all_boundaries_have_state(myglob, anchor):
         return True
     else:
         return False
+
+def elber_anchor_has_umbrella_files(model, anchor):
+    """
+    Determine whether umbrella files already exist, which can save time
+    by skipping the Elber umbrella stage.
+    """
+    umbrella_glob = elber_base.ELBER_UMBRELLA_BASENAME+"*.dcd"
+    anchor_prod_directory = os.path.join(
+        model.anchor_rootdir, anchor.directory, anchor.production_directory)
+    umbrella_files_glob = os.path.join(anchor_prod_directory, umbrella_glob)
+    umbrella_files_list = glob.glob(umbrella_files_glob)
+    if len(umbrella_files_list) > 0:
+        return True
+    else:
+        return False
+    #return umbrella_files_list
 
 def search_for_state_to_load(model, anchor):
     """
@@ -127,7 +144,7 @@ def read_reversal_data_file_last(data_file_name):
     else:
         return False
 
-def cleanse_anchor_outputs(model, anchor):
+def cleanse_anchor_outputs(model, anchor, skip_umbrella_files=False):
     """
     Delete all simulation outputs for an existing anchor to make way
     for new outputs.
@@ -144,8 +161,15 @@ def cleanse_anchor_outputs(model, anchor):
     output_restarts_list = glob.glob(output_files_glob)
     for output_file in output_restarts_list:
         os.remove(output_file)
-    dcd_glob = os.path.join(output_directory, "*.dcd")
-    for dcd_file in glob.glob(dcd_glob):
+    if not skip_umbrella_files:
+        umbrella_dcd_glob = os.path.join(output_directory, "umbrella*.dcd")
+        for dcd_file in glob.glob(umbrella_dcd_glob):
+            os.remove(dcd_file)
+    rev_dcd_glob = os.path.join(output_directory, "reverse*.dcd")
+    for dcd_file in glob.glob(rev_dcd_glob):
+        os.remove(dcd_file)
+    fwd_dcd_glob = os.path.join(output_directory, "forward*.dcd")
+    for dcd_file in glob.glob(fwd_dcd_glob):
         os.remove(dcd_file)
     backup_file = os.path.join(output_directory, 
                            RESTART_CHECKPOINT_FILENAME)
@@ -244,9 +268,10 @@ class Runner_openmm():
         self.steps_per_chunk = None
         self.start_bounce_counter = 0
         self.save_all_states = False
+        self.umbrellas_already_exist_mode = False
     
     def prepare(self, restart=False, save_state_file=False, 
-                force_overwrite=False):
+                force_overwrite=False, umbrella_restart_mode=False):
         """
         This function gets run before the sim_openmm object is created
         so that the proper paths can be found, etc.
@@ -274,7 +299,7 @@ class Runner_openmm():
                                      self.extension))
         else:
             if common_prepare.anchor_has_files(self.model, self.anchor):
-                if not force_overwrite:
+                if not force_overwrite and not umbrella_restart_mode:
                     print("This anchor already has existing output files "\
                           "and the entered command would overwrite them. "\
                           "If you desire to overwrite the existing files, "\
@@ -282,9 +307,28 @@ class Runner_openmm():
                           "all outputs will be deleted and replace by a new "\
                           "run.")
                     raise Exception("Cannot overwrite existing outputs.")
-                else:
+                elif force_overwrite:
                     cleanse_anchor_outputs(self.model, self.anchor)
+                else:
+                    cleanse_anchor_outputs(self.model, self.anchor,
+                                           skip_umbrella_files=True)
+            
+            # check if umbrellas exist
+            if self.model.get_type() == "elber":
+                anchor_has_umbrella_files = elber_anchor_has_umbrella_files(
+                    self.model, self.anchor)
+                assert not force_overwrite or not umbrella_restart_mode, \
+                    "The options force_overwrite and umbrella_restart_mode "\
+                    "may not both be activated at the same time."
+                if umbrella_restart_mode:
+                    assert anchor_has_umbrella_files, "Cannot use umbrella "\
+                        "restart mode if umbrella files don't exist for "\
+                        "anchor {}.".format(self.anchor.index)
                         
+                if anchor_has_umbrella_files and (not force_overwrite \
+                        or umbrella_restart_mode):
+                    self.umbrellas_already_exist_mode = True
+                    
             default_output_filename = os.path.join(
                 self.output_directory, 
                 "%s%d.%s" % (self.basename, 1, self.extension))
@@ -372,7 +416,7 @@ class Runner_openmm():
     
     def run_mmvt(self, traj_filename):
         """Run the SEEKR2 MMVT calculation."""
-        settings = self.model.openmm_settings
+        openmm_settings = self.model.openmm_settings
         calc_settings = self.model.calculation_settings
         simulation = self.sim_openmm.simulation
         trajectory_reporter_interval = calc_settings.trajectory_reporter_interval
@@ -438,6 +482,7 @@ class Runner_openmm():
     
     def run_elber(self, traj_filename):
         """Run the SEEKR2 Elber calculation."""
+        openmm_settings = self.model.openmm_settings
         calc_settings = self.model.calculation_settings
         umbrella_simulation = self.sim_openmm.umbrella_simulation
         umbrella_trajectory_reporter_interval = calc_settings.umbrella_trajectory_reporter_interval
@@ -448,7 +493,8 @@ class Runner_openmm():
         suffix = re.sub(elber_base.OPENMM_ELBER_BASENAME, "", basename)
         umbrella_basename = elber_base.ELBER_UMBRELLA_BASENAME+suffix
         umbrella_traj_filename = os.path.join(directory, umbrella_basename)
-        if umbrella_trajectory_reporter_interval is not None:
+        if umbrella_trajectory_reporter_interval is not None \
+                and not self.umbrellas_already_exist_mode:
             umbrella_simulation.reporters.append(umbrella_traj_reporter(
                 umbrella_traj_filename, umbrella_trajectory_reporter_interval))
             assert umbrella_trajectory_reporter_interval <= calc_settings.num_umbrella_stage_steps, \
@@ -493,110 +539,117 @@ class Runner_openmm():
         if os.path.exists(fwd_data_file_name):
             os.remove(fwd_data_file_name)
         num_errors = 0
+        
+        # If the user provides an existing umbrella trajectory, don't re-
+        # simulation, just load the frames and skip to rev and fwd.
+        if self.umbrellas_already_exist_mode:
+            print("Umbrella trajectories found already existing in "\
+                  "anchor {}. Skipping umbrella simulations.".format(
+                      self.anchor.index))
+            # load DCD using mdtraj and use it as the umbrella state
+            umbrella_traj = check.load_structure_with_mdtraj(
+                self.model, self.anchor, mode="elber_umbrella")
+            assert umbrella_traj.n_frames == self.end_chunk, \
+                "Umbrella trajectories found have total length of "\
+                "{} frames ".format(umbrella_traj.n_frames) \
+                +"while this calculation is configured to run "\
+                "{} frames.".format(self.end_chunk)
+            assert openmm_settings.barostat is None, "Cannot use existing" \
+                "umbrella trajectories in constant pressure mode."
+        
         for chunk in range(self.start_chunk, self.end_chunk):
-            if self.save_one_state_for_all_boundaries:
-                if all_boundaries_have_state(self.state_prefix+"*", 
-                                             self.anchor):
-                    if self.save_all_states:
-                        chunk_str = "_%d" % chunk
-                        self.sim_openmm.rev_seekr_force.setSaveStateFileName(
-                            self.state_prefix+chunk_str+"r")
-                        self.sim_openmm.fwd_seekr_force.setSaveStateFileName(
-                            self.state_prefix+chunk_str+"f")
-                    else:
-                        self.sim_openmm.rev_seekr_force.setSaveStateFileName("")
-                        self.sim_openmm.fwd_seekr_force.setSaveStateFileName("")
-                        self.save_one_state_for_all_boundaries = False
-                    self.sim_openmm.rev_simulation.context.reinitialize(
-                        preserveState=True)
-                    self.sim_openmm.fwd_simulation.context.reinitialize(
-                        preserveState=True)
-                    
-                else:
-                    chunk_str = "_%d" % chunk
-                    self.sim_openmm.rev_seekr_force.setSaveStateFileName(
-                        self.state_prefix+chunk_str+"r")
-                    self.sim_openmm.fwd_seekr_force.setSaveStateFileName(
-                        self.state_prefix+chunk_str+"f")
-                    self.sim_openmm.rev_simulation.context.reinitialize(
-                        preserveState=True)
-                    self.sim_openmm.fwd_simulation.context.reinitialize(
-                        preserveState=True)
-            umbrella_simulation.saveCheckpoint(
-                self.restart_checkpoint_filename)
-            umbrella_simulation.step(self.steps_per_chunk)
-            umbrella_state = \
-                umbrella_simulation.context.getState(
-                getPositions=True, getVelocities=True)
-            rev_simulation.context.setPositions(
-                umbrella_state.getPositions())
-            rev_simulation.context.setVelocities(
-                -1.0 * umbrella_state.getVelocities())
-            rev_simulation.context.setPeriodicBoxVectors(
-                *umbrella_state.getPeriodicBoxVectors())
-            rev_simulation.context.reinitialize(preserveState=True)
-            rev_data_file_length = get_data_file_length(rev_data_file_name)
-            if rev_trajectory_reporter_interval is not None:
-                rev_traj_filename = os.path.join(
-                    self.output_directory, "reverse_%d.dcd" % chunk)
-                print("rev_traj_filename", rev_traj_filename)
-                rev_simulation.reporters = [rev_traj_reporter(
-                    rev_traj_filename, rev_trajectory_reporter_interval, enforcePeriodicBox=False)]
-            if rev_energy_reporter_interval is not None:
-                rev_simulation.reporters.append(
-                    self.sim_openmm.rev_energy_reporter(
-                        sys.stdout, rev_energy_reporter_interval, step=True, 
-                        potentialEnergy=True, temperature=True, volume=True))
-            rev_block_counter = 0
-            had_error = False
-            while get_data_file_length(rev_data_file_name) \
-                    == rev_data_file_length:
-                rev_data_file_length = get_data_file_length(rev_data_file_name)
-                try:
-                    rev_simulation.step(REV_STAGE_STEPS_PER_BLOCK)
-                except Exception: # if there was a NAN error
-                    print("Error encountered. Continuing with the next "\
-                          "umbrella frame.")
-                    num_errors += 1
-                    had_error = True
-                    break # don't want to log this as a success
-
-                rev_block_counter += 1
-                if rev_block_counter > MAX_REVERSE_ITER:
-                    print("maximum iterations exceeded.")
-                    break
-            
-            rev_simulation.context.setTime(0.0)
-            if had_error == True:
-                break # move on to the next frame
-            if read_reversal_data_file_last(rev_data_file_name):
-                fwd_simulation.context.setPositions(
-                    umbrella_state.getPositions())
-                fwd_simulation.context.setVelocities(
-                    umbrella_state.getVelocities())
-                fwd_simulation.context.setPeriodicBoxVectors(
-                    *umbrella_state.getPeriodicBoxVectors())
-                fwd_simulation.context.reinitialize(preserveState=True)
-                # TODO: add reporter update here
+            if self.umbrellas_already_exist_mode:
+                # extract frame from trajectory and load the coordinates
+                print("loading umbrella frame {}.".format(chunk))
+                umbrella_simulation.context.setPositions(
+                    umbrella_traj.openmm_positions(chunk))
+                umbrella_simulation.context.setPeriodicBoxVectors(
+                    *umbrella_traj.openmm_boxes(chunk))
+                umbrella_state = \
+                    umbrella_simulation.context.getState(
+                        getPositions=True, getVelocities=True)
                 
-                fwd_data_file_length = get_data_file_length(fwd_data_file_name)
-                if fwd_trajectory_reporter_interval is not None:
-                    fwd_traj_filename = os.path.join(
-                        self.output_directory, "forward_%d.dcd" % chunk)
-                    fwd_simulation.reporters = [fwd_traj_reporter(
-                        fwd_traj_filename, fwd_trajectory_reporter_interval)]
-                if fwd_energy_reporter_interval is not None:
-                    fwd_simulation.reporters.append(
-                        self.sim_openmm.fwd_energy_reporter(
-                            sys.stdout, fwd_energy_reporter_interval, step=True, 
+            else:
+                umbrella_simulation.saveCheckpoint(
+                    self.restart_checkpoint_filename)
+                umbrella_simulation.step(self.steps_per_chunk)
+                umbrella_state = \
+                    umbrella_simulation.context.getState(
+                        getPositions=True, getVelocities=True)
+                
+            # for each velocity restart
+            for launch_id in range(calc_settings.num_rev_launches):
+                crossing_counter = chunk * calc_settings.num_rev_launches \
+                    + launch_id
+                chunk_str = "_%d" % chunk
+                counter_str = "_%d" % crossing_counter
+                if self.save_one_state_for_all_boundaries:
+                    if all_boundaries_have_state(self.state_prefix+"*", 
+                                                 self.anchor):
+                        if self.save_all_states:
+                            #self.sim_openmm.rev_seekr_force.setSaveStateFileName(
+                            #    self.state_prefix+chunk_str+"r")
+                            self.sim_openmm.rev_integrator.setSaveStateFileName(
+                                self.state_prefix+counter_str+"r")
+                            #self.sim_openmm.fwd_seekr_force.setSaveStateFileName(
+                            #    self.state_prefix+chunk_str+"f")
+                            self.sim_openmm.fwd_integrator.setSaveStateFileName(
+                                self.state_prefix+counter_str+"f")
+                        else:
+                            #self.sim_openmm.rev_seekr_force.setSaveStateFileName("")
+                            self.sim_openmm.rev_integrator.setSaveStateFileName("")
+                            #self.sim_openmm.fwd_seekr_force.setSaveStateFileName("")
+                            self.sim_openmm.fwd_integrator.setSaveStateFileName("")
+                            self.save_one_state_for_all_boundaries = False
+                        self.sim_openmm.rev_simulation.context.reinitialize(
+                            preserveState=True)
+                        self.sim_openmm.fwd_simulation.context.reinitialize(
+                            preserveState=True)
+                        
+                    else:
+                        #self.sim_openmm.rev_seekr_force.setSaveStateFileName(
+                        #    self.state_prefix+chunk_str+"r")
+                        self.sim_openmm.rev_integrator.setSaveStateFileName(
+                            self.state_prefix+counter_str+"r")
+                        #self.sim_openmm.fwd_seekr_force.setSaveStateFileName(
+                        #    self.state_prefix+chunk_str+"f")
+                        self.sim_openmm.fwd_integrator.setSaveStateFileName(
+                            self.state_prefix+counter_str+"f"+str(launch_id))
+                        self.sim_openmm.rev_simulation.context.reinitialize(
+                            preserveState=True)
+                        self.sim_openmm.fwd_simulation.context.reinitialize(
+                            preserveState=True)
+                
+                rev_simulation.context.setPositions(
+                    umbrella_state.getPositions())
+                rev_simulation.context.setVelocitiesToTemperature(
+                    self.model.openmm_settings.initial_temperature \
+                    * unit.kelvin)
+                rev_simulation.context.setPeriodicBoxVectors(
+                    *umbrella_state.getPeriodicBoxVectors())
+                self.sim_openmm.rev_integrator.setCrossingCounter(
+                    crossing_counter)
+                rev_simulation.context.reinitialize(preserveState=True)
+                rev_data_file_length = get_data_file_length(rev_data_file_name)
+                if rev_trajectory_reporter_interval is not None:
+                    rev_traj_filename = os.path.join(
+                        self.output_directory, "reverse_%d.dcd" % counter_str)
+                    print("rev_traj_filename", rev_traj_filename)
+                    rev_simulation.reporters = [rev_traj_reporter(
+                        rev_traj_filename, rev_trajectory_reporter_interval, 
+                        enforcePeriodicBox=False)]
+                if rev_energy_reporter_interval is not None:
+                    rev_simulation.reporters.append(
+                        self.sim_openmm.rev_energy_reporter(
+                            sys.stdout, rev_energy_reporter_interval, step=True, 
                             potentialEnergy=True, temperature=True, volume=True))
-                fwd_block_counter = 0
+                rev_block_counter = 0
                 had_error = False
-                while get_data_file_length(fwd_data_file_name) \
-                        == fwd_data_file_length:
-                    fwd_data_file_length = get_data_file_length(fwd_data_file_name)
+                while get_data_file_length(rev_data_file_name) \
+                        == rev_data_file_length:
+                    rev_data_file_length = get_data_file_length(rev_data_file_name)
                     try:
-                        fwd_simulation.step(FWD_STAGE_STEPS_PER_BLOCK)
+                        rev_simulation.step(REV_STAGE_STEPS_PER_BLOCK)
                     except Exception: # if there was a NAN error
                         print("Error encountered. Continuing with the next "\
                               "umbrella frame.")
@@ -604,12 +657,58 @@ class Runner_openmm():
                         had_error = True
                         break # don't want to log this as a success
     
-                    fwd_block_counter += 1
-                    if fwd_block_counter > MAX_FORWARD_ITER:
+                    rev_block_counter += 1
+                    if rev_block_counter > MAX_REVERSE_ITER:
                         print("maximum iterations exceeded.")
                         break
                 
-                fwd_simulation.context.setTime(0.0)
+                rev_simulation.context.setTime(0.0)
+                if had_error == True:
+                    break # move on to the next frame
+                if read_reversal_data_file_last(rev_data_file_name):
+                    fwd_simulation.context.setPositions(
+                        umbrella_state.getPositions())
+                    fwd_simulation.context.setVelocities(
+                        umbrella_state.getVelocities())
+                    fwd_simulation.context.setPeriodicBoxVectors(
+                        *umbrella_state.getPeriodicBoxVectors())
+                    self.sim_openmm.fwd_integrator.setCrossingCounter(
+                        crossing_counter)
+                    fwd_simulation.context.reinitialize(preserveState=True)
+                    # TODO: add reporter update here
+                    
+                    fwd_data_file_length = get_data_file_length(fwd_data_file_name)
+                    if fwd_trajectory_reporter_interval is not None:
+                        fwd_traj_filename = os.path.join(
+                            self.output_directory, "forward_%d.dcd" % counter_str)
+                        fwd_simulation.reporters = [fwd_traj_reporter(
+                            fwd_traj_filename, fwd_trajectory_reporter_interval)]
+                    if fwd_energy_reporter_interval is not None:
+                        fwd_simulation.reporters.append(
+                            self.sim_openmm.fwd_energy_reporter(
+                                sys.stdout, fwd_energy_reporter_interval, step=True, 
+                                potentialEnergy=True, temperature=True, volume=True))
+                    fwd_block_counter = 0
+                    had_error = False
+                    while get_data_file_length(fwd_data_file_name) \
+                            == fwd_data_file_length:
+                        fwd_data_file_length = get_data_file_length(fwd_data_file_name)
+                        try:
+                            fwd_simulation.step(FWD_STAGE_STEPS_PER_BLOCK)
+                        except Exception: # if there was a NAN error
+                            print("Error encountered. Continuing with the next "\
+                                  "umbrella frame.")
+                            num_errors += 1
+                            had_error = True
+                            break # don't want to log this as a success
+        
+                        fwd_block_counter += 1
+                        if fwd_block_counter > MAX_FORWARD_ITER:
+                            print("maximum iterations exceeded.")
+                            break
+                    
+                    fwd_simulation.context.setTime(0.0)
+                                        
         umbrella_simulation.saveCheckpoint(self.restart_checkpoint_filename)
         return
     
@@ -667,6 +766,20 @@ if __name__ == "__main__":
                            "anchor's production directory will be emptied of "\
                            "all output, trajectory, and backup files for the "\
                            "new simulation.", action="store_true")
+    argparser.add_argument("-l", "--num_rev_launches", dest="num_rev_launches",
+                          default=1, help="In Elber milestoning, this "\
+                          "parameter defines how many reversals to launch "\
+                          "for each equilibrium configuration generated by "\
+                          "the umbrella stage. For each launch, the positions "\
+                          "will be identical, but the velocities will be "\
+                          "resampled from a Maxwell-Boltzmann distribution.",
+                          type=int)
+    argparser.add_argument("-u", "--umbrella_restart_mode", 
+                           dest="num_rev_launches", default=False,
+                          help="In Elber milestoning, this option allows one"\
+                          "to use the umbrella simulations that already exist "\
+                          "in the anchor, and just re-run the reversals and "\
+                          "forwards simulations.", action="store_true")
         
     args = argparser.parse_args()
     args = vars(args)
@@ -680,6 +793,8 @@ if __name__ == "__main__":
     load_state_file = args["load_state_file"]
     directory = args["directory"]
     force_overwrite = args["force_overwrite"]
+    num_rev_launches = args["num_rev_launches"]
+    umbrella_restart_mode = args["umbrella_restart_mode"]
     
     assert os.path.exists(input_file), "A nonexistent input file was provided."
     model = base.Model()
@@ -712,7 +827,7 @@ if __name__ == "__main__":
     
     runner = Runner_openmm(model, myanchor)
     default_output_file, state_file_prefix, restart_index = runner.prepare(
-        restart, save_state_file, force_overwrite)
+        restart, save_state_file, force_overwrite, umbrella_restart_mode)
     if output_file is None:
         output_file = default_output_file
     
@@ -722,5 +837,6 @@ if __name__ == "__main__":
     elif model.get_type() == "elber":
         sim_openmm_factory = elber_sim_openmm.create_sim_openmm(
             model, myanchor, output_file, state_file_prefix)
+        model.calculation_settings.num_rev_launches = num_rev_launches
     
     runner.run(sim_openmm_obj, restart, load_state_file, restart_index)

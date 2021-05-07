@@ -1,7 +1,9 @@
 """
 elber_sim_openmm.py
 
-TODO: description
+Create the Sim_openmm object which contains the objects needed for an
+openmm simulation based on the settings provided by a user. These
+objects are specific to Elber milestoning only.
 """
 
 # TODO: update this code and documentation once the Elber plugin is
@@ -14,6 +16,7 @@ import openmm
 import openmm.app as openmm_app
 from parmed import unit
 
+import seekr2plugin
 import seekr2.modules.elber_base as elber_base
 import seekr2.modules.common_sim_openmm as common_sim_openmm
 
@@ -36,7 +39,6 @@ class Elber_sim_openmm(common_sim_openmm.Common_sim_openmm):
         self.rev_traj_reporter = openmm_app.DCDReporter
         self.rev_energy_reporter = openmm_app.StateDataReporter
         self.rev_output_filename = ""
-        self.rev_seekr_force = None
         
         self.fwd_system = None
         self.fwd_integrator = None
@@ -44,12 +46,11 @@ class Elber_sim_openmm(common_sim_openmm.Common_sim_openmm):
         self.fwd_traj_reporter = openmm_app.DCDReporter
         self.fwd_energy_reporter = openmm_app.StateDataReporter
         self.fwd_output_filename = ""
-        self.fwd_seekr_force = None
         return
     
 def add_integrators(sim_openmm, model, state_prefix=None):
     """
-    
+    Assign the proper integrator to this OpenMM simulation.
     """
     if model.openmm_settings.langevin_integrator is not None:
         target_temperature = \
@@ -73,10 +74,27 @@ def add_integrators(sim_openmm, model, state_prefix=None):
         if random_seed is not None:
             sim_openmm.umbrella_integrator.setRandomNumberSeed(random_seed)
             
-        sim_openmm.rev_integrator = openmm.VerletIntegrator(
-            timestep*unit.picoseconds)
-        sim_openmm.fwd_integrator = openmm.VerletIntegrator(
-            timestep*unit.picoseconds)
+        #sim_openmm.rev_integrator = openmm.VerletIntegrator(
+        #    timestep*unit.picoseconds)
+        sim_openmm.rev_integrator = seekr2plugin.ElberLangevinIntegrator(
+            target_temperature*unit.kelvin, 
+            friction_coefficient/unit.picoseconds, 
+            timestep*unit.picoseconds,
+            sim_openmm.rev_output_filename)
+        if random_seed is not None:
+            sim_openmm.rev_integrator.setRandomNumberSeed(random_seed+1)
+        sim_openmm.rev_integrator.setEndOnSrcMilestone(True)
+        
+        #sim_openmm.fwd_integrator = openmm.VerletIntegrator(
+        #    timestep*unit.picoseconds)
+        sim_openmm.fwd_integrator = seekr2plugin.ElberLangevinIntegrator(
+            target_temperature*unit.kelvin, 
+            friction_coefficient/unit.picoseconds, 
+            timestep*unit.picoseconds,
+            sim_openmm.fwd_output_filename)
+        if random_seed is not None:
+            sim_openmm.fwd_integrator.setRandomNumberSeed(random_seed+2)
+        sim_openmm.fwd_integrator.setEndOnSrcMilestone(False)
         
         if rigid_constraint_tolerance is not None:
             sim_openmm.umbrella_integrator.setConstraintTolerance(
@@ -86,28 +104,43 @@ def add_integrators(sim_openmm, model, state_prefix=None):
             sim_openmm.fwd_integrator.setConstraintTolerance(
                 rigid_constraint_tolerance)
         
-        #if state_prefix is not None:
-        #    self.sim_openmm.integrator.setSaveStateFileName(state_prefix)
+        if state_prefix is not None:
+            sim_openmm.fwd_integrator.setSaveStateFileName(state_prefix)
         
     else:
         raise Exception("Settings not provided for available "\
                         "integrator type(s).")
     return
 
-def add_forces(sim_openmm, model, anchor, rev_data_file_name, 
-               fwd_data_file_name):
+def add_forces(sim_openmm, model, anchor):
     """
-    
+    Add the proper forces for this Elber simulation to each of their 
+    respective systems. This will include the umbrella force for the
+    umbrella stage, as well as the forces used to monitor for boundary
+    crossings in the reversal and forward stages.
     """
     sim_openmm.umbrella_force = make_elber_umbrella_force(
         model, anchor)
     sim_openmm.umbrella_system.addForce(sim_openmm.umbrella_force)
-    sim_openmm.rev_seekr_force = make_elber_rev_force(
-        model, anchor, rev_data_file_name)
-    sim_openmm.rev_system.addForce(sim_openmm.rev_seekr_force)
-    sim_openmm.fwd_seekr_force = make_elber_fwd_force(
-        model, anchor, fwd_data_file_name)
-    sim_openmm.fwd_system.addForce(sim_openmm.fwd_seekr_force)
+    
+    for milestone in anchor.milestones:
+        cv = milestone.get_CV(model)
+        my_rev_force = make_elber_boundary_definitions(
+            cv, milestone)
+        my_fwd_force = make_elber_boundary_definitions(
+            cv, milestone)
+        if milestone.is_source_milestone:
+            sim_openmm.rev_integrator.addSrcMilestoneGroup(
+                milestone.alias_index)
+            sim_openmm.fwd_integrator.addSrcMilestoneGroup(
+                milestone.alias_index)
+        else:
+            sim_openmm.rev_integrator.addDestMilestoneGroup(
+                milestone.alias_index)
+            sim_openmm.fwd_integrator.addDestMilestoneGroup(
+                milestone.alias_index)
+        revforcenum = sim_openmm.rev_system.addForce(my_rev_force)
+        fwdforcenum = sim_openmm.fwd_system.addForce(my_fwd_force)
     return
 
 def add_simulations(sim_openmm, model, topology, positions, box_vectors):
@@ -145,8 +178,7 @@ def add_simulations(sim_openmm, model, topology, positions, box_vectors):
     assert sim_openmm.timestep is not None
     return
 
-def create_sim_openmm(model, anchor, output_filename, 
-                      state_prefix=None):
+def create_sim_openmm(model, anchor, output_filename, state_prefix=None):
     """
     Take all relevant model and anchor information and generate
     the necessary OpenMM objects to run the simulation.
@@ -184,6 +216,8 @@ def create_sim_openmm(model, anchor, output_filename,
     suffix = re.sub(elber_base.OPENMM_ELBER_BASENAME, "", basename)
     rev_basename = elber_base.ELBER_REV_BASENAME+suffix
     rev_output_filename = os.path.join(directory, rev_basename)
+    sim_openmm.rev_output_filename = rev_output_filename
+    sim_openmm.fwd_output_filename = fwd_output_filename
     common_sim_openmm.fill_generic_parameters(
         sim_openmm, model, anchor, output_filename)
     umbrella_system, umbrella_topology, umbrella_positions, \
@@ -199,10 +233,7 @@ def create_sim_openmm(model, anchor, output_filename,
     add_integrators(sim_openmm, model, state_prefix=state_prefix)
     common_sim_openmm.add_barostat(sim_openmm, model)
     common_sim_openmm.add_platform(sim_openmm, model)
-    add_forces(sim_openmm, model, anchor, rev_output_filename, 
-               fwd_output_filename)
-    sim_openmm.rev_output_filename = rev_output_filename
-    sim_openmm.fwd_output_filename = fwd_output_filename
+    add_forces(sim_openmm, model, anchor)
     add_simulations(sim_openmm, model, umbrella_topology, umbrella_positions, 
                          umbrella_box_vectors)
     return sim_openmm
@@ -211,31 +242,33 @@ def make_elber_umbrella_force(model, anchor):
     """
     
     """
+    
     for milestone in anchor.milestones:
-        if milestone.alias_index == 2:
+        #if milestone.alias_index == 2:
+        if milestone.is_source_milestone:
             cv = milestone.get_CV(model)
             umbrella_force = cv.make_umbrella_force_object()
             break
         
     mygroup_list = []
-    mygroup1 = umbrella_force.addGroup(cv.group1)
-    mygroup_list.append(mygroup1)
-    mygroup2 = umbrella_force.addGroup(cv.group2)
-    mygroup_list.append(mygroup2)    
+    #mygroup1 = umbrella_force.addGroup(cv.group1)
+    #mygroup_list.append(mygroup1)
+    #mygroup2 = umbrella_force.addGroup(cv.group2)
+    #mygroup_list.append(mygroup2)
+    for group in cv.get_atom_groups():
+        mygroup = umbrella_force.addGroup(group)
+        mygroup_list.append(mygroup)
     
     variable_names_list = cv.add_umbrella_parameters(umbrella_force)
-    cv.add_groups_and_variables(umbrella_force, mygroup_list, 
-                                cv.get_variable_values_list(
-                                    milestone))
+    cv.add_groups_and_variables(umbrella_force, mygroup_list,
+                                cv.get_variable_values_list(milestone))
     return umbrella_force
-
+""" # TODO: remove
 def make_elber_rev_force(model, anchor, data_file_name):
-    """
-    
-    """
     
     for milestone in anchor.milestones:
-        if milestone.alias_index == 2:
+        #if milestone.alias_index == 2:
+        if milestone.is_source_milestone:
             cv = milestone.get_CV(model)
             rev_force = cv.make_fwd_rev_force_object(anchor)
     variable_names_list = cv.add_fwd_rev_parameters(rev_force, anchor, 
@@ -244,20 +277,19 @@ def make_elber_rev_force(model, anchor, data_file_name):
     return rev_force
 
 def make_elber_fwd_force(model, anchor, data_file_name):
-    """
     
-    """
     
     for milestone in anchor.milestones:
-        if milestone.alias_index == 2:
+        #if milestone.alias_index == 2:
+        if milestone.is_source_milestone:
             cv = milestone.get_CV(model)
             fwd_force = cv.make_fwd_rev_force_object(anchor)
     variable_names_list = cv.add_fwd_rev_parameters(fwd_force, anchor, 
                                             end_on_middle_crossing=False,
                                             data_file_name=data_file_name)
     return fwd_force
-        
-def make_mmvt_boundary_definitions(cv, milestone):
+"""  
+def make_elber_boundary_definitions(cv, milestone):
     """
     Take a Collective_variable object and a particular milestone and
     return an OpenMM Force() object that the plugin can use to monitor
@@ -286,17 +318,10 @@ def make_mmvt_boundary_definitions(cv, milestone):
         allows us to conveniently monitor a function of atomic 
         position.
     """
-    myforce = cv.make_force_object()
-    mygroup_list = []
-    mygroup1 = myforce.addGroup(cv.group1)
-    mygroup_list.append(mygroup1)
-    mygroup2 = myforce.addGroup(cv.group2)
-    mygroup_list.append(mygroup2)
-        
+    myforce = cv.make_fwd_rev_force_object()
     myforce.setForceGroup(milestone.alias_index)
-    
-    variable_names_list = cv.add_parameters(myforce)
-    cv.add_groups_and_variables(myforce, mygroup_list, 
+    variable_names_list, group_list = cv.add_fwd_rev_parameters(myforce)
+    cv.add_groups_and_variables(myforce, group_list,
                                 cv.get_variable_values_list(
-                                    milestone))
+                                milestone))
     return myforce

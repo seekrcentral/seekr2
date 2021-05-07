@@ -136,7 +136,7 @@ def load_structure_with_mdtraj(model, anchor, mode="pdb", coords_filename=None):
         pass
     elif mode == "elber_umbrella":
         umbrella_dcd_path = os.path.join(prod_directory)
-        umbrella_basename = elber_base.ELBER_UMBRELLA_BASENAME+"*"
+        umbrella_basename = elber_base.ELBER_UMBRELLA_BASENAME+"*.dcd"
         umbrella_traj_glob = os.path.join(umbrella_dcd_path, umbrella_basename)
         umbrella_traj_filenames = glob.glob(umbrella_traj_glob)
         if len(umbrella_traj_filenames) == 0:
@@ -145,11 +145,14 @@ def load_structure_with_mdtraj(model, anchor, mode="pdb", coords_filename=None):
         # search for and remove any empty trajectory files
         indices_to_pop = []
         for i, umbrella_traj_filename in enumerate(umbrella_traj_filenames):
-            if os.path.getsize(umbrella_traj_filenames) == 0:
+            if os.path.getsize(umbrella_traj_filename) == 0:
                 indices_to_pop.append(i)
         
         for i in indices_to_pop[::-1]:
             umbrella_traj_filenames.pop(i)
+            
+        assert len(umbrella_traj_filenames) > 0, "Only empty umbrella " \
+        "trajectories were found."
     
     elif mode == "state_xml":
         assert coords_filename is not None

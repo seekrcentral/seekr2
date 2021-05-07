@@ -899,6 +899,9 @@ def add_ghost_atom_to_pqr_from_atoms_center_of_mass(
     ghost_structure.add_atom(ghost_atom, "GHO", 1)
     ghost_structure.coordinates = np.array(center_of_mass)
     complex = pqr_struct + ghost_structure
+    for residue in complex.residues:
+        residue.chain = ""
+    
     complex.save(new_pqr_filename, overwrite=True)
     ghost_index = len(complex.atoms)
     return ghost_index

@@ -37,6 +37,7 @@ def make_elber_milestoning_objects_spherical(
         milestone1.neighbor_anchor_index = neighbor_index
         #milestone1.alias_index = milestone_alias
         milestone1.alias_index = 1
+        milestone1.is_source_milestone = False
         milestone1.cv_index = spherical_cv_input.index
         radius = input_anchors[neighbor_index].radius
         milestone1.variables = {"k": umbrella_force_constant, "radius": radius}
@@ -49,6 +50,7 @@ def make_elber_milestoning_objects_spherical(
     milestone2.neighbor_anchor_index = None
     #milestone2.alias_index = milestone_alias
     milestone2.alias_index = 2
+    milestone2.is_source_milestone = True
     milestone2.cv_index = spherical_cv_input.index
     radius = input_anchors[index].radius
     milestone2.variables = {"k": umbrella_force_constant, "radius": radius}
@@ -61,6 +63,7 @@ def make_elber_milestoning_objects_spherical(
         milestone3.neighbor_anchor_index = neighbor_index
         #milestone3.alias_index = milestone_alias+1
         milestone3.alias_index = 3
+        milestone3.is_source_milestone = False
         milestone3.cv_index = spherical_cv_input.index
         radius = input_anchors[neighbor_index].radius
         milestone3.variables = {"k": umbrella_force_constant, "radius": radius}
