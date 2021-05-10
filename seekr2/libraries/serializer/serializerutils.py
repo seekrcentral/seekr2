@@ -8,7 +8,7 @@ from xml.dom.minidom import Document
 from xml.dom import minidom
 import importlib
 
-from openmmvt.libraries.serializer.datatype import data_type
+from seekr2.libraries.serializer.datatype import data_type
 
 #Generic class type alias
 CLASS = TypeVar('CLASS')

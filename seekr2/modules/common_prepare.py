@@ -500,13 +500,16 @@ def create_cvs_and_anchors(model, collective_variable_inputs):
                     cv_input, milestone_alias, milestone_index, anchor_index, 
                     cv_input.input_anchors, 
                     model.calculation_settings.umbrella_force_constant)
-                milestone_index += 1
+                
             anchor.milestones += milestones
             variable_name = "{}_{}".format(cv.variable_name, i)
             variable_value = input_anchor.radius # TODO: hard-coded
             anchor.variables[variable_name] = variable_value
             anchors.append(anchor)
             anchor_index += 1
+    
+    if model.get_type() == "elber":
+        milestone_index += 1
     
     return cvs, anchors, anchor_index, milestone_index
 

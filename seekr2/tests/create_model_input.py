@@ -186,3 +186,17 @@ def create_host_guest_mmvt_model_input(root_dir):
     model_input.browndye_settings_input.n_threads = 1
     
     return model_input
+
+def create_host_guest_elber_model_input(root_dir):
+    """
+    Create a generic host-guest model input object.
+    """
+    model_input = create_host_guest_mmvt_model_input(root_dir)
+    model_input.calculation_type = "elber"
+    model_input.calculation_settings = common_prepare.Elber_input_settings()
+    model_input.calculation_settings.num_umbrella_stage_steps = 100000
+    model_input.calculation_settings.umbrella_force_constant = 9000.0
+    model_input.calculation_settings.fwd_rev_interval = 500
+    model_input.calculation_settings.rev_output_interval = None
+    model_input.calculation_settings.fwd_output_interval = None
+    return model_input

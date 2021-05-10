@@ -67,6 +67,13 @@ def Q_to_K(Q):
                 K[i,j] = -Q[i,j] / Q[i,i]
     return K
 
+#def make_elber_K_matrix(oldK):
+#    """Make a K matrix that is compatible with Elber milestoning."""
+#    old_shape = oldK.shape
+#    print("oldK:", oldK)
+#    exit()
+#    K_hat
+
 def quadriture(err1, err2):
     """Add two errors in quadriture."""
     
@@ -524,7 +531,16 @@ class Data_sample():
                 assert self.Q[i,j] >= 0.0, "self.Q[i,j]: {}".format(self.Q[i,j])
                     
         for i in range(self.model.num_milestones):
-            self.Q[i][i] = -np.sum(self.Q[i])
+            row_sum = np.sum(self.Q[i])
+            if row_sum == 0:
+                new_row_sum = 0.0
+                for j in range(self.model.num_milestones):
+                    self.Q[i,j] = self.Q[j,i]
+                    new_row_sum += self.Q[j,i]
+                    
+                self.Q[i,i] = -new_row_sum
+            else:
+                self.Q[i,i] = -row_sum
         
         self.K = Q_to_K(self.Q)
         return
@@ -552,9 +568,12 @@ class Data_sample():
             N_i = 0
             for j in range(self.model.num_milestones):
                 N_i += self.N_ij[i,j]
-                
-            incubation_times[i] = self.R_i[i] / N_i
-        
+            
+            if N_i == 0:
+                incubation_times[i] = -1.0/self.Q[i,i]
+            else:
+                incubation_times[i] = self.R_i[i] / N_i
+
         for i, q_i_val in enumerate(q_i):
             p_i[i] = abs(q_i_val * incubation_times[i])
         
@@ -613,8 +632,8 @@ class Data_sample():
         # first, make the bulk state the sink state to compute k_offs
         Q_hat = self.Q[:,:]
         p_i_hat = self.p_i[:]
-        if self.model.k_on_info:
-            K_hat = self.K[:,:]
+        #if self.model.k_on_info:
+        #    K_hat = self.K[:,:]
         
         n = len(self.Q)
         for bulk_milestone in sorted(bulk_milestones, reverse=True):
@@ -679,10 +698,21 @@ class Data_sample():
                 MFPTs[(end_milestone_src, end_milestone_dest)] = mfpt
         
         if self.model.k_on_info:
-            p_i_hat = self.p_i[:]
+            #if self.model.get_type() == "elber":
+            #    K_hat = make_elber_K_matrix(self.K)
+            #    for end_milestone in end_milestones:
+            #        K_hat[end_milestone, :] = 0.0
+            #        K_hat[end_milestone, end_milestone] = 1.0
+            #else:
+            #    K_hat = self.K[:,:]
+            #    for end_milestone in end_milestones:
+            #        K_hat[end_milestone, :] = 0.0
+            #        K_hat[end_milestone, end_milestone] = 1.0
+            K_hat = self.K[:,:]
             for end_milestone in end_milestones:
                 K_hat[end_milestone, :] = 0.0
                 K_hat[end_milestone, end_milestone] = 1.0
+            p_i_hat = self.p_i[:]
             n = K_hat.shape[0]
             source_vec = np.zeros((n,1))
             output_file_glob = os.path.join(
@@ -723,22 +753,22 @@ class Data_sample():
                                                  bd_directory_list, 
                                                  bd_results_file)
                         
-                        source_vec[bd_milestone.outer_milestone.index] = \
-                            k_ons_src[bd_milestone.outer_milestone.index]
+                        source_index = bd_milestone.outer_milestone.index
+                        source_vec[source_index] = k_ons_src[source_index]
                         results_filename_list = [bd_results_file]
                         transition_probabilities, transition_counts = \
                             browndye_parse_bd_milestone_results(
                                 results_filename_list)
                         self.bd_transition_counts[bd_milestone.index] \
                             = transition_counts
-                        src_index = bd_milestone.outer_milestone.index
-                        K_hat[src_index, :] = 0.0
+                        #src_index = bd_milestone.outer_milestone.index
+                        K_hat[source_index, :] = 0.0
                         for key in transition_probabilities:
                             value = transition_probabilities[key]
                             if key in ["escaped", "stuck"]:
                                 pass
                             else:
-                                K_hat[src_index, key] = value
+                                K_hat[source_index, key] = value
                 
                 K_hat_inf = np.linalg.matrix_power(K_hat, MATRIX_EXPONENTIAL)
                 end_k_ons = np.dot(K_hat_inf.T, source_vec)
@@ -809,6 +839,8 @@ class Data_sample():
                     if i == j: continue
                     if Qnew[i,j] == 0.0: continue
                     if Qnew[j,j] == 0.0: continue
+                    if N[i,j] == 0: continue
+                    if R[i] == 0: continue
                     Q_gamma = 0
                     delta = Qnew[i,j]
                     while ((delta) >= (Qnew[i,j])):

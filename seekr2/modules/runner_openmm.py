@@ -198,6 +198,8 @@ def get_last_bounce(data_file_name):
     if not os.path.exists(data_file_name):
         return None
     with open(data_file_name, 'r') as data_file:
+        if len(data_file.readlines()) == 0:
+            return None
         line = data_file.readlines()[-1]
     if line.startswith("#"):
         return None

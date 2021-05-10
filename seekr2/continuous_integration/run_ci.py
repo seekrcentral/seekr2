@@ -17,14 +17,14 @@ import seekr2.analyze as analyze
 
 def run_short_ci(model_input):
     start_dir = os.getcwd()
-    model, xml_path = prepare.generate_openmmvt_model_and_filetree(
+    model, xml_path = prepare.generate_seekr2_model_and_filetree(
         model_input, force_overwrite=False)
     model_dir = os.path.dirname(xml_path)
     model.anchor_rootdir = os.path.abspath(model_dir)
     check.check_pre_simulation_all(model)
     run.run(model, "any", min_b_surface_simulation_length=1000,
         min_bd_milestone_simulation_length=100, 
-        max_b_surface_trajs_to_extract=10)
+        max_b_surface_trajs_to_extract=10, num_rev_launches=10)
     data_sample_list = converge.converge(model, k_on_state=0)
     rmsd_convergence_results = common_converge.calc_RMSD_conv_amount(
         model, data_sample_list)
@@ -61,6 +61,15 @@ def run_generic_namd_hostguest_ci():
         
     return
 
+def run_elber_hostguest_ci():
+    with tempfile.TemporaryDirectory() as temp_dir:
+        host_guest_model_input \
+            = create_model_input.create_host_guest_elber_model_input(temp_dir)
+        run_short_ci(host_guest_model_input)
+        host_guest_model_input.calculation_type = "elber"
+        
+    return
+
 if __name__ == "__main__":
     if len(sys.argv) <= 1:
         argument = "short"
@@ -72,9 +81,12 @@ if __name__ == "__main__":
         run_generic_hostguest_ci()
     elif argument == "namd":
         run_generic_namd_hostguest_ci()
+    elif argument == "elber":
+        run_elber_hostguest_ci()
     elif argument == "long":
         run_generic_hostguest_ci()
         run_generic_namd_hostguest_ci()
+        run_elber_hostguest_ci()
     
     print("Time elapsed: {:.3f}".format(time.time() - starttime))
     print("Continuous Integration Tests Passed Successfully.")
