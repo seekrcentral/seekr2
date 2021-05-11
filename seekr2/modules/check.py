@@ -70,6 +70,7 @@ def load_structure_with_parmed(model, anchor):
     """
     
     if anchor.amber_params is not None:
+        inpcrd_structure = None
         building_directory = os.path.join(
             model.anchor_rootdir, anchor.directory, 
             anchor.building_directory)
@@ -81,6 +82,8 @@ def load_structure_with_parmed(model, anchor):
         if anchor.amber_params.inpcrd_filename is not None:
             inpcrd_filename = os.path.join(
                 building_directory, anchor.amber_params.inpcrd_filename)
+            inpcrd_structure = parmed.load_file(prmtop_filename, 
+                                                xyz=inpcrd_filename)
         else:
             inpcrd_filename = None
         
@@ -90,6 +93,9 @@ def load_structure_with_parmed(model, anchor):
                 building_directory, 
                 anchor.amber_params.pdb_coordinates_filename)
             structure = parmed.load_file(pdb_filename)
+            if inpcrd_structure is not None:
+                structure.box = inpcrd_structure.get_box()
+
         elif inpcrd_filename is not None and inpcrd_filename != "":
             #structure = parmed.load_file(prmtop_filename, xyz=inpcrd_filename)
             return None

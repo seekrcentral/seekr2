@@ -198,9 +198,10 @@ def get_last_bounce(data_file_name):
     if not os.path.exists(data_file_name):
         return None
     with open(data_file_name, 'r') as data_file:
-        if len(data_file.readlines()) == 0:
+        lines = data_file.readlines()
+        if len(lines) == 0:
             return None
-        line = data_file.readlines()[-1]
+        line = lines[-1]
     if line.startswith("#"):
         return None
     else:
@@ -565,8 +566,8 @@ class Runner_openmm():
                 print("loading umbrella frame {}.".format(chunk))
                 umbrella_simulation.context.setPositions(
                     umbrella_traj.openmm_positions(chunk))
-                umbrella_simulation.context.setPeriodicBoxVectors(
-                    *umbrella_traj.openmm_boxes(chunk))
+                #umbrella_simulation.context.setPeriodicBoxVectors(
+                #    *umbrella_traj.openmm_boxes(chunk))
                 umbrella_state = \
                     umbrella_simulation.context.getState(
                         getPositions=True, getVelocities=True)
@@ -631,8 +632,6 @@ class Runner_openmm():
                     *umbrella_state.getPeriodicBoxVectors())
                 self.sim_openmm.rev_integrator.setCrossingCounter(
                     crossing_counter)
-                rev_simulation.context.reinitialize(preserveState=True)
-                rev_data_file_length = get_data_file_length(rev_data_file_name)
                 if rev_trajectory_reporter_interval is not None:
                     rev_traj_filename = os.path.join(
                         self.output_directory, "reverse_%d.dcd" % counter_str)
@@ -645,6 +644,8 @@ class Runner_openmm():
                         self.sim_openmm.rev_energy_reporter(
                             sys.stdout, rev_energy_reporter_interval, step=True, 
                             potentialEnergy=True, temperature=True, volume=True))
+                rev_simulation.context.reinitialize(preserveState=True)
+                rev_data_file_length = get_data_file_length(rev_data_file_name)
                 rev_block_counter = 0
                 had_error = False
                 while get_data_file_length(rev_data_file_name) \
