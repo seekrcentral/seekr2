@@ -585,7 +585,7 @@ def run(model, instruction, min_total_simulation_length=None,
         for anchor_info in anchor_info_to_run:
             steps_to_go_to_minimum, num_transitions, anchor_index, \
             restart, total_simulation_length = anchor_info
-            if force_overwrite and restart:
+            if (force_overwrite or umbrella_restart_mode) and restart:
                 restart = False
             print("running anchor_index:", anchor_index, "restart:", 
                   restart, "total_simulation_length:", 

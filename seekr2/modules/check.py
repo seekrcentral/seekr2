@@ -79,7 +79,8 @@ def load_structure_with_parmed(model, anchor):
                 building_directory, anchor.amber_params.prmtop_filename)
         else:
             return None
-        if anchor.amber_params.inpcrd_filename is not None:
+        if anchor.amber_params.inpcrd_filename is not None \
+                and anchor.amber_params.inpcrd_filename != "":
             inpcrd_filename = os.path.join(
                 building_directory, anchor.amber_params.inpcrd_filename)
             inpcrd_structure = parmed.load_file(prmtop_filename, 

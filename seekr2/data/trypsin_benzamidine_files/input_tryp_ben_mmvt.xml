@@ -1,0 +1,185 @@
+<?xml version="1.0" ?>
+<model_input class='Model_input'>
+    <calculation_type>mmvt</calculation_type>
+    <calculation_settings class="MMVT_input_settings">
+        <md_output_interval>2500000</md_output_interval>
+        <md_steps_per_anchor>250000000</md_steps_per_anchor>
+    </calculation_settings>
+    <temperature>298.0</temperature>
+    <pressure>1.0</pressure>
+    <ensemble>nvt</ensemble>
+    <root_directory>~/tryp_ben_mmvt_seekr2/</root_directory>
+    <md_program>openmm</md_program>
+    <constraints>HBonds</constraints>
+    <rigidWater>True</rigidWater>
+    <hydrogenMass/>
+    <timestep>0.002</timestep>
+    <nonbonded_cutoff>0.9</nonbonded_cutoff>
+    <cv_inputs>
+        <cv_input class="Spherical_cv_input">
+            <group1>[2478, 2489, 2499, 2535, 2718, 2745, 2769, 2787, 2794, 2867, 2926]</group1>
+            <group2>[3221, 3222, 3223, 3224, 3225, 3226, 3227, 3228, 3229]</group2>
+            <input_anchors>
+                <input_anchor class="Spherical_cv_anchor">
+                    <radius>0.05</radius>
+                    <lower_milestone_radius/>
+                    <upper_milestone_radius>0.1</upper_milestone_radius>
+                    <starting_amber_params class="Amber_params">
+                        <prmtop_filename>data/trypsin_benzamidine_files/tryp_ben.prmtop</prmtop_filename>
+                        <inpcrd_filename>data/trypsin_benzamidine_files/tryp_ben.inpcrd</inpcrd_filename>
+                        <box_vectors/>
+                        <pdb_coordinates_filename>data/trypsin_benzamidine_files/mmvt/tryp_ben_at0.pdb</pdb_coordinates_filename>
+                    </starting_amber_params>
+                    <bound_state>True</bound_state>
+                    <bulk_anchor>False</bulk_anchor>
+                </input_anchor>
+                <input_anchor class="Spherical_cv_anchor">
+                    <radius>0.15</radius>
+                    <lower_milestone_radius>0.1</lower_milestone_radius>
+                    <upper_milestone_radius>0.2</upper_milestone_radius>
+                    <starting_amber_params class="Amber_params">
+                        <prmtop_filename>data/trypsin_benzamidine_files/tryp_ben.prmtop</prmtop_filename>
+                        <inpcrd_filename>data/trypsin_benzamidine_files/tryp_ben.inpcrd</inpcrd_filename>
+                        <box_vectors/>
+                        <pdb_coordinates_filename>data/trypsin_benzamidine_files/mmvt/tryp_ben_at1.58.pdb</pdb_coordinates_filename>
+                    </starting_amber_params>
+                    <bound_state>False</bound_state>
+                    <bulk_anchor>False</bulk_anchor>
+                </input_anchor>
+                <input_anchor class="Spherical_cv_anchor">
+                    <radius>0.25</radius>
+                    <lower_milestone_radius>0.2</lower_milestone_radius>
+                    <upper_milestone_radius>0.3</upper_milestone_radius>
+                    <starting_amber_params class="Amber_params">
+                        <prmtop_filename>data/trypsin_benzamidine_files/tryp_ben.prmtop</prmtop_filename>
+                        <inpcrd_filename>data/trypsin_benzamidine_files/tryp_ben.inpcrd</inpcrd_filename>
+                        <box_vectors/>
+                        <pdb_coordinates_filename>data/trypsin_benzamidine_files/mmvt/tryp_ben_at2.76.pdb</pdb_coordinates_filename>
+                    </starting_amber_params>
+                    <bound_state>False</bound_state>
+                    <bulk_anchor>False</bulk_anchor>
+                </input_anchor>
+                <input_anchor class="Spherical_cv_anchor">
+                    <radius>0.35</radius>
+                    <lower_milestone_radius>0.3</lower_milestone_radius>
+                    <upper_milestone_radius>0.4</upper_milestone_radius>
+                    <starting_amber_params class="Amber_params">
+                        <prmtop_filename>data/trypsin_benzamidine_files/tryp_ben.prmtop</prmtop_filename>
+                        <inpcrd_filename>data/trypsin_benzamidine_files/tryp_ben.inpcrd</inpcrd_filename>
+                        <box_vectors/>
+                        <pdb_coordinates_filename>data/trypsin_benzamidine_files/mmvt/tryp_ben_at3.69.pdb</pdb_coordinates_filename>
+                    </starting_amber_params>
+                    <bound_state>False</bound_state>
+                    <bulk_anchor>False</bulk_anchor>
+                </input_anchor>
+                <input_anchor class="Spherical_cv_anchor">
+                    <radius>0.45</radius>
+                    <lower_milestone_radius>0.4</lower_milestone_radius>
+                    <upper_milestone_radius>0.6</upper_milestone_radius>
+                    <starting_amber_params class="Amber_params">
+                        <prmtop_filename>data/trypsin_benzamidine_files/tryp_ben.prmtop</prmtop_filename>
+                        <inpcrd_filename>data/trypsin_benzamidine_files/tryp_ben.inpcrd</inpcrd_filename>
+                        <box_vectors/>
+                        <pdb_coordinates_filename>data/trypsin_benzamidine_files/mmvt/tryp_ben_at4.61.pdb</pdb_coordinates_filename>
+                    </starting_amber_params>
+                    <bound_state>False</bound_state>
+                    <bulk_anchor>False</bulk_anchor>
+                </input_anchor>
+                <input_anchor class="Spherical_cv_anchor">
+                    <radius>0.7</radius>
+		            <lower_milestone_radius>0.6</lower_milestone_radius>
+                    <upper_milestone_radius>0.8</upper_milestone_radius>
+                    <starting_amber_params class="Amber_params">
+                        <prmtop_filename>data/trypsin_benzamidine_files/tryp_ben.prmtop</prmtop_filename>
+                        <inpcrd_filename>data/trypsin_benzamidine_files/tryp_ben.inpcrd</inpcrd_filename>
+                        <box_vectors/>
+                        <pdb_coordinates_filename>data/trypsin_benzamidine_files/mmvt/tryp_ben_at7.20.pdb</pdb_coordinates_filename>
+                    </starting_amber_params>
+                    <bound_state>False</bound_state>
+                    <bulk_anchor>False</bulk_anchor>
+                </input_anchor>
+                <input_anchor class="Spherical_cv_anchor">
+                    <radius>0.9</radius>
+                    <lower_milestone_radius>0.8</lower_milestone_radius>
+                    <upper_milestone_radius>1.0</upper_milestone_radius>
+                    <starting_amber_params class="Amber_params">
+                        <prmtop_filename>data/trypsin_benzamidine_files/tryp_ben.prmtop</prmtop_filename>
+                        <inpcrd_filename>data/trypsin_benzamidine_files/tryp_ben.inpcrd</inpcrd_filename>
+                        <box_vectors/>
+                        <pdb_coordinates_filename>data/trypsin_benzamidine_files/mmvt/tryp_ben_at9.33.pdb</pdb_coordinates_filename>
+                    </starting_amber_params>
+                    <bound_state>False</bound_state>
+                    <bulk_anchor>False</bulk_anchor>
+                </input_anchor>
+                <input_anchor class="Spherical_cv_anchor">
+                    <radius>1.1</radius>
+                    <lower_milestone_radius>1.0</lower_milestone_radius>
+                    <upper_milestone_radius>1.2</upper_milestone_radius>
+                    <starting_amber_params class="Amber_params">
+                        <prmtop_filename>data/trypsin_benzamidine_files/tryp_ben.prmtop</prmtop_filename>
+                        <inpcrd_filename>data/trypsin_benzamidine_files/tryp_ben.inpcrd</inpcrd_filename>
+                        <box_vectors/>
+                        <pdb_coordinates_filename>data/trypsin_benzamidine_files/mmvt/tryp_ben_at11.06.pdb</pdb_coordinates_filename>
+                    </starting_amber_params>
+                    <bound_state>False</bound_state>
+                    <bulk_anchor>False</bulk_anchor>
+                </input_anchor>
+                <input_anchor class="Spherical_cv_anchor">
+                    <radius>1.25</radius>
+		            <lower_milestone_radius>1.2</lower_milestone_radius>
+                    <upper_milestone_radius>1.3</upper_milestone_radius>
+                    <starting_amber_params class="Amber_params">
+                        <prmtop_filename>data/trypsin_benzamidine_files/tryp_ben.prmtop</prmtop_filename>
+                        <inpcrd_filename>data/trypsin_benzamidine_files/tryp_ben.inpcrd</inpcrd_filename>
+                        <box_vectors/>
+                        <pdb_coordinates_filename>data/trypsin_benzamidine_files/mmvt/tryp_ben_at12.70.pdb</pdb_coordinates_filename>
+                    </starting_amber_params>
+                    <bound_state>False</bound_state>
+                    <bulk_anchor>False</bulk_anchor>
+                </input_anchor>
+                <input_anchor class="Spherical_cv_anchor">
+                    <radius>1.4</radius>
+		            <lower_milestone_radius>1.3</lower_milestone_radius>
+                    <upper_milestone_radius/>
+                    <starting_amber_params class="Amber_params">
+                        <prmtop_filename>data/trypsin_benzamidine_files/tryp_ben.prmtop</prmtop_filename>
+                        <inpcrd_filename>data/trypsin_benzamidine_files/tryp_ben.inpcrd</inpcrd_filename>
+                        <box_vectors/>
+                        <pdb_coordinates_filename></pdb_coordinates_filename>
+                    </starting_amber_params>
+                    <bound_state>False</bound_state>
+                    <bulk_anchor>True</bulk_anchor>
+                </input_anchor>
+            </input_anchors>
+        </cv_input>
+    </cv_inputs>
+    <browndye_settings_input class="Browndye_settings_input">
+        <binary_directory></binary_directory>
+        <receptor_pqr_filename>data/trypsin_benzamidine_files/trypsin.pqr</receptor_pqr_filename>
+        <ligand_pqr_filename>data/trypsin_benzamidine_files/benzamidine.pqr</ligand_pqr_filename>
+        <apbs_grid_spacing>0.5</apbs_grid_spacing>
+        <receptor_indices>[2478, 2489, 2499, 2535, 2718, 2745, 2769, 2787, 2794, 2867, 2926]</receptor_indices>
+        <ligand_indices>[0, 1, 2, 3, 4, 5, 6, 7, 8]</ligand_indices>
+        <ions>
+            <ion class="Ion"> <!-- Calcium at 0.02 M -->
+                <radius>1.14</radius>
+                <charge>2.0</charge>
+                <conc>0.02</conc>
+            </ion>
+            <ion class="Ion"> <!-- Chloride at 0.1 M -->
+                <radius>1.67</radius>
+                <charge>-1.0</charge>
+                <conc>0.1</conc>
+            </ion>
+            <ion class="Ion"> <!-- Tris at 0.06 M -->
+                <radius>4.0</radius>
+                <charge>1.0</charge>
+                <conc>0.06</conc>
+            </ion>
+        </ions>
+        <num_bd_milestone_trajectories>1000</num_bd_milestone_trajectories>
+        <num_b_surface_trajectories>1000000</num_b_surface_trajectories>
+        <max_b_surface_trajs_to_extract>1000</max_b_surface_trajs_to_extract>
+        <n_threads>6</n_threads>
+    </browndye_settings_input>
+</model_input>

@@ -431,25 +431,31 @@ class Runner_openmm():
             if self.restart_checkpoint_interval is not None:
                 assert trajectory_reporter_interval >= \
                     self.restart_checkpoint_interval
-            assert trajectory_reporter_interval <= calc_settings.num_production_steps, \
-                "The trajectory reporter interval must be less or equal to "\
-                "the length of the simulation."
+            if trajectory_reporter_interval > calc_settings.num_production_steps:
+                trajectory_reporter_interval = calc_settings.num_production_steps
+            #assert trajectory_reporter_interval <= calc_settings.num_production_steps, \
+            #    "The trajectory reporter interval must be less or equal to "\
+            #    "the length of the simulation."
         
         if energy_reporter_interval is not None:
             simulation.reporters.append(
                 self.sim_openmm.energy_reporter(
                     sys.stdout, energy_reporter_interval, step=True, 
                     potentialEnergy=True, temperature=True, volume=True))
-            assert trajectory_reporter_interval <= calc_settings.num_production_steps, \
-                "The energy reporter interval must be less than or equal to "\
-                "the length of the simulation."
+            if energy_reporter_interval > calc_settings.num_production_steps:
+                energy_reporter_interval = calc_settings.num_production_steps
+            #assert energy_reporter_interval <= calc_settings.num_production_steps, \
+            #    "The energy reporter interval must be less than or equal to "\
+            #    "the length of the simulation."
         
         if self.restart_checkpoint_interval is not None:
+            if self.restart_checkpoint_interval > calc_settings.num_production_steps:
+                self.restart_checkpoint_interval = calc_settings.num_production_steps
             self.end_chunk = calc_settings.num_production_steps // self.restart_checkpoint_interval
             self.steps_per_chunk = self.restart_checkpoint_interval
-            assert self.restart_checkpoint_interval <= \
-                calc_settings.num_production_steps, "The restart checkpoint interval "\
-                "must be less than or equal to the length of the simulation."
+            #assert self.restart_checkpoint_interval <= \
+            #    calc_settings.num_production_steps, "The restart checkpoint interval "\
+            #    "must be less than or equal to the length of the simulation."
         else:
             self.end_chunk = self.start_chunk + 1
             self.steps_per_chunk = calc_settings.num_production_steps
@@ -571,7 +577,6 @@ class Runner_openmm():
                 umbrella_state = \
                     umbrella_simulation.context.getState(
                         getPositions=True, getVelocities=True)
-                
             else:
                 umbrella_simulation.saveCheckpoint(
                     self.restart_checkpoint_filename)
@@ -622,7 +627,6 @@ class Runner_openmm():
                             preserveState=True)
                         self.sim_openmm.fwd_simulation.context.reinitialize(
                             preserveState=True)
-                
                 rev_simulation.context.setPositions(
                     umbrella_state.getPositions())
                 rev_simulation.context.setVelocitiesToTemperature(
@@ -645,6 +649,8 @@ class Runner_openmm():
                             sys.stdout, rev_energy_reporter_interval, step=True, 
                             potentialEnergy=True, temperature=True, volume=True))
                 rev_simulation.context.reinitialize(preserveState=True)
+                rev_start_state = rev_simulation.context.getState(
+                    getPositions=True, getVelocities=True)
                 rev_data_file_length = get_data_file_length(rev_data_file_name)
                 rev_block_counter = 0
                 had_error = False
@@ -659,7 +665,6 @@ class Runner_openmm():
                         num_errors += 1
                         had_error = True
                         break # don't want to log this as a success
-    
                     rev_block_counter += 1
                     if rev_block_counter > MAX_REVERSE_ITER:
                         print("maximum iterations exceeded.")
@@ -670,16 +675,15 @@ class Runner_openmm():
                     break # move on to the next frame
                 if read_reversal_data_file_last(rev_data_file_name):
                     fwd_simulation.context.setPositions(
-                        umbrella_state.getPositions())
+                        rev_start_state.getPositions())
                     fwd_simulation.context.setVelocities(
-                        umbrella_state.getVelocities())
+                        -1.0*rev_start_state.getVelocities())
                     fwd_simulation.context.setPeriodicBoxVectors(
-                        *umbrella_state.getPeriodicBoxVectors())
+                        *rev_start_state.getPeriodicBoxVectors())
                     self.sim_openmm.fwd_integrator.setCrossingCounter(
                         crossing_counter)
                     fwd_simulation.context.reinitialize(preserveState=True)
                     # TODO: add reporter update here
-                    
                     fwd_data_file_length = get_data_file_length(fwd_data_file_name)
                     if fwd_trajectory_reporter_interval is not None:
                         fwd_traj_filename = os.path.join(
@@ -703,8 +707,7 @@ class Runner_openmm():
                                   "umbrella frame.")
                             num_errors += 1
                             had_error = True
-                            break # don't want to log this as a success
-        
+                            break
                         fwd_block_counter += 1
                         if fwd_block_counter > MAX_FORWARD_ITER:
                             print("maximum iterations exceeded.")
