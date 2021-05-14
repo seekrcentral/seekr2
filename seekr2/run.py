@@ -44,7 +44,7 @@ def choose_next_simulation_browndye2(
     # if overwrite is True, cleanse all BD directories for new runs
     b_surface_directory = os.path.join(
         model.anchor_rootdir, model.k_on_info.b_surface_directory)
-    if force_overwrite in ["any", "any_bd", "b_surface"]:
+    if force_overwrite and instruction in ["any", "any_bd", "b_surface"]:
         runner_browndye2.cleanse_bd_outputs(b_surface_directory, 
                                             check_mode=False)
         for bd_milestone in model.k_on_info.bd_milestones:
