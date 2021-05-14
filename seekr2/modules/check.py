@@ -159,7 +159,8 @@ def load_structure_with_mdtraj(model, anchor, mode="pdb", coords_filename=None):
             umbrella_traj_filenames.pop(i)
             
         assert len(umbrella_traj_filenames) > 0, "Only empty umbrella " \
-        "trajectories were found."
+        "trajectories were found. You can force SEEKR to skip these checks "\
+        "by using the --skip_checks (-s) argument"
     
     elif mode == "state_xml":
         assert coords_filename is not None
@@ -211,12 +212,18 @@ def load_structure_with_mdtraj(model, anchor, mode="pdb", coords_filename=None):
                 return None
         
         elif mode == "elber_umbrella":
+            assert len(umbrella_traj_filenames) > 0, "Only empty umbrella " \
+                "trajectories were found. You can force SEEKR to skip these "\
+                "checks by using the --skip_checks (-s) argument"
             traj = mdtraj.load(umbrella_traj_filenames, top=prmtop_filename)
         
         elif mode == "state_xml":
             traj = mdtraj.load_xml(coords_filename, top=prmtop_filename)
         
         elif mode == "mmvt_traj":
+            assert len(mmvt_traj_filenames) > 0, "Only empty mmvt " \
+                "trajectories were found. You can force SEEKR to skip these "\
+                "checks by using the --skip_checks (-s) argument"
             traj = mdtraj.load(mmvt_traj_filenames, top=prmtop_filename)
             
         return traj
@@ -237,6 +244,9 @@ def load_structure_with_mdtraj(model, anchor, mode="pdb", coords_filename=None):
         if mode == "pdb":
             traj = mdtraj.load(pdb_filename)
         elif mode == "elber_umbrella":
+            assert len(umbrella_traj_filenames) > 0, "Only empty umbrella " \
+                "trajectories were found. You can force SEEKR to skip these "\
+                "checks by using the --skip_checks (-s) argument"
             traj = mdtraj.load(umbrella_traj_filenames, top=pdb_filename)
         elif mode == "state_xml":
             traj = mdtraj.load_xml(coords_filename, top=prmtop_filename)

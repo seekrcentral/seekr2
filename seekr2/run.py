@@ -44,7 +44,7 @@ def choose_next_simulation_browndye2(
     # if overwrite is True, cleanse all BD directories for new runs
     b_surface_directory = os.path.join(
         model.anchor_rootdir, model.k_on_info.b_surface_directory)
-    if force_overwrite:
+    if force_overwrite in ["any", "any_bd", "b_surface"]:
         runner_browndye2.cleanse_bd_outputs(b_surface_directory, 
                                             check_mode=False)
         for bd_milestone in model.k_on_info.bd_milestones:
@@ -620,6 +620,8 @@ def run(model, instruction, min_total_simulation_length=None,
         if counter > MAX_ITER:
             raise Exception("MD while loop appears to be stuck.")
         force_overwrite = False
+        if umbrella_restart_mode:
+            md_complete = True
         umbrella_restart_mode = False
     
     counter = 0
