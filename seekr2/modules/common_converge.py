@@ -306,10 +306,10 @@ def plot_scalar_conv(conv_values, conv_intervals, label, title, timestep_in_ns,
     
     fig, ax = plt.subplots()
     ax.plot(np.multiply(conv_intervals, timestep_in_ns), conv_values, 
-            linestyle='-', marker="o", markersize = 1)
+            linestyle="-", marker="o", markersize=1)
     plt.ylabel("$"+label+"$")
     plt.xlabel("convergence window")
-    plt.title("$"+title+"$")
+    plt.title(title)
     if y_axis_logarithmic:
         plt.yscale("log", nonpositive="mask")
     return fig, ax

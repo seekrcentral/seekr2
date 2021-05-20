@@ -150,7 +150,11 @@ def copy_building_files(model, input_model, rootdir):
             anchor.amber_params = base.Amber_params()
             if amber.prmtop_filename is not None and \
                     amber.prmtop_filename != "":
-                assert os.path.exists(amber.prmtop_filename)
+                amber.prmtop_filename = os.path.expanduser(
+                    amber.prmtop_filename)
+                assert os.path.exists(amber.prmtop_filename), \
+                    "Provided file does not exist: {}".format(
+                        amber.prmtop_filename)
                 prmtop_filename = os.path.basename(amber.prmtop_filename)
                 new_prmtop_filename = os.path.join(anchor_building_dir, 
                                                    prmtop_filename)
@@ -159,7 +163,11 @@ def copy_building_files(model, input_model, rootdir):
                 
             if amber.inpcrd_filename is not None and \
                     amber.inpcrd_filename != "":
-                assert os.path.exists(amber.inpcrd_filename)
+                amber.inpcrd_filename = os.path.expanduser(
+                    amber.inpcrd_filename)
+                assert os.path.exists(amber.inpcrd_filename), \
+                    "Provided file does not exist: {}".format(
+                        amber.inpcrd_filename)
                 inpcrd_filename = os.path.basename(amber.inpcrd_filename)
                 new_inpcrd_filename = os.path.join(anchor_building_dir, 
                                                    inpcrd_filename)
@@ -168,7 +176,11 @@ def copy_building_files(model, input_model, rootdir):
                 
             if amber.pdb_coordinates_filename is not None and \
                     amber.pdb_coordinates_filename != "":
-                assert os.path.exists(amber.pdb_coordinates_filename)
+                amber.pdb_coordinates_filename = os.path.expanduser(
+                    amber.pdb_coordinates_filename)
+                assert os.path.exists(amber.pdb_coordinates_filename), \
+                    "Provided file does not exist: {}".format(
+                        amber.pdb_coordinates_filename)
                 pdb_filename = os.path.basename(amber.pdb_coordinates_filename)
                 new_pdb_filename = os.path.join(anchor_building_dir, 
                                                 pdb_filename)
@@ -190,7 +202,7 @@ def copy_building_files(model, input_model, rootdir):
                     len(forcefield.built_in_forcefield_filenames) > 0:
                 for filename in forcefield.built_in_forcefield_filenames:
                     anchor.forcefield_params.built_in_forcefield_filenames.\
-                        append(filename)
+                        append(os.path.expanduser(filename))
                         
             if forcefield.custom_forcefield_filenames is not None and \
                     len(forcefield.custom_forcefield_filenames) > 0:
@@ -200,11 +212,15 @@ def copy_building_files(model, input_model, rootdir):
                                                    ff_filename)
                     copyfile(filename, new_ff_filename)
                     anchor.forcefield_params.custom_forcefield_filenames.\
-                        append(ff_filename)
+                        append(os.path.expanduser(ff_filename))
             
             if forcefield.pdb_filename is not None and \
                     forcefield.pdb_filename != "":
-                assert os.path.exists(forcefield.pdb_filename)
+                forcefield.pdb_filename = os.path.expanduser(
+                    forcefield.pdb_filename)
+                assert os.path.exists(forcefield.pdb_filename), \
+                    "Provided file does not exist: {}".format(
+                        forcefield.pdb_filename)
                 pdb_filename = os.path.basename(forcefield.pdb_filename)
                 new_pdb_filename = os.path.join(anchor_building_dir, 
                                                 pdb_filename)
@@ -222,13 +238,13 @@ def copy_building_files(model, input_model, rootdir):
         ligand_pqr_filename = os.path.basename(bd_settings.ligand_pqr_filename)
         ligand_pqr_dest_filename = os.path.join(
             b_surface_dir, ligand_pqr_filename)
-        copyfile(bd_input_settings.ligand_pqr_filename, 
+        copyfile(os.path.expanduser(bd_input_settings.ligand_pqr_filename), 
                  ligand_pqr_dest_filename)
         
         receptor_pqr_filename = os.path.basename(
             bd_settings.receptor_pqr_filename)
         receptor_pqr_dest_filename = os.path.join(
             b_surface_dir, receptor_pqr_filename)
-        copyfile(bd_input_settings.receptor_pqr_filename, 
+        copyfile(os.path.expanduser(bd_input_settings.receptor_pqr_filename), 
                  receptor_pqr_dest_filename)
     return

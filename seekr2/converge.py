@@ -32,10 +32,10 @@ def converge(model, k_on_state=None, image_directory=None,
         return data_sample_list
     
     k_off_fig, ax = common_converge.plot_scalar_conv(
-        k_off_conv, max_step_list[0,:], title="k_{off} Convergence", 
+        k_off_conv, max_step_list[0,:], title="$k_{off}$ Convergence", 
         label="k_{off} (s^{-1})", timestep_in_ns=timestep_in_ns)
     k_on_fig, ax = common_converge.plot_scalar_conv(
-        k_on_conv, max_step_list[0,:], title="k_{on} Convergence", 
+        k_on_conv, max_step_list[0,:], title="$k_{on}$ Convergence", 
         label="k_{on} (s^{-1} M^{-1})", timestep_in_ns=timestep_in_ns)
     N_ij_fig_list, ax, N_ij_title_list, N_ij_name_list \
         = common_converge.plot_dict_conv(

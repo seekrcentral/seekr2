@@ -168,7 +168,7 @@ def create_openmm_system(sim_openmm, model, anchor):
         raise Exception("constraints not found: %s", 
                         model.openmm_settings.constraints)
     
-    hydrogenMass = model.openmm_settings.hydrogenMass
+    hydrogenMass = model.openmm_settings.hydrogenMass*openmm.unit.amu
     rigidWater = model.openmm_settings.rigidWater
     
     if anchor.amber_params is not None:

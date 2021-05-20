@@ -197,7 +197,7 @@ def choose_next_simulation_openmm(
                 simulation = sim_openmm_obj.umbrella_simulation
             
             simulation.loadCheckpoint(restart_checkpoint_filename)
-            currentStep = int(math.ceil(simulation.context.getState().getTime()\
+            currentStep = int(round(simulation.context.getState().getTime()\
                               .value_in_unit(unit.picoseconds) \
                               / sim_openmm_obj.timestep))
             dummy_file.close()
@@ -439,8 +439,8 @@ def run_browndye2(model, bd_milestone_index, restart, n_trajectories,
 
 def run_openmm(model, anchor_index, restart, total_simulation_length, 
                cuda_device_index=False, force_overwrite=False,
-               save_state_file=False, num_rev_launches=1, 
-               umbrella_restart_mode=False):
+               save_state_file=False, save_state_boundaries=False,
+               num_rev_launches=1, umbrella_restart_mode=False):
     """Run an OpenMM simulation."""
     import seekr2.modules.runner_openmm as runner_openmm
     import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
@@ -473,7 +473,8 @@ def run_openmm(model, anchor_index, restart, total_simulation_length,
     
     runner = runner_openmm.Runner_openmm(model, myanchor)
     default_output_file, state_file_prefix, restart_index = runner.prepare(
-        restart, save_state_file, force_overwrite, umbrella_restart_mode)
+        restart, save_state_file, save_state_boundaries, force_overwrite, 
+        umbrella_restart_mode)
     
     if model.get_type() == "mmvt":
         sim_openmm_obj = mmvt_sim_openmm.create_sim_openmm(
@@ -492,7 +493,8 @@ def run_openmm(model, anchor_index, restart, total_simulation_length,
 
 def run_namd(model, anchor_index, restart, total_simulation_length, 
                     cuda_device_index=False, force_overwrite=False,
-                    save_state_file=False, namd_command="namd2", namd_arguments=""):
+                    save_state_file=False, save_state_boundaries=False,
+                    namd_command="namd2", namd_arguments=""):
     """Run a NAMD simulation."""
     import seekr2.modules.runner_namd as runner_namd
     import seekr2.modules.mmvt_sim_namd as mmvt_sim_namd
@@ -518,7 +520,8 @@ def run_namd(model, anchor_index, restart, total_simulation_length,
     runner = runner_namd.Runner_namd(model, myanchor, namd_command, 
                                      namd_arguments)
     default_output_file, output_basename, state_file_prefix, restart_index \
-        = runner.prepare(restart, save_state_file, force_overwrite)
+        = runner.prepare(restart, save_state_file, save_state_boundaries, 
+                         force_overwrite)
     
     if model.get_type() == "mmvt":
         sim_namd_obj = mmvt_sim_namd.create_sim_namd(
@@ -539,7 +542,8 @@ def run(model, instruction, min_total_simulation_length=None,
         max_total_simulation_length=None, convergence_cutoff=None, 
         directory=None, minimum_anchor_transitions=None, 
         cuda_device_index=None, force_overwrite=False, save_state_file=False,
-        namd_command="namd2", namd_arguments="", min_b_surface_simulation_length=None,
+        save_state_boundaries=False, namd_command="namd2", namd_arguments="", 
+        min_b_surface_simulation_length=None,
         min_bd_milestone_simulation_length=None, 
         max_b_surface_trajs_to_extract=None, min_b_surface_encounters=None, 
         min_bd_milestone_encounters=None, num_rev_launches=1, 
@@ -598,6 +602,7 @@ def run(model, instruction, min_total_simulation_length=None,
                            cuda_device_index=cuda_device_index, 
                            force_overwrite=force_overwrite, 
                            save_state_file=save_state_file,
+                           save_state_boundaries=save_state_boundaries,
                            num_rev_launches=num_rev_launches,
                            umbrella_restart_mode=umbrella_restart_mode)
             elif model.namd_settings is not None:
@@ -606,6 +611,7 @@ def run(model, instruction, min_total_simulation_length=None,
                          cuda_device_index=cuda_device_index, 
                          force_overwrite=force_overwrite, 
                          save_state_file=save_state_file, 
+                         save_state_boundaries=save_state_boundaries,
                          namd_command=namd_command,
                          namd_arguments=namd_arguments)
             else:
@@ -722,9 +728,17 @@ if __name__ == "__main__":
                            "anchor's production directory will be emptied of "\
                            "all output, trajectory, and backup files for the "\
                            "new simulation.", action="store_true")
-    argparser.add_argument("-s", "--save_state_file", dest="save_state_file",
+    argparser.add_argument("-s", "--save_state_for_all_boundaries", 
+                           dest="save_state_for_all_boundaries",
+                           default=False, help="Toggle whether to save at "\
+                           "least one state file for each boundary until "\
+                           "every boundary has been bounced against. Warning: "\
+                           "can generate very large numbers of files.", 
+                           action="store_true")
+    argparser.add_argument("-S", "--save_state_file", dest="save_state_file",
                            default=False, help="Toggle whether to save a "\
-                           "state file whenever a bounce occurs.", 
+                           "state file every time a bounce occurs. Warning: "\
+                           "can generate very large numbers of files.", 
                            action="store_true")
     argparser.add_argument("-n", "--namd_command", dest="namd_command",
                            default="namd2", help="Define a different NAMD "\
@@ -806,6 +820,7 @@ if __name__ == "__main__":
     minimum_anchor_transitions = args["minimum_anchor_transitions"]
     directory = args["directory"]
     force_overwrite = args["force_overwrite"]
+    save_state_for_all_boundaries = args["save_state_for_all_boundaries"]
     save_state_file = args["save_state_file"]
     namd_command = args["namd_command"]
     namd_arguments = args["namd_arguments"]
@@ -825,7 +840,8 @@ if __name__ == "__main__":
     run(model, instruction, min_total_simulation_length, 
         max_total_simulation_length, convergence_cutoff, 
         directory, minimum_anchor_transitions, cuda_device_index, 
-        force_overwrite, save_state_file, namd_command, namd_arguments,
+        force_overwrite, save_state_file, save_state_for_all_boundaries,
+        namd_command, namd_arguments,
         minimum_b_surface_trajectories, minimum_bd_milestone_trajectories,
         max_b_surface_trajs_to_extract, min_b_surface_encounters, 
         min_bd_milestone_encounters, num_rev_launches, umbrella_restart_mode)

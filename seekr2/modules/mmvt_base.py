@@ -271,6 +271,7 @@ colvar {{
         within the expected anchor. Return True if passed, return
         False if failed.
         """
+        TOL = 0.001
         traj1 = traj.atom_slice(self.group1)
         traj2 = traj.atom_slice(self.group2)
         com1_array = mdtraj.compute_center_of_mass(traj1)
@@ -281,7 +282,7 @@ colvar {{
             radius = np.linalg.norm(com2-com1)
             milestone_k = milestone_variables["k"]
             milestone_radius = milestone_variables["radius"]
-            if milestone_k*(radius - milestone_radius) > 0.0:
+            if milestone_k*(radius - milestone_radius) > TOL:
                 if verbose:
                     warnstr = """The center of masses of atom group1 and atom
 group2 were found to be {:.4f} nm apart.

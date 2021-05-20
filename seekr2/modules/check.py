@@ -62,6 +62,7 @@ ION_CHARGE_DICT = {"li":1.0, "na":1.0, "k":1.0, "rb":1.0, "cs":1.0, "fr":1.0,
 
 AVOGADROS_NUMBER = 6.022e23
 SAVE_STATE_DIRECTORY = "states/"
+MAX_STRUCTURES_TO_CHECK = 100
 
 def load_structure_with_parmed(model, anchor):
     """
@@ -655,7 +656,7 @@ def check_xml_boundary_states(model):
             state_files = glob.glob(state_file_glob)
             if len(state_files) == 0:
                 continue
-            for state_file in state_files:
+            for i, state_file in enumerate(state_files):
                 traj = load_structure_with_mdtraj(
                     model, anchor, mode="state_xml", coords_filename=state_file)
                 cv = model.collective_variables[milestone.cv_index]
@@ -669,6 +670,9 @@ def check_xml_boundary_states(model):
                     print(warnstr.format(anchor.index, state_file))
                     print("Saved problematic structure to:", save_pdb_filename)
                     return False
+                
+                if i > MAX_STRUCTURES_TO_CHECK:
+                    break
     
     return True
 
@@ -708,9 +712,10 @@ def find_parmed_structure_com(structure, indices):
     
     total_mass = 0.0
     com_vector = np.zeros(3)
-    for i, atom in enumerate(structure.atoms):
+    for index in indices:
+        atom = structure.atoms[index]
         total_mass += atom.mass
-        com_vector += atom.mass * structure.coordinates[i]
+        com_vector += atom.mass * structure.coordinates[index]
     
     assert total_mass > 0.0
     return com_vector / total_mass
