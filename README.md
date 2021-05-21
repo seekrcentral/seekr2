@@ -112,16 +112,17 @@ MORE HERE
 ## Authors and Contributors
 
 The following people have contributed directly to the coding and validation
-efforts of SEEKR2. Thanks also to everyone who has
-helped or will help improve this project by providing feedback, bug reports,
-or other comments.
+efforts of SEEKR2 (listed an alphabetical order of last name). 
+Thanks also to everyone who has helped or will help improve this project by 
+providing feedback, bug reports, or other comments.
 
-* Lane Votapka (lead developer)
-* Andy Stokely (developer)
-* Anand Ojha (developer)
 * Rommie Amaro (principal investigator)
 * Ilker Deveci (contributor)
 * Hilliary Frank (contributor)
+* Anand Ojha (developer)
+* Andy Stokely (developer)
+* Natalie Timms (contributor)
+* Lane Votapka (lead developer)
 
 ### Copyright
 

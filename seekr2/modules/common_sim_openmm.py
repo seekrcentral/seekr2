@@ -10,6 +10,7 @@ import os
 
 import openmm
 import openmm.app as openmm_app
+import parmed
 
 class Common_sim_openmm:
     """
@@ -68,31 +69,29 @@ def create_openmm_system(sim_openmm, model, anchor):
         prmtop_filename = os.path.join(
             building_directory, anchor.amber_params.prmtop_filename)
         prmtop = openmm_app.AmberPrmtopFile(prmtop_filename)
-        inpcrd = None
-        if anchor.amber_params.inpcrd_filename is not None \
-                and anchor.amber_params.inpcrd_filename != "":
-            inpcrd_filename = os.path.join(
-                building_directory, anchor.amber_params.inpcrd_filename)
-            inpcrd = openmm_app.AmberInpcrdFile(inpcrd_filename)
+        #inpcrd = None
+        #if anchor.amber_params.inpcrd_filename is not None \
+        #        and anchor.amber_params.inpcrd_filename != "":
+        #    inpcrd_filename = os.path.join(
+        #        building_directory, anchor.amber_params.inpcrd_filename)
+        #    inpcrd = openmm_app.AmberInpcrdFile(inpcrd_filename)
+        assert anchor.amber_params.pdb_coordinates_filename is not None
+        pdb_coordinates_filename = os.path.join(
+            building_directory, 
+            anchor.amber_params.pdb_coordinates_filename)
+        positions = openmm_app.PDBFile(pdb_coordinates_filename)
+        
             
         if anchor.amber_params.box_vectors is None:
-            assert inpcrd is not None, "If box_vectors field is "\
-                "empty, then an inpcrd must be provided."
-            assert inpcrd.boxVectors is not None, "The provided "\
+            assert pdb_coordinates_filename is not None, "If box_vectors "\
+                "field is empty, then pdb file must be provided with box "\
+                "vectors (CRYST line)."
+            pdb_structure = parmed.load_file(pdb_coordinates_filename)
+            assert positions.boxVectors is not None, "The provided "\
                 "inpcrd file contains no box vectors: "+inpcrd_filename
             box_vectors = inpcrd.boxVectors
         else:
             box_vectors = anchor.amber_params.box_vectors
-            
-        if anchor.amber_params.pdb_coordinates_filename is None \
-                or anchor.amber_params.pdb_coordinates_filename == "":
-            positions = inpcrd
-            sim_openmm.try_to_load_state = True
-        else:
-            pdb_coordinates_filename = os.path.join(
-                building_directory, 
-                anchor.amber_params.pdb_coordinates_filename)
-            positions = openmm_app.PDBFile(pdb_coordinates_filename)
         
         topology = prmtop
         

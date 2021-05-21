@@ -661,7 +661,6 @@ def run(model, instruction, min_total_simulation_length=None,
                 model, bd_milestone_index, restart, steps_to_go_to_minimum, 
                 force_overwrite=bd_force_overwrite, 
                 max_b_surface_trajs_to_extract=max_b_surface_trajs_to_extract)
-        print("bd_milestone_info_to_run:", bd_milestone_info_to_run)
         if len(bd_milestone_info_to_run) > 0:
             bd_complete = False
         else:

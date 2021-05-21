@@ -147,8 +147,6 @@ class Box_vectors(serializer.Serializer):
         C = np.array([self.cx, self.cy, self.cz])
         volume = abs(np.dot(A, np.cross(B, C)))
         return volume
-                                         
-        
         
 class Langevin_integrator_settings(serializer.Serializer):
     """

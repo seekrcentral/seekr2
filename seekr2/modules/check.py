@@ -71,7 +71,7 @@ def load_structure_with_parmed(model, anchor):
     """
     
     if anchor.amber_params is not None:
-        inpcrd_structure = None
+        #inpcrd_structure = None
         building_directory = os.path.join(
             model.anchor_rootdir, anchor.directory, 
             anchor.building_directory)
@@ -80,14 +80,14 @@ def load_structure_with_parmed(model, anchor):
                 building_directory, anchor.amber_params.prmtop_filename)
         else:
             return None
-        if anchor.amber_params.inpcrd_filename is not None \
-                and anchor.amber_params.inpcrd_filename != "":
-            inpcrd_filename = os.path.join(
-                building_directory, anchor.amber_params.inpcrd_filename)
-            inpcrd_structure = parmed.load_file(prmtop_filename, 
-                                                xyz=inpcrd_filename)
-        else:
-            inpcrd_filename = None
+        #if anchor.amber_params.inpcrd_filename is not None \
+        #        and anchor.amber_params.inpcrd_filename != "":
+        #    inpcrd_filename = os.path.join(
+        #        building_directory, anchor.amber_params.inpcrd_filename)
+        #    inpcrd_structure = parmed.load_file(prmtop_filename, 
+        #                                        xyz=inpcrd_filename)
+        #else:
+        #    inpcrd_filename = None
         
         if anchor.amber_params.pdb_coordinates_filename is not None \
                 and anchor.amber_params.pdb_coordinates_filename != "":
@@ -95,15 +95,17 @@ def load_structure_with_parmed(model, anchor):
                 building_directory, 
                 anchor.amber_params.pdb_coordinates_filename)
             structure = parmed.load_file(pdb_filename)
-            if inpcrd_structure is not None:
-                structure.box = inpcrd_structure.get_box()
-
-        elif inpcrd_filename is not None and inpcrd_filename != "":
-            #structure = parmed.load_file(prmtop_filename, xyz=inpcrd_filename)
-            return None
+            if anchor.amber_params.box_vectors is not None:
+                structure.box_vectors = anchor.amber_params.box_vectors.to_quantity()
         else:
-            # anchor has no structure files
             return None
+
+        #elif inpcrd_filename is not None and inpcrd_filename != "":
+        #    #structure = parmed.load_file(prmtop_filename, xyz=inpcrd_filename)
+        #    return None
+        #else:
+        #    # anchor has no structure files
+        #    return None
         return structure
         
     elif anchor.forcefield_params is not None:
@@ -122,6 +124,9 @@ def load_structure_with_parmed(model, anchor):
         structure = parmed.load_file(parameter_set)
         pdb_structure = parmed.load_file(pdb_filename)
         structure.coordinates = pdb_structure.coordinates
+        if anchor.forcefield_params.box_vectors is not None:
+                structure.box_vectors \
+                    = anchor.forcefield_params.box_vectors.to_quantity()
         return structure
     
     elif anchor.charmm_params is not None:
@@ -192,11 +197,11 @@ def load_structure_with_mdtraj(model, anchor, mode="pdb", coords_filename=None):
                 building_directory, anchor.amber_params.prmtop_filename)
         else:
             return None
-        if anchor.amber_params.inpcrd_filename is not None:
-            inpcrd_filename = os.path.join(
-                building_directory, anchor.amber_params.inpcrd_filename)
-        else:
-            inpcrd_filename = None
+        #if anchor.amber_params.inpcrd_filename is not None:
+        #    inpcrd_filename = os.path.join(
+        #        building_directory, anchor.amber_params.inpcrd_filename)
+        #else:
+        #    inpcrd_filename = None
         
         if mode == "pdb":
             if anchor.amber_params.pdb_coordinates_filename is not None \
@@ -205,9 +210,9 @@ def load_structure_with_mdtraj(model, anchor, mode="pdb", coords_filename=None):
                     building_directory, 
                     anchor.amber_params.pdb_coordinates_filename)
                 traj = mdtraj.load(pdb_filename) #, top=prmtop_filename)
-            elif inpcrd_filename is not None and inpcrd_filename != "":
-                #structure = parmed.load_file(prmtop_filename, xyz=inpcrd_filename)
-                return None
+            #elif inpcrd_filename is not None and inpcrd_filename != "":
+            #    #structure = parmed.load_file(prmtop_filename, xyz=inpcrd_filename)
+            #    return None
             else:
                 # anchor has no structure files
                 return None
@@ -251,6 +256,11 @@ def load_structure_with_mdtraj(model, anchor, mode="pdb", coords_filename=None):
             traj = mdtraj.load(umbrella_traj_filenames, top=pdb_filename)
         elif mode == "state_xml":
             traj = mdtraj.load_xml(coords_filename, top=prmtop_filename)
+        elif mode == "mmvt_traj":
+            assert len(mmvt_traj_filenames) > 0, "Only empty mmvt " \
+                "trajectories were found. You can force SEEKR to skip these "\
+                "checks by using the --skip_checks (-s) argument"
+            traj = mdtraj.load(mmvt_traj_filenames, top=pdb_filename)
         
         return traj
     
