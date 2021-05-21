@@ -19,7 +19,7 @@ import seekr2.modules.common_converge as common_converge
 CONVERGENCE_INTERVAL = 100000
 B_SURFACE_CONVERGENCE_INTERVAL = 10000
 BD_MILESTONE_CONVERGENCE_INTERVAL = 100
-MAX_ITER = 99999
+MAX_ITER = 999
 
 def choose_next_simulation_browndye2(
         model, instruction, min_b_surface_simulation_length, 
@@ -32,6 +32,9 @@ def choose_next_simulation_browndye2(
     run, in order.
     """
     if instruction == "any_md":
+        return []
+    
+    if instruction != "any" and not instruction.startswith("b"):
         return []
     
     import seekr2.modules.common_sim_browndye2 as sim_browndye2
@@ -658,8 +661,8 @@ def run(model, instruction, min_total_simulation_length=None,
                 model, bd_milestone_index, restart, steps_to_go_to_minimum, 
                 force_overwrite=bd_force_overwrite, 
                 max_b_surface_trajs_to_extract=max_b_surface_trajs_to_extract)
-        
-        if len(anchor_info_to_run) > 0:
+        print("bd_milestone_info_to_run:", bd_milestone_info_to_run)
+        if len(bd_milestone_info_to_run) > 0:
             bd_complete = False
         else:
             bd_complete = True

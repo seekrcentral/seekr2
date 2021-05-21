@@ -9,6 +9,8 @@ import os
 import shutil
 from shutil import copyfile
 
+import parmed
+
 import seekr2.modules.common_base as base
 
 class Filetree():
@@ -145,6 +147,7 @@ def copy_building_files(model, input_model, rootdir):
             amber = input_anchor.starting_amber_params
         except AttributeError:
             amber = None
+        new_prmtop_filename = None
         
         if amber is not None:
             anchor.amber_params = base.Amber_params()
@@ -173,6 +176,13 @@ def copy_building_files(model, input_model, rootdir):
                                                    inpcrd_filename)
                 copyfile(amber.inpcrd_filename, new_inpcrd_filename)
                 anchor.amber_params.inpcrd_filename = inpcrd_filename
+                if anchor.amber_params.box_vectors is None:
+                    assert new_prmtop_filename is not None
+                    anchor.amber_params.box_vectors = base.Box_vectors()
+                    inpcrd_structure = parmed.load_file(new_prmtop_filename, 
+                                                xyz=new_inpcrd_filename)
+                    anchor.amber_params.box_vectors.from_quantity(
+                        inpcrd_structure.box_vectors)
                 
             if amber.pdb_coordinates_filename is not None and \
                     amber.pdb_coordinates_filename != "":
@@ -186,8 +196,15 @@ def copy_building_files(model, input_model, rootdir):
                                                 pdb_filename)
                 copyfile(amber.pdb_coordinates_filename, new_pdb_filename)
                 anchor.amber_params.pdb_coordinates_filename = pdb_filename
+                if anchor.amber_params.box_vectors is None:
+                    assert new_prmtop_filename is not None
+                    anchor.amber_params.box_vectors = base.Box_vectors()
+                    pdb_structure = parmed.load_file(new_prmtop_filename, 
+                                                     xyz=new_pdb_filename)
+                    anchor.amber_params.box_vectors.from_quantity(
+                        pdb_structure.box_vectors)
                 
-            anchor.amber_params.box_vectors = amber.box_vectors
+            #anchor.amber_params.box_vectors = amber.box_vectors
         
         try: # TODO: fix simple XML parser so this isn't necessary
             forcefield = input_anchor.starting_forcefield_params
@@ -226,8 +243,12 @@ def copy_building_files(model, input_model, rootdir):
                                                 pdb_filename)
                 copyfile(forcefield.pdb_filename, new_pdb_filename)
                 anchor.forcefield_params.pdb_filename = pdb_filename
+                if anchor.forcefield_params.box_vectors is None:
+                    pdb_structure = parmed.load_file(new_pdb_filename)
+                    anchor.forcefield_params.box_vectors.from_quantity(
+                        pdb_structure.box_vectors)
             
-            anchor.forcefield_params.box_vectors = forcefield.box_vectors
+            #anchor.forcefield_params.box_vectors = forcefield.box_vectors
                 
     if model.k_on_info is not None:
         bd_settings = model.browndye_settings

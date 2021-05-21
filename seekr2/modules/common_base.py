@@ -97,16 +97,15 @@ class Box_vectors(serializer.Serializer):
         """
         
         values = quantity.value_in_unit(unit.nanometer)
-        print("values:", values)
-        self.ax = values[0][0]
-        self.ay = values[0][1]
-        self.az = values[0][2]
-        self.bx = values[1][0]
-        self.by = values[1][1] # TEST THESE FUNCTIONS
-        self.bz = values[1][2]
-        self.cx = values[2][0]
-        self.cy = values[2][1]
-        self.cz = values[2][2]
+        self.ax = float(values[0][0])
+        self.ay = float(values[0][1])
+        self.az = float(values[0][2])
+        self.bx = float(values[1][0])
+        self.by = float(values[1][1]) # TEST THESE FUNCTIONS
+        self.bz = float(values[1][2])
+        self.cx = float(values[2][0])
+        self.cy = float(values[2][1])
+        self.cz = float(values[2][2])
         return
     
     def from_6_vector(self, box_6_vector):
@@ -117,23 +116,25 @@ class Box_vectors(serializer.Serializer):
         to this object.
         """
         
-        self.ax = box_6_vector[0]
+        self.ax = float(box_6_vector[0])
         self.ay = 0.0
         self.az = 0.0
-        self.bx = box_6_vector[1] * math.cos(box_6_vector[5]*math.pi/180.0)
-        self.by = box_6_vector[1] * math.sin(box_6_vector[5]*math.pi/180.0)
+        self.bx = float(box_6_vector[1] \
+                        * math.cos(box_6_vector[5]*math.pi/180.0))
+        self.by = float(box_6_vector[1] \
+                        * math.sin(box_6_vector[5]*math.pi/180.0))
         self.bz = 0.0
-        self.cx = box_6_vector[2] * math.cos(box_6_vector[4]*math.pi/180.0)
+        self.cx = (box_6_vector[2] * math.cos(box_6_vector[4]*math.pi/180.0))
         if box_6_vector[5] == 90.0:
             self.cy = 0.0
         else:
-            self.cy = box_6_vector[2] * (
+            self.cy = float(box_6_vector[2] * (
                 math.cos(box_6_vector[3]*math.pi/180.0) \
                 - math.cos(box_6_vector[4]*math.pi/180.0) \
                 * math.cos(box_6_vector[5]*math.pi/180.0) \
-                / math.sin(box_6_vector[5]*math.pi/180.0))
-        self.cz = math.sqrt(box_6_vector[2]**2 - self.cx**2 \
-            - self.cy**2)
+                / math.sin(box_6_vector[5]*math.pi/180.0)))
+        self.cz = float(math.sqrt(box_6_vector[2]**2 - self.cx**2 \
+            - self.cy**2))
         return
     
     def get_volume(self):
