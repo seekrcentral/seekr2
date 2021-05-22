@@ -8,14 +8,18 @@ runner_openmm.py, and others.
 import os
 from shutil import copyfile
 
+import parmed
+
 import seekr2.modules.common_base as base
 import seekr2.modules.mmvt_base as mmvt_base
 import seekr2.modules.filetree as filetree
 
 def make_browndye_params_b_surface(model, b_surface_dir):
     this_dir = os.path.dirname(os.path.realpath(__file__))
-    receptor_src = os.path.join(this_dir, "../data/hostguest_files/hostguest_receptor.pqr")
-    ligand_src = os.path.join(this_dir, "../data/hostguest_files/hostguest_ligand.pqr")
+    receptor_src = os.path.join(
+        this_dir, "../data/hostguest_files/hostguest_receptor.pqr")
+    ligand_src = os.path.join(
+        this_dir, "../data/hostguest_files/hostguest_ligand.pqr")
     
     receptor_dest = os.path.join(b_surface_dir, "hostguest_receptor.pqr")
     ligand_dest = os.path.join(b_surface_dir, "hostguest_ligand.pqr")
@@ -33,26 +37,32 @@ def make_amber_params(anchor, building_dir, engine="openmm"):
     this_dir = os.path.dirname(os.path.realpath(__file__))
     
     if engine == "openmm":
-        prmtop_src = os.path.join(this_dir, "../data/hostguest_files/hostguest.parm7")
+        prmtop_src = os.path.join(
+            this_dir, "../data/hostguest_files/hostguest.parm7")
     elif engine == "namd":
-        prmtop_src = os.path.join(this_dir, "../data/hostguest_files/hostguest_for_NAMD.parm7")
+        prmtop_src = os.path.join(
+            this_dir, "../data/hostguest_files/hostguest_for_NAMD.parm7")
     else:
         raise Exception("Engine not implemented: %s" % engine)
-    inpcrd_src = os.path.join(this_dir, "../data/hostguest_files/hostguest.rst7")
-    pdb_coord_src = os.path.join(this_dir, "../data/hostguest_files/hostguest_at1.5.pdb")
+    inpcrd_src = os.path.join(
+        this_dir, "../data/hostguest_files/hostguest.rst7")
+    pdb_coord_src = os.path.join(
+        this_dir, "../data/hostguest_files/hostguest_at1.5.pdb")
     
     prmtop_dest = os.path.join(building_dir, "hostguest.parm7")
-    inpcrd_dest = os.path.join(building_dir, "hostguest.rst7")
+    #inpcrd_dest = os.path.join(building_dir, "hostguest.rst7")
     pdb_coord_dest = os.path.join(building_dir, "hostguest_at1.5.pdb")
     
     copyfile(prmtop_src, prmtop_dest)
-    copyfile(inpcrd_src, inpcrd_dest)
+    #copyfile(inpcrd_src, inpcrd_dest)
     copyfile(pdb_coord_src, pdb_coord_dest)
     
     anchor.amber_params.prmtop_filename = "hostguest.parm7"
-    anchor.amber_params.inpcrd_filename = "hostguest.rst7"
-    anchor.amber_params.box_vectors = None
+    #anchor.amber_params.inpcrd_filename = "hostguest.rst7"
     anchor.amber_params.pdb_coordinates_filename = "hostguest_at1.5.pdb"
+    anchor.amber_params.box_vectors = base.Box_vectors()
+    anchor.amber_params.box_vectors.from_quantity(
+        parmed.load_file(pdb_coord_src).box_vectors)
     return
 
 def make_forcefield_params(anchor, building_dir):
@@ -61,7 +71,8 @@ def make_forcefield_params(anchor, building_dir):
     this_dir = os.path.dirname(os.path.realpath(__file__))
     
     xml_src = os.path.join(this_dir, "../data/hostguest_files/hostguest.xml")
-    pdb_coord_src = os.path.join(this_dir, "../data/hostguest_files/hostguest_for_xml.pdb")
+    pdb_coord_src = os.path.join(
+        this_dir, "../data/hostguest_files/hostguest_for_xml.pdb")
     
     xml_dest = os.path.join(building_dir, "hostguest.xml")
     pdb_coord_dest = os.path.join(building_dir, "hostguest_for_xml.pdb")
@@ -73,7 +84,8 @@ def make_forcefield_params(anchor, building_dir):
         ["amber14/tip3pfb.xml"]
     anchor.forcefield_params.custom_forcefield_filenames = ["hostguest.xml"]
     anchor.forcefield_params.pdb_filename = "hostguest_for_xml.pdb"
-    anchor.forcefield_params.box_vectors = None
+    anchor.forcefield_params.box_vectors = base.Box_vectors()
+    anchor.forcefield_params.box_vectors.from_quantity(parmed.load_file(pdb_coord_src).box_vectors)
     return
 
 def make_test_model(tmp_dir, num_anchors=3, milestone_type="spherical", 
@@ -166,7 +178,7 @@ def make_test_model(tmp_dir, num_anchors=3, milestone_type="spherical",
             milestone1.neighbor_anchor_index = i-1
             milestone1.alias_index = num_milestones+1
             milestone1.cv_index = 0
-            milestone1.variables = {"k": -1.0, "radius": 0.05 + 0.1*i}
+            milestone1.variables = {"k": -1.0, "radius":0.1*i}
             milestone_list.append(milestone1)
             num_milestones += 1
             endstate = False
@@ -179,7 +191,7 @@ def make_test_model(tmp_dir, num_anchors=3, milestone_type="spherical",
             milestone2.neighbor_anchor_index = i+1
             milestone2.alias_index = num_milestones + 1
             milestone2.cv_index = 0
-            milestone2.variables = {"k": 1.0, "radius": 0.05 + 0.1*(i+1)}
+            milestone2.variables = {"k": 1.0, "radius": 0.1*(i+1)}
             milestone_list.append(milestone2)
             bulkstate = False
         else:

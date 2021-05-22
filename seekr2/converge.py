@@ -82,10 +82,10 @@ def print_convergence_results(model, convergence_results, cutoff,
             transition_string += " {}->{} : {}".format(
                 key[0],key[1],transition_detail[key])
         anchor_string = " - Anchor {}: ".format(anchor.index) \
-            +"Milestone transitions:{}. ".format(transition_string) \
-            +"Convergence value: " \
+            +"\n     Milestone transitions:{}. ".format(transition_string) \
+            +"\n     Convergence value: " \
             +"{:.4e}. ".format(convergence_results[alpha]) \
-            +"Converged? {}".format(is_converged)
+            +"\n     Converged? {}".format(is_converged)
         print(anchor_string)
         
     if "b_surface" in bd_transition_counts:

@@ -34,7 +34,7 @@ def choose_next_simulation_browndye2(
     if instruction == "any_md":
         return []
     
-    if instruction != "any" and not instruction.startswith("b"):
+    if instruction not in ["any", "any_bd"] and not instruction.startswith("b"):
         return []
     
     import seekr2.modules.common_sim_browndye2 as sim_browndye2
@@ -679,7 +679,10 @@ if __name__ == "__main__":
         "The arguments 'any_md', 'any_bd', and 'any' are also allowed. The "\
         "argument 'any_md' will run any unfinished MD anchors. The argument "\
         "'any_bd' will run any unfinished BD calculations. The argument 'any' "\
-        "will run either MD or BD calculations that still need to finish.")
+        "will run either MD or BD calculations that still need to finish. "\
+        "One may also use the argument 'b_surface' to run the b-surface "\
+        "simulations. One may also use the letter 'b' followed by an integer "\
+        "(Ex. 'b0', 'b1',...) to simulation one of the BD milestones.")
     argparser.add_argument(
         "input_file", metavar="INPUT_FILE", type=str, 
         help="The name of the input file for SEEKR2 calculation. This would "\

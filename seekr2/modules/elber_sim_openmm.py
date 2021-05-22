@@ -169,7 +169,7 @@ def add_simulations(sim_openmm, model, topology, positions, box_vectors):
     sim_openmm.umbrella_simulation.context.setPositions(positions.positions)
     if box_vectors is not None:
         sim_openmm.umbrella_simulation.context.setPeriodicBoxVectors(
-            *box_vectors)
+            *box_vectors.to_quantity())
     if model.openmm_settings.run_minimization:
         sim_openmm.umbrella_simulation.minimizeEnergy()
     

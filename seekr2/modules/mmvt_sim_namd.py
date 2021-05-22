@@ -317,8 +317,9 @@ def create_sim_namd(model, anchor, output_filename):
     
     sim_namd.namd_root = common_sim_namd.Namd_root()
     sim_namd.namd_root.fill_out_from_model(model, anchor, output_filename)
-    sim_namd.namd_root.periodic_boundary_conditions\
-        .assign_cell_basis_vectors(box_vectors)
+    if box_vectors is not None:
+        sim_namd.namd_root.periodic_boundary_conditions\
+            .assign_cell_basis_vectors(box_vectors)
     sim_namd.colvars_config = Colvars_config()
     sim_namd.colvars_config.fill_out_from_model(model)
     sim_namd.seekr_namd_settings = Seekr_namd_settings()

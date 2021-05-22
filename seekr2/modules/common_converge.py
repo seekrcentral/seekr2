@@ -140,15 +140,17 @@ def get_mmvt_max_steps(model, dt):
                     
         max_steps = DEFAULT_NUM_POINTS * int(math.ceil(
             max_steps / DEFAULT_NUM_POINTS))
+        
         if max_steps == 0:
-            return max_step_list
+            continue
+        
         conv_stride = max_steps // DEFAULT_NUM_POINTS
         conv_intervals = np.arange(conv_stride, max_steps+conv_stride, 
                                    conv_stride)
         conv_intervals = conv_intervals + DEFAULT_SKIP
         max_step_list[alpha,:] = conv_intervals
                     
-    return max_step_list, conv_intervals
+    return max_step_list
     
 def get_elber_max_steps(model, dt):
     """
@@ -169,7 +171,9 @@ def get_elber_max_steps(model, dt):
         max_steps = DEFAULT_NUM_POINTS * int(math.ceil(
             max_steps / DEFAULT_NUM_POINTS))
         if max_steps == 0:
-            return max_step_list
+            #return max_step_list
+            continue
+        
         conv_stride = max_steps // DEFAULT_NUM_POINTS
         conv_intervals = np.arange(conv_stride, max_steps+conv_stride, 
                                    conv_stride)
@@ -245,7 +249,7 @@ def check_milestone_convergence(model, k_on_state=None,
         max_step_list = get_mmvt_max_steps(model, dt)
     elif model.get_type() == "elber":
         max_step_list = get_elber_max_steps(model, dt)
-        
+    
     k_off_conv = np.zeros(DEFAULT_NUM_POINTS)
     k_on_conv = np.zeros(DEFAULT_NUM_POINTS)
     N_ij_conv = defaultdict(functools.partial(np.zeros, DEFAULT_NUM_POINTS))
@@ -258,7 +262,6 @@ def check_milestone_convergence(model, k_on_state=None,
         k_on, k_off, N_ij, R_i = analyze_kinetics(
             model, analysis, max_step_list[:, interval_index], k_on_state, 
             pre_equilibrium_approx)
-        print("N_ij:", N_ij)
         data_sample_list.append(analysis.main_data_sample)
         k_on_conv[interval_index] = k_on
         k_off_conv[interval_index] = k_off
