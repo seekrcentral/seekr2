@@ -69,33 +69,14 @@ def create_openmm_system(sim_openmm, model, anchor):
         prmtop_filename = os.path.join(
             building_directory, anchor.amber_params.prmtop_filename)
         prmtop = openmm_app.AmberPrmtopFile(prmtop_filename)
-        #inpcrd = None
-        #if anchor.amber_params.inpcrd_filename is not None \
-        #        and anchor.amber_params.inpcrd_filename != "":
-        #    inpcrd_filename = os.path.join(
-        #        building_directory, anchor.amber_params.inpcrd_filename)
-        #    inpcrd = openmm_app.AmberInpcrdFile(inpcrd_filename)
         assert anchor.amber_params.pdb_coordinates_filename is not None
         pdb_coordinates_filename = os.path.join(
             building_directory, 
             anchor.amber_params.pdb_coordinates_filename)
         positions = openmm_app.PDBFile(pdb_coordinates_filename)
-        
-            
-        if anchor.amber_params.box_vectors is None:
-            assert pdb_coordinates_filename is not None, "If box_vectors "\
-                "field is empty, then pdb file must be provided with box "\
-                "vectors (CRYST line)."
-            pdb_structure = parmed.load_file(pdb_coordinates_filename)
-            assert positions.boxVectors is not None, "The provided "\
-                "inpcrd file contains no box vectors: "+inpcrd_filename
-            box_vectors = inpcrd.boxVectors
-        else:
-            box_vectors = anchor.amber_params.box_vectors
-        
+        #assert anchor.amber_params.box_vectors is not None
+        box_vectors = anchor.amber_params.box_vectors
         topology = prmtop
-        
-        assert box_vectors is not None, "No source of box vectors provided."
     
     elif anchor.forcefield_params is not None:
         forcefield_filenames = []
@@ -111,8 +92,7 @@ def create_openmm_system(sim_openmm, model, anchor):
         pdb = openmm_app.PDBFile(pdb_filename)
         forcefield = openmm_app.ForceField(
             *forcefield_filenames)
-        if anchor.forcefield_params.box_vectors is not None:
-            box_vectors = anchor.forcefield_params.box_vectors
+        box_vectors = anchor.forcefield_params.box_vectors
         
         topology = pdb
         positions = pdb
@@ -122,7 +102,8 @@ def create_openmm_system(sim_openmm, model, anchor):
     
     else:
         raise Exception("No Amber or Charmm input settings detected.")
-        
+    
+    #assert box_vectors is not None, "No source of box vectors provided."
     nonbonded_method = model.openmm_settings.nonbonded_method.lower()
     if nonbonded_method == "pme":
         nonbondedMethod = openmm_app.PME

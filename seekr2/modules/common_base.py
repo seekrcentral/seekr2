@@ -467,7 +467,6 @@ class Amber_params(serializer.Serializer):
     
     def __init__(self):
         self.prmtop_filename = ""
-        self.inpcrd_filename = ""
         self.box_vectors = None
         self.pdb_coordinates_filename = ""
         return

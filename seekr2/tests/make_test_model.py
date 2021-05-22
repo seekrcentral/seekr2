@@ -39,11 +39,11 @@ def make_amber_params(anchor, building_dir, engine="openmm"):
     else:
         raise Exception("Engine not implemented: %s" % engine)
     inpcrd_src = os.path.join(this_dir, "../data/hostguest_files/hostguest.rst7")
-    pdb_coord_src = os.path.join(this_dir, "../data/hostguest_files/hostguest_at1.9.pdb")
+    pdb_coord_src = os.path.join(this_dir, "../data/hostguest_files/hostguest_at1.5.pdb")
     
     prmtop_dest = os.path.join(building_dir, "hostguest.parm7")
     inpcrd_dest = os.path.join(building_dir, "hostguest.rst7")
-    pdb_coord_dest = os.path.join(building_dir, "hostguest_at1.9.pdb")
+    pdb_coord_dest = os.path.join(building_dir, "hostguest_at1.5.pdb")
     
     copyfile(prmtop_src, prmtop_dest)
     copyfile(inpcrd_src, inpcrd_dest)
@@ -52,7 +52,7 @@ def make_amber_params(anchor, building_dir, engine="openmm"):
     anchor.amber_params.prmtop_filename = "hostguest.parm7"
     anchor.amber_params.inpcrd_filename = "hostguest.rst7"
     anchor.amber_params.box_vectors = None
-    anchor.amber_params.pdb_coordinates_filename = "hostguest_at1.9.pdb"
+    anchor.amber_params.pdb_coordinates_filename = "hostguest_at1.5.pdb"
     return
 
 def make_forcefield_params(anchor, building_dir):
