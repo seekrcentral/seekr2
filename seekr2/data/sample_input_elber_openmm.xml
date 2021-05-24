@@ -38,124 +38,163 @@
                     158, 159, 160, 161]</group2>
             <input_anchors>
                 <input_anchor class="Spherical_cv_anchor">
-                    <radius>0.1</radius>
+                    <radius>0.05</radius>
                     <lower_milestone_radius/>
                     <upper_milestone_radius/>
                     <starting_amber_params class="Amber_params">
                         <prmtop_filename>data/hostguest_files/hostguest.parm7</prmtop_filename>
-                        <inpcrd_filename>data/hostguest_files/hostguest.rst7</inpcrd_filename>
                         <box_vectors/>
-                        <pdb_coordinates_filename>data/hostguest_files/hostguest_at0.4.pdb</pdb_coordinates_filename>
+                        <pdb_coordinates_filename>data/hostguest_files/hostguest_at0.5.pdb</pdb_coordinates_filename>
                     </starting_amber_params>
                     <bound_state>True</bound_state>
                     <bulk_anchor>False</bulk_anchor>
                 </input_anchor>
                 <input_anchor class="Spherical_cv_anchor">
-                    <radius>0.2</radius>
+                    <radius>0.15</radius>
                     <lower_milestone_radius/>
                     <upper_milestone_radius/>
                     <starting_amber_params class="Amber_params">
                         <prmtop_filename>data/hostguest_files/hostguest.parm7</prmtop_filename>
-                        <inpcrd_filename>data/hostguest_files/hostguest.rst7</inpcrd_filename>
                         <box_vectors/>
-                        <pdb_coordinates_filename>data/hostguest_files/hostguest_at1.9.pdb</pdb_coordinates_filename>
+                        <pdb_coordinates_filename>data/hostguest_files/hostguest_at1.5.pdb</pdb_coordinates_filename>
                     </starting_amber_params>
                     <bound_state>False</bound_state>
                     <bulk_anchor>False</bulk_anchor>
                 </input_anchor>
                 <input_anchor class="Spherical_cv_anchor">
-                    <radius>0.4</radius>
+                    <radius>0.25</radius>
                     <lower_milestone_radius/>
                     <upper_milestone_radius/>
                     <starting_amber_params class="Amber_params">
                         <prmtop_filename>data/hostguest_files/hostguest.parm7</prmtop_filename>
-                        <inpcrd_filename>data/hostguest_files/hostguest.rst7</inpcrd_filename>
                         <box_vectors/>
-                        <pdb_coordinates_filename>data/hostguest_files/hostguest_at3.8.pdb</pdb_coordinates_filename>
+                        <pdb_coordinates_filename>data/hostguest_files/hostguest_at2.5.pdb</pdb_coordinates_filename>
                     </starting_amber_params>
                     <bound_state>False</bound_state>
                     <bulk_anchor>False</bulk_anchor>
                 </input_anchor>
                 <input_anchor class="Spherical_cv_anchor">
-                    <radius>0.5</radius>
+                    <radius>0.35</radius>
                     <lower_milestone_radius/>
                     <upper_milestone_radius/>
                     <starting_amber_params class="Amber_params">
                         <prmtop_filename>data/hostguest_files/hostguest.parm7</prmtop_filename>
-                        <inpcrd_filename>data/hostguest_files/hostguest.rst7</inpcrd_filename>
                         <box_vectors/>
-                        <pdb_coordinates_filename>data/hostguest_files/hostguest_at5.4.pdb</pdb_coordinates_filename>
+                        <pdb_coordinates_filename>data/hostguest_files/hostguest_at3.5.pdb</pdb_coordinates_filename>
                     </starting_amber_params>
                     <bound_state>False</bound_state>
                     <bulk_anchor>False</bulk_anchor>
                 </input_anchor>
                 <input_anchor class="Spherical_cv_anchor">
-                    <radius>0.7</radius>
+                    <radius>0.45</radius>
                     <lower_milestone_radius/>
                     <upper_milestone_radius/>
                     <starting_amber_params class="Amber_params">
                         <prmtop_filename>data/hostguest_files/hostguest.parm7</prmtop_filename>
-                        <inpcrd_filename>data/hostguest_files/hostguest.rst7</inpcrd_filename>
                         <box_vectors/>
-                        <pdb_coordinates_filename>data/hostguest_files/hostguest_at7.0.pdb</pdb_coordinates_filename>
+                        <pdb_coordinates_filename>data/hostguest_files/hostguest_at4.5.pdb</pdb_coordinates_filename>
                     </starting_amber_params>
                     <bound_state>False</bound_state>
                     <bulk_anchor>False</bulk_anchor>
                 </input_anchor>
                 <input_anchor class="Spherical_cv_anchor">
-                    <radius>0.8</radius>
+                    <radius>0.55</radius>
                     <lower_milestone_radius/>
                     <upper_milestone_radius/>
                     <starting_amber_params class="Amber_params">
                         <prmtop_filename>data/hostguest_files/hostguest.parm7</prmtop_filename>
-                        <inpcrd_filename>data/hostguest_files/hostguest.rst7</inpcrd_filename>
                         <box_vectors/>
-                        <pdb_coordinates_filename>data/hostguest_files/hostguest_at8.3.pdb</pdb_coordinates_filename>
+                        <pdb_coordinates_filename>data/hostguest_files/hostguest_at5.5.pdb</pdb_coordinates_filename>
                     </starting_amber_params>
                     <bound_state>False</bound_state>
                     <bulk_anchor>False</bulk_anchor>
                 </input_anchor>
                 <input_anchor class="Spherical_cv_anchor">
-                    <radius>1.0</radius>
+                    <radius>0.65</radius>
                     <lower_milestone_radius/>
                     <upper_milestone_radius/>
                     <starting_amber_params class="Amber_params">
                         <prmtop_filename>data/hostguest_files/hostguest.parm7</prmtop_filename>
-                        <inpcrd_filename>data/hostguest_files/hostguest.rst7</inpcrd_filename>
                         <box_vectors/>
-                        <pdb_coordinates_filename>data/hostguest_files/hostguest_at9.8.pdb</pdb_coordinates_filename>
+                        <pdb_coordinates_filename>data/hostguest_files/hostguest_at6.5.pdb</pdb_coordinates_filename>
                     </starting_amber_params>
                     <bound_state>False</bound_state>
                     <bulk_anchor>False</bulk_anchor>
                 </input_anchor>
                 <input_anchor class="Spherical_cv_anchor">
-                    <radius>1.1</radius>
+                    <radius>0.75</radius>
                     <lower_milestone_radius/>
                     <upper_milestone_radius/>
                     <starting_amber_params class="Amber_params">
                         <prmtop_filename>data/hostguest_files/hostguest.parm7</prmtop_filename>
-                        <inpcrd_filename>data/hostguest_files/hostguest.rst7</inpcrd_filename>
                         <box_vectors/>
-                        <pdb_coordinates_filename>data/hostguest_files/hostguest_at11.2.pdb</pdb_coordinates_filename>
+                        <pdb_coordinates_filename>data/hostguest_files/hostguest_at7.5.pdb</pdb_coordinates_filename>
                     </starting_amber_params>
                     <bound_state>False</bound_state>
                     <bulk_anchor>False</bulk_anchor>
                 </input_anchor>
                 <input_anchor class="Spherical_cv_anchor">
-                    <radius>1.3</radius>
+                    <radius>0.85</radius>
                     <lower_milestone_radius/>
                     <upper_milestone_radius/>
                     <starting_amber_params class="Amber_params">
                         <prmtop_filename>data/hostguest_files/hostguest.parm7</prmtop_filename>
-                        <inpcrd_filename>data/hostguest_files/hostguest.rst7</inpcrd_filename>
                         <box_vectors/>
-                        <pdb_coordinates_filename>data/hostguest_files/hostguest_at12.8.pdb</pdb_coordinates_filename>
+                        <pdb_coordinates_filename>data/hostguest_files/hostguest_at8.5.pdb</pdb_coordinates_filename>
                     </starting_amber_params>
                     <bound_state>False</bound_state>
                     <bulk_anchor>False</bulk_anchor>
                 </input_anchor>
                 <input_anchor class="Spherical_cv_anchor">
-                    <radius>1.4</radius>
+                    <radius>0.95</radius>
+                    <lower_milestone_radius/>
+                    <upper_milestone_radius/>
+                    <starting_amber_params class="Amber_params">
+                        <prmtop_filename>data/hostguest_files/hostguest.parm7</prmtop_filename>
+                        <box_vectors/>
+                        <pdb_coordinates_filename>data/hostguest_files/hostguest_at9.5.pdb</pdb_coordinates_filename>
+                    </starting_amber_params>
+                    <bound_state>False</bound_state>
+                    <bulk_anchor>False</bulk_anchor>
+                </input_anchor>
+                <input_anchor class="Spherical_cv_anchor">
+                    <radius>1.05</radius>
+                    <lower_milestone_radius/>
+                    <upper_milestone_radius/>
+                    <starting_amber_params class="Amber_params">
+                        <prmtop_filename>data/hostguest_files/hostguest.parm7</prmtop_filename>
+                        <box_vectors/>
+                        <pdb_coordinates_filename>data/hostguest_files/hostguest_at10.5.pdb</pdb_coordinates_filename>
+                    </starting_amber_params>
+                    <bound_state>False</bound_state>
+                    <bulk_anchor>False</bulk_anchor>
+                </input_anchor>
+                <input_anchor class="Spherical_cv_anchor">
+                    <radius>1.15</radius>
+                    <lower_milestone_radius/>
+                    <upper_milestone_radius/>
+                    <starting_amber_params class="Amber_params">
+                        <prmtop_filename>data/hostguest_files/hostguest.parm7</prmtop_filename>
+                        <box_vectors/>
+                        <pdb_coordinates_filename>data/hostguest_files/hostguest_at11.5.pdb</pdb_coordinates_filename>
+                    </starting_amber_params>
+                    <bound_state>False</bound_state>
+                    <bulk_anchor>False</bulk_anchor>
+                </input_anchor>
+                <input_anchor class="Spherical_cv_anchor">
+                    <radius>1.25</radius>
+                    <lower_milestone_radius/>
+                    <upper_milestone_radius/>
+                    <starting_amber_params class="Amber_params">
+                        <prmtop_filename>data/hostguest_files/hostguest.parm7</prmtop_filename>
+                        <box_vectors/>
+                        <pdb_coordinates_filename>data/hostguest_files/hostguest_at12.5.pdb</pdb_coordinates_filename>
+                    </starting_amber_params>
+                    <bound_state>False</bound_state>
+                    <bulk_anchor>False</bulk_anchor>
+                </input_anchor>
+                <input_anchor class="Spherical_cv_anchor">
+                    <radius>1.35</radius>
                     <lower_milestone_radius/>
                     <upper_milestone_radius/>
                     <starting_amber_params class="Amber_params">

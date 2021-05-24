@@ -167,7 +167,12 @@ class Seekr_namd_settings():
             self.save_one_state_for_all_boundaries)
         my_string += add_string_buffer("set check_state_interval", 
                                        self.check_state_interval)
-        my_string += add_string_buffer("set save_state_prefix", "states/namdmmvt")
+        if self.save_one_state_for_all_boundaries:
+            my_string += add_string_buffer("set save_state_prefix", 
+                                           "states/namdmmvt")
+        else:
+            my_string += add_string_buffer("set save_state_prefix", 
+                                           "\"\"")
         my_string += add_string_buffer("set save_all_states", self.save_state)
         alias_index_list = []
         for milestone in anchor.milestones:
@@ -300,23 +305,8 @@ def create_sim_namd(model, anchor, output_filename):
         model.anchor_rootdir, anchor.directory, anchor.building_directory)
     box_vectors = None
     if anchor.amber_params is not None:
-        inpcrd = None
-        if anchor.amber_params.inpcrd_filename is not None \
-                and anchor.amber_params.inpcrd_filename != "":
-            inpcrd_filename = os.path.join(
-                building_directory, anchor.amber_params.inpcrd_filename)
-            inpcrd = parmed.amber.Rst7(inpcrd_filename)
-            
-        if anchor.amber_params.box_vectors is None:
-            assert inpcrd is not None, "If box_vectors field is "\
-                "empty, then an inpcrd must be provided."
-            assert inpcrd.box_vectors is not None, "The provided "\
-                "inpcrd file contains no box vectors: "+inpcrd_filename
-            box_vectors = inpcrd.box_vectors
-        else:
-            box_vectors = anchor.amber_params.box_vectors
-            
-        assert box_vectors is not None, "No source of box vectors provided."
+        box_vectors = anchor.amber_params.box_vectors
+        #assert box_vectors is not None, "No source of box vectors provided."
     
     elif anchor.charmm_params is not None:
         raise Exception("Charmm systems not yet implemented")
@@ -327,8 +317,9 @@ def create_sim_namd(model, anchor, output_filename):
     
     sim_namd.namd_root = common_sim_namd.Namd_root()
     sim_namd.namd_root.fill_out_from_model(model, anchor, output_filename)
-    sim_namd.namd_root.periodic_boundary_conditions\
-        .assign_cell_basis_vectors(box_vectors)
+    if box_vectors is not None:
+        sim_namd.namd_root.periodic_boundary_conditions\
+            .assign_cell_basis_vectors(box_vectors)
     sim_namd.colvars_config = Colvars_config()
     sim_namd.colvars_config.fill_out_from_model(model)
     sim_namd.seekr_namd_settings = Seekr_namd_settings()

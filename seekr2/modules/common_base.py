@@ -147,8 +147,6 @@ class Box_vectors(Serializer):
         C = np.array([self.cx, self.cy, self.cz])
         volume = abs(np.dot(A, np.cross(B, C)))
         return volume
-                                         
-        
         
 class Langevin_integrator_settings(Serializer):
     """
@@ -469,7 +467,6 @@ class Amber_params(Serializer):
     
     def __init__(self):
         self.prmtop_filename = ""
-        self.inpcrd_filename = ""
         self.box_vectors = None
         self.pdb_coordinates_filename = ""
         return

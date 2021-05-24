@@ -313,6 +313,7 @@ class Analysis:
             
             if not files_already_read:
                 self.anchor_stats_list.append(anchor_stats)
+        
         return
         
     def check_extraction(self, silent=False):

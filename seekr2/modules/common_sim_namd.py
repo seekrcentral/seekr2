@@ -88,8 +88,8 @@ class Amber_input_files():
             building_relative_dir = "../building"
             self.parmfile = os.path.join(building_relative_dir,
                                          anchor.amber_params.prmtop_filename)
-            self.ambercoor = os.path.join(building_relative_dir,
-                                          anchor.amber_params.inpcrd_filename)
+            #self.ambercoor = os.path.join(building_relative_dir,
+            #                              anchor.amber_params.inpcrd_filename)
             if anchor.amber_params.pdb_coordinates_filename:
                 self.coordinates = os.path.join(
                     building_relative_dir, 
@@ -645,7 +645,8 @@ class Periodic_boundary_conditions():
             A 1x3 array Quantity that represents the origin of the
             periodic box.
         """
-        box_vectors_unitless = box_vectors.value_in_unit(unit.angstrom)
+        box_vectors_unitless = box_vectors.to_quantity().value_in_unit(
+            unit.angstrom)
         ax = "{:10.6f}".format(box_vectors_unitless[0][0])
         ay = "{:10.6f}".format(box_vectors_unitless[0][1])
         az = "{:10.6f}".format(box_vectors_unitless[0][2])

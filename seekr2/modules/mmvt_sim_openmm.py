@@ -101,7 +101,8 @@ def add_simulation(sim_openmm, model, topology, positions, box_vectors):
     
     sim_openmm.simulation.context.setPositions(positions.positions)
     if box_vectors is not None:
-        sim_openmm.simulation.context.setPeriodicBoxVectors(*box_vectors)
+        sim_openmm.simulation.context.setPeriodicBoxVectors(
+            *box_vectors.to_quantity())
     if model.openmm_settings.run_minimization:
         print("Warning: running minimizations. It is recommended that "\
               "structures are minimized and verified by the user before "\

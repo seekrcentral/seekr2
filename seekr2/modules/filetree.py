@@ -148,6 +148,12 @@ def copy_building_files(model, input_model, rootdir):
         
         if amber is not None:
             anchor.amber_params = base.Amber_params()
+            #assert amber.prmtop_filename is not None, \
+            #    "Amber PRMTOP file must be provided for anchor {}".format(
+            #        anchor.index)
+            #assert amber.prmtop_filename != "", \
+            #    "Amber PRMTOP file must be provided for anchor {}".format(
+            #        anchor.index)
             if amber.prmtop_filename is not None and \
                     amber.prmtop_filename != "":
                 assert os.path.exists(amber.prmtop_filename)
@@ -157,6 +163,7 @@ def copy_building_files(model, input_model, rootdir):
                 copyfile(amber.prmtop_filename, new_prmtop_filename)
                 anchor.amber_params.prmtop_filename = prmtop_filename
                 
+            """# TODO: remove
             if amber.inpcrd_filename is not None and \
                     amber.inpcrd_filename != "":
                 assert os.path.exists(amber.inpcrd_filename)
@@ -165,18 +172,38 @@ def copy_building_files(model, input_model, rootdir):
                                                    inpcrd_filename)
                 copyfile(amber.inpcrd_filename, new_inpcrd_filename)
                 anchor.amber_params.inpcrd_filename = inpcrd_filename
-                
+                if anchor.amber_params.box_vectors is None:
+                    assert new_prmtop_filename is not None
+                    anchor.amber_params.box_vectors = base.Box_vectors()
+                    inpcrd_structure = parmed.load_file(new_prmtop_filename, 
+                                                xyz=new_inpcrd_filename)
+                    anchor.amber_params.box_vectors.from_quantity(
+                        inpcrd_structure.box_vectors)
+            """
+            
+            #assert amber.pdb_coordinates_filename is not None and \
+            #    amber.pdb_coordinates_filename != "", \
+            #    "PDB file must be provided for anchor {}".format(
+            #        anchor.index)
+            #amber.pdb_coordinates_filename = os.path.expanduser(
+            #    amber.pdb_coordinates_filename)
+            #assert os.path.exists(amber.pdb_coordinates_filename), \
+            #    "Provided file does not exist: {}".format(
+            #        amber.pdb_coordinates_filename)
             if amber.pdb_coordinates_filename is not None and \
                     amber.pdb_coordinates_filename != "":
-                assert os.path.exists(amber.pdb_coordinates_filename)
                 pdb_filename = os.path.basename(amber.pdb_coordinates_filename)
                 new_pdb_filename = os.path.join(anchor_building_dir, 
                                                 pdb_filename)
                 copyfile(amber.pdb_coordinates_filename, new_pdb_filename)
                 anchor.amber_params.pdb_coordinates_filename = pdb_filename
-                
-            anchor.amber_params.box_vectors = amber.box_vectors
-        
+                anchor.amber_params.box_vectors = amber.box_vectors
+                if anchor.amber_params.box_vectors is None:
+                    anchor.amber_params.box_vectors = base.Box_vectors()
+                    pdb_structure = parmed.load_file(new_pdb_filename)
+                    anchor.amber_params.box_vectors.from_quantity(
+                        pdb_structure.box_vectors)
+            
         try: # TODO: fix simple XML parser so this isn't necessary
             forcefield = input_anchor.starting_forcefield_params
         except AttributeError:
@@ -210,8 +237,11 @@ def copy_building_files(model, input_model, rootdir):
                                                 pdb_filename)
                 copyfile(forcefield.pdb_filename, new_pdb_filename)
                 anchor.forcefield_params.pdb_filename = pdb_filename
-            
-            anchor.forcefield_params.box_vectors = forcefield.box_vectors
+                anchor.forcefield_params.box_vectors = forcefield.box_vectors
+                if anchor.forcefield_params.box_vectors is None:
+                    pdb_structure = parmed.load_file(new_pdb_filename)
+                    anchor.forcefield_params.box_vectors.from_quantity(
+                        pdb_structure.box_vectors)
                 
     if model.k_on_info is not None:
         bd_settings = model.browndye_settings
