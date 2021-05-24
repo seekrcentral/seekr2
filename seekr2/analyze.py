@@ -669,11 +669,6 @@ class Analysis:
             diss_constant = self.k_off / k_on
             delta_G = common_analyze.GAS_CONSTANT*self.model.temperature\
                 *math.log(diss_constant)
-            delta_G_profile = self.free_energy_profile[0] \
-                - self.free_energy_profile[-1]
-            delta_G_profile_err = common_analyze.quadriture(
-                self.free_energy_profile_err[0], 
-                self.free_energy_profile_err[-1])
             if key in self.k_ons_error:
                 k_on_err = float(self.k_ons_error[key])
                 print("  k_on (1/s * 1/M) to state", key, ":", 
@@ -693,10 +688,6 @@ class Analysis:
             print("  \u0394G (kcal/mol) to state", key, ":", 
                   common_analyze.pretty_string_value_error(
                       delta_G, delta_G_err))
-            
-            print("  \u0394G (kcal/mol) to state from profile", key, ":", 
-                  common_analyze.pretty_string_value_error(
-                      delta_G_profile, delta_G_profile_err))
         
         print("Mean first passage times (s):")
         for key in self.MFPTs:

@@ -10,7 +10,7 @@ be used in an Elber milestoning calculation.
 
 import seekr2.modules.common_base as base
 import seekr2.modules.elber_base as elber_base
-import seekr2.libraries.serializer.serializer as serializer
+from abserdes import Serializer
 
 def make_elber_spherical_cv_object(spherical_cv_input, index):
     """

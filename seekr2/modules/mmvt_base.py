@@ -9,7 +9,7 @@ import numpy as np
 from parmed import unit
 import mdtraj
 
-import seekr2.libraries.serializer.serializer as serializer
+from abserdes import Serializer
 
 OPENMMVT_BASENAME = "mmvt"
 OPENMMVT_EXTENSION = "out"
@@ -18,7 +18,7 @@ NAMDMMVT_BASENAME = "namdmmvt"
 NAMDMMVT_EXTENSION = "out"
 NAMDMMVT_GLOB = "%s*.%s*" % (NAMDMMVT_BASENAME, NAMDMMVT_EXTENSION)
 
-class MMVT_settings(serializer.Serializer):
+class MMVT_settings(Serializer):
     """
     Settings that are specific to an MMVT calculation.
     
@@ -47,7 +47,7 @@ class MMVT_settings(serializer.Serializer):
         self.trajectory_reporter_interval = None
         self.restart_checkpoint_interval = None
 
-class MMVT_collective_variable(serializer.Serializer):
+class MMVT_collective_variable(Serializer):
     """
     Collective variables represent the function of system positions
     and velocities along with the MMVT cells and boundaries can be
@@ -271,7 +271,6 @@ colvar {{
         within the expected anchor. Return True if passed, return
         False if failed.
         """
-        TOL = 0.001
         traj1 = traj.atom_slice(self.group1)
         traj2 = traj.atom_slice(self.group2)
         com1_array = mdtraj.compute_center_of_mass(traj1)
@@ -282,7 +281,7 @@ colvar {{
             radius = np.linalg.norm(com2-com1)
             milestone_k = milestone_variables["k"]
             milestone_radius = milestone_variables["radius"]
-            if milestone_k*(radius - milestone_radius) > TOL:
+            if milestone_k*(radius - milestone_radius) > 0.0:
                 if verbose:
                     warnstr = """The center of masses of atom group1 and atom
 group2 were found to be {:.4f} nm apart.
@@ -412,7 +411,7 @@ class MMVT_angular_CV(CollectiveVariable):
         return values_list
 """
 
-class MMVT_anchor(serializer.Serializer):
+class MMVT_anchor(Serializer):
     """
     An anchor object for representing a Voronoi cell in an MMVT 
     calculation.

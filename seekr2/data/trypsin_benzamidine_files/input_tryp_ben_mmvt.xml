@@ -125,9 +125,9 @@
                     <bulk_anchor>False</bulk_anchor>
                 </input_anchor>
                 <input_anchor class="Spherical_cv_anchor">
-                    <radius>1.3</radius>
+                    <radius>1.25</radius>
 		            <lower_milestone_radius>1.2</lower_milestone_radius>
-                    <upper_milestone_radius>1.4</upper_milestone_radius>
+                    <upper_milestone_radius>1.3</upper_milestone_radius>
                     <starting_amber_params class="Amber_params">
                         <prmtop_filename>data/trypsin_benzamidine_files/tryp_ben.prmtop</prmtop_filename>
                         <inpcrd_filename>data/trypsin_benzamidine_files/tryp_ben.inpcrd</inpcrd_filename>
@@ -138,21 +138,8 @@
                     <bulk_anchor>False</bulk_anchor>
                 </input_anchor>
                 <input_anchor class="Spherical_cv_anchor">
-                    <radius>1.5</radius>
-		            <lower_milestone_radius>1.4</lower_milestone_radius>
-                    <upper_milestone_radius>1.6</upper_milestone_radius>
-                    <starting_amber_params class="Amber_params">
-                        <prmtop_filename>data/trypsin_benzamidine_files/tryp_ben.prmtop</prmtop_filename>
-                        <inpcrd_filename>data/trypsin_benzamidine_files/tryp_ben.inpcrd</inpcrd_filename>
-                        <box_vectors/>
-                        <pdb_coordinates_filename>data/trypsin_benzamidine_files/mmvt/tryp_ben_at14.04.pdb</pdb_coordinates_filename>
-                    </starting_amber_params>
-                    <bound_state>False</bound_state>
-                    <bulk_anchor>False</bulk_anchor>
-                </input_anchor>
-                <input_anchor class="Spherical_cv_anchor">
-                    <radius>1.7</radius>
-		            <lower_milestone_radius>1.6</lower_milestone_radius>
+                    <radius>1.4</radius>
+		            <lower_milestone_radius>1.3</lower_milestone_radius>
                     <upper_milestone_radius/>
                     <starting_amber_params class="Amber_params">
                         <prmtop_filename>data/trypsin_benzamidine_files/tryp_ben.prmtop</prmtop_filename>

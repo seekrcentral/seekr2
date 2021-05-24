@@ -5,6 +5,9 @@ Simulation-Enabled Estimation of Kinetic Rates - Version 2
 import sys
 from setuptools import setup, find_packages
 import versioneer
+import subprocess
+import fileinput
+import re
 
 short_description = __doc__.split("\n")
 
@@ -47,7 +50,7 @@ setup(
     # Additional entries you may want simply uncomment the lines you want and fill in the data
     # url='http://www.my_package.com',  # Website
     install_requires=["numpy", "scipy", "parmed", "pytest", "matplotlib", 
-                       "nptyping", "mdtraj"],       
+                       "nptyping", "mdtraj", "bubblebuster"],       
     platforms=['Linux',
     #            'Mac OS-X',
                 'Unix',]
@@ -58,3 +61,19 @@ setup(
     # zip_safe=False,
 
 )
+abserdes_repo_url = 'https://github.com/astokely/abserdes.git'
+process = subprocess.Popen([
+    "git",
+    "ls-remote",
+    'https://github.com/astokely/abserdes.git'
+], stdout=subprocess.PIPE)
+stdout = process.communicate()[0]
+sha_tarball = re.split(r'\t+', stdout.decode('ascii'))[0] + ".tar.gz"
+abserdes_tarball_link = [line for line in open("requirements.txt" , "r+") if 'abserdes' in line][0]
+for line in fileinput.input("requirements.txt", inplace = 1):
+    print(line.replace(
+        abserdes_tarball_link.rsplit('/', 1)[-1],
+        sha_tarball
+    ))
+
+subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])

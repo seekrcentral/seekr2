@@ -9,9 +9,10 @@ import re
 import math
 
 import numpy as np
+import mdtraj as md
 from parmed import unit
 
-import seekr2.libraries.serializer.serializer as serializer
+from abserdes import Serializer
 
 # A glob for BrownDye output files
 BROWNDYE_OUTPUT = "results*.xml"
@@ -62,7 +63,7 @@ def order_files_numerically(file_list):
         
     return sorted_file_list
 
-class Box_vectors(serializer.Serializer):
+class Box_vectors(Serializer):
     """
     A box vector object that contains the a, b, and c vectors in units
     of nanometers.
@@ -97,15 +98,16 @@ class Box_vectors(serializer.Serializer):
         """
         
         values = quantity.value_in_unit(unit.nanometer)
-        self.ax = float(values[0][0])
-        self.ay = float(values[0][1])
-        self.az = float(values[0][2])
-        self.bx = float(values[1][0])
-        self.by = float(values[1][1]) # TEST THESE FUNCTIONS
-        self.bz = float(values[1][2])
-        self.cx = float(values[2][0])
-        self.cy = float(values[2][1])
-        self.cz = float(values[2][2])
+        print("values:", values)
+        self.ax = values[0][0]
+        self.ay = values[0][1]
+        self.az = values[0][2]
+        self.bx = values[1][0]
+        self.by = values[1][1] # TEST THESE FUNCTIONS
+        self.bz = values[1][2]
+        self.cx = values[2][0]
+        self.cy = values[2][1]
+        self.cz = values[2][2]
         return
     
     def from_6_vector(self, box_6_vector):
@@ -116,25 +118,23 @@ class Box_vectors(serializer.Serializer):
         to this object.
         """
         
-        self.ax = float(box_6_vector[0])
+        self.ax = box_6_vector[0]
         self.ay = 0.0
         self.az = 0.0
-        self.bx = float(box_6_vector[1] \
-                        * math.cos(box_6_vector[5]*math.pi/180.0))
-        self.by = float(box_6_vector[1] \
-                        * math.sin(box_6_vector[5]*math.pi/180.0))
+        self.bx = box_6_vector[1] * math.cos(box_6_vector[5]*math.pi/180.0)
+        self.by = box_6_vector[1] * math.sin(box_6_vector[5]*math.pi/180.0)
         self.bz = 0.0
-        self.cx = (box_6_vector[2] * math.cos(box_6_vector[4]*math.pi/180.0))
+        self.cx = box_6_vector[2] * math.cos(box_6_vector[4]*math.pi/180.0)
         if box_6_vector[5] == 90.0:
             self.cy = 0.0
         else:
-            self.cy = float(box_6_vector[2] * (
+            self.cy = box_6_vector[2] * (
                 math.cos(box_6_vector[3]*math.pi/180.0) \
                 - math.cos(box_6_vector[4]*math.pi/180.0) \
                 * math.cos(box_6_vector[5]*math.pi/180.0) \
-                / math.sin(box_6_vector[5]*math.pi/180.0)))
-        self.cz = float(math.sqrt(box_6_vector[2]**2 - self.cx**2 \
-            - self.cy**2))
+                / math.sin(box_6_vector[5]*math.pi/180.0))
+        self.cz = math.sqrt(box_6_vector[2]**2 - self.cx**2 \
+            - self.cy**2)
         return
     
     def get_volume(self):
@@ -150,7 +150,7 @@ class Box_vectors(serializer.Serializer):
                                          
         
         
-class Langevin_integrator_settings(serializer.Serializer):
+class Langevin_integrator_settings(Serializer):
     """
     Contains settings used in the initialization of a Langevin-
     type integrator in either OpenMM or NAMD.
@@ -186,7 +186,7 @@ class Langevin_integrator_settings(serializer.Serializer):
         self.rigid_tolerance = 1e-6
         return
     
-class Barostat_settings_openmm(serializer.Serializer):
+class Barostat_settings_openmm(Serializer):
     """
     Contains settings used in the initialization of a 
     MonteCarloBarostat for the control of pressure within the 
@@ -213,7 +213,7 @@ class Barostat_settings_openmm(serializer.Serializer):
         self.frequency = 25
         return
     
-class Barostat_settings_namd(serializer.Serializer):
+class Barostat_settings_namd(Serializer):
     """
     Contains settings used in the initialization of a 
     LangevinPiston barostat for the control of pressure within the 
@@ -245,7 +245,7 @@ class Barostat_settings_namd(serializer.Serializer):
         self.decay_timescale = 0.1
         return
     
-class Cuda_platform_settings(serializer.Serializer):
+class Cuda_platform_settings(Serializer):
     """
     Contains settings used in the CUDA platform of OpenMM simulations.
     
@@ -275,7 +275,7 @@ class Cuda_platform_settings(serializer.Serializer):
                       'CudaPrecision': self.cuda_precision}
         return properties
     
-class Openmm_settings(serializer.Serializer):
+class Openmm_settings(Serializer):
     """
     Contains settings used by OpenMM MD simulation program.
     
@@ -342,7 +342,7 @@ class Openmm_settings(serializer.Serializer):
         self.initial_temperature = 298.15
         return
     
-class Namd_settings(serializer.Serializer):
+class Namd_settings(Serializer):
     """
     Contains settings used by NAMD simulation program.
     
@@ -391,7 +391,7 @@ class Namd_settings(serializer.Serializer):
         self.eval_stride = 10
         return
     
-class Browndye_settings(serializer.Serializer):
+class Browndye_settings(Serializer):
     """
     Read and parse the outputs from the BrownDye program, which runs
     the BD stage of the SEEKR2 calculation
@@ -444,7 +444,7 @@ class Browndye_settings(serializer.Serializer):
         self.ghost_indices_lig = []
         return
     
-class Amber_params(serializer.Serializer):
+class Amber_params(Serializer):
     """
     Contains parameters for an amber simulation.
     
@@ -473,8 +473,8 @@ class Amber_params(serializer.Serializer):
         self.box_vectors = None
         self.pdb_coordinates_filename = ""
         return
-    
-class Forcefield_params(serializer.Serializer):
+
+class Forcefield_params(Serializer):
     """
     Contains parameters for an OpenMM simulation starting from a set
     of XML forcefields.
@@ -507,7 +507,7 @@ class Forcefield_params(serializer.Serializer):
         self.box_vectors = None
         return
 
-class Ion(serializer.Serializer):
+class Ion(Serializer):
     """
     An ion for input to BrownDye and APBS calculations.
     
@@ -529,7 +529,7 @@ class Ion(serializer.Serializer):
         self.conc = -1.0
         return
 
-class K_on_info(serializer.Serializer):
+class K_on_info(Serializer):
     """
     Information needed to compute K-on-related quantities.
     
@@ -564,7 +564,7 @@ class K_on_info(serializer.Serializer):
         self.ions = []
         return
 
-class BD_milestone(serializer.Serializer):
+class BD_milestone(Serializer):
     """
     BD simulations must end on a spherical milestone, and one
     additional set of BD simulations must be run for each of these.
@@ -635,7 +635,7 @@ class BD_milestone(serializer.Serializer):
         self.max_b_surface_trajs_to_extract = -1
         return
     
-class Milestone(serializer.Serializer):
+class Milestone(Serializer):
     """
     Milestones represent the boundaries within the simulation.
     A given anchor object may contain any number of milestone
@@ -685,7 +685,7 @@ class Milestone(serializer.Serializer):
         
         return model.collective_variables[self.cv_index]
 
-class Model(serializer.Serializer): 
+class Model(Serializer): 
     """
     The Model object contains all the parameters, settings, 
     directory names, and file names which are relevant to a
@@ -741,7 +741,8 @@ class Model(serializer.Serializer):
         
     anchors : list
         A list of Anchor() object instances for this model.
-    """
+
+            """
     
     def __init__(self):
         self.temperature = 0.0

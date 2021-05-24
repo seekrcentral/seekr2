@@ -1,15 +1,15 @@
-%VERSION  VERSION_STAMP = V0001.000  DATE = 05/17/21  16:03:29
-%FLAG TITLE
-%FORMAT(20a4)
-default_name
-%FLAG POINTERS
-%FORMAT(10I8)
+%VERSION  VERSION_STAMP = V0001.000  DATE = 11/01/18  09:13:35                  
+%FLAG TITLE                                                                     
+%FORMAT(20a4)                                                                   
+default_name                                                                    
+%FLAG POINTERS                                                                  
+%FORMAT(10I8)                                                                   
     5358      10    5276      88     183     129     325     256       0       0
     7887    1740      88     129     256      13      20      27      13       1
-       0       0       0       0       0       0       0       1      21       0
+       0       0       0       0       0       0       0       2      21       0
        0
-%FLAG ATOM_NAME
-%FORMAT(20a4)
+%FLAG ATOM_NAME                                                                 
+%FORMAT(20a4)                                                                   
 C1  H1  O1  C2  H2  O2  HO2 C3  H3  O3  HO3 C4  H4  C5  H5  O5  C6  H61 H62 O6  
 HO6 C1  H1  O1  C2  H2  O2  HO2 C3  H3  O3  HO3 C4  H4  C5  H5  O5  C6  H61 H62 
 O6  HO6 C1  H1  O1  C2  H2  O2  HO2 C3  H3  O3  HO3 C4  H4  C5  H5  O5  C6  H61 
@@ -278,8 +278,8 @@ O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2  O   H1
 H2  O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2  O   
 H1  H2  O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2  
 O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2  
-%FLAG CHARGE
-%FORMAT(5E16.8)
+%FLAG CHARGE                                                                    
+%FORMAT(5E16.8)                                                                 
   7.78092210E-01  2.93379030E+00 -5.88398067E+00  2.50738848E+00  1.18444950E+00
  -1.15638716E+01  7.95585618E+00  2.23040952E+00  3.24174717E+00 -1.12978260E+01
   7.68981060E+00  7.30714230E-01  2.90645685E+00  3.51690390E-01  2.10649788E+00
@@ -1352,8 +1352,8 @@ O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2
   7.59869910E+00 -1.51973982E+01  7.59869910E+00  7.59869910E+00 -1.51973982E+01
   7.59869910E+00  7.59869910E+00 -1.51973982E+01  7.59869910E+00  7.59869910E+00
  -1.51973982E+01  7.59869910E+00  7.59869910E+00
-%FLAG ATOMIC_NUMBER
-%FORMAT(10I8)
+%FLAG ATOMIC_NUMBER                                                             
+%FORMAT(10I8)                                                                   
        6       1       8       6       1       8       1       6       1       8
        1       6       1       6       1       8       6       1       1       8
        1       6       1       8       6       1       8       1       6       1
@@ -1890,8 +1890,8 @@ O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2
        1       8       1       1       8       1       1       8       1       1
        8       1       1       8       1       1       8       1       1       8
        1       1       8       1       1       8       1       1
-%FLAG MASS
-%FORMAT(5E16.8)
+%FLAG MASS                                                                      
+%FORMAT(5E16.8)                                                                 
   1.20100000E+01  1.00800000E+00  1.60000000E+01  1.20100000E+01  1.00800000E+00
   1.60000000E+01  1.00800000E+00  1.20100000E+01  1.00800000E+00  1.60000000E+01
   1.00800000E+00  1.20100000E+01  1.00800000E+00  1.20100000E+01  1.00800000E+00
@@ -2964,8 +2964,8 @@ O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2
   1.00800000E+00  1.60000000E+01  1.00800000E+00  1.00800000E+00  1.60000000E+01
   1.00800000E+00  1.00800000E+00  1.60000000E+01  1.00800000E+00  1.00800000E+00
   1.60000000E+01  1.00800000E+00  1.00800000E+00
-%FLAG ATOM_TYPE_INDEX
-%FORMAT(10I8)
+%FLAG ATOM_TYPE_INDEX                                                           
+%FORMAT(10I8)                                                                   
        1       2       3       1       4       5       6       1       4       5
        6       1       4       1       4       3       1       4       4       5
        6       1       2       3       1       4       5       6       1       4
@@ -3502,8 +3502,8 @@ O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2
       10       9      10      10       9      10      10       9      10      10
        9      10      10       9      10      10       9      10      10       9
       10      10       9      10      10       9      10      10
-%FLAG NUMBER_EXCLUDED_ATOMS
-%FORMAT(10I8)
+%FLAG NUMBER_EXCLUDED_ATOMS                                                     
+%FORMAT(10I8)                                                                   
       18       8      16      13       7       6       1      11       6       5
        1      13       6       9       6       6       5       3       2       1
        1      18       8      16      12       7       6       1       9       5
@@ -4040,8 +4040,8 @@ O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2
        1       2       1       1       2       1       1       2       1       1
        2       1       1       2       1       1       2       1       1       2
        1       1       2       1       1       2       1       1
-%FLAG NONBONDED_PARM_INDEX
-%FORMAT(10I8)
+%FLAG NONBONDED_PARM_INDEX                                                      
+%FORMAT(10I8)                                                                   
        1       2       4       7      11      16      22      29      37      46
        2       3       5       8      12      17      23      30      38      47
        4       5       6       9      13      18      24      31      39      48
@@ -4052,8 +4052,8 @@ O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2  O   H1  H2
       29      30      31      32      33      34      35      36      44      53
       37      38      39      40      41      42      43      44      45      -1
       46      47      48      49      50      51      52      53      -1      55
-%FLAG RESIDUE_LABEL
-%FORMAT(20a4)
+%FLAG RESIDUE_LABEL                                                             
+%FORMAT(20a4)                                                                   
 MGO MGO MGO MGO MGO MGO MGO APN WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT 
 WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT 
 WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT 
@@ -4141,8 +4141,8 @@ WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT
 WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT 
 WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT 
 WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT 
-%FLAG RESIDUE_POINTER
-%FORMAT(10I8)
+%FLAG RESIDUE_POINTER                                                           
+%FORMAT(10I8)                                                                   
        1      22      43      64      85     106     127     148     163     166
      169     172     175     178     181     184     187     190     193     196
      199     202     205     208     211     214     217     220     223     226
@@ -4317,75 +4317,75 @@ WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT
     5269    5272    5275    5278    5281    5284    5287    5290    5293    5296
     5299    5302    5305    5308    5311    5314    5317    5320    5323    5326
     5329    5332    5335    5338    5341    5344    5347    5350    5353    5356
-%FLAG BOND_FORCE_CONSTANT
-%FORMAT(5E16.8)
+%FLAG BOND_FORCE_CONSTANT                                                       
+%FORMAT(5E16.8)                                                                 
   7.00000000E+02  4.10000000E+02  3.20000000E+02  2.85000000E+02  3.10000000E+02
   4.40000000E+02  3.30600000E+02  3.00900000E+02  3.71400000E+02  3.30600000E+02
   3.16700000E+02  5.53000000E+02  5.53000000E+02
-%FLAG BOND_EQUIL_VALUE
-%FORMAT(5E16.8)
+%FLAG BOND_EQUIL_VALUE                                                          
+%FORMAT(5E16.8)                                                                 
   9.60000000E-01  1.09200000E+00  1.43000000E+00  1.46000000E+00  1.52000000E+00
   1.10500000E+00  1.09690000E+00  1.53750000E+00  9.73000000E-01  1.09690000E+00
   1.42330000E+00  1.51360000E+00  9.57200000E-01
-%FLAG ANGLE_FORCE_CONSTANT
-%FORMAT(5E16.8)
+%FLAG ANGLE_FORCE_CONSTANT                                                      
+%FORMAT(5E16.8)                                                                 
   6.00000000E+01  4.50000000E+01  5.50000000E+01  7.00000000E+01  6.00000000E+01
   4.50000000E+01  7.00000000E+01  4.50000000E+01  5.00000000E+01  1.00000000E+02
   6.00000000E+01  4.50000000E+01  3.94000000E+01  4.63400000E+01  6.28600000E+01
   6.74700000E+01  5.09300000E+01  4.63900000E+01  3.92400000E+01  4.73800000E+01
-%FLAG ANGLE_EQUIL_VALUE
-%FORMAT(5E16.8)
+%FLAG ANGLE_EQUIL_VALUE                                                         
+%FORMAT(5E16.8)                                                                 
   1.91986300E+00  1.91113635E+00  1.91113635E+00  1.89368305E+00  1.91986300E+00
   1.93731630E+00  1.87622975E+00  1.98094955E+00  1.89368305E+00  1.95476960E+00
   1.91986300E+00  1.93731630E+00  1.87762601E+00  1.91637234E+00  1.94621748E+00
   1.92317913E+00  1.92440086E+00  1.91218355E+00  1.89298492E+00  1.87204096E+00
-%FLAG DIHEDRAL_FORCE_CONSTANT
-%FORMAT(5E16.8)
+%FLAG DIHEDRAL_FORCE_CONSTANT                                                   
+%FORMAT(5E16.8)                                                                 
   1.80000000E-01 -2.70000000E-01  5.50000000E-01  6.00000000E-01  2.00000000E-01
   8.20000000E-01  5.00000000E-02  1.17500000E+00  1.44000000E-01  1.70000000E-01
   1.60000000E-01  1.50000000E-01  2.70000000E-01  1.00000000E-01  6.00000000E-01
   1.00000000E-01  4.50000000E-01 -1.00000000E-01  9.50000000E-01  5.50000000E-01
   1.50000000E-01  2.50000000E-01  0.00000000E+00  1.55555556E-01  1.66666667E-01
   2.00000000E-01  2.50000000E-01
-%FLAG DIHEDRAL_PERIODICITY
-%FORMAT(5E16.8)
+%FLAG DIHEDRAL_PERIODICITY                                                      
+%FORMAT(5E16.8)                                                                 
   3.00000000E+00  1.00000000E+00  1.00000000E+00  2.00000000E+00  3.00000000E+00
   2.00000000E+00  3.00000000E+00  2.00000000E+00  3.00000000E+00  3.00000000E+00
   3.00000000E+00  3.00000000E+00  3.00000000E+00  3.00000000E+00  2.00000000E+00
   3.00000000E+00  1.00000000E+00  1.00000000E+00  2.00000000E+00  3.00000000E+00
   3.00000000E+00  1.00000000E+00  3.00000000E+00  3.00000000E+00  3.00000000E+00
   1.00000000E+00  2.00000000E+00
-%FLAG DIHEDRAL_PHASE
-%FORMAT(5E16.8)
+%FLAG DIHEDRAL_PHASE                                                            
+%FORMAT(5E16.8)                                                                 
   0.00000000E+00  0.00000000E+00  5.23599000E+00  0.00000000E+00  1.04719800E+00
   0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00
   0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00
   0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00
   0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00
   3.14159400E+00  3.14159400E+00
-%FLAG SCEE_SCALE_FACTOR
-%FORMAT(5E16.8)
+%FLAG SCEE_SCALE_FACTOR                                                         
+%FORMAT(5E16.8)                                                                 
   1.20000000E+00  1.20000000E+00  2.00000000E+00  2.00000000E+00  2.00000000E+00
   1.20000000E+00  1.20000000E+00  1.20000000E+00  1.20000000E+00  1.20000000E+00
   1.20000000E+00  2.00000000E+00  1.20000000E+00  2.00000000E+00  1.20000000E+00
   1.20000000E+00  1.20000000E+00  2.00000000E+00  2.00000000E+00  2.00000000E+00
   1.20000000E+00  1.20000000E+00  1.20000000E+00  1.20000000E+00  1.20000000E+00
   1.20000000E+00  1.20000000E+00
-%FLAG SCNB_SCALE_FACTOR
-%FORMAT(5E16.8)
+%FLAG SCNB_SCALE_FACTOR                                                         
+%FORMAT(5E16.8)                                                                 
   2.00000000E+00  2.00000000E+00  2.00000000E+00  2.00000000E+00  2.00000000E+00
   2.00000000E+00  2.00000000E+00  2.00000000E+00  2.00000000E+00  2.00000000E+00
   2.00000000E+00  2.00000000E+00  2.00000000E+00  2.00000000E+00  2.00000000E+00
   2.00000000E+00  2.00000000E+00  2.00000000E+00  2.00000000E+00  2.00000000E+00
   2.00000000E+00  2.00000000E+00  2.00000000E+00  2.00000000E+00  2.00000000E+00
   2.00000000E+00  2.00000000E+00
-%FLAG SOLTY
-%FORMAT(5E16.8)
+%FLAG SOLTY                                                                     
+%FORMAT(5E16.8)                                                                 
   0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00
   0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00
   0.00000000E+00  0.00000000E+00  0.00000000E+00
-%FLAG LENNARD_JONES_ACOEF
-%FORMAT(5E16.8)
+%FLAG LENNARD_JONES_ACOEF                                                       
+%FORMAT(5E16.8)                                                                 
   1.04308023E+06  4.68930885E+04  1.32801250E+03  6.28541240E+05  2.44050579E+04
   3.61397723E+05  6.78771368E+04  2.09814978E+03  3.63097246E+04  3.25969625E+03
   7.91544157E+05  3.15360051E+04  4.58874091E+05  4.66922514E+04  5.81803229E+05
@@ -4397,8 +4397,8 @@ WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT
   5.82502563E+05  0.00000000E+00  0.00000000E+00  6.91745839E+04  5.81923367E+05
   0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00
   0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00
-%FLAG LENNARD_JONES_BCOEF
-%FORMAT(5E16.8)
+%FLAG LENNARD_JONES_BCOEF                                                       
+%FORMAT(5E16.8)                                                                 
   6.75612247E+02  8.81685417E+01  9.13231543E+00  5.85549272E+02  7.10161395E+01
   4.95732238E+02  1.06076943E+02  1.14788417E+01  8.66220817E+01  1.43076527E+01
   6.93079947E+02  8.51470647E+01  5.89183300E+02  1.03606917E+02  6.99746810E+02
@@ -4410,8 +4410,8 @@ WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT
   6.45613575E+02  0.00000000E+00  0.00000000E+00  1.16281464E+02  5.95014434E+02
   0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00
   0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00
-%FLAG BONDS_INC_HYDROGEN
-%FORMAT(10I8)
+%FLAG BONDS_INC_HYDROGEN                                                        
+%FORMAT(10I8)                                                                   
       57      60       1      48      51       2      48      54       2      39
       42       2      33      36       2      27      30       1      21      24
        2      15      18       1       9      12       2       0       3       6
@@ -5995,8 +5995,8 @@ WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT
       13   16050   16053      12   16047   16050      13   16047   16053      13
    16059   16062      12   16056   16059      13   16056   16062      13   16068
    16071      12   16065   16068      13   16065   16071      13
-%FLAG BONDS_WITHOUT_HYDROGEN
-%FORMAT(10I8)
+%FLAG BONDS_WITHOUT_HYDROGEN                                                    
+%FORMAT(10I8)                                                                   
       48      57       3      39      45       4      39      48       5      33
       39       5      33     384       4      21      27       3      21      33
        5       9      15       3       9      21       5       6      96       4
@@ -6024,8 +6024,8 @@ WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT
      387     399       5     378     384       4     378     387       5     378
      423       4     465     474       8     456     465       8     441     450
       11     441     456       8
-%FLAG ANGLES_INC_HYDROGEN
-%FORMAT(10I8)
+%FLAG ANGLES_INC_HYDROGEN                                                       
+%FORMAT(10I8)                                                                   
       54      48      57       1      51      48      54       2      51      48
       57       1      48      57      60       3      42      39      45       5
       42      39      48       6      39      48      51       6      39      48
@@ -6100,8 +6100,8 @@ WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT
      447      19     444     441     450      17     444     441     456      18
      441     450     453      20     441     456     459      14     441     456
      462      14
-%FLAG ANGLES_WITHOUT_HYDROGEN
-%FORMAT(10I8)
+%FLAG ANGLES_WITHOUT_HYDROGEN                                                   
+%FORMAT(10I8)                                                                   
       45      39      48       4      39      33     384       4      39      48
       57       7      33      39      45       4      33      39      48       8
       33     384     378       9      27      21      33       7      21      33
@@ -6154,8 +6154,8 @@ WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT
      423      10     378     387     393       7     378     387     399       8
      378     423     417       9     456     465     474      15     450     441
      456      16     441     456     465      15
-%FLAG DIHEDRALS_INC_HYDROGEN
-%FORMAT(10I8)
+%FLAG DIHEDRALS_INC_HYDROGEN                                                    
+%FORMAT(10I8)                                                                   
       54      48      57      60       1      51      48      57      60       1
       45      39      48      51       7      45      39      48      54       7
       42      39      33     384       7      42      39      48      51      10
@@ -6319,8 +6319,8 @@ WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT
      444     441     456     459      24     444     441     456     462      24
      444     441     456     465      24     441     456     465     468      11
      441     456     465     471      11
-%FLAG DIHEDRALS_WITHOUT_HYDROGEN
-%FORMAT(10I8)
+%FLAG DIHEDRALS_WITHOUT_HYDROGEN                                                
+%FORMAT(10I8)                                                                   
       48      39      33     384       2      45       0       6      96       3
       45       0      -6      96       4      45       0      -6      96       5
       45      39      33     384       6      45      39      48      57       8
@@ -6449,8 +6449,8 @@ WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT
      378     423    -417     411      11     378     423     417     426      11
      450     441     456     465      24     441     456     465     474      26
      441     456    -465     474      27     441     456    -465     474       1
-%FLAG EXCLUDED_ATOMS_LIST
-%FORMAT(10I8)
+%FLAG EXCLUDED_ATOMS_LIST                                                       
+%FORMAT(10I8)                                                                   
        2       3       4       5       6       7       8       9      10      12
       14      15      16      17      29      33      34      35       3       4
        5       6       8      14      16      33       4       5       6       8
@@ -7240,17 +7240,17 @@ WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT WAT
     5340    5340       0    5342    5343    5343       0    5345    5346    5346
        0    5348    5349    5349       0    5351    5352    5352       0    5354
     5355    5355       0    5357    5358    5358       0
-%FLAG HBOND_ACOEF
-%FORMAT(5E16.8)
+%FLAG HBOND_ACOEF                                                               
+%FORMAT(5E16.8)                                                                 
   0.00000000E+00
-%FLAG HBOND_BCOEF
-%FORMAT(5E16.8)
+%FLAG HBOND_BCOEF                                                               
+%FORMAT(5E16.8)                                                                 
   0.00000000E+00
-%FLAG HBCUT
-%FORMAT(5E16.8)
+%FLAG HBCUT                                                                     
+%FORMAT(5E16.8)                                                                 
   0.00000000E+00
-%FLAG AMBER_ATOM_TYPE
-%FORMAT(20a4)
+%FLAG AMBER_ATOM_TYPE                                                           
+%FORMAT(20a4)                                                                   
 CG  H2  OS  CG  H1  OH  HO  CG  H1  OH  HO  CG  H1  CG  H1  OS  CG  H1  H1  OH  
 HO  CG  H2  OS  CG  H1  OH  HO  CG  H1  OH  HO  CG  H1  CG  H1  OS  CG  H1  H1  
 OH  HO  CG  H2  OS  CG  H1  OH  HO  CG  H1  OH  HO  CG  H1  CG  H1  OS  CG  H1  
@@ -7519,8 +7519,8 @@ OW  HW  HW  OW  HW  HW  OW  HW  HW  OW  HW  HW  OW  HW  HW  OW  HW  HW  OW  HW
 HW  OW  HW  HW  OW  HW  HW  OW  HW  HW  OW  HW  HW  OW  HW  HW  OW  HW  HW  OW  
 HW  HW  OW  HW  HW  OW  HW  HW  OW  HW  HW  OW  HW  HW  OW  HW  HW  OW  HW  HW  
 OW  HW  HW  OW  HW  HW  OW  HW  HW  OW  HW  HW  OW  HW  HW  OW  HW  HW  
-%FLAG TREE_CHAIN_CLASSIFICATION
-%FORMAT(20a4)
+%FLAG TREE_CHAIN_CLASSIFICATION                                                 
+%FORMAT(20a4)                                                                   
 M   E   M   M   E   S   E   M   E   S   E   M   E   3   E   E   3   E   E   S   
 E   M   E   M   M   E   S   E   M   E   S   E   M   E   3   E   E   3   E   E   
 S   E   M   E   M   M   E   S   E   M   E   S   E   M   E   3   E   E   3   E   
@@ -7789,8 +7789,8 @@ BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA
 BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA 
 BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA 
 BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA 
-%FLAG JOIN_ARRAY
-%FORMAT(10I8)
+%FLAG JOIN_ARRAY                                                                
+%FORMAT(10I8)                                                                   
        0       0       0       0       0       0       0       0       0       0
        0       0       0       0       0       0       0       0       0       0
        0       0       0       0       0       0       0       0       0       0
@@ -8327,8 +8327,8 @@ BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA
        0       0       0       0       0       0       0       0       0       0
        0       0       0       0       0       0       0       0       0       0
        0       0       0       0       0       0       0       0
-%FLAG IROTAT
-%FORMAT(10I8)
+%FLAG IROTAT                                                                    
+%FORMAT(10I8)                                                                   
        0       0       0       0       0       0       0       0       0       0
        0       0       0       0       0       0       0       0       0       0
        0       0       0       0       0       0       0       0       0       0
@@ -8865,193 +8865,14 @@ BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA BLA
        0       0       0       0       0       0       0       0       0       0
        0       0       0       0       0       0       0       0       0       0
        0       0       0       0       0       0       0       0
-%FLAG SOLVENT_POINTERS
-%FORMAT(3I8)
-       8    1734       3
-%FLAG ATOMS_PER_MOLECULE
-%FORMAT(10I8)
-     147      15       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3       3       3       3       3       3       3
-       3       3       3       3
 %FLAG BOX_DIMENSIONS
 %FORMAT(5E16.8)
-  9.00000000E+01  4.19480000E+01  4.21440000E+01  3.39330000E+01
-%FLAG RADIUS_SET
-%FORMAT(1a80)
+  9.00000000E+01  3.71223000E+01  3.71223000E+01  3.71223000E+01
+%FLAG RADIUS_SET                                                                
+%FORMAT(1a80)                                                                   
 modified Bondi radii (mbondi)                                                   
-%FLAG RADII
-%FORMAT(5E16.8)
+%FLAG RADII                                                                     
+%FORMAT(5E16.8)                                                                 
   1.70000000E+00  1.30000000E+00  1.50000000E+00  1.70000000E+00  1.30000000E+00
   1.50000000E+00  8.00000000E-01  1.70000000E+00  1.30000000E+00  1.50000000E+00
   8.00000000E-01  1.70000000E+00  1.30000000E+00  1.70000000E+00  1.30000000E+00
@@ -10124,8 +9945,8 @@ modified Bondi radii (mbondi)
   8.00000000E-01  1.50000000E+00  8.00000000E-01  8.00000000E-01  1.50000000E+00
   8.00000000E-01  8.00000000E-01  1.50000000E+00  8.00000000E-01  8.00000000E-01
   1.50000000E+00  8.00000000E-01  8.00000000E-01
-%FLAG SCREEN
-%FORMAT(5E16.8)
+%FLAG SCREEN                                                                    
+%FORMAT(5E16.8)                                                                 
   7.20000000E-01  8.50000000E-01  8.50000000E-01  7.20000000E-01  8.50000000E-01
   8.50000000E-01  8.50000000E-01  7.20000000E-01  8.50000000E-01  8.50000000E-01
   8.50000000E-01  7.20000000E-01  8.50000000E-01  7.20000000E-01  8.50000000E-01
@@ -11198,6 +11019,6 @@ modified Bondi radii (mbondi)
   8.50000000E-01  8.50000000E-01  8.50000000E-01  8.50000000E-01  8.50000000E-01
   8.50000000E-01  8.50000000E-01  8.50000000E-01  8.50000000E-01  8.50000000E-01
   8.50000000E-01  8.50000000E-01  8.50000000E-01
-%FLAG IPOL
-%FORMAT(1I8)
+%FLAG IPOL                                                                      
+%FORMAT(1I8)                                                                    
        0

@@ -44,6 +44,7 @@ import argparse
 import collections
 import glob
 import warnings
+import bubblebuster
 warnings.filterwarnings("ignore")
 
 import numpy as np
@@ -62,7 +63,6 @@ ION_CHARGE_DICT = {"li":1.0, "na":1.0, "k":1.0, "rb":1.0, "cs":1.0, "fr":1.0,
 
 AVOGADROS_NUMBER = 6.022e23
 SAVE_STATE_DIRECTORY = "states/"
-MAX_STRUCTURES_TO_CHECK = 100
 
 def load_structure_with_parmed(model, anchor):
     """
@@ -269,8 +269,113 @@ def is_ion(atom):
         return False
 
 def check_pre_sim_bubbles(model):
-    print("Warning: Bubble check not yet implemented.")
+    """
+    Checks starting pdb structures for water box bubbles.
+
+    Parameters
+    ----------
+    model : Model
+        The SEEKR2 model object containing all calculation information.
+
+    Returns
+    -------
+    : bool
+        False if a bubble is detected and True otherwise.
+
+    """
+    for anchor in model.anchors:
+        building_directory = os.path.join(
+            model.anchor_rootdir, 
+            anchor.directory, 
+            anchor.building_directory
+        )
+        if anchor.amber_params is not None:
+            if (anchor.amber_params.pdb_coordinates_filename is not None \
+                and anchor.amber_params.pdb_coordinates_filename != ""
+            ):
+                pdb_filename = os.path.join(
+                    building_directory,
+                    anchor.amber_params.pdb_coordinates_filename
+                )
+                bvecs = anchor.amber_params.box_vectors
+                if bvecs is not None:
+                    print(np.array(bvecs, dtype=np.float32))
+                    """
+                    box_vectors = np.array([
+                        [bvecs.a.x, bvecs.a.y, bvecs.a.z], 
+                        [bvecs.b.x, bvecs.b.y, bvecs.b.z], 
+                        [bvecs.c.x, bvecs.c.y, bvecs.c.z], 
+                    ], dtype=np.float32)
+                    """
+                    pdb_periodic_box_properties = \
+                        bubblebuster.periodic_box_properties(
+                            pdb_filename,
+                            box_vectors=np.array(bvecs, dtype=np.float32)
+                        )
+                    if pdb_periodic_box_properties.has_bubble:
+                        warnstr = "CHECK FAILURE: Water box bubble detected "\
+                        "in one or more starting structures." 
+                        print(warnstr)
+                    else:
+                        box_vectors = np.array([
+                            *bvecs
+                        ], dtype=np.float32)
+                        pdb_periodic_box_properties = \
+                            bubblebuster.periodic_box_properties(
+                                pdb_filename,
+                                box_vectors=box_vectors
+                            )
+                        if pdb_periodic_box_properties.has_bubble:
+                            warnstr = "CHECK FAILURE: Water box bubble detected "\
+                            "in one or more starting structures." 
+                            print(warnstr)
+                            return False
+                            return False
+                else:
+                    pdb_periodic_box_properties = \
+                        bubblebuster.periodic_box_properties(
+                            pdb_filename,
+                        )
+                    if pdb_periodic_box_properties.has_bubble:
+                        warnstr = "CHECK FAILURE: Water box bubble detected "\
+                        "in one or more starting structures." 
+                        print(warnstr)
+                        return False
     return True
+
+def check_hmr_timestep(model):
+    """
+    Checks the simulation time step size if HMR is implemented.
+    If HMR is implemented and the time step equals 0.002 picoseconds,
+    the user likely forgot to increase the time step in the input 
+    XML file. 
+
+    Parameters
+    ----------
+    model : Model
+        The SEEKR2 model object containing all calculation information.
+
+    Returns
+    -------
+    : bool
+        False if HMR is implemented and the time step equals 0.002 
+        picoseconds, otherwise True.
+
+    """
+    if model.openmm_settings:
+        print(model.openmm_settings.hydrogenMass)
+        if model.openmm_settings.hydrogenMass:
+            if (model.openmm_settings.langevin_integrator.timestep \
+                == 0.002
+            ):
+                warnstr = "CHECK FAILURE: HMR is implemented, but a "\
+                "0.002 ps time step is being used. Increase the time step "\
+                "in the input XML file to take advantage of the "\
+                "performance benefits HMR offers." 
+                print(warnstr)
+                return False
+    return True
+    
 
 def check_pre_sim_MD_and_BD_salt_concentration(model):
     """
@@ -580,6 +685,7 @@ def check_pre_simulation_all(model):
     
     check_passed_list = []
     check_passed_list.append(check_pre_sim_bubbles(model))
+    check_passed_list.append(check_hmr_timestep(model))
     check_passed_list.append(check_pre_sim_MD_and_BD_salt_concentration(model))
     check_passed_list.append(check_atom_selections_on_same_molecule(model))
     check_passed_list.append(check_systems_within_Voronoi_cells(model))
@@ -656,7 +762,7 @@ def check_xml_boundary_states(model):
             state_files = glob.glob(state_file_glob)
             if len(state_files) == 0:
                 continue
-            for i, state_file in enumerate(state_files):
+            for state_file in state_files:
                 traj = load_structure_with_mdtraj(
                     model, anchor, mode="state_xml", coords_filename=state_file)
                 cv = model.collective_variables[milestone.cv_index]
@@ -670,9 +776,6 @@ def check_xml_boundary_states(model):
                     print(warnstr.format(anchor.index, state_file))
                     print("Saved problematic structure to:", save_pdb_filename)
                     return False
-                
-                if i > MAX_STRUCTURES_TO_CHECK:
-                    break
     
     return True
 
@@ -712,10 +815,9 @@ def find_parmed_structure_com(structure, indices):
     
     total_mass = 0.0
     com_vector = np.zeros(3)
-    for index in indices:
-        atom = structure.atoms[index]
+    for i, atom in enumerate(structure.atoms):
         total_mass += atom.mass
-        com_vector += atom.mass * structure.coordinates[index]
+        com_vector += atom.mass * structure.coordinates[i]
     
     assert total_mass > 0.0
     return com_vector / total_mass

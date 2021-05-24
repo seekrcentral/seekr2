@@ -187,7 +187,7 @@ class Runner_namd():
         self.check_state_interval = 1000
     
     def prepare(self, restart=False, save_state=False, 
-                save_state_boundaries=False, force_overwrite=False):
+                force_overwrite=False):
         """
         This function gets run before the sim_namd object is created
         so that the proper paths can be found, etc.
@@ -216,9 +216,6 @@ class Runner_namd():
                           "all outputs will be deleted and replace by a new "\
                           "run.")
                     raise Exception("Cannot overwrite existing MMVT outputs.")
-                else:
-                    cleanse_anchor_outputs(self.model, self.anchor)
-                """
                 else:
                     for mmvt_output_file in mmvt_output_restarts_list:
                         os.remove(mmvt_output_file)
@@ -255,7 +252,6 @@ class Runner_namd():
                         self.output_directory, SAVE_STATE_DIRECTORY)
                     if os.path.exists(states_dir):
                         shutil.rmtree(states_dir)
-                """
                         
             default_output_filename = "%s%d.%s" % (
                 self.basename, 1, self.extension)
@@ -263,7 +259,6 @@ class Runner_namd():
             
         state_dir = os.path.join(self.output_directory, 
                                  SAVE_STATE_DIRECTORY)
-        self.save_one_state_for_all_boundaries = save_state_boundaries
         if self.save_one_state_for_all_boundaries:
             if not os.path.exists(state_dir):
                 os.mkdir(state_dir)

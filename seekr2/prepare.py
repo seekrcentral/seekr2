@@ -76,4 +76,6 @@ if __name__ == "__main__":
         model_dir = os.path.dirname(xml_path)
         model.anchor_rootdir = os.path.abspath(model_dir)
     if not skip_checks:
-        check.check_pre_simulation_all(model)
+        check.check_pre_simulation_all(
+            model, 
+        )

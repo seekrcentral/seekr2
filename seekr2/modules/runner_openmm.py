@@ -262,7 +262,7 @@ class Runner_openmm():
             self.extension = elber_base.OPENMM_ELBER_EXTENSION
             
         self.state_prefix = None
-        self.save_one_state_for_all_boundaries=False
+        self.save_one_state_for_all_boundaries=True
         self.restart_checkpoint_filename = None
         self.restart_checkpoint_interval = None
         self.start_chunk = None
@@ -274,8 +274,7 @@ class Runner_openmm():
         self.umbrellas_already_exist_mode = False
     
     def prepare(self, restart=False, save_state_file=False, 
-                save_state_boundaries=False, force_overwrite=False, 
-                umbrella_restart_mode=False):
+                force_overwrite=False, umbrella_restart_mode=False):
         """
         This function gets run before the sim_openmm object is created
         so that the proper paths can be found, etc.
@@ -339,7 +338,6 @@ class Runner_openmm():
         
         state_dir = os.path.join(self.output_directory, 
                                  SAVE_STATE_DIRECTORY)
-        self.save_one_state_for_all_boundaries = save_state_boundaries
         if self.save_one_state_for_all_boundaries:
             if not os.path.exists(state_dir):
                 os.mkdir(state_dir)
