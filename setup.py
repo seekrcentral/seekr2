@@ -30,6 +30,7 @@ def install_abserdes():
     ], stdout=subprocess.PIPE)
     stdout = process.communicate()[0]
     sha_tarball = re.split(r'\t+', stdout.decode('ascii'))[0] + ".tar.gz"
+    print(re.split(r'\t+', stdout.decode('ascii'))[-1] + ".tar.gz")
     abserdes_tarball_link = [line for line in 
         open("requirements.txt" , "r+") if 'abserdes' in line][0]
     for line in fileinput.input("requirements.txt", inplace = 1):
@@ -82,9 +83,5 @@ setup(
 )
 
 if 'install' in sys.argv:
-    try:
-        import abserdes
-    except:
-        install_abserdes()
-    
+    import abserdes 
 

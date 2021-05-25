@@ -308,43 +308,28 @@ def check_pre_sim_bubbles(model):
                     anchor.amber_params.pdb_coordinates_filename
                 )
                 bvecs = anchor.amber_params.box_vectors
-                if bvecs is not None:
-                    print(np.array(bvecs, dtype=np.float32))
-                    """
-                    box_vectors = np.array([
-                        [bvecs.a.x, bvecs.a.y, bvecs.a.z], 
-                        [bvecs.b.x, bvecs.b.y, bvecs.b.z], 
-                        [bvecs.c.x, bvecs.c.y, bvecs.c.z], 
-                    ], dtype=np.float32)
-                    """
-                    pdb_periodic_box_properties = \
-                        bubblebuster.periodic_box_properties(
-                            pdb_filename,
-                            box_vectors=np.array(bvecs, dtype=np.float32)
-                        )
-                    if pdb_periodic_box_properties.has_bubble:
-                        warnstr = "CHECK FAILURE: Water box bubble detected "\
-                        "in one or more starting structures." 
-                        print(warnstr)
-                    else:
-                        box_vectors = np.array([
-                            *bvecs
-                        ], dtype=np.float32)
-                        pdb_periodic_box_properties = \
-                            bubblebuster.periodic_box_properties(
-                                pdb_filename,
-                                box_vectors=box_vectors
-                            )
-                        if pdb_periodic_box_properties.has_bubble:
-                            warnstr = "CHECK FAILURE: Water box bubble detected "\
-                            "in one or more starting structures." 
-                            print(warnstr)
-                            return False
-                            return False
+                bvecs = np.array([
+                    [bvecs.ax, bvecs.ay, bvecs.az],
+                    [bvecs.bx, bvecs.by, bvecs.bz],
+                    [bvecs.cx, bvecs.cy, bvecs.cz],
+                ])
+                pdb_periodic_box_properties = \
+                    bubblebuster.periodic_box_properties(
+                        pdb_filename,
+                        box_vectors=np.array(bvecs, dtype=np.float32)
+                    )
+                if pdb_periodic_box_properties.has_bubble:
+                    warnstr = "CHECK FAILURE: Water box bubble detected "\
+                    "in one or more starting structures." 
+                    print(warnstr)
                 else:
+                    box_vectors = np.array([
+                        *bvecs
+                    ], dtype=np.float32)
                     pdb_periodic_box_properties = \
                         bubblebuster.periodic_box_properties(
                             pdb_filename,
+                            box_vectors=box_vectors
                         )
                     if pdb_periodic_box_properties.has_bubble:
                         warnstr = "CHECK FAILURE: Water box bubble detected "\
@@ -373,7 +358,6 @@ def check_hmr_timestep(model):
 
     """
     if model.openmm_settings:
-        print(model.openmm_settings.hydrogenMass)
         if model.openmm_settings.hydrogenMass:
             if (model.openmm_settings.langevin_integrator.timestep \
                 == 0.002

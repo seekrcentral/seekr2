@@ -8,6 +8,7 @@ simulations.
 import os
 import shutil
 from shutil import copyfile
+import numpy as np
 
 import seekr2.modules.common_base as base
 
@@ -197,6 +198,16 @@ def copy_building_files(model, input_model, rootdir):
                                                 pdb_filename)
                 copyfile(amber.pdb_coordinates_filename, new_pdb_filename)
                 anchor.amber_params.pdb_coordinates_filename = pdb_filename
+                if amber.box_vectors is not None:
+                    flattened_box_vectors = np.array([
+                        val for row in amber.box_vectors for val in row
+                    ]) 
+                    box_vectors = base.Box_vectors()
+                    box_vectors.ax, box_vectors.ay, box_vectors.az, \
+                    box_vectors.bx, box_vectors.by, box_vectors.bz, \
+                    box_vectors.cx, box_vectors.cy, box_vectors.cz = \
+                    flattened_box_vectors
+                    amber.box_vectors = box_vectors
                 anchor.amber_params.box_vectors = amber.box_vectors
                 if anchor.amber_params.box_vectors is None:
                     anchor.amber_params.box_vectors = base.Box_vectors()
