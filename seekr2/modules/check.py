@@ -358,9 +358,9 @@ def check_hmr_timestep(model):
 
     """
     if model.openmm_settings:
-        if model.openmm_settings.hydrogenMass:
+        if model.openmm_settings.hydrogenMass is not None:
             if (model.openmm_settings.langevin_integrator.timestep \
-                == 0.002
+                <= 0.002
             ):
                 warnstr = "CHECK FAILURE: HMR is implemented, but a "\
                 "0.002 ps time step is being used. Increase the time step "\
