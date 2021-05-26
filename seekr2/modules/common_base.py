@@ -98,7 +98,6 @@ class Box_vectors(Serializer):
         """
         
         values = quantity.value_in_unit(unit.nanometer)
-        print("values:", values)
         self.ax = values[0][0]
         self.ay = values[0][1]
         self.az = values[0][2]
