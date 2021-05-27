@@ -7,6 +7,7 @@ dependencies:
   - python
   - cython
   - pip
+  - libgcc-ng=7.5.0 # Needed to build seekr plugin
   - numpy
   - scipy
   - swig
