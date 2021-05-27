@@ -5,16 +5,16 @@ channels:
 dependencies:
     # Base depends
   - python
-  - cython
+  #- cython
   - pip
-  - libgcc-ng=7.5.0 # Needed to build seekr plugin
+  #- libgcc-ng=7.5.0 # Needed to build seekr plugin
   - numpy
   - scipy
-  - swig
-  - doxygen # for compiling openmm
+  #- swig
+  #- doxygen # for compiling openmm
   - matplotlib
-  - netcdf4
-  - mpi4py
+  #- netcdf4
+  #- mpi4py
   - openmm
   #- ocaml
   
