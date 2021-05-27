@@ -77,6 +77,15 @@ jobs:
     - name: Install BrownDye
       shell: bash -l {0}
       run: |
+        git clone https://github.com/libexpat/libexpat.git
+        cd libexpat
+        git checkout 9b79a5a
+        cd expat
+        ./buildconf.sh
+        ./configure
+        make
+        sudo make install
+        cd ../..
         wget https://browndye.ucsd.edu/downloads/browndye2.tar.gz
         tar xvfz browndye2.tar.gz
         cd browndye2
