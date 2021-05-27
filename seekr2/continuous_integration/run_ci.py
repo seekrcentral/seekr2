@@ -19,6 +19,7 @@ def run_short_ci(model_input, cuda_device_index):
     start_dir = os.getcwd()
     model, xml_path = prepare.generate_seekr2_model_and_filetree(
         model_input, force_overwrite=False)
+    
     model_dir = os.path.dirname(xml_path)
     model.anchor_rootdir = os.path.abspath(model_dir)
     check.check_pre_simulation_all(model)

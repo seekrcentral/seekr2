@@ -77,10 +77,10 @@ jobs:
     #- name: Install BrownDye
     #  shell: bash -l {0}
     #  run: |
-    #    wget https://browndye.ucsd.edu/downloads/browndye2.tar.gz
-    #    tar xvfz browndye2.tar.gz
-    #    cd browndye2
-    #    make -j 4 all
+        wget https://browndye.ucsd.edu/downloads/browndye2.tar.gz
+        tar xvfz browndye2.tar.gz
+        cd browndye2
+        make -j 4 all
 
     - name: Install package
 
