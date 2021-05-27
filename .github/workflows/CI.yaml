@@ -72,6 +72,7 @@ jobs:
         NAMD_ACCESS_TOKEN: ${{ secrets.NAMD_ACCESS_TOKEN }}
       run: |
         git clone https://oauth2:${NAMD_ACCESS_TOKEN}@gitlab.com/tcbgUIUC/namd.git
+        cd namd
         #export TCLDIR=/home/tcbdevel/runner/tcl/tcl8.5.9-linux-x86_64
         #export CHRMDIR=/home/tcbdevel/runner/charm-6.10.2
         #export FFTWDIR=/home/tcbdevel/runner/fftw/linux-x86_64
@@ -79,6 +80,7 @@ jobs:
         cd Linux-x86_64-g++
         make
         ls
+        cd ../..
         
         
     - name: Install package
