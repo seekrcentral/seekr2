@@ -21,7 +21,7 @@ dependencies:
   #- mpi4py
   - openmm
   - ocaml # for browndye
-  - libexpat1 # for browndye  
+  #- libexpat1 # for browndye  
   
 
     # Testing
