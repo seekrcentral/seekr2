@@ -7,8 +7,8 @@ dependencies:
   - python
   #- cmake
   #- make
-  #- gcc_linux-64
-  #- gxx_linux-64
+  - gcc_linux-64
+  - gxx_linux-64
   #- cython
   - pip
   #- libgcc-ng=7.5.0 # Needed to build seekr plugin
