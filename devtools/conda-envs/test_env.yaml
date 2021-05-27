@@ -15,6 +15,7 @@ dependencies:
   - netcdf4
   - mpi4py
   - openmm
+  - ocaml
   
   
 

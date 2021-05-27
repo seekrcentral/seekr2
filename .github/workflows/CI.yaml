@@ -74,7 +74,7 @@ jobs:
       run: |
         python -m pip install . --no-deps
         conda list
-        conda install numpy scipy git swig matplotlib
+        #conda install numpy scipy git swig matplotlib
 
         # Install seekr openmm plugin
         git clone https://github.com/seekrcentral/seekr2_openmm_plugin.git
@@ -82,7 +82,7 @@ jobs:
         mkdir build
         cd build
 
-        cmake -DCMAKE_INSTALL_PREFIX=${CONDA_PREFIX} ..
+        cmake -DCMAKE_INSTALL_PREFIX=${CONDA_PREFIX} -DSEEKR2_BUILD_OPENCL_LIB=OFF ..
         make
         make install
         make PythonInstall
