@@ -94,8 +94,7 @@ jobs:
         wget https://browndye.ucsd.edu/downloads/browndye2-ubuntu-20.04-2021-02-07.tar.gz
         tar -xzf browndye2-ubuntu-20.04-2021-02-07.tar.gz
         cd browndye2/bin
-        export PATH="/home/runner/work/build/browndye/bin:$PATH"
-        ./nam_simulation
+        export PATH="$PWD:$PATH"
         cd ../..
 
     - name: Install package
