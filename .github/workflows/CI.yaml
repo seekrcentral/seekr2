@@ -52,19 +52,19 @@ jobs:
         show-channel-urls: true
 
 
-    - name: Build OpenMM
-      shell: bash -l {0}
-      run: |
-        git clone https://github.com/openmm/openmm.git
-        mkdir -p /home/runner/work/build/bin
-        cd openmm
-        mkdir build
-        cd build
-        cmake -DCMAKE_INSTALL_PREFIX=/home/runner/work/build/bin/openmm ..
-        make 
-        make install
-        make PythonInstall
-        cd ../..	
+    #- name: Build OpenMM
+    #  shell: bash -l {0}
+    #  run: |
+    #    git clone https://github.com/openmm/openmm.git
+    #    mkdir -p /home/runner/work/build/bin
+    #    cd openmm
+    #    mkdir build
+    #    cd build
+    #    cmake -DCMAKE_INSTALL_PREFIX=/home/runner/work/build/bin/openmm ..
+    #    make 
+    #    make install
+    #    make PythonInstall
+    #    cd ../..	
 
 
     - name: Install package
@@ -75,6 +75,19 @@ jobs:
         python -m pip install . --no-deps
         conda list
         conda install numpy scipy git swig matplotlib
+
+        # Install seekr openmm plugin
+        git clone https://github.com/seekrcentral/seekr2_openmm_plugin.git
+        cd seekr2_openmm_plugin/seekr2plugin
+        mkdir build
+        cd build
+
+	cmake -DCMAKE_INSTALL_PREFIX=${CONDA_PREFIX} ..
+        make
+        make install
+        make PythonInstall
+        make test
+
 
 
     - name: Run tests

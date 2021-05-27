@@ -12,7 +12,9 @@ dependencies:
   - swig
   - doxygen # for compiling openmm
   - matplotlib
-  # - openmm
+  - netcdf4
+  - mpi4py
+  - openmm
   
   
 
