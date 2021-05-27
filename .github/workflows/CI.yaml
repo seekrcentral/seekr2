@@ -56,7 +56,7 @@ jobs:
       shell: bash -l {0}
       run: |
         git clone https://github.com/openmm/openmm.git
-        mkdir /home/runner/work/build/bin
+        mkdir -p /home/runner/work/build/bin
         cd openmm
         mkdir build
         cd build
