@@ -72,31 +72,8 @@ jobs:
         NAMD_ACCESS_TOKEN: ${{ secrets.NAMD_ACCESS_TOKEN }}
       run: |
         git clone https://oauth2:${NAMD_ACCESS_TOKEN}@gitlab.com/tcbgUIUC/namd.git
-
-
-    - name: Install BrownDye
-      shell: bash -l {0}
-      run: |
-        #git clone https://github.com/libexpat/libexpat.git
-        #cd libexpat
-        #git checkout 9b79a5a
-        #cd expat
-        #./buildconf.sh
-        #./configure
-        #make
-        #sudo make install
-        #cd ../..
-        sudo apt-get install libexpat1
-        #wget https://browndye.ucsd.edu/downloads/browndye2.tar.gz
-        #tar xvfz browndye2.tar.gz
-        #cd browndye2
-        #make -j 4 all
-        wget https://browndye.ucsd.edu/downloads/browndye2-ubuntu-20.04-2021-02-07.tar.gz
-        tar -xzf browndye2-ubuntu-20.04-2021-02-07.tar.gz
-        cd browndye2/bin
-        export PATH="$PWD:$PATH"
-        cd ../..
-
+        
+        
     - name: Install package
 
       # conda setup requires this special shell
@@ -124,6 +101,29 @@ jobs:
         make test
 
 
+    - name: Install BrownDye
+      shell: bash -l {0}
+      run: |
+        #git clone https://github.com/libexpat/libexpat.git
+        #cd libexpat
+        #git checkout 9b79a5a
+        #cd expat
+        #./buildconf.sh
+        #./configure
+        #make
+        #sudo make install
+        #cd ../..
+        sudo apt-get install libexpat1
+        #wget https://browndye.ucsd.edu/downloads/browndye2.tar.gz
+        #tar xvfz browndye2.tar.gz
+        #cd browndye2
+        #make -j 4 all
+        wget https://browndye.ucsd.edu/downloads/browndye2-ubuntu-20.04-2021-02-07.tar.gz
+        tar -xzf browndye2-ubuntu-20.04-2021-02-07.tar.gz
+        cd browndye2/bin
+        export PATH="$PWD:$PATH"
+        cd ../..
+
 
     - name: Run tests
 
@@ -133,7 +133,8 @@ jobs:
       run: |
         python -m simtk.testInstallation
         # pytest -v --cov=seekr2 --cov-report=xml --color=yes seekr2/tests/
-        python setup.py test --addopts "--ignore=seekr2/tests/test_sim_namd.py --ignore=seekr2/tests/test_runner_namd.py --ignore=seekr2/tests/test_runner_browndye2.py" #--ignore=seekr2/tests/test_runner_openmm.py"
+        # python setup.py test --addopts "--ignore=seekr2/tests/test_sim_namd.py --ignore=seekr2/tests/test_runner_namd.py --ignore=seekr2/tests/test_runner_browndye2.py" #--ignore=seekr2/tests/test_runner_openmm.py"
+        python setup.py test --addopts "--ignore=seekr2/tests/test_sim_namd.py --ignore=seekr2/tests/test_runner_namd.py"
 
     - name: CodeCov
       uses: codecov/codecov-action@v1
