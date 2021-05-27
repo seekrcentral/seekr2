@@ -133,6 +133,7 @@ jobs:
       shell: bash -l {0}
 
       run: |
+        export PATH="/home/runner/work/seekr2/seekr2/browndye2/bin:$PATH"
         python -m simtk.testInstallation
         # pytest -v --cov=seekr2 --cov-report=xml --color=yes seekr2/tests/
         # python setup.py test --addopts "--ignore=seekr2/tests/test_sim_namd.py --ignore=seekr2/tests/test_runner_namd.py --ignore=seekr2/tests/test_runner_browndye2.py" #--ignore=seekr2/tests/test_runner_openmm.py"
