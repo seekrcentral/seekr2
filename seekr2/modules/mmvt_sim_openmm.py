@@ -6,7 +6,11 @@ openmm simulation based on the settings provided by a user. These
 objects are specific to MMVT only.
 """
 
-import openmm.app as openmm_app
+try:
+    import openmm.app as openmm_app
+except ImportError:
+    import simtk.openmm.app as openmm_app
+    
 from parmed import unit
 
 import seekr2plugin

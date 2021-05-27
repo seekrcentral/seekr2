@@ -8,8 +8,16 @@ objects and routines are common to both Elber and MMVT milestoning.
 
 import os
 
-import openmm
-import openmm.app as openmm_app
+try:
+    import openmm
+except ImportError:
+    import simtk.openmm as openmm
+    
+try:
+    import openmm.app as openmm_app
+except ImportError:
+    import simtk.openmm.app as openmm_app
+    
 import parmed
 
 class Common_sim_openmm:

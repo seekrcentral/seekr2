@@ -173,7 +173,11 @@ class MMVT_spherical_CV(MMVT_collective_variable):
         refer to them as forces outside of this layer of the code,
         preferring instead the term: boundary definitions.
         """
-        import openmm
+        try:
+            import openmm
+        except ImportError:
+            import simtk.openmm as openmm
+            
         assert self.num_groups == 2
         return openmm.CustomCentroidBondForce(
             self.num_groups, self.openmm_expression)

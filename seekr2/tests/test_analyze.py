@@ -4,18 +4,10 @@ test_analyze.py
 Testing analyze.py
 """
 
-#import pytest
-#import sys
 import os
-#from time import time
-#import warnings
 from collections import defaultdict
 
 import numpy as np
-#from scipy import linalg as la
-#from simtk.openmm.app import *
-#from simtk.openmm import *
-#from simtk.unit import *
 
 import seekr2.modules.common_analyze as common_analyze
 import seekr2.modules.mmvt_analyze as mmvt_analyze

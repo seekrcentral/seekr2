@@ -183,7 +183,11 @@ class Elber_spherical_CV(Elber_collective_variable):
         Make an umbrella sampling force object, which will constrain
         the system to the milestone.
         """
-        import openmm
+        try:
+            import openmm
+        except ImportError:
+            import simtk.openmm as openmm
+            
         assert self.num_groups == 2
         return openmm.CustomCentroidBondForce(
             self.num_groups, self.openmm_umbrella_expression)
@@ -193,7 +197,11 @@ class Elber_spherical_CV(Elber_collective_variable):
         Make a list of reversal force objects, which will  be used to
         monitor milestone crossing during the reversal stage.
         """
-        import openmm
+        try:
+            import openmm
+        except ImportError:
+            import simtk.openmm as openmm
+            
         assert self.num_groups == 2
         return openmm.CustomCentroidBondForce(
             self.num_groups, self.openmm_fwd_rev_expression)

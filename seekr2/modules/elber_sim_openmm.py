@@ -12,8 +12,16 @@ objects are specific to Elber milestoning only.
 import os
 import re
 
-import openmm
-import openmm.app as openmm_app
+try:
+    import openmm
+except ImportError:
+    import simtk.openmm as openmm
+    
+try:
+    import openmm.app as openmm_app
+except ImportError:
+    import simtk.openmm.app as openmm_app
+    
 from parmed import unit
 
 import seekr2plugin
