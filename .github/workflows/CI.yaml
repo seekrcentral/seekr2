@@ -74,9 +74,9 @@ jobs:
         git clone https://oauth2:${NAMD_ACCESS_TOKEN}@gitlab.com/tcbgUIUC/namd.git
 
 
-    #- name: Install BrownDye
-    #  shell: bash -l {0}
-    #  run: |
+    - name: Install BrownDye
+      shell: bash -l {0}
+      run: |
         wget https://browndye.ucsd.edu/downloads/browndye2.tar.gz
         tar xvfz browndye2.tar.gz
         cd browndye2
