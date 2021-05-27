@@ -72,6 +72,13 @@ jobs:
         NAMD_ACCESS_TOKEN: ${{ secrets.NAMD_ACCESS_TOKEN }}
       run: |
         git clone https://oauth2:${NAMD_ACCESS_TOKEN}@gitlab.com/tcbgUIUC/namd.git
+        #export TCLDIR=/home/tcbdevel/runner/tcl/tcl8.5.9-linux-x86_64
+        #export CHRMDIR=/home/tcbdevel/runner/charm-6.10.2
+        #export FFTWDIR=/home/tcbdevel/runner/fftw/linux-x86_64
+        ./config Linux-x86_64-g++ # --tcl-prefix $TCLDIR --charm-base $CHRMDIR --fftw-prefix ${FFTWDIR}
+        cd Linux-x86_64-g++
+        make
+        ls
         
         
     - name: Install package
@@ -81,7 +88,6 @@ jobs:
       run: |
         python -m pip install . --no-deps
         conda list
-        #conda install numpy scipy git swig matplotlib
 
         # Install seekr openmm plugin
         git clone https://github.com/seekrcentral/seekr2_openmm_plugin.git
@@ -104,20 +110,7 @@ jobs:
     - name: Install BrownDye
       shell: bash -l {0}
       run: |
-        #git clone https://github.com/libexpat/libexpat.git
-        #cd libexpat
-        #git checkout 9b79a5a
-        #cd expat
-        #./buildconf.sh
-        #./configure
-        #make
-        #sudo make install
-        #cd ../..
         sudo apt-get install libexpat1 apbs
-        #wget https://browndye.ucsd.edu/downloads/browndye2.tar.gz
-        #tar xvfz browndye2.tar.gz
-        #cd browndye2
-        #make -j 4 all
         wget https://browndye.ucsd.edu/downloads/browndye2-ubuntu-20.04-2021-02-07.tar.gz
         tar -xzf browndye2-ubuntu-20.04-2021-02-07.tar.gz
         cd browndye2/bin

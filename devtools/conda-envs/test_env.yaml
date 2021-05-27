@@ -20,9 +20,7 @@ dependencies:
   #- netcdf4
   #- mpi4py
   - openmm
-  #- ocaml # for browndye
-  #- libexpat1 # for browndye  
-  
+  - tcl
 
     # Testing
   - pytest

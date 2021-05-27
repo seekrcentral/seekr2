@@ -15,7 +15,8 @@ import seekr2.modules.check as check
 # Don't remove the following library imports - needed by deserializer
 from seekr2.modules.common_prepare import Browndye_settings_input, \
     MMVT_input_settings, Elber_input_settings
-from seekr2.modules.common_base import Ion, Amber_params, Forcefield_params
+from seekr2.modules.common_base import Ion, Amber_params, Forcefield_params, \
+    Box_vectors
 from seekr2.modules.common_cv import Spherical_cv_anchor, Spherical_cv_input
 
 def generate_seekr2_model_and_filetree(model_input, force_overwrite):

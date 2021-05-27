@@ -123,7 +123,7 @@ providing feedback, bug reports, or other comments.
 * Andy Stokely (developer)
 * Natalie Timms (contributor)
 * Lane Votapka (lead developer)
-* Jeffrey Wagner (contributor)
+* Jeff Wagner (contributor)
 
 ### Copyright
 
