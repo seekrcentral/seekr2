@@ -629,6 +629,9 @@ def check_elber_umbrella_stage(model):
     if model.get_type() != "elber":
         # this test would be irrelevant
         return True
+    if model.openmm_settings is not None:
+        if model.openmm_settings.hydrogenMass is not None:
+            return True
     for anchor in model.anchors:
         traj = load_structure_with_mdtraj(model, anchor, mode="elber_umbrella")
         if traj is None:
@@ -695,6 +698,9 @@ def check_mmvt_in_Voronoi_cell(model):
     if model.get_type() != "mmvt":
         # irrelevant test
         return True
+    if model.openmm_settings is not None:
+        if model.openmm_settings.hydrogenMass is not None:
+            return True
     for anchor in model.anchors:
         traj = load_structure_with_mdtraj(model, anchor, mode="mmvt_traj")
         if traj is None:
@@ -707,7 +713,7 @@ def check_mmvt_in_Voronoi_cell(model):
                 warnstr = """CHECK FAILURE: The MMVT trajectory(ies)
     for anchor {} do not lie within the 
     anchor boundaries. This could be caused by
-    careless tampering with files or the model.xml
+    incorrect modification of files or the model.xml
     file, or possibly a bug.""".format(anchor.index)
                 print(warnstr)
                 return False
