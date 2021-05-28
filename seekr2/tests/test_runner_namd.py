@@ -34,6 +34,8 @@ def test_Runner_namd_default(tmp_path):
     #sim_namd_factory = sim_namd.Sim_namd_factory()
     my_sim_namd = mmvt_sim_namd.create_sim_namd(mymodel, myanchor, 
                                                       mmvt_output_filename)
+    my_sim_namd.namd_root.periodic_boundary_conditions.PMEGridSpacing = None
+    print("PME turned off")
     runner.run(my_sim_namd, mmvt_output_filename+".out")
     myglob = mmvt_output_filename+".out*"
     outfiles = glob.glob(myglob)
