@@ -72,23 +72,23 @@ jobs:
         NAMD_ACCESS_TOKEN: ${{ secrets.NAMD_ACCESS_TOKEN }}
       run: |
         
-        git clone https://oauth2:${NAMD_ACCESS_TOKEN}@gitlab.com/tcbgUIUC/charm.git
-        tar xzf charm/charm-6.8.2.tar.gz
-        tar xzf charm/tcl.tar.gz
-        tar xzf charm/fftw.tar.gz
-        export TCLINC=${PWD}/tcl/tcl8.5.9-linux-x86_64/lib/
-        export TCLLIB=${PWD}/tcl/tcl8.5.9-linux-x86_64/include/
-        export LD_LIBRARY_PATH=${PWD}/tcl/tcl8.5.9-linux-x86_64/include/:$LD_LIBRARY_PATH
-        export TCLDIR=${PWD}/tcl/tcl8.5.9-linux-x86_64
-        export CHRMDIR=${PWD}/charm-6.8.2
-        export FFTWDIR=${PWD}/fftw/linux-x86_64
+        git clone https://github.com/UIUC-PPL/charm
+        cd charm
+        ./build charm++ netlrts-linux-x86_64 [ --with-production | -g ]
         
-        git clone https://oauth2:${NAMD_ACCESS_TOKEN}@gitlab.com/tcbgUIUC/namd.git
+        #export TCLINC=${PWD}/tcl/tcl8.5.9-linux-x86_64/lib/
+        #export TCLLIB=${PWD}/tcl/tcl8.5.9-linux-x86_64/include/
+        #export LD_LIBRARY_PATH=${PWD}/tcl/tcl8.5.9-linux-x86_64/include/:$LD_LIBRARY_PATH
+        #export TCLDIR=${PWD}/tcl/tcl8.5.9-linux-x86_64
+        export CHRMDIR=${PWD}/charm-6.8.2
+        #export FFTWDIR=${PWD}/fftw/linux-x86_64
+        cd ..
+        git clone https://oauth2:${NAMD_ACCESS_TOKEN2}@gitlab.com/tcbgUIUC/namd.git
         cd namd
         #export TCLDIR=/home/tcbdevel/runner/tcl/tcl8.5.9-linux-x86_64
         #export CHRMDIR=/home/tcbdevel/runner/charm-6.10.2
         #export FFTWDIR=/home/tcbdevel/runner/fftw/linux-x86_64
-        ./config Linux-x86_64-g++ --tcl-prefix $TCLDIR --charm-base $CHRMDIR --fftw-prefix ${FFTWDIR}
+        ./config Linux-x86_64-g++ --charm-base $CHRMDIR #--tcl-prefix $TCLDIR --fftw-prefix ${FFTWDIR}
         cd Linux-x86_64-g++
         make
         ls
