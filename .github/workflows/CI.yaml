@@ -78,28 +78,17 @@ jobs:
         ./build charm++ multicore-linux-x86_64 --with-production
         export CHRMDIR=${PWD}
         cd ..
-        
-        #wget http://www.ks.uiuc.edu/Research/namd/libraries/fftw-linux-x86_64.tar.gz
-        #tar xzf fftw-linux-x86_64.tar.gz
-        #mv linux-x86_64 fftw
         wget http://www.ks.uiuc.edu/Research/namd/libraries/tcl8.5.9-linux-x86_64.tar.gz
-        #wget http://www.ks.uiuc.edu/Research/namd/libraries/tcl8.5.9-linux-x86_64-threaded.tar.gz
         tar xzf tcl8.5.9-linux-x86_64.tar.gz
-        #tar xzf tcl8.5.9-linux-x86_64-threaded.tar.gz
         mkdir tcl
         mv tcl8.5.9-linux-x86_64 tcl
-        #mv tcl8.5.9-linux-x86_64-threaded tcl-threaded
         export TCLINC=${PWD}/tcl/tcl8.5.9-linux-x86_64/lib/
         export TCLLIB=${PWD}/tcl/tcl8.5.9-linux-x86_64/include/
         export LD_LIBRARY_PATH=${PWD}/tcl/tcl8.5.9-linux-x86_64/include/:$LD_LIBRARY_PATH
         export TCLDIR=${PWD}/tcl/tcl8.5.9-linux-x86_64
-        
         git clone https://oauth2:${NAMD_ACCESS_TOKEN2}@gitlab.com/tcbgUIUC/namd.git
         cd namd
-        #export TCLDIR=/home/tcbdevel/runner/tcl/tcl8.5.9-linux-x86_64
-        #export CHRMDIR=/home/tcbdevel/runner/charm-6.10.2
-        #export FFTWDIR=/home/tcbdevel/runner/fftw/linux-x86_64
-        ./config Linux-x86_64-g++ --charm-base $CHRMDIR --tcl-prefix $TCLDIR --without-fftw #--fftw-prefix ${FFTWDIR}
+        ./config Linux-x86_64-g++ --charm-base $CHRMDIR --tcl-prefix $TCLDIR --without-fftw
         cd Linux-x86_64-g++
         make
         ls
@@ -119,11 +108,9 @@ jobs:
         cd seekr2_openmm_plugin/seekr2plugin
         mkdir build
         cd build
-
         export OPENMM_INSTALL_DIR=${CONDA_PREFIX}
         export OPENMM_LIB_PATH=$OPENMM_INSTALL_DIR/lib
         export OPENMM_PLUGIN_DIR=$OPENMM_LIB_PATH/plugins
-        
         export LD_LIBRARY_PATH=$OPENMM_LIB_PATH:$OPENMM_PLUGIN_DIR:$LD_LIBRARY_PATH
         cmake -DCMAKE_INSTALL_PREFIX=${CONDA_PREFIX} -DSEEKR2_BUILD_OPENCL_LIB=OFF -DOPENMM_DIR=${CONDA_PREFIX} ..
         make
@@ -155,7 +142,7 @@ jobs:
         python -m simtk.testInstallation
         # pytest -v --cov=seekr2 --cov-report=xml --color=yes seekr2/tests/
         # python setup.py test --addopts "--ignore=seekr2/tests/test_sim_namd.py --ignore=seekr2/tests/test_runner_namd.py --ignore=seekr2/tests/test_runner_browndye2.py" #--ignore=seekr2/tests/test_runner_openmm.py"
-        python setup.py test --addopts "--ignore=seekr2/tests/test_sim_namd.py --ignore=seekr2/tests/test_runner_namd.py"
+        python setup.py test
 
     - name: CodeCov
       uses: codecov/codecov-action@v1
