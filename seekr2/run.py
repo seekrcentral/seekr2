@@ -665,6 +665,7 @@ def run(model, instruction, min_total_simulation_length=None,
             bd_complete = False
         else:
             bd_complete = True
+        force_overwrite = False
         counter += 1
         if counter > MAX_ITER:
             raise Exception("BD while loop appears to be stuck.")
