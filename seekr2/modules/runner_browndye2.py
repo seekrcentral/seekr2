@@ -462,8 +462,8 @@ def extract_bd_surface(model, bd_milestone, max_b_surface_trajs_to_extract,
                         number_list.append(int(line.strip().split()[1]))
                     elif re.search("<subtrajectory>",line):
                         subtraj_list.append(int(line.strip().split()[1]))
-            print("number_list:", number_list)
-            print("subtraj_list:", subtraj_list)
+            #print("number_list:", number_list)
+            #print("subtraj_list:", subtraj_list)
             if len(number_list) == 0 or len(subtraj_list) == 0:
                 continue
             # sort both lists concurrently so that structures are in order

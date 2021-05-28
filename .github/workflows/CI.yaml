@@ -69,7 +69,7 @@ jobs:
     - name: Get NAMD
       shell: bash -l {0}
       env:
-        NAMD_ACCESS_TOKEN: ${{ secrets.NAMD_ACCESS_TOKEN }}
+        # NAMD_ACCESS_TOKEN: ${{ secrets.NAMD_ACCESS_TOKEN }}
         NAMD_ACCESS_TOKEN2: ${{ secrets.NAMD_ACCESS_TOKEN2 }}
       run: |
         
@@ -81,7 +81,7 @@ jobs:
         #export TCLLIB=${PWD}/tcl/tcl8.5.9-linux-x86_64/include/
         #export LD_LIBRARY_PATH=${PWD}/tcl/tcl8.5.9-linux-x86_64/include/:$LD_LIBRARY_PATH
         #export TCLDIR=${PWD}/tcl/tcl8.5.9-linux-x86_64
-        export CHRMDIR=${PWD}/charm-6.8.2
+        export CHRMDIR=${PWD}
         #export FFTWDIR=${PWD}/fftw/linux-x86_64
         cd ..
         git clone https://oauth2:${NAMD_ACCESS_TOKEN2}@gitlab.com/tcbgUIUC/namd.git
