@@ -75,7 +75,7 @@ jobs:
         
         git clone https://github.com/UIUC-PPL/charm
         cd charm
-        ./build charm++ netlrts-linux-x86_64
+        ./build charm++ multicore-linux-x86_64 --with-production
         
         #export TCLINC=${PWD}/tcl/tcl8.5.9-linux-x86_64/lib/
         #export TCLLIB=${PWD}/tcl/tcl8.5.9-linux-x86_64/include/
