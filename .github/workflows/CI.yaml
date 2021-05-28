@@ -76,21 +76,29 @@ jobs:
         git clone https://github.com/UIUC-PPL/charm
         cd charm
         ./build charm++ multicore-linux-x86_64 --with-production
-        
-        #export TCLINC=${PWD}/tcl/tcl8.5.9-linux-x86_64/lib/
-        #export TCLLIB=${PWD}/tcl/tcl8.5.9-linux-x86_64/include/
-        #export LD_LIBRARY_PATH=${PWD}/tcl/tcl8.5.9-linux-x86_64/include/:$LD_LIBRARY_PATH
-        #export TCLDIR=${PWD}/tcl/tcl8.5.9-linux-x86_64
         export CHRMDIR=${PWD}
-        #export FFTWDIR=${PWD}/fftw/linux-x86_64
         cd ..
+        
+        wget http://www.ks.uiuc.edu/Research/namd/libraries/fftw-linux-x86_64.tar.gz
+        tar xzf fftw-linux-x86_64.tar.gz
+        mv linux-x86_64 fftw
+        wget http://www.ks.uiuc.edu/Research/namd/libraries/tcl8.5.9-linux-x86_64.tar.gz
+        wget http://www.ks.uiuc.edu/Research/namd/libraries/tcl8.5.9-linux-x86_64-threaded.tar.gz
+        tar xzf tcl8.5.9-linux-x86_64.tar.gz
+        tar xzf tcl8.5.9-linux-x86_64-threaded.tar.gz
+        mv tcl8.5.9-linux-x86_64 tcl
+        mv tcl8.5.9-linux-x86_64-threaded tcl-threaded
+        export TCLINC=${PWD}/tcl/tcl8.5.9-linux-x86_64/lib/
+        export TCLLIB=${PWD}/tcl/tcl8.5.9-linux-x86_64/include/
+        export LD_LIBRARY_PATH=${PWD}/tcl/tcl8.5.9-linux-x86_64/include/:$LD_LIBRARY_PATH
+        export TCLDIR=${PWD}/tcl/tcl8.5.9-linux-x86_64
         
         git clone https://oauth2:${NAMD_ACCESS_TOKEN2}@gitlab.com/tcbgUIUC/namd.git
         cd namd
         #export TCLDIR=/home/tcbdevel/runner/tcl/tcl8.5.9-linux-x86_64
         #export CHRMDIR=/home/tcbdevel/runner/charm-6.10.2
         #export FFTWDIR=/home/tcbdevel/runner/fftw/linux-x86_64
-        ./config Linux-x86_64-g++ --charm-base $CHRMDIR --without-tcl --without-fftw #--tcl-prefix $TCLDIR --fftw-prefix ${FFTWDIR}
+        ./config Linux-x86_64-g++ --charm-base $CHRMDIR --tcl-prefix $TCLDIR --fftw-prefix ${FFTWDIR}
         cd Linux-x86_64-g++
         make
         ls
@@ -143,11 +151,10 @@ jobs:
 
       run: |
         export PATH="/home/runner/work/seekr2/seekr2/browndye2/bin:$PATH"
-        export PATH="/home/runner/work/seekr2/seekr2/namd/Linux-x86_64-g++:$PATH"
         python -m simtk.testInstallation
         # pytest -v --cov=seekr2 --cov-report=xml --color=yes seekr2/tests/
         # python setup.py test --addopts "--ignore=seekr2/tests/test_sim_namd.py --ignore=seekr2/tests/test_runner_namd.py --ignore=seekr2/tests/test_runner_browndye2.py" #--ignore=seekr2/tests/test_runner_openmm.py"
-        python setup.py test
+        python setup.py test --addopts "--ignore=seekr2/tests/test_sim_namd.py --ignore=seekr2/tests/test_runner_namd.py"
 
     - name: CodeCov
       uses: codecov/codecov-action@v1

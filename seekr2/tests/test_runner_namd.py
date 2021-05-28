@@ -25,7 +25,7 @@ def test_Runner_namd_default(tmp_path):
     mmvt_output_filename = os.path.join(
                     tmp_path, myanchor.name, "prod", 
                     "%s%d" % (mmvt_base.NAMDMMVT_BASENAME, 1))
-    namd_command = "namd2"
+    namd_command = "/home/lvotapka/tmp/namd/Linux-x86_64-g++/namd2"
     namd_arguments = ""
     runner = runner_namd.Runner_namd(mymodel, myanchor, namd_command, 
                                      namd_arguments)
@@ -43,6 +43,7 @@ def test_Runner_namd_default(tmp_path):
     has_correct_line2 = False
     with open(outfile,"r") as f:
         for line in f:
+            print(line)
             if re.search("^WallClock", line):
                 has_correct_line1 = True
             if re.search("^WRITING", line):
