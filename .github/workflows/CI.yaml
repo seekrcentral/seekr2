@@ -72,7 +72,7 @@ jobs:
         NAMD_ACCESS_TOKEN: ${{ secrets.NAMD_ACCESS_TOKEN }}
       run: |
         
-        git clone https://gitlab-ci-token:${NAMD_ACCESS_TOKEN}@gitlab.com/tcbgUIUC/charm.git
+        git clone https://oauth2:${NAMD_ACCESS_TOKEN}@gitlab.com/tcbgUIUC/charm.git
         tar xzf charm/charm-6.8.2.tar.gz
         tar xzf charm/tcl.tar.gz
         tar xzf charm/fftw.tar.gz
