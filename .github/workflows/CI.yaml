@@ -99,7 +99,7 @@ jobs:
         #export TCLDIR=/home/tcbdevel/runner/tcl/tcl8.5.9-linux-x86_64
         #export CHRMDIR=/home/tcbdevel/runner/charm-6.10.2
         #export FFTWDIR=/home/tcbdevel/runner/fftw/linux-x86_64
-        ./config Linux-x86_64-g++ --charm-base $CHRMDIR --tcl-prefix $TCLDIR --fftw-prefix ${FFTWDIR}
+        ./config Linux-x86_64-g++ --charm-base $CHRMDIR --tcl-prefix $TCLDIR --without-fftw #--fftw-prefix ${FFTWDIR}
         cd Linux-x86_64-g++
         make
         ls
