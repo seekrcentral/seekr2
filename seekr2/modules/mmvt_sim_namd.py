@@ -118,7 +118,7 @@ class Seekr_namd_settings():
         self.max_steps = -1
         self.eval_stride = -1
         self.save_state = False
-        self.save_one_state_for_all_boundaries = True
+        self.save_one_state_for_all_boundaries = False
         self.check_state_interval = 1000
         return
         

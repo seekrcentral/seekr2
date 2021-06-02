@@ -183,7 +183,7 @@ class Runner_namd():
             self.output_directory = os.path.join(
                 self.model.anchor_rootdir, self.anchor.directory)
             self.header = elber_sim_namd.SEEKR_ELBER_PROD_HEADER
-        self.save_one_state_for_all_boundaries = True
+        self.save_one_state_for_all_boundaries = False
         self.check_state_interval = 1000
     
     def prepare(self, restart=False, save_state=False, 
