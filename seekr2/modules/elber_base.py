@@ -12,7 +12,8 @@ import numpy as np
 from parmed import unit
 import mdtraj
 
-import seekr2.libraries.serializer.serializer as serializer
+#import seekr2.libraries.serializer.serializer as serializer
+from abserdes import Serializer
 
 OPENMM_ELBER_BASENAME = "forward"
 OPENMM_ELBER_EXTENSION = "out"
@@ -29,7 +30,7 @@ ELBER_REV_BASENAME = "reverse"
 ELBER_REV_EXTENSION = "out"
 ELBER_REV_GLOB = "%s*.%s" % (ELBER_REV_BASENAME, ELBER_REV_EXTENSION)
 
-class Elber_settings(serializer.Serializer):
+class Elber_settings(Serializer):
     """
     Settings that are specific to an Elber milestoning calculation.
     
@@ -71,7 +72,7 @@ class Elber_settings(serializer.Serializer):
         self.fwd_energy_reporter_interval = None
         self.fwd_trajectory_reporter_interval = None
 
-class Elber_collective_variable(serializer.Serializer):
+class Elber_collective_variable(Serializer):
     """
     Collective variables represent the function of system positions
     and velocities so that Elber milestones can be defined
@@ -345,7 +346,7 @@ colvar {{
         """
         return[self.group1, self.group2]
 
-class Elber_anchor(serializer.Serializer):
+class Elber_anchor(Serializer):
     """
     An anchor object for representing a Voronoi cell in an Elber 
     milestoning calculation.

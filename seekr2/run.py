@@ -73,6 +73,7 @@ def choose_next_simulation_browndye2(
                 bd_transition_counts["b_surface"].values())
             steps_to_go_minimum = min_b_surface_simulation_length \
                 - total_b_surface_sims
+            #print("steps_to_go_minimum:", steps_to_go_minimum)
             if steps_to_go_minimum > 0:
                 bd_milestone_info_to_run_unsorted.append(
                     [steps_to_go_minimum, total_b_surface_encounters, \
@@ -155,12 +156,12 @@ def choose_next_simulation_openmm(
     number of steps, minimum convergence, maximum number of steps,
     etc.), construct a list of anchors to run, in order.
     """
+    if (instruction in ["any_bd", "b_surface",]) or instruction.startswith("b"):
+        return []
+    
     import seekr2.modules.runner_openmm as runner_openmm
     import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
     import seekr2.modules.elber_sim_openmm as elber_sim_openmm
-        
-    if instruction == "any_bd":
-        return []
     anchor_info_to_run_unsorted = []
     for alpha, anchor in enumerate(model.anchors):
         if anchor.bulkstate:
@@ -287,8 +288,9 @@ def choose_next_simulation_namd(
     import seekr2.modules.runner_namd as runner_namd
     import seekr2.modules.mmvt_sim_namd as mmvt_sim_namd
         
-    if instruction == "any_bd":
+    if (instruction in ["any_bd", "b_surface",]) or instruction.startswith("b"):
         return []
+    
     anchor_info_to_run_unsorted = []
     for alpha, anchor in enumerate(model.anchors):
         if anchor.bulkstate:

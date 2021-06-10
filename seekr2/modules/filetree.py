@@ -206,7 +206,8 @@ def copy_building_files(model, input_model, rootdir):
                 pdb_filename = os.path.basename(amber.pdb_coordinates_filename)
                 new_pdb_filename = os.path.join(anchor_building_dir, 
                                                 pdb_filename)
-                copyfile(amber.pdb_coordinates_filename, new_pdb_filename)
+                copyfile(os.path.expanduser(amber.pdb_coordinates_filename), 
+                         new_pdb_filename)
                 anchor.amber_params.pdb_coordinates_filename = pdb_filename
                 anchor.amber_params.box_vectors = amber.box_vectors
                 if anchor.amber_params.box_vectors is None:

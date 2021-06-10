@@ -165,10 +165,10 @@ def pretty_string_value_error(value, error, error_digits=2, use_unicode=True):
             error_mantissa*10**exp_diff)
         
         if use_unicode:
-            new_string = "%s \u00B1 %s * 10^%s" % (
+            new_string = "(%s \u00B1 %s) * 10^%s" % (
                 new_value_mantissa, new_error_mantissa, value_exponent_str)
         else:
-            new_string = "%s +/- %s * 10^%s" % (
+            new_string = "(%s +/- %s) * 10^%s" % (
                 new_value_mantissa, new_error_mantissa, value_exponent_str)
     return new_string
 

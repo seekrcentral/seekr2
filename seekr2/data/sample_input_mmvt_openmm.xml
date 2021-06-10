@@ -5,7 +5,7 @@
         <md_output_interval>10000</md_output_interval>
         <md_steps_per_anchor>100000</md_steps_per_anchor>
     </calculation_settings>
-    <temperature>277.8</temperature>
+    <temperature>298.15</temperature>
     <pressure>1.0</pressure>
     <ensemble>nvt</ensemble>
     <root_directory>~/test_mmvt_openmm/</root_directory>
@@ -194,7 +194,6 @@
                     <upper_milestone_radius/>
                     <starting_amber_params class="Amber_params">
                         <prmtop_filename></prmtop_filename>
-                        <inpcrd_filename></inpcrd_filename>
                         <box_vectors/>
                         <pdb_coordinates_filename></pdb_coordinates_filename>
                     </starting_amber_params>
@@ -233,9 +232,9 @@
                 <conc>0.0</conc>
             </ion>
         </ions>
-        <num_bd_milestone_trajectories>1000</num_bd_milestone_trajectories>
+        <num_bd_milestone_trajectories>100</num_bd_milestone_trajectories>
         <num_b_surface_trajectories>10000</num_b_surface_trajectories>
-        <max_b_surface_trajs_to_extract>1000</max_b_surface_trajs_to_extract>
+        <max_b_surface_trajs_to_extract>100</max_b_surface_trajs_to_extract>
         <n_threads>1</n_threads>
     </browndye_settings_input>
 </model_input>

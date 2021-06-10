@@ -103,19 +103,24 @@ def add_simulation(sim_openmm, model, topology, positions, box_vectors):
         sim_openmm.integrator, sim_openmm.platform, 
         sim_openmm.properties)
     
-    sim_openmm.simulation.context.setPositions(positions.positions)
+    if positions is not None:
+        sim_openmm.simulation.context.setPositions(positions.positions)
+        sim_openmm.simulation.context.setVelocitiesToTemperature(
+            model.openmm_settings.initial_temperature * unit.kelvin)
+        
     if box_vectors is not None:
         sim_openmm.simulation.context.setPeriodicBoxVectors(
             *box_vectors.to_quantity())
     if model.openmm_settings.run_minimization:
+        assert positions is not None, "If states are being loaded as starting"\
+            "positions, minimizations cannot be activated."
         print("Warning: running minimizations. It is recommended that "\
               "structures are minimized and verified by the user before "\
               "running SEEKR, since minimizations might cause the system "\
               "to drift out of the MMVT cell.")
         sim_openmm.simulation.minimizeEnergy()
     
-    sim_openmm.simulation.context.setVelocitiesToTemperature(
-        model.openmm_settings.initial_temperature * unit.kelvin)
+    
     assert sim_openmm.timestep is not None
     return
 

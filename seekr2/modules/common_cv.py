@@ -5,9 +5,10 @@ Define collective variable superclasses (also known as milestone
 shapes) that might be used in SEEKR2 calculations.
 """
 
-import seekr2.libraries.serializer.serializer as serializer
+#import seekr2.libraries.serializer.serializer as serializer
+from abserdes import Serializer
 
-class Spherical_cv_anchor(serializer.Serializer):
+class Spherical_cv_anchor(Serializer):
     """
     This object represents an anchor within the concentric spherical
     CV. Used for input purposes only.
@@ -51,7 +52,7 @@ class Spherical_cv_anchor(serializer.Serializer):
         self.bound_state = False
         self.bulk_anchor = False
         
-class Spherical_cv_input(serializer.Serializer):
+class Spherical_cv_input(Serializer):
     """
     Inputs by the user resulting in concentric spherical anchors
     with milestones and the collective variable (CV).

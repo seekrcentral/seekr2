@@ -165,6 +165,7 @@ def make_browndye_input_xml(model, rootdir, receptor_xml_filename,
         root.write(input_xml_filename)
         debye_length = sim_browndye2.make_and_run_apbs(
             root, input_xml_filename, 
+            browndye2_bin=model.browndye_settings.browndye_bin_dir,
             new_input_xml_base=sim_browndye2.BROWNDYE_INPUT_FILENAME)
     else:
         root.write(input_xml_filename)
@@ -239,6 +240,7 @@ def run_bd_top(browndye_bin_dir, bd_directory, restart=False,
                   "--force_overwrite (-f) option, and all outputs will be "\
                   "deleted and replaced by a new run.")
             raise Exception("Cannot overwrite existing Browndye outputs.")
+        
     bd_command = os.path.join(browndye_bin_dir, "bd_top")
     command = bd_command + " " + sim_browndye2.BROWNDYE_INPUT_FILENAME
     assert os.path.exists(sim_browndye2.BROWNDYE_INPUT_FILENAME), \
@@ -786,6 +788,9 @@ if __name__ == "__main__":
             model.anchor_rootdir, bd_milestone.directory)
     
     if not b_surface:
+        assert max_b_surface_trajs_to_extract is not None, "The argument "\
+            "'--max_b_surface_trajs_to_extract' (-m) must be set for the "\
+            "specified calculation."
         lig_pqr_filenames, rec_pqr_filenames = extract_bd_surface(
             model, bd_milestone, max_b_surface_trajs_to_extract, 
             force_overwrite)
@@ -800,6 +805,8 @@ if __name__ == "__main__":
         run_bd_top(model.browndye_settings.browndye_bin_dir, 
                    bd_directory, restart, force_overwrite)
         n_trajectories_per_output = DEFAULT_N_TRAJ_PER_OUT
+        assert n_trajectories is not None, "The argument '--n_trajectories' "\
+            "(-n) must be set for the specified calculation."
         if n_trajectories_per_output > n_trajectories:
             n_trajectories_per_output = n_trajectories
         modify_variables(bd_directory, model.k_on_info.bd_output_glob, 

@@ -63,6 +63,11 @@ if __name__ == "__main__":
         "model will not be saved. This argument bypasses those "\
         "checks and allows the model to be generated anyways.", 
         action="store_true")
+    #argparser.add_argument(
+    #    "-b", "--bd_files_only", dest="bd_files_only", default=False,
+    #    help="Write the model.xml file as normal, but only write BD-related "\
+    #    "files. No MD files will be written/updated, and no modules requiring"\
+    #    "OpenMM will be loaded.", action="store_true")
         
     args = argparser.parse_args() # parse the args into a dictionary
     args = vars(args)

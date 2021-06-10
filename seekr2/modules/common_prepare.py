@@ -20,9 +20,8 @@ import seekr2.modules.mmvt_cv as mmvt_cv
 import seekr2.modules.elber_cv as elber_cv
 import seekr2.modules.common_sim_browndye2 as sim_browndye2
 import seekr2.modules.runner_browndye2 as runner_browndye2
-import seekr2.modules.runner_openmm as runner_openmm
-import seekr2.modules.runner_namd as runner_namd
-import seekr2.libraries.serializer.serializer as serializer
+#import seekr2.libraries.serializer.serializer as serializer
+from abserdes import Serializer
 
 def anchor_has_files(model, anchor):
     """
@@ -45,12 +44,14 @@ def cleanse_anchor_outputs(model, anchor):
     """
     
     if model.openmm_settings is not None:
+        import seekr2.modules.runner_openmm as runner_openmm
         runner_openmm.cleanse_anchor_outputs(model, anchor)
     elif model.namd_settings is not None:
+        import seekr2.modules.runner_namd as runner_namd
         runner_namd.cleanse_anchor_outputs(model, anchor)
     return
 
-class Browndye_settings_input(serializer.Serializer):
+class Browndye_settings_input(Serializer):
     """
     Read and parse the outputs from the BrownDye2 program, which runs
     the BD stage of the SEEKR2 calculation
@@ -120,7 +121,7 @@ class Browndye_settings_input(serializer.Serializer):
         self.ligand_indices = []
         self.n_threads = 1
 
-class MMVT_input_settings(serializer.Serializer):
+class MMVT_input_settings(Serializer):
     """
     Settings needed for running an MMVT simulation.
     
@@ -140,7 +141,7 @@ class MMVT_input_settings(serializer.Serializer):
         self.md_output_interval = 500000
         self.md_steps_per_anchor = 500000000
         
-class Elber_input_settings(serializer.Serializer):
+class Elber_input_settings(Serializer):
     """
     Settings needed for running an Elber milestoning simulation.
     
@@ -187,7 +188,7 @@ class Elber_input_settings(serializer.Serializer):
         self.rev_output_interval = 500
         self.fwd_output_interval = 500
 
-class Model_input(serializer.Serializer):
+class Model_input(Serializer):
     """
     The serializable object representing parameters that would be
     input by the user.
@@ -629,7 +630,9 @@ def generate_bd_files(model, rootdir):
             
         model.browndye_settings.ghost_indices_rec = ghost_indices_rec
         model.browndye_settings.ghost_indices_lig = ghost_indices_lig
-        receptor_xml_filename = sim_browndye2.make_pqrxml(receptor_pqr_filename)
+        receptor_xml_filename = sim_browndye2.make_pqrxml(
+            receptor_pqr_filename, 
+            browndye2_bin=model.browndye_settings.browndye_bin_dir)
         ligand_xml_filename = sim_browndye2.make_pqrxml(ligand_pqr_filename)
         debye_length, reaction_filename = \
             runner_browndye2.make_browndye_input_xml(

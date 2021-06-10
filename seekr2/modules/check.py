@@ -45,6 +45,7 @@ import collections
 import glob
 import warnings
 warnings.filterwarnings("ignore")
+import bubblebuster
 
 import numpy as np
 import parmed
@@ -279,7 +280,69 @@ def is_ion(atom):
         return False
 
 def check_pre_sim_bubbles(model):
-    print("Warning: Bubble check not yet implemented.")
+    """
+    Checks starting pdb structures for water box bubbles.
+    
+    Parameters
+    ----------
+    model : Model
+        The SEEKR2 model object containing all calculation information.
+    
+    Returns
+    -------
+    bool
+        False if a bubble is detected and True otherwise.
+    """
+    for anchor in model.anchors:
+        building_directory = os.path.join(
+            model.anchor_rootdir, 
+            anchor.directory, 
+            anchor.building_directory
+        )
+        if anchor.amber_params is not None:
+            if (anchor.amber_params.pdb_coordinates_filename is not None \
+                and anchor.amber_params.pdb_coordinates_filename != ""
+            ):
+                pdb_filename = os.path.join(
+                    building_directory,
+                    anchor.amber_params.pdb_coordinates_filename
+                )
+                bvecs = anchor.amber_params.box_vectors
+                if bvecs is not None:
+                    bvecs = bvecs.to_quantity().value_in_unit(
+                        parmed.unit.nanometers)
+                    
+                    pdb_periodic_box_properties = \
+                        bubblebuster.periodic_box_properties(
+                            pdb_filename,
+                            box_vectors=np.array(bvecs, dtype=np.float32)
+                        )
+                    if pdb_periodic_box_properties.has_bubble:
+                        warnstr = "CHECK FAILURE: Water box bubble detected "\
+                        "in starting structure: {}".format(pdb_filename) 
+                        print(warnstr)
+                    else:
+                        pdb_periodic_box_properties = \
+                            bubblebuster.periodic_box_properties(
+                                pdb_filename,
+                                box_vectors=np.array(bvecs, dtype=np.float32)
+                            )
+                        if pdb_periodic_box_properties.has_bubble:
+                            warnstr = "CHECK FAILURE: Water box bubble detected "\
+                            "in starting structure: {}.".format(pdb_filename) 
+                            print(warnstr)
+                            return False
+
+                else:
+                    pdb_periodic_box_properties = \
+                        bubblebuster.periodic_box_properties(
+                            pdb_filename,
+                        )
+                    if pdb_periodic_box_properties.has_bubble:
+                        warnstr = "CHECK FAILURE: Water box bubble detected "\
+                        "in one or more starting structures." 
+                        print(warnstr)
+                        return False
     return True
 
 def check_pre_sim_MD_and_BD_salt_concentration(model):

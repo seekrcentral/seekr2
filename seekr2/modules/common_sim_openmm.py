@@ -78,10 +78,22 @@ def create_openmm_system(sim_openmm, model, anchor):
             building_directory, anchor.amber_params.prmtop_filename)
         prmtop = openmm_app.AmberPrmtopFile(prmtop_filename)
         assert anchor.amber_params.pdb_coordinates_filename is not None
+        """ # TODO: remove
         pdb_coordinates_filename = os.path.join(
             building_directory, 
             anchor.amber_params.pdb_coordinates_filename)
         positions = openmm_app.PDBFile(pdb_coordinates_filename)
+        """
+        if anchor.amber_params.pdb_coordinates_filename is None \
+                or anchor.amber_params.pdb_coordinates_filename == "":
+            positions = None
+            sim_openmm.try_to_load_state = True
+        else:
+            pdb_coordinates_filename = os.path.join(
+                building_directory, 
+                anchor.amber_params.pdb_coordinates_filename)
+            positions = openmm_app.PDBFile(pdb_coordinates_filename)
+            
         #assert anchor.amber_params.box_vectors is not None
         box_vectors = anchor.amber_params.box_vectors
         topology = prmtop

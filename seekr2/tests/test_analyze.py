@@ -106,15 +106,15 @@ def test_minor1d():
 def test_pretty_string_value_error():
     mystr = common_analyze.pretty_string_value_error(
         5.6e-2, 2.0e-3, error_digits=1, use_unicode=False)
-    expectedstr = "5.6 +/- 0.2 * 10^-02"
+    expectedstr = "(5.6 +/- 0.2) * 10^-02"
     assert(mystr == expectedstr)
     mystr = common_analyze.pretty_string_value_error(
         5.6e-2, 2.0e-1, error_digits=1, use_unicode=False)
-    expectedstr = "5.6 +/- 20.0 * 10^-02"
+    expectedstr = "(5.6 +/- 20.0) * 10^-02"
     assert(mystr == expectedstr)
     mystr = common_analyze.pretty_string_value_error(
         1.23456789e8, 4.5678e5, error_digits=2, use_unicode=False)
-    expectedstr = "1.2346 +/- 0.0046 * 10^+08"
+    expectedstr = "(1.2346 +/- 0.0046) * 10^+08"
     assert(mystr == expectedstr)
 
 def make_fake_output_file_osc(anchor, tmp_path, timestep=1.0):

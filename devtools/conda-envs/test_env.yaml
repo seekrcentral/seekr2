@@ -10,6 +10,7 @@ dependencies:
   - scipy
   - matplotlib
   - openmm
+  - swig
 
     # Testing
   - pytest

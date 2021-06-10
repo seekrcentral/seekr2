@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 from parmed import unit
 
 import seekr2.analyze as analyze
+import seekr2.modules.common_base as base
 import seekr2.modules.common_analyze as common_analyze
 
 # The default number of points to include in convergence plots
@@ -30,6 +31,62 @@ MIN_PLOT_NORM = 1e-8
 
 # The interval between which to update the user on convergence script progress
 PROGRESS_UPDATE_INTERVAL = DEFAULT_NUM_POINTS // 10
+
+def analyze_bd_only(model, data_sample):
+    """
+    
+    """
+    bulk_milestones = []
+    MFPTs = {}
+    for alpha, anchor in enumerate(model.anchors):
+        if anchor.bulkstate:
+            for milestone_id in anchor.get_ids():
+                bulk_milestones.append(milestone_id)
+                
+    output_file_glob = os.path.join(
+        model.anchor_rootdir, model.k_on_info.b_surface_directory, 
+        model.k_on_info.bd_output_glob)
+    output_file_list = glob.glob(output_file_glob)
+    output_file_list = base.order_files_numerically(output_file_list)
+    if len(output_file_list) > 0:
+        if model.browndye_settings is not None:
+            k_ons_src, k_on_errors_src, reaction_probabilities, \
+                reaction_probability_errors, transition_counts = \
+                common_analyze.browndye_run_compute_rate_constant(os.path.join(
+                    model.browndye_settings.browndye_bin_dir,
+                    "compute_rate_constant"), output_file_list, 
+                    sample_error_from_normal=False)
+            data_sample.bd_transition_counts["b_surface"] = transition_counts
+        else:
+            raise Exception("No valid BD program settings provided.")
+        
+        if len(bulk_milestones) > 0:
+            bulk_milestone = bulk_milestones[0]
+            for bd_milestone in model.k_on_info.bd_milestones:
+                bd_results_file = os.path.join(
+                    model.anchor_rootdir, bd_milestone.directory, 
+                    "results.xml")
+                
+                if not os.path.exists(bd_results_file):
+                    bd_directory_list_glob = os.path.join(
+                        model.anchor_rootdir, 
+                        bd_milestone.directory, 
+                        "first_hitting_point_distribution", "lig*/")
+                    bd_directory_list = glob.glob(
+                        bd_directory_list_glob)
+                    if len(bd_directory_list) == 0:
+                        continue
+                    common_analyze.combine_fhpd_results(
+                        bd_milestone, bd_directory_list, bd_results_file)
+                
+                results_filename_list = [bd_results_file]
+                transition_probabilities, transition_counts = \
+                    common_analyze.browndye_parse_bd_milestone_results(
+                        results_filename_list)
+                data_sample.bd_transition_counts[bd_milestone.index] \
+                    = transition_counts
+                    
+    return
 
 def analyze_kinetics(model, analysis, max_step_list, k_on_state=None, 
                      pre_equilibrium_approx=False):
@@ -77,13 +134,15 @@ def analyze_kinetics(model, analysis, max_step_list, k_on_state=None,
     R_i : dict
         An n dict representing the incubation times at each milestone.
     """
-    
     try:
         analysis.extract_data(max_step_list, silence_errors=True)
         analysis.fill_out_data_samples()
         sufficient_statistics = analysis.check_extraction()
         if sufficient_statistics:
             analysis.process_data_samples(pre_equilibrium_approx)
+        else:
+            analyze_bd_only(model, analysis)
+            
         if (k_on_state is not None) and (k_on_state in analysis.k_ons):
             k_on = analysis.k_ons[k_on_state]
         else:
@@ -92,6 +151,9 @@ def analyze_kinetics(model, analysis, max_step_list, k_on_state=None,
         main_data_sample = analysis.main_data_sample
         return k_on, k_off, main_data_sample.N_ij, main_data_sample.R_i
     except common_analyze.MissingStatisticsError:
+        data_sample = common_analyze.Data_sample(model)
+        analyze_bd_only(model, data_sample)
+        analysis.main_data_sample = data_sample
         return 0.0, 0.0, {}, {}
 
 def get_mmvt_max_steps(model, dt):

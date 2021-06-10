@@ -9,7 +9,8 @@ import numpy as np
 from parmed import unit
 import mdtraj
 
-import seekr2.libraries.serializer.serializer as serializer
+#import seekr2.libraries.serializer.serializer as serializer
+from abserdes import Serializer
 
 OPENMMVT_BASENAME = "mmvt"
 OPENMMVT_EXTENSION = "out"
@@ -18,7 +19,7 @@ NAMDMMVT_BASENAME = "namdmmvt"
 NAMDMMVT_EXTENSION = "out"
 NAMDMMVT_GLOB = "%s*.%s*" % (NAMDMMVT_BASENAME, NAMDMMVT_EXTENSION)
 
-class MMVT_settings(serializer.Serializer):
+class MMVT_settings(Serializer):
     """
     Settings that are specific to an MMVT calculation.
     
@@ -47,7 +48,7 @@ class MMVT_settings(serializer.Serializer):
         self.trajectory_reporter_interval = None
         self.restart_checkpoint_interval = None
 
-class MMVT_collective_variable(serializer.Serializer):
+class MMVT_collective_variable(Serializer):
     """
     Collective variables represent the function of system positions
     and velocities along with the MMVT cells and boundaries can be
@@ -416,7 +417,7 @@ class MMVT_angular_CV(CollectiveVariable):
         return values_list
 """
 
-class MMVT_anchor(serializer.Serializer):
+class MMVT_anchor(Serializer):
     """
     An anchor object for representing a Voronoi cell in an MMVT 
     calculation.
