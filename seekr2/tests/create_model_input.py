@@ -17,7 +17,7 @@ def create_host_guest_mmvt_model_input(root_dir):
     model_input.calculation_settings = common_prepare.MMVT_input_settings()
     model_input.calculation_settings.md_output_interval = 10000
     model_input.calculation_settings.md_steps_per_anchor = 1000000
-    model_input.temperature = 277.8
+    model_input.temperature = 298.15
     model_input.pressure = 1.0
     model_input.ensemble = "nvt"
     model_input.root_directory = root_dir

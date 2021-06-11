@@ -56,6 +56,12 @@ It is recommended that you download and use the Python3.8 version.
 
 With Conda working, install OpenMM and Swig:
 
+WARNING: If you already have a version of CUDA installed, these commands
+will cause the most recent version of CUDA Tools to be installed in the Conda
+environment, which could cause version conflicts and errors. If you already
+have CUDA installed, consider installing OpenMM from source, instructions
+for which can be found in the DOCUMENTATION FILE TO ADD HERE.
+
 ```
 conda install -c conda-forge openmm
 conda install swig
