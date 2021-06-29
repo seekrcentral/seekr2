@@ -15,4 +15,4 @@ python:
       path: .
     
 conda:
-    - requirements: docs/requirements.yaml
+    - environment: docs/requirements.yaml
