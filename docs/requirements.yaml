@@ -1,0 +1,12 @@
+name: docs
+channels:
+#  - conda-forge
+#  - omnia
+  - defaults
+dependencies:
+  - python=3.8
+  - pip
+  - cython
+
+  - pip:
+    - sphinx-autoapi

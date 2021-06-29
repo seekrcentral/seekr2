@@ -159,9 +159,9 @@ jobs:
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         file: ./coverage.xml
-        directory: ./coverage/reports/
+        #directory: ./coverage/reports/
         flags: unittests
         name: codecov-${{ matrix.os }}-py${{ matrix.python-version }}
         fail_ci_if_error: true
-        path_to_write_report: ./coverage/codecov_report.txt
+        #path_to_write_report: ./coverage/codecov_report.txt
         verbose: true

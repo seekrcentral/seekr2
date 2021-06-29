@@ -13,7 +13,7 @@ python:
   install:
     - method: pip
       path: .
-    - requirements: docs/requirements.txt
+#    - requirements: docs/requirements.txt
 
-#conda:
-#  environment: docs/requirements.yaml
+conda:
+  environment: docs/requirements.yaml
