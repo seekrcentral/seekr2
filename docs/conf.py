@@ -17,14 +17,14 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
 
-import seekr2
+import openmmvt
 
 
 # -- Project information -----------------------------------------------------
 
-project = 'seekr2'
-copyright = ("2021, Lane Votapka. Project structure based on the "
-             "Computational Molecular Science Python Cookiecutter version 1.5")
+project = 'openmmvt'
+copyright = ("2020, Lane Votapka. Project structure based on the "
+             "Computational Molecular Science Python Cookiecutter version 1.3")
 author = 'Lane Votapka'
 
 # The short X.Y version
@@ -117,7 +117,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'seekr2doc'
+htmlhelp_basename = 'openmmvtdoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -144,8 +144,8 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'seekr2.tex', 'seekr2 Documentation',
-     'seekr2', 'manual'),
+    (master_doc, 'openmmvt.tex', 'openmmvt Documentation',
+     'openmmvt', 'manual'),
 ]
 
 
@@ -154,7 +154,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'seekr2', 'seekr2 Documentation',
+    (master_doc, 'openmmvt', 'openmmvt Documentation',
      [author], 1)
 ]
 
@@ -165,8 +165,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'seekr2', 'seekr2 Documentation',
-     author, 'seekr2', 'Simulation-Enabled Estimation of Kinetic Rates - Version 2',
+    (master_doc, 'openmmvt', 'openmmvt Documentation',
+     author, 'openmmvt', 'Markovian Milestoning with Voronoi Tesselations (MMVT) as an OpenMM plugin.',
      'Miscellaneous'),
 ]
 

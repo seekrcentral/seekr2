@@ -1,8 +1,11 @@
 seekr2
 ==============================
 [//]: # (Badges)
-[![GitHub Actions Build Status](https://github.com/REPLACE_WITH_OWNER_ACCOUNT/seekr2/workflows/CI/badge.svg)](https://github.com/REPLACE_WITH_OWNER_ACCOUNT/seekr2/actions?query=workflow%3ACI)
+[![GitHub Actions Build Status](https://github.com/lvotapka/seekr2/workflows/CI/badge.svg)](https://github.com/lvotapka/seekr2/actions?query=workflow%3ACI)
 [![codecov](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/seekr2/branch/master/graph/badge.svg)](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/seekr2/branch/master)
+
+| **Foundation** | [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![python](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/)|
+| :------ | :------ |
 
 ```
 ##########################################      ########
@@ -22,20 +25,20 @@ Simulation-Enabled Estimation of Kinetic Rates - Version 2
 ```
 
 ## Overview
-Fast and versatile multiscale milestoning to compute molecular thermodynamics
-and kinetics.
+**Fast** and **versatile** multiscale milestoning to compute molecular 
+thermodynamics and kinetics.
 
 Prepare and run milestoning calculations in the OpenMM, NAMD, and/or Browndye2
 simulation engines for the purposes of obtaining the kinetics and 
 thermodynamics of molecular processes such as: ligand-receptor 
 binding and unbinding, membrane permeability, internal molecular dynamics, 
-and many other situations.
+and many other potential situations.
 
-This is only a quickstart guide to get SEEKR2 up and running as soon as
-possible. To see more detailed instructions and tutorials, please see the
-docs/ subfolder and OTHER RESOURCES HERE.
+This README is only a quickstart guide to get SEEKR2 up and running as soon as
+possible. To see more detailed **instructions** and **tutorials**, please see 
+the docs/ subfolder and OTHER RESOURCES HERE.
 
-## Install
+## Quick Install
 
 ### Dependencies
 Many of the dependencies for SEEKR2 will be installed automatically, but
@@ -85,12 +88,15 @@ make PythonInstall
 make test # Optional
 ```
 
+Additional installation instructions and information for OpenMM can be found at
+http://docs.openmm.org/latest/userguide/application.html#installing-openmm
+
 Alternatively, NAMD2 may be used for MD if desired. See the NAMD2 section
 below for installation of NAMD2.
 
 #### Browndye2 (optional)
 
-SEEKR2 needs Browndye2 if BD simulations will be run (necessary for k-on
+SEEKR2 needs Browndye2 if BD simulations will be run (necessary for $k_{on}$
 calculations). Please see (https://browndye.ucsd.edu/) for Browndye installation
 instructions.
 

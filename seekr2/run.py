@@ -841,7 +841,8 @@ if __name__ == "__main__":
     num_rev_launches = args["num_rev_launches"]
     umbrella_restart_mode = args["umbrella_restart_mode"]
     
-    assert os.path.exists(input_file), "A nonexistent input file was provided."
+    assert os.path.exists(input_file), \
+        "A nonexistent input file was provided: {}.".format(input_file)
     model = base.Model()
     model.deserialize(input_file)
     

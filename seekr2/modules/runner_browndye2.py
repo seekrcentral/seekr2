@@ -440,12 +440,16 @@ def extract_bd_surface(model, bd_milestone, max_b_surface_trajs_to_extract,
             traj_filename = os.path.join(b_surface_dir, "traj%d_%d.xml" % (i,j))
             trajindex_filename = os.path.join(
                 b_surface_dir, "traj%d_%d.index.xml" % (i,j))
-            assert os.path.exists(traj_filename), "trajectory output file "\
-                "%s not found for b-surface. Are you sure you ran b-surface "\
-                "simulations?" % traj_filename
-            assert os.path.exists(trajindex_filename), "trajectory output "\
-                "file %s not found for b-surface. Are you sure you ran "\
-                "b-surface simulations?" % traj_filename
+            #assert os.path.exists(traj_filename), "trajectory output file "\
+            #    "%s not found for b-surface. Are you sure you ran b-surface "\
+            #    "simulations?" % traj_filename
+            #assert os.path.exists(trajindex_filename), "trajectory output "\
+            #    "file %s not found for b-surface. Are you sure you ran "\
+            #    "b-surface simulations?" % traj_filename
+            if not os.path.exists(traj_filename) \
+                    or not os.path.exists(trajindex_filename):
+                continue
+            
             command = "echo 'Browndye Trajectory number'; "\
                 +process_trajectories+" -traj %s -index %s -srxn %s > %s" \
                 % (traj_filename, trajindex_filename, sitename, 
