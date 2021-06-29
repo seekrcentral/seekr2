@@ -4,6 +4,7 @@ dependencies:
     # Base depends
   - python
   - pip
+  - cython
 
 
 
