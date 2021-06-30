@@ -36,7 +36,7 @@ and many other potential situations.
 
 This README is only a quickstart guide to get SEEKR2 up and running as soon as
 possible. To see more detailed **instructions** and **tutorials**, please see 
-the docs/ subfolder and OTHER RESOURCES HERE.
+https://seekr2.readthedocs.io/en/latest or the docs/ subfolder.
 
 ## Quick Install
 
