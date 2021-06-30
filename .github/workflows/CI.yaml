@@ -151,17 +151,17 @@ jobs:
         export PATH="/home/runner/work/seekr2/seekr2/browndye2/bin:$PATH"
         export PATH="/home/runner/work/seekr2/seekr2/namd/Linux-x86_64-g++/:$PATH"
         python -m simtk.testInstallation
-        # pytest -v --cov=seekr2 --cov-report=xml --color=yes seekr2/tests/
-        python setup.py test
+        pytest -v --cov=seekr2 --cov-report=xml --color=yes seekr2/tests/
+        # python setup.py test
 
     - name: CodeCov
       uses: codecov/codecov-action@v1
       with:
-        #token: ${{ secrets.CODECOV_TOKEN }}
+        token: ${{ secrets.CODECOV_TOKEN }}
         file: ./coverage.xml
-        #directory: ./coverage/reports/
+        directory: ./coverage/reports/
         flags: unittests
         name: codecov-${{ matrix.os }}-py${{ matrix.python-version }}
-        #fail_ci_if_error: true
-        #path_to_write_report: ./coverage/codecov_report.txt
-        #verbose: true
+        fail_ci_if_error: true
+        path_to_write_report: ./coverage/codecov_report.txt
+        verbose: true
