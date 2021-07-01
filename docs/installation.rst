@@ -12,9 +12,10 @@ Installation begins with cloning and installing the SEEKR2 python API::
 
 Next, you must choose which MD engine you will use: either OpenMM or NAMD.
 Each engine has their own advantages - OpenMM is faster on GPUs and is likely
-to give slightly more accurate results. NAMD is optimized for distributed
-computing systems, such as supercomputers or cluster which use large numbers
-of CPU cores. If you are uncertain which to choose, OpenMM is a good default
+to give slightly more accurate results in SEEKR2. NAMD is optimized for 
+distributed computing systems, such as supercomputers or cluster which use 
+large numbers of CPU cores. If you are uncertain which to choose, OpenMM is 
+a good default
 choice.
 
 Install Conda
@@ -43,7 +44,8 @@ environment by running ``conda activate``.
 Install OpenMM and Plugin with Conda
 ------------------------------------
 If you desire to use OpenMM, you must install OpenMM either from conda or from 
-source. Please see the official `OpenMM guide to installing from source <http://docs.openmm.org/latest/userguide/library.html#compiling-openmm-from-source-code>`_ 
+source. Please see the official 
+`OpenMM guide to installing from source <http://docs.openmm.org/latest/userguide/library.html#compiling-openmm-from-source-code>`_ 
 for complete OpenMM installation instructions. The fastest way is to install
 OpenMM with Conda, but we've also had great luck with installing OpenMM from
 source. See the "OpenMM Installation from Source" sections below for specific
@@ -56,13 +58,15 @@ WARNING: If you already have a version of CUDA installed, these commands will
 cause the most recent version of CUDA Tools to be installed in the Conda 
 environment, which could cause version conflicts and errors. If you already 
 have CUDA installed, consider installing OpenMM from source, instructions for 
-which can be found in the "OpenMM Installation from Source" sections below.::
+which can be found in the "OpenMM Installation from Source" sections below.
+
+If you're OK with installing OpenMM with Conda, then type::
 
   install -c conda-forge openmm
   conda install swig
 
-Make sure to take note of the CMAKE_INSTALL_PREFIX variable, which will be 
-referred to as /path/to/openmm.
+Make sure to take note of the CMAKE_INSTALL_PREFIX variable, which, in this 
+documentation, will be referred to as /path/to/openmm.
 
 If you desire to use NAMD, then see the "Install NAMD" section below.
 
@@ -83,37 +87,38 @@ The following commands will install the SEEKR2 OpenMM Plugin::
   make test # Optional
 
 Once OpenMM and the OpenMM SEEKR2 Plugin is installed, it is recommended that 
-you run tests of SEEKR2. 
-
-Navigate to where the "seekr2" git repository was cloned. From within the
+you run tests of SEEKR2. Navigate to where the "seekr2" git repository was cloned. From within the
 "seekr2/" directory, run:
 
 ``python setup.py test``
 
-Install NAMD
-------------
-If you desire to NAMD for your MD calculations, you should follow the `NAMD
-installation instructions <https://www.ks.uiuc.edu/Research/namd/2.9/ug/node91.html>`_
+Install NAMD (If not using OpenMM)
+----------------------------------
+If you desire not to use OpenMM, but rather to use NAMD for your MD 
+calculations, you should follow the 
+`NAMD installation instructions <https://www.ks.uiuc.edu/Research/namd/2.9/ug/node91.html>`_
 
 NAMD is also often available on shared scientific computing resources such as
 most supercomputers and clusters. Consult the resource manual or system
 administrators to see if NAMD is installed on the available shared resource.
 
-OpenMM and Plugin Installation from Source on Local Machine
------------------------------------------------------------
-Compiling from OpenMM is tricky, but necessary if a version of CUDA already
-exists on your machine.
+OpenMM and Plugin Installation from Source on Local Machine (If not using Conda to install OpenMM)
+--------------------------------------------------------------------------------------------------
+Compiling OpenMM from source is tricky, but necessary if a version of CUDA 
+already exists on your machine, if the Conda installation doesn't work, or if
+you wish to optimize OpenMM's performance.
 
 If you want to use a GPU to accelerate your OpenMM simulations (highly 
 recommended) you must ensure that a recent version of CUDA is installed and
 loaded. It is highly recommended that you contact your system administrator
-about this, although if you have to do it by yourself, you should carefully read
-and follow all instructions from 
+about this, although if you have to install CUDA by yourself, you should 
+carefully read and follow all instructions from 
 `NVIDIA's CUDA toolkit installation instructions 
 <https://developer.nvidia.com/cuda-toolkit>`_.
 
 In order to use CUDA, you may also need to define the following environmental
 variable by placing it in your .bashrc file: 
+
 ``export OPENMM_CUDA_COMPILER=/path/to/nvcc``
 
 Obviously, you'll need to modify "/path/to/nvcc" with the actual path. The 
@@ -133,7 +138,7 @@ Make sure 'ccmake' is installed
 ``which ccmake``
 
 If nothing happens, you may need to ask your system administrator to install 
-ccmake or install it yourself if you have sudo privileges:
+ccmake or you can install it yourself if you have sudo privileges:
 
 ``sudo apt-get install cmake-curses-gui``
 
@@ -157,7 +162,7 @@ The ccmake gui should come up. Press 'c' and then 't'
 
 You should modify the following variables:
 
-CMAKE_INSTALL_PREFIX: change to a local directory that exists (example: 
+CMAKE_INSTALL_PREFIX: change to a local directory that exists (for example: 
 /home/USERNAME/bin/openmm). If such a directory doesn't exist, then make one.
 You can also leave this variable at the default if you have sudo privileges
 and don't mind installing OpenMM globally.
@@ -187,7 +192,7 @@ If the PythonInstall step fails, then make sure you have installed cython
 ``pip install --upgrade cython``
 
 Hopefully, with the final step, all the tests pass. If a few fail, then 
-determine if those failures will be necessary for our calculations. If 
+determine if those failures will be necessary for your calculations. If 
 several or all fail, then you'll need to be sure that you fix whatever 
 problem caused those failures. If the CUDA tests failed, then you either do
 not have a working CUDA installation, or the proper environmental variables
@@ -213,22 +218,20 @@ Now the ccmake gui should come up. Press 'c'.
 You should modify the following variables:
 
 * CMAKE_INSTALL_PREFIX and OPENMM_DIR: change to the directory that was
-  CMAKE_INSTALL_PREFIX for the OpenMM installation (example: 
+  CMAKE_INSTALL_PREFIX for the OpenMM installation above (example: 
   /home/USERNAME/bin/openmm).
 
 * SEEKR2_BUILD_OPENCL_LIB should be set to OFF.
 
-Close the GUI by pressing 'c' and then 'g'.::
+Close the GUI by pressing 'c' and then 'g'. Then make the plugin::
   
   make
   make install
   make PythonInstall
   make test # Optional
   
-At this point, its a good idea to run the SEEKR2 tests:
-
-Navigate to where the "seekr2" git repository was cloned. From within the
-"seekr2/" directory, run:
+At this point, its a good idea to run the SEEKR2 tests. Navigate to where the 
+"seekr2" git repository was cloned. From within the "seekr2/" directory, run:
 
 ``python setup.py test``
 

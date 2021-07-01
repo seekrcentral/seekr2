@@ -20,13 +20,11 @@ augmented and their disadvantages are reduced. The regimes are then combined
 using the theory of milestoning such that the kinetics and thermodynamics of the 
 process under interest is obtained.
 
-Getting Involved
-================
+Two versions of milestoning theory are available to use in SEEKR2:
 
-Please report **bugs** or **enhancement requests** through the `Issue 
-Tracker`_. 
+1. Markovian milestoning with Voronoi Tesselations (MMVT):  Vanden-Eijnden, E.; Venturoli, M. Markovian Milestoning with Voronoi Tessellations. J. Chem. Phys. 2009, 130 (19), 194101. https://doi.org/10.1063/1.3129843
 
-.. _Issue Tracker: https://github.com/seekrcentral/seekr2/issues
+2. The original formulation of milestoning theory (Elber milestoning): Faradjian, A. K.; Elber, R. Computing Time Scales from Reaction Coordinates by Milestoning. J. Chem. Phys. 2004, 120 (23), 10880–10889. https://doi.org/10.1063/1.1738640
 
 .. toctree::
    :maxdepth: 2
@@ -35,10 +33,35 @@ Tracker`_.
    installation
    running_calculations
    tutorial
+   model_input_files
+   program_options
    api
-   
+
+Cite SEEKR2
+===========
+
+If you wish to cite SEEKR2, please cite the following paper:
+
+* PAPER HERE
+
+You may also optionally cite one or more of the following papers:
+
+* Votapka, L. W.; Jagger, B. R.; Heyneman, A. L.; Amaro, R. E. SEEKR: Simulation Enabled Estimation of Kinetic Rates, A Computational Tool to Estimate Molecular Kinetics and Its Application to Trypsin–Benzamidine Binding. J. Phys. Chem. B 2017, 121 (15), 3597–3606. https://doi.org/10.1021/acs.jpcb.6b09388. 
+
+* Jagger, B. R.; Ojha, A. A.; Amaro, R. E. Predicting Ligand Binding Kinetics Using a Markovian Milestoning with Voronoi Tessellations Multiscale Approach. J. Chem. Theory Comput. 2020. https://doi.org/10.1021/acs.jctc.0c00495. 
+
+* Jagger, B. R.; Lee, C. T.; Amaro, R. E. Quantitative Ranking of Ligand Binding Kinetics with a Multiscale Milestoning Simulation Approach. J. Phys. Chem. Lett. 2018, 9 (17), 4941–4948. https://doi.org/10.1021/acs.jpclett.8b02047. 
+
+* Votapka LW, Amaro RE (2015) Multiscale Estimation of Binding Kinetics Using Brownian Dynamics, Molecular Dynamics and Milestoning. PLOS Computational Biology 11(10): e1004381. https://doi.org/10.1371/journal.pcbi.1004381
 
 
+Getting Involved
+================
+
+Please report **bugs** or **enhancement requests** through the `Issue 
+Tracker`_. 
+
+.. _Issue Tracker: https://github.com/seekrcentral/seekr2/issues
 
 Indices and tables
 ==================

@@ -28,9 +28,9 @@ copyright = ("2021, Lane Votapka. Project structure based on the "
 author = 'Lane Votapka'
 
 # The short X.Y version
-version = ''
+version = '2.1'
 # The full version, including alpha/beta/rc tags
-release = ''
+release = '2.1.2-beta'
 
 
 # -- General configuration ---------------------------------------------------
