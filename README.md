@@ -2,10 +2,11 @@ seekr2
 ==============================
 [//]: # (Badges)
 [![GitHub Actions Build Status](https://github.com/seekrcentral/seekr2/workflows/CI/badge.svg)](https://github.com/seekrcentral/seekr2/actions?query=workflow%3ACI)
-[![codecov](https://codecov.io/gh/seekrcentral/seekr2/branch/master/graph/badge.svg)](https://codecov.io/gh/seekrcentral/seekr2/branch/master)
+[![codecov](https://codecov.io/gh/seekrcentral/seekr2/branch/master/graph/badge.svg)](https://codecov.io/gh/seekrcentral/seekr2/branch/master)|
 
-| **Foundation** | [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![python](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/)|
-| :------ | :------ |
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![python](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/)|
+
 
 ```
 ##########################################      ########
@@ -29,10 +30,10 @@ Simulation-Enabled Estimation of Kinetic Rates - Version 2
 thermodynamics and kinetics.
 
 Prepare and run milestoning calculations in the OpenMM, NAMD, and/or Browndye2
-simulation engines for the purposes of obtaining the kinetics and 
-thermodynamics of molecular processes such as: ligand-receptor 
-binding and unbinding, membrane permeability, internal molecular dynamics, 
-and many other potential situations.
+simulation engines to obtain the kinetics and thermodynamics of molecular 
+processes such as: ligand-receptor binding and unbinding, 
+membrane permeability, internal molecular dynamics, and many other potential 
+situations.
 
 This README is only a quickstart guide to get SEEKR2 up and running as soon as
 possible. To see more detailed **instructions** and **tutorials**, please see 
@@ -41,21 +42,20 @@ https://seekr2.readthedocs.io/en/latest or the docs/ subfolder.
 ## Quick Install
 
 ### Dependencies
-Many of the dependencies for SEEKR2 will be installed automatically, but
-some must be installed separately, and are listed in the installation
-instructions below.
+Many of the dependencies for SEEKR2 will be installed alongside SEEKR2, but
+some must be installed separately, and are installed first, before SEEKR2.
 
 #### OpenMM (recommended)
 
-OpenMM is recommended for the MD stage of SEEKR2. SEEKR2 needs the Seekr2 
-Openmm Plugin in order to use OpenMM for MD simulations.
+OpenMM is recommended for the molecular dynamics (MD) stage of SEEKR2. SEEKR2 
+also needs the SEEKR2 OpenMM Plugin in order to use OpenMM for MD simulations.
 
 The easiest, quickest way to install the SEEKR2 OpenMM Plugin is to use
 Conda. If you don't already have Conda installed, Download Conda from 
 https://conda.io/en/latest/miniconda.html and run the downloaded script and 
 fill out the prompts. 
 
-It is recommended that you download and use the Python3.8 version.
+It is recommended that you download and use Python version 3.8.
 
 With Conda working, install OpenMM and Swig:
 
@@ -63,14 +63,15 @@ WARNING: If you already have a version of CUDA installed, these commands
 will cause the most recent version of CUDA Tools to be installed in the Conda
 environment, which could cause version conflicts and errors. If you already
 have CUDA installed, consider installing OpenMM from source, instructions
-for which can be found in the DOCUMENTATION FILE TO ADD HERE.
+for which can be found at https://seekr2.readthedocs.io/en/latest.
 
 ```
 conda install -c conda-forge openmm
 conda install swig
 ```
 
-In the directory of your choice, execute the following commands:
+Now that OpenMM is installed, we will install the SEEKR2 OpenMM Plugin. In the 
+directory of your choice, execute the following commands:
 
 ```
 git clone https://github.com/seekrcentral/seekr2_openmm_plugin.git
@@ -88,19 +89,20 @@ make PythonInstall
 make test # Optional
 ```
 
-Additional installation instructions and information for OpenMM can be found at
+This is a *very* brief overview of OpenMM installation. Additional 
+installation instructions and information for OpenMM can be found at
 http://docs.openmm.org/latest/userguide/application.html#installing-openmm
 
 Alternatively, NAMD2 may be used for MD if desired. See the NAMD2 section
-below for installation of NAMD2.
+below for installation instructions.
 
-#### Browndye2 (optional)
+#### Browndye2 (optional; required for k-on calculations)
 
-SEEKR2 needs Browndye2 if BD simulations will be run (necessary for $k_{on}$
-calculations). Please see (https://browndye.ucsd.edu/) for Browndye installation
-instructions.
+SEEKR2 needs Browndye2 if Brownian dynamics (BD) simulations will be run 
+(necessary for k-on calculations). Please see (https://browndye.ucsd.edu/) 
+for Browndye2 installation instructions.
 
-#### NAMD2 (optional)
+#### NAMD2 (optional, if not using OpenMM)
 
 If OpenMM is not desirable or available for the MD simulations, SEEKR2 may 
 use NAMD2 in order to run MD simulations. NAMD2 is frequently already 
@@ -108,10 +110,12 @@ available on shared computing resources like clusters and supercomputers.
 Not all SEEKR2 options may be available using NAMD2.
 
 If you wish to install NAMD2 yourself, please see 
-http://www.ks.uiuc.edu/Research/namd/ for installation of NAMD.
+http://www.ks.uiuc.edu/Research/namd/ for instructions to install NAMD.
 
 ### Install SEEKR2
-To install SEEKR2, clone this repository and install the package:
+
+Once the dependencies are installed, we may install SEEKR2. First, clone this 
+repository and install the package:
 
 ```
 git clone https://github.com/seekrcentral/seekr2.git
@@ -119,7 +123,7 @@ cd seekr2
 python setup.py install
 ```
 
-### Testing SEEKR2
+### Testing SEEKR2 (Optional)
 To test SEEKR2, run the following command in the seekr2/ directory:
 
 ```
@@ -145,12 +149,27 @@ python converge.py ~/test_mmvt_openmm/model.xml
 python analyze.py ~/test_mmvt_openmm/model.xml
 ```
 
-### Important Options
+### Important Options and Hints
 
-In general, SEEKR2 programs can be run with the '-h' argument to see all
-available options.
+* In general, SEEKR2 programs can be run with the '-h' argument to see all
+available options. Please see https://seekr2.readthedocs.io/en/latest for a
+detailed description of programs and options.
 
-MORE HERE
+* the **run.py** program accepts an INSTRUCTION as its first argument, and
+the following options are available:
+  * "any" - run any MD or BD calculation that still needs to be run.
+  * "any_md" - run any MD calculation that still needs to be run.
+  * "any_bd" - run any BD calculation that still needs to be run.
+  * INTEGER - run the MD anchor whose index is INTEGER. Examples: "0", "1", etc.
+  * "b_surface" - run BD simulations starting at the b-surface.
+  * "b"+INTEGER - run the BD milestone with index INTEGER. Example: "b0", b1", ...
+
+* When an option must be modified, it is usually necessary to make the change
+in the **input file** and not the **model file**, and then re-run 
+prepare.py to make a new model file. In some exceptions, the model file may be
+directly (and carefully) modified.
+
+
 
 ## Authors and Contributors
 
