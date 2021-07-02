@@ -46,7 +46,7 @@ Using Gedit, Vim, or another editor, open up the file
    Model input file of the host-guest system.
 
 There is a lot of information in here, the details of which are described in
-the **MODEL INPUT FILES** documentation. For this tutorial, we will be using
+the `Model Input Files<model_input_files>` documentation. For this tutorial, we will be using
 this file as-is, for now.
 
 There are other provided files we need for this SEEKR2 calculation, they are 
@@ -96,7 +96,7 @@ as we talk about them).
    The files and directories of a SEEKR2 calculation.
 
 * **model.xml** - This is arguably the most important file. It contains most of
-  the important information used by later SEEKR2 stages.
+  the high-level information used by later SEEKR2 stages.
   
 * **anchor_0/, anchor_1/, etc...** - These directories contain the MD 
   simulation information in two directories:

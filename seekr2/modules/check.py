@@ -636,6 +636,54 @@ def check_atom_selections_MD_BD(model):
                     return False
     return True
 
+def check_pqr_residues(model):
+    """
+    Browndye will create lumped charges (test charges) out of entire
+    residues. This check will suggest that users split their PQR
+    atoms into individual residues to increase accuracy.
+    """
+    if model.browndye_settings is not None:
+        b_surface_dir = os.path.join(
+            model.anchor_rootdir, model.k_on_info.b_surface_directory)
+        rec_pqr_path = os.path.join(
+            b_surface_dir, model.browndye_settings.receptor_pqr_filename)
+        lig_pqr_path = os.path.join(
+            b_surface_dir, model.browndye_settings.ligand_pqr_filename)
+        rec_pqr_structure = parmed.load_file(rec_pqr_path)
+        lig_pqr_structure = parmed.load_file(lig_pqr_path)
+        rec_residues = []
+        for residue in rec_pqr_structure.residues:
+            if residue.name != "GHO":
+                rec_residues.append(residue)
+        lig_residues = []
+        for residue in lig_pqr_structure.residues:
+            if residue.name != "GHO":
+                lig_residues.append(residue)
+        
+    else:
+        # No BD to check
+        return True
+    
+    warnstr1 = """CHECK FAILURE: The PQR file {} is comprised of a single
+    residue, named {}. By default, Browndye2 will lump all the charges in
+    a residue into a single "test charge". This feature can be overidden by
+    numbering every atom in your PQR file(s) as a different residue. If you
+    don't mind this, and wish to proceed, then run this script again, skipping
+    all checks."""
+    assert rec_residues != 0, "Empty PQR file: {}".format(
+        rec_pqr_path)
+    if len(rec_residues) == 1:
+        print(warnstr1.format(rec_pqr_path, rec_residues[0].name))
+        return False
+        
+    assert lig_residues != 0, "Empty PQR file: {}".format(
+        lig_pqr_path)
+    if len(lig_residues) == 1:
+        print(warnstr1.format(lig_pqr_path, lig_residues[0].name))
+        return False
+    
+    return True
+
 def check_pre_simulation_all(model):
     """
     After the completion of the prepare stage, check inputs for some
@@ -657,6 +705,7 @@ def check_pre_simulation_all(model):
     check_passed_list.append(check_atom_selections_on_same_molecule(model))
     check_passed_list.append(check_systems_within_Voronoi_cells(model))
     check_passed_list.append(check_atom_selections_MD_BD(model))
+    check_passed_list.append(check_pqr_residues(model))
     
     no_failures = True
     for check_passed in check_passed_list:
