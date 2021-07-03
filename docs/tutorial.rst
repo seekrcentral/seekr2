@@ -46,8 +46,8 @@ Using Gedit, Vim, or another editor, open up the file
    Model input file of the host-guest system.
 
 There is a lot of information in here, the details of which are described in
-the `Model Input Files<model_input_files>` documentation. For this tutorial, we will be using
-this file as-is, for now.
+the :doc:`Model Input Files<model_input_files>` documentation. For this 
+tutorial, we will be using this file as-is, for now.
 
 There are other provided files we need for this SEEKR2 calculation, they are 
 described here:
