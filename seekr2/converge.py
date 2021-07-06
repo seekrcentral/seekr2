@@ -123,8 +123,8 @@ def print_convergence_results(model, convergence_results, cutoff,
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser(description=__doc__)
     argparser.add_argument(
-        "input_file", metavar="INPUT_FILE", type=str, 
-        help="name of input file for OpenMMVT calculation. This would be the "\
+        "input_file", metavar="MODEL_FILE", type=str, 
+        help="name of model file for SEEKR2 calculation. This would be the "\
         "XML file generated in the prepare stage.")
     argparser.add_argument(
         "-s", "--k_on_state", dest="k_on_state", default=None, type=int,
@@ -140,7 +140,8 @@ if __name__ == "__main__":
             % common_analyze.DEFAULT_IMAGE_DIR)
     argparser.add_argument(
         "-c", "--cutoff", dest="cutoff", default=0.1, type=float, 
-        help="")
+        help="The minimum convergence that must be achieved before concluding "\
+        "that the calculations have converged for a given anchor.")
     argparser.add_argument(
         "-m", "--minimum_anchor_transitions", dest="minimum_anchor_transitions",
         default=100, type=int, help="Enter a minimum number of transitions "\
@@ -148,14 +149,16 @@ if __name__ == "__main__":
         "for the simulations.")
     argparser.add_argument(
         "-p", "--pre_equilibrium_approx", dest="pre_equilibrium_approx", 
-        default=False, help="Optionally use the pre-equilibrium approximation"\
-        "when computing system kinetics. This setting may be desirable for "\
-        "very long-timescale kinetic processes, which would cause the typical"\
-        "SEEKR2 analysis approach to fail.", action="store_true")
+        default=False, help="This option uses the pre-equilibrium "\
+        "approximation when computing system kinetics. This setting may be "\
+        "desirable for very long-timescale kinetic processes, which might "\
+        "cause the poor matrix conditioning in the milestoning rate matrix, "\
+        "causing the typical SEEKR2 analysis approach to fail.", 
+        action="store_true")
     
     args = argparser.parse_args() # parse the args into a dictionary
     args = vars(args)
-    input_file = args["input_file"]
+    model_file = args["model_file"]
     k_on_state = args["k_on_state"]
     image_directory = args["image_directory"]
     cutoff = args["cutoff"]
@@ -163,9 +166,9 @@ if __name__ == "__main__":
     pre_equilibrium_approx = args["pre_equilibrium_approx"]
     
     model = base.Model()
-    model.deserialize(input_file)
+    model.deserialize(model_file)
     if model.anchor_rootdir == ".":
-        model_dir = os.path.dirname(input_file)
+        model_dir = os.path.dirname(model_file)
         model.anchor_rootdir = os.path.abspath(model_dir)
     
     if image_directory is None:

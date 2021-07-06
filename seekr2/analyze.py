@@ -761,8 +761,8 @@ def analyze(model, force_warning=False, num_error_samples=1000,
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser(description=__doc__)
     argparser.add_argument(
-        "input_file", metavar="INPUT_FILE", type=str, 
-        help="name of model file for OpenMMVT calculation. This would be the "\
+        "model_file", metavar="MODEL_FILE", type=str, 
+        help="name of model file for SEEKR2 calculation. This would be the "\
         "XML file generated in the prepare stage.")
     argparser.add_argument(
         "-f", "--force_warning", dest="force_warning", default=False, 
@@ -774,13 +774,15 @@ if __name__ == "__main__":
         "-n", "--num_error_samples", dest="num_error_samples", 
         default=1000, type=int, help="Specify the number of error samples" \
         " to generate for estimating error/uncertainty of computed "\
-        "values.")
+        "values. Default: 1000")
     argparser.add_argument(
         "-p", "--pre_equilibrium_approx", dest="pre_equilibrium_approx", 
-        default=False, help="Optionally use the pre-equilibrium approximation "\
-        "when computing system kinetics. This setting may be desirable for "\
-        "very long-timescale kinetic processes, which would cause the typical "\
-        "SEEKR2 analysis approach to fail.", action="store_true")
+        default=False, help="This option uses the pre-equilibrium "\
+        "approximation when computing system kinetics. This setting may "\
+        "be desirable for very long-timescale kinetic processes, which might "\
+        "cause the poor matrix conditioning in the milestoning rate matrix, "\
+        "causing the typical SEEKR2 analysis approach to fail.", 
+        action="store_true")
     argparser.add_argument(
         "-d", "--image_directory", dest="image_directory", 
         default=None, type=str,
@@ -790,15 +792,15 @@ if __name__ == "__main__":
             % common_analyze.DEFAULT_IMAGE_DIR)
     argparser.add_argument(
         "-s", "--skip_checks", dest="skip_checks", default=False, 
-        help="By default, pre-simulation checks will be run after the "\
-        "preparation is complete, and if the checks fail, the SEEKR2 "\
-        "model will not be saved. This argument bypasses those "\
-        "checks and allows the model to be generated anyways.",
+        help="By default, post-simulation checks will be run before the "\
+        "analysis is started, and if the checks fail, the analysis "\
+        "will not proceed. This argument bypasses those "\
+        "checks and allows the analysis to proceed anyways.",
         action="store_true")
     
     args = argparser.parse_args() # parse the args into a dictionary
     args = vars(args)
-    xmlfile = args["input_file"]
+    xmlfile = args["model_file"]
     force_warning = args["force_warning"]
     num_error_samples = args["num_error_samples"]
     pre_equilibrium_approx = args["pre_equilibrium_approx"]

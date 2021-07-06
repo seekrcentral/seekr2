@@ -569,7 +569,7 @@ def run(model, instruction, min_total_simulation_length=None,
     if directory is not None:
         model.anchor_rootdir = os.path.abspath(directory)
     elif model.anchor_rootdir == ".":
-        model_dir = os.path.dirname(input_file)
+        model_dir = os.path.dirname(model_file)
         model.anchor_rootdir = os.path.abspath(model_dir)
         
     assert os.path.exists(model.anchor_rootdir), "An incorrect anchor "\
@@ -687,8 +687,8 @@ if __name__ == "__main__":
         "simulations. One may also use the letter 'b' followed by an integer "\
         "(Ex. 'b0', 'b1',...) to simulation one of the BD milestones.")
     argparser.add_argument(
-        "input_file", metavar="INPUT_FILE", type=str, 
-        help="The name of the input file for SEEKR2 calculation. This would "\
+        "model_file", metavar="MODEL_FILE", type=str, 
+        help="The name of the model file for SEEKR2 calculation. This would "\
         "be the XML file generated in the prepare stage.")
     argparser.add_argument("-c", "--cuda_device_index", 
                            dest="cuda_device_index", default=None,
@@ -697,13 +697,13 @@ if __name__ == "__main__":
                            "would suffice. To run on multiple GPU indices, "
                            "simply enter comma separated indices. Example: "\
                            "'0,1'. If a value is not supplied, the value in "\
-                           "the INPUT_FILE will be used by default.", type=str)
+                           "the MODEL_FILE will be used by default.", type=str)
     argparser.add_argument("-t", "--minimum_total_simulation_length", 
                            dest="min_total_simulation_length", default=None,
                            help="Enter a minimum MD simulation length (in "\
                            "time steps) to run the simulation if a different "\
                            "number of steps are desired than what is in the "\
-                           "INPUT_FILE. A longer simulation may be run if "
+                           "MODEL_FILE. A longer simulation may be run if "
                            "other specified criteria are not met, such as the "\
                            "--convergence_cutoff, for example.", type=int)
     argparser.add_argument("-T", "--maximum_total_simulation_length", 
@@ -727,7 +727,7 @@ if __name__ == "__main__":
                            default=None, help="Provide the location of the "\
                            "directory which contains the anchors. If this "\
                            "argument is omitted, then the directory within "\
-                           "the anchor_rootdir setting of the INPUT_FILE will "\
+                           "the anchor_rootdir setting of the MODEL_FILE will "\
                            "be used.", type=str)
     argparser.add_argument("-f", "--force_overwrite", dest="force_overwrite",
                            default=False, help="Toggle whether to overwrite "\
@@ -766,7 +766,7 @@ if __name__ == "__main__":
                            "run for the b-surface if a different number of "\
                            "trajectories are desired than what is indicated "\
                            "in the <b_surface_num_trajectories> tag in the "\
-                           "INPUT_FILE. A longer simulation may be run if "\
+                           "MODEL_FILE. A longer simulation may be run if "\
                            "other specified criteria are not met, such as the "\
                            "--min_b_surface_encounters, for example.",
                            type=int)
@@ -778,7 +778,7 @@ if __name__ == "__main__":
                            "trajectories are desired than what is indicated "\
                            "in the <num_trajectories> tag in the "\
                            "<bd_milestone> tag of the "\
-                           "INPUT_FILE. A longer simulation may be run if "\
+                           "MODEL_FILE. A longer simulation may be run if "\
                            "other specified criteria are not met, such as the "\
                            "--min_bd_milestone_encounters, for example.",
                            type=int)
@@ -812,7 +812,7 @@ if __name__ == "__main__":
                           type=int)
     argparser.add_argument("-u", "--umbrella_restart_mode", 
                            dest="umbrella_restart_mode", default=False,
-                          help="In Elber milestoning, this option allows one"\
+                          help="In Elber milestoning, this option allows one "\
                           "to use the umbrella simulations that already exist "\
                           "in the anchor, and just re-run the reversals and "\
                           "forwards simulations.", action="store_true")
@@ -820,7 +820,7 @@ if __name__ == "__main__":
     args = argparser.parse_args()
     args = vars(args)
     instruction = args["instruction"]
-    input_file = args["input_file"]
+    model_file = args["model_file"]
     cuda_device_index = args["cuda_device_index"]
     min_total_simulation_length = args["min_total_simulation_length"]
     max_total_simulation_length = args["max_total_simulation_length"]
@@ -841,10 +841,10 @@ if __name__ == "__main__":
     num_rev_launches = args["num_rev_launches"]
     umbrella_restart_mode = args["umbrella_restart_mode"]
     
-    assert os.path.exists(input_file), \
-        "A nonexistent input file was provided: {}.".format(input_file)
+    assert os.path.exists(model_file), \
+        "A nonexistent input file was provided: {}.".format(model_file)
     model = base.Model()
-    model.deserialize(input_file)
+    model.deserialize(model_file)
     
     run(model, instruction, min_total_simulation_length, 
         max_total_simulation_length, convergence_cutoff, 

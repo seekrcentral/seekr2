@@ -22,8 +22,8 @@ are named:
 Prepare
 -------
 
-In order to run the prepare stage, SEEKR2 needs a "model input" XML file. 
-Some examples of input files can be found in the following locations::
+In order to run the prepare stage, SEEKR2 typically needs a "model input" XML 
+file. Some examples of input files can be found in the following locations::
 
   seekr2/seekr2/data/sample_input_mmvt_openmm.xml
   seekr2/seekr2/data/sample_input_mmvt_namd.xml

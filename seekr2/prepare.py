@@ -1,8 +1,9 @@
 """
 prepare.py
 
-Accept arguments and settings for creating a seekr2 calculation, 
-including its model.xml file as well as its entire filetree.
+Accept a model input file and other arguments and settings for creating a 
+SEEKR2 calculation. Generated files including the model.xml file as well as 
+the entire filetree.
 """
 
 import os
