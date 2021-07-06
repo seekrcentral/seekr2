@@ -2,10 +2,10 @@ seekr2
 ==============================
 [//]: # (Badges)
 [![GitHub Actions Build Status](https://github.com/seekrcentral/seekr2/workflows/CI/badge.svg)](https://github.com/seekrcentral/seekr2/actions?query=workflow%3ACI)
-[![codecov](https://codecov.io/gh/seekrcentral/seekr2/branch/master/graph/badge.svg)](https://codecov.io/gh/seekrcentral/seekr2/branch/master)|
+[![codecov](https://codecov.io/gh/seekrcentral/seekr2/branch/master/graph/badge.svg)](https://codecov.io/gh/seekrcentral/seekr2/branch/master)
 
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![python](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/)|
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![python](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/)
 
 
 ```
