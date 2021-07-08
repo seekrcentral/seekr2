@@ -18,8 +18,8 @@ import seekr2.tests.smoluchowski_system as smoluchowski
 
 this_dir = os.path.dirname(os.path.realpath(__file__))
 
-test_output_filename = os.path.join(this_dir, "test_analyze_outputfile.txt")
-test_statistics_filename = os.path.join(this_dir, "test_analyze_statistics.txt")
+test_output_filename = os.path.join(this_dir, 
+                                    "data/test_analyze_outputfile.txt")
 
 def test_read_output_file():
     N_i_j_alpha, R_i_alpha_list, R_i_alpha_average, \

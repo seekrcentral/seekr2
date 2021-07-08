@@ -315,6 +315,7 @@ def check_pre_sim_bubbles(model):
                     pdb_periodic_box_properties = \
                         bubblebuster.periodic_box_properties(
                             pdb_filename,
+                            mesh=0.7,
                             box_vectors=np.array(bvecs, dtype=np.float32)
                         )
                     if pdb_periodic_box_properties.has_bubble:
@@ -325,6 +326,7 @@ def check_pre_sim_bubbles(model):
                         pdb_periodic_box_properties = \
                             bubblebuster.periodic_box_properties(
                                 pdb_filename,
+                                mesh=0.7,
                                 box_vectors=np.array(bvecs, dtype=np.float32)
                             )
                         if pdb_periodic_box_properties.has_bubble:
@@ -337,6 +339,7 @@ def check_pre_sim_bubbles(model):
                     pdb_periodic_box_properties = \
                         bubblebuster.periodic_box_properties(
                             pdb_filename,
+                            mesh=0.7
                         )
                     if pdb_periodic_box_properties.has_bubble:
                         warnstr = "CHECK FAILURE: Water box bubble detected "\
@@ -355,8 +358,8 @@ def check_pre_sim_MD_and_BD_salt_concentration(model):
     exist between the various anchors and scales.
     """
     
-    RELATIVE_TOLERANCE = 0.25
-    ABSOLUTE_TOLERANCE = 0.1
+    RELATIVE_TOLERANCE = 0.1
+    ABSOLUTE_TOLERANCE = 0.01
     if model.k_on_info:
         bd_ionic_strength = 0.0
         for ion in model.k_on_info.ions:
@@ -374,7 +377,7 @@ def check_pre_sim_MD_and_BD_salt_concentration(model):
             "structures in anchor {}".format(anchor.index)
         box_vectors = base.Box_vectors()
         box_vectors.from_6_vector(box_6_vector[0])
-        box_volume = box_vectors.get_volume()
+        box_volume = box_vectors.get_volume() # volume in nm^3
         particle_concentration = 1.0e24 / (AVOGADROS_NUMBER * box_volume)
         for index, atom in enumerate(structure.atoms):
             if is_ion(atom):
@@ -382,7 +385,8 @@ def check_pre_sim_MD_and_BD_salt_concentration(model):
                 for key in ION_CHARGE_DICT:
                     if atom.name.lower().startswith(key):
                         charge = ION_CHARGE_DICT[key]
-                        md_ionic_strength += particle_concentration * charge**2
+                        md_ionic_strength += 0.5 * particle_concentration \
+                            * charge**2
                         found_ion = True
                     
                 if not found_ion:
@@ -395,7 +399,9 @@ def check_pre_sim_MD_and_BD_salt_concentration(model):
     ionic strength of {} M*e^2 than MD simulation ionic strength of 
     {} M*e^2 for anchor {}. Please check the ion concentrations in the 
     BD simulation settings, and also count the number of ions 
-    in the MD simulations.""".format(bd_ionic_strength, 
+    in the MD simulations. Counterions added to neutralize the protein in an
+    MD simulation may also trigger this failure. If that is the case, simply 
+    skip this check.""".format(bd_ionic_strength, 
                                  md_ionic_strength,
                                  anchor.index))
             return False
@@ -857,12 +863,7 @@ def check_bd_simulation_end_state(model):
     """
     
     ATOL = 0.1
-    if model.k_on_info:
-        bd_ionic_strength = 0.0
-        for ion in model.k_on_info.ions:
-            bd_ionic_strength += 0.5 * ion.conc * ion.charge**2
-    else:
-        # No BD to check
+    if model.k_on_info is None:
         return True
     
     for bd_index, bd_milestone in enumerate(model.k_on_info.bd_milestones):

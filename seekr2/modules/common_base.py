@@ -115,7 +115,14 @@ class Box_vectors(Serializer):
         the first three are vector lengths, and the next three are the
         angles between them. Compute the full 3x3 box_vectors and assign
         to this object.
+        
+        box_6_vector is assumed to be in Angstroms and degrees.
         """
+        
+        # convert box_6_vector from Angstroms to nm
+        box_6_vector[0] *= 0.1
+        box_6_vector[1] *= 0.1
+        box_6_vector[2] *= 0.1
         
         self.ax = float(box_6_vector[0])
         self.ay = 0.0
@@ -141,6 +148,7 @@ class Box_vectors(Serializer):
     def get_volume(self):
         """
         Compute the volume of the box defined by these box vectors.
+        Units in nm^3
         """
         
         A = np.array([self.ax, self.ay, self.az])

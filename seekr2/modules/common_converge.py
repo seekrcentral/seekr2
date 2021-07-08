@@ -19,6 +19,8 @@ from parmed import unit
 import seekr2.analyze as analyze
 import seekr2.modules.common_base as base
 import seekr2.modules.common_analyze as common_analyze
+import seekr2.modules.mmvt_analyze as mmvt_analyze
+import seekr2.modules.elber_analyze as elber_analyze
 
 # The default number of points to include in convergence plots
 DEFAULT_NUM_POINTS = 100
@@ -151,9 +153,14 @@ def analyze_kinetics(model, analysis, max_step_list, k_on_state=None,
         main_data_sample = analysis.main_data_sample
         return k_on, k_off, main_data_sample.N_ij, main_data_sample.R_i
     except common_analyze.MissingStatisticsError:
-        data_sample = common_analyze.Data_sample(model)
-        analyze_bd_only(model, data_sample)
-        analysis.main_data_sample = data_sample
+        if model.get_type() == "mmvt":
+            #data_sample = common_analyze.Data_sample(model)
+            data_sample = None
+        elif model.get_type() == "elber":
+            data_sample = None
+            
+        #analyze_bd_only(model, data_sample)
+        analysis.main_data_sample = None #data_sample
         return 0.0, 0.0, {}, {}
 
 def get_mmvt_max_steps(model, dt):

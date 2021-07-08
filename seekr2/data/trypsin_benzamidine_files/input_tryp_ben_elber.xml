@@ -141,6 +141,30 @@
                     <starting_amber_params class="Amber_params">
                         <prmtop_filename>data/trypsin_benzamidine_files/tryp_ben.prmtop</prmtop_filename>
                         <box_vectors/>
+                        <pdb_coordinates_filename>data/trypsin_benzamidine_files/elber/tryp_ben_at14.pdb</pdb_coordinates_filename>
+                    </starting_amber_params>
+                    <bound_state>False</bound_state>
+                    <bulk_anchor>False</bulk_anchor>
+                </input_anchor>
+                <input_anchor class="Spherical_cv_anchor">
+                    <radius>1.6</radius>
+                    <lower_milestone_radius/>
+                    <upper_milestone_radius/>
+                    <starting_amber_params class="Amber_params">
+                        <prmtop_filename>data/trypsin_benzamidine_files/tryp_ben.prmtop</prmtop_filename>
+                        <box_vectors/>
+                        <pdb_coordinates_filename></pdb_coordinates_filename>
+                    </starting_amber_params>
+                    <bound_state>False</bound_state>
+                    <bulk_anchor>False</bulk_anchor>
+                </input_anchor>
+                <input_anchor class="Spherical_cv_anchor">
+                    <radius>1.8</radius>
+                    <lower_milestone_radius/>
+                    <upper_milestone_radius/>
+                    <starting_amber_params class="Amber_params">
+                        <prmtop_filename>data/trypsin_benzamidine_files/tryp_ben.prmtop</prmtop_filename>
+                        <box_vectors/>
                         <pdb_coordinates_filename></pdb_coordinates_filename>
                     </starting_amber_params>
                     <bound_state>False</bound_state>

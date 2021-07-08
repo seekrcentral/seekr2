@@ -8,7 +8,7 @@
     <temperature>298.0</temperature>
     <pressure>1.0</pressure>
     <ensemble>nvt</ensemble>
-    <root_directory>~/tryp_ben_mmvt_seekr2/</root_directory>
+    <root_directory>~/tryp_ben_mmvt_seekr2_DELETE/</root_directory>
     <md_program>openmm</md_program>
     <constraints>HBonds</constraints>
     <rigidWater>True</rigidWater>
@@ -143,6 +143,18 @@
                 <input_anchor class="Spherical_cv_anchor">
                     <radius>1.7</radius>
 		            <lower_milestone_radius>1.6</lower_milestone_radius>
+                    <upper_milestone_radius>1.8</upper_milestone_radius>
+                    <starting_amber_params class="Amber_params">
+                        <prmtop_filename>data/trypsin_benzamidine_files/tryp_ben.prmtop</prmtop_filename>
+                        <box_vectors/>
+                        <pdb_coordinates_filename>data/trypsin_benzamidine_files/mmvt/tryp_ben_at17.00.pdb</pdb_coordinates_filename>
+                    </starting_amber_params>
+                    <bound_state>False</bound_state>
+                    <bulk_anchor>False</bulk_anchor>
+                </input_anchor>
+                <input_anchor class="Spherical_cv_anchor">
+                    <radius>1.9</radius>
+		            <lower_milestone_radius>1.8</lower_milestone_radius>
                     <upper_milestone_radius/>
                     <starting_amber_params class="Amber_params">
                         <prmtop_filename>data/trypsin_benzamidine_files/tryp_ben.prmtop</prmtop_filename>
