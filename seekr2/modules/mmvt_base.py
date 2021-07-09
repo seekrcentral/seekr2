@@ -180,8 +180,9 @@ class MMVT_spherical_CV(MMVT_collective_variable):
             import simtk.openmm as openmm
             
         assert self.num_groups == 2
+        expression_w_bitcode = "bitcode*"+self.openmm_expression
         return openmm.CustomCentroidBondForce(
-            self.num_groups, self.openmm_expression)
+            self.num_groups, expression_w_bitcode)
         
     def make_namd_colvar_string(self):
         """
@@ -218,6 +219,9 @@ colvar {{
         mygroup2 = force.addGroup(self.group2)
         self._mygroup_list.append(mygroup2)
         variable_names_list = []
+        
+        variable_names_list.append("bitcode")
+        force.addPerBondParameter("bitcode")
         if self.per_dof_variables is not None:
             for per_dof_variable in self.per_dof_variables:
                 force.addPerBondParameter(per_dof_variable)
@@ -227,7 +231,7 @@ colvar {{
             for global_variable in self.global_variables:
                 force.addGlobalParameter(global_variable)
                 variable_names_list.append(global_variable)
-            
+        
         return variable_names_list
     
     def add_groups_and_variables(self, force, variables):
@@ -247,11 +251,12 @@ colvar {{
         """
         assert milestone.cv_index == self.index
         values_list = []
-        k = milestone.variables['k'] * unit.kilojoules_per_mole
+        bitcode = 2**(milestone.alias_index-1)
+        k = milestone.variables['k'] * unit.kilojoules_per_mole/unit.angstrom**2
         radius = milestone.variables['radius'] * unit.nanometers
+        values_list.append(bitcode)
         values_list.append(k)
         values_list.append(radius)
-        
         return values_list
     
     def get_namd_evaluation_string(self, milestone, cv_val_var="cv_val"):

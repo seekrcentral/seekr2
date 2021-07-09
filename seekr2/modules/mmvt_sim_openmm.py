@@ -198,7 +198,8 @@ def make_mmvt_boundary_definitions(cv, milestone):
         position.
     """
     myforce = cv.make_force_object()
-    myforce.setForceGroup(milestone.alias_index)
+    #myforce.setForceGroup(milestone.alias_index)
+    myforce.setForceGroup(1)
     variable_names_list = cv.add_parameters(myforce)
     cv.add_groups_and_variables(myforce, cv.get_variable_values_list(
                                     milestone))
