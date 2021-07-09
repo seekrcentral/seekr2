@@ -20,7 +20,8 @@ def test_is_ion():
     Validate the is_ion() function by verifying it gives the correct output
     on a number of atoms in a sample pdb structure.
     """
-    test_pdb_filename = "data/tryp_ben_at0.pdb"
+    
+    test_pdb_filename = os.path.join(TEST_DIRECTORY, "data/tryp_ben_at0.pdb")
     structure = parmed.load_file(test_pdb_filename)
     ion_indices = [3239, 3245, 3220, 3246]
     non_ion_indices = [3233, 9068, 12116, 2029, 2051]
