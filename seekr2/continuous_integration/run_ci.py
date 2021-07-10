@@ -26,7 +26,8 @@ def run_short_ci(model_input, cuda_device_index):
     run.run(model, "any", min_b_surface_simulation_length=1000,
         min_bd_milestone_simulation_length=100, 
         max_b_surface_trajs_to_extract=10, num_rev_launches=10, 
-        cuda_device_index=cuda_device_index)
+        cuda_device_index=cuda_device_index,
+        save_state_file=True)
     data_sample_list = converge.converge(model, k_on_state=0)
     rmsd_convergence_results = common_converge.calc_RMSD_conv_amount(
         model, data_sample_list)
@@ -38,6 +39,7 @@ def run_short_ci(model_input, cuda_device_index):
         transition_results=transition_details, 
         minimum_anchor_transitions=10, 
         bd_transition_counts=data_sample_list[-1].bd_transition_counts)
+    check.check_post_simulation_all(model, long_check=True)
     analysis = analyze.analyze(model)
     analysis.print_results()
     os.chdir(start_dir)

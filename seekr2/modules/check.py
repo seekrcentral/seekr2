@@ -706,7 +706,7 @@ def check_pre_simulation_all(model):
     """
     
     check_passed_list = []
-    check_passed_list.append(check_pre_sim_bubbles(model))
+    #check_passed_list.append(check_pre_sim_bubbles(model))
     check_passed_list.append(check_pre_sim_MD_and_BD_salt_concentration(model))
     check_passed_list.append(check_atom_selections_on_same_molecule(model))
     check_passed_list.append(check_systems_within_Voronoi_cells(model))

@@ -61,19 +61,20 @@ setup(
     # zip_safe=False,
 
 )
-abserdes_repo_url = 'https://github.com/astokely/abserdes.git'
-process = subprocess.Popen([
-    "git",
-    "ls-remote",
-    'https://github.com/astokely/abserdes.git'
-], stdout=subprocess.PIPE)
-stdout = process.communicate()[0]
-sha_tarball = re.split(r'\t+', stdout.decode('ascii'))[0] + ".tar.gz"
-abserdes_tarball_link = [line for line in open("requirements.txt" , "r+") if 'abserdes' in line][0]
-for line in fileinput.input("requirements.txt", inplace = 1):
-    print(line.replace(
-        abserdes_tarball_link.rsplit('/', 1)[-1],
-        sha_tarball
-    ))
-
-subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
+if "install" in sys.argv:
+    abserdes_repo_url = 'https://github.com/astokely/abserdes.git'
+    process = subprocess.Popen([
+        "git",
+        "ls-remote",
+        'https://github.com/astokely/abserdes.git'
+    ], stdout=subprocess.PIPE)
+    stdout = process.communicate()[0]
+    sha_tarball = re.split(r'\t+', stdout.decode('ascii'))[0] + ".tar.gz"
+    abserdes_tarball_link = [line for line in open("requirements.txt" , "r+") if 'abserdes' in line][0]
+    for line in fileinput.input("requirements.txt", inplace = 1):
+        print(line.replace(
+            abserdes_tarball_link.rsplit('/', 1)[-1],
+            sha_tarball
+        ))
+    
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
