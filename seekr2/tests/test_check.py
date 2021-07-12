@@ -33,34 +33,35 @@ def test_is_ion():
         assert not check.is_ion(non_ion_atom)
     return
 
-# TODO: uncomment when other tests complete
-#def test_check_pre_sim_bubbles(tryp_ben_mmvt_model):
-#    """
-#    Test whether the check can properly detect bubbles in the system.
-#    """
-#    # Test check success: no bubbles
-#    no_bubbles_output = check.check_pre_sim_bubbles(tryp_ben_mmvt_model)
-#    assert no_bubbles_output
-#    
-#    # Test check failure: bubbles in structure
-#    # copy over the PDB file with the bubble
-#    bubbles_files = ["tryp_ben_at0_bubble1.pdb",
-#                     "tryp_ben_at0_bubble2.pdb"]
-#    for bubbles_file in bubbles_files:
-#        src_filename = os.path.join(TEST_DIRECTORY, "data", bubbles_file)
-#        dest_filename = os.path.join(
-#            tryp_ben_mmvt_model.anchor_rootdir, 
-#            tryp_ben_mmvt_model.anchors[0].directory,
-#            tryp_ben_mmvt_model.anchors[0].building_directory, 
-#            bubbles_file)
-#        shutil.copyfile(src_filename, dest_filename)
-#        tryp_ben_mmvt_model.anchors[0].amber_params.pdb_coordinates_filename \
-#            = bubbles_file
-#        bubbles_output = check.check_pre_sim_bubbles(tryp_ben_mmvt_model)
-#        #print("testing check of structure with bubbles: ", bubbles_file)
-#        assert not bubbles_output
-#    
-#    return
+# TODO: remove skip tag when other tests complete
+@pytest.mark.skip()
+def test_check_pre_sim_bubbles(tryp_ben_mmvt_model):
+    """
+    Test whether the check can properly detect bubbles in the system.
+    """
+    # Test check success: no bubbles
+    no_bubbles_output = check.check_pre_sim_bubbles(tryp_ben_mmvt_model)
+    assert no_bubbles_output
+    
+    # Test check failure: bubbles in structure
+    # copy over the PDB file with the bubble
+    bubbles_files = ["tryp_ben_at0_bubble1.pdb",
+                     "tryp_ben_at0_bubble2.pdb"]
+    for bubbles_file in bubbles_files:
+        src_filename = os.path.join(TEST_DIRECTORY, "data", bubbles_file)
+        dest_filename = os.path.join(
+            tryp_ben_mmvt_model.anchor_rootdir, 
+            tryp_ben_mmvt_model.anchors[0].directory,
+            tryp_ben_mmvt_model.anchors[0].building_directory, 
+            bubbles_file)
+        shutil.copyfile(src_filename, dest_filename)
+        tryp_ben_mmvt_model.anchors[0].amber_params.pdb_coordinates_filename \
+            = bubbles_file
+        bubbles_output = check.check_pre_sim_bubbles(tryp_ben_mmvt_model)
+        #print("testing check of structure with bubbles: ", bubbles_file)
+        assert not bubbles_output
+    
+    return
 
 def test_check_pre_sim_MD_and_BD_salt_concentration(tryp_ben_mmvt_model):
     """

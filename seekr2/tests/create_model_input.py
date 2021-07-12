@@ -8,7 +8,7 @@ import seekr2.modules.common_base as base
 import seekr2.modules.common_prepare as common_prepare
 import seekr2.modules.common_cv as common_cv
 
-def create_host_guest_mmvt_model_input(root_dir):
+def create_host_guest_mmvt_model_input(root_dir, bd=True):
     """
     Create a generic host-guest model input object.
     """
@@ -215,30 +215,34 @@ def create_host_guest_mmvt_model_input(root_dir):
     cv_input1.input_anchors.append(input_anchor14)
     
     model_input.cv_inputs = [cv_input1]
-    model_input.browndye_settings_input \
-        = common_prepare.Browndye_settings_input()
-    model_input.browndye_settings_input.binary_directory = ""
-    model_input.browndye_settings_input.receptor_pqr_filename \
-        = "../data/hostguest_files/hostguest_receptor.pqr"
-    model_input.browndye_settings_input.ligand_pqr_filename \
-        = "../data/hostguest_files/hostguest_ligand.pqr"
-    model_input.browndye_settings_input.apbs_grid_spacing = 0.5
-    model_input.browndye_settings_input.receptor_indices = list(range(147))
-    model_input.browndye_settings_input.ligand_indices = list(range(15))
     
-    ion1 = base.Ion()
-    ion1.radius = 1.2
-    ion1.charge = -1.0
-    ion1.conc = 0.0
-    ion2 = base.Ion()
-    ion2.radius = 0.9
-    ion2.charge = 1.0
-    ion2.conc = 0.0
-    model_input.browndye_settings_input.ions = [ion1, ion2]
-    model_input.browndye_settings_input.num_bd_milestone_trajectories = 1000
-    model_input.browndye_settings_input.num_b_surface_trajectories = 10000
-    model_input.browndye_settings_input.max_b_surface_trajs_to_extract = 1000
-    model_input.browndye_settings_input.n_threads = 1
+    if bd:
+        model_input.browndye_settings_input \
+            = common_prepare.Browndye_settings_input()
+        model_input.browndye_settings_input.binary_directory = ""
+        model_input.browndye_settings_input.receptor_pqr_filename \
+            = "../data/hostguest_files/hostguest_receptor.pqr"
+        model_input.browndye_settings_input.ligand_pqr_filename \
+            = "../data/hostguest_files/hostguest_ligand.pqr"
+        model_input.browndye_settings_input.apbs_grid_spacing = 0.5
+        model_input.browndye_settings_input.receptor_indices = list(range(147))
+        model_input.browndye_settings_input.ligand_indices = list(range(15))
+        
+        ion1 = base.Ion()
+        ion1.radius = 1.2
+        ion1.charge = -1.0
+        ion1.conc = 0.0
+        ion2 = base.Ion()
+        ion2.radius = 0.9
+        ion2.charge = 1.0
+        ion2.conc = 0.0
+        model_input.browndye_settings_input.ions = [ion1, ion2]
+        model_input.browndye_settings_input.num_bd_milestone_trajectories = 1000
+        model_input.browndye_settings_input.num_b_surface_trajectories = 10000
+        model_input.browndye_settings_input.max_b_surface_trajs_to_extract = 1000
+        model_input.browndye_settings_input.n_threads = 1
+    else:
+        model_input.browndye_settings_input = None
     
     return model_input
 

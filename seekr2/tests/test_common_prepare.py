@@ -8,6 +8,9 @@ test_prepare_1d_spherical.py
 
 import os
 import sys
+import glob
+
+import pytest
 
 import seekr2.modules.common_base as base
 import seekr2.modules.mmvt_base as mmvt_base
@@ -16,233 +19,100 @@ from seekr2.modules import common_prepare
 import seekr2.modules.common_cv as common_cv 
 from seekr2.modules.common_cv import Spherical_cv_input
 
-def create_model_input(root_dir):
-    """
-    TEMPORARY
-    """
-    this_dir = os.path.dirname(os.path.abspath(__file__))
-    model_input = common_prepare.Model_input()
-    model_input.calculation_settings = mmvt_base.MMVT_settings()
-    model_input.root_directory = root_dir
-    model_input.temperature = 282.55
-    model_input.calculation_type = "mmvt"
-    model_input.calculation_settings.md_output_interval = 12345
-    model_input.calculation_settings.md_steps_per_anchor = 76543
-    cv_input1 = common_cv.Spherical_cv_input()
-    cv_input1.group1 = list(range(147))
-    cv_input1.group2 = list(range(147, 162))
-    cv_input1.input_anchors = []
-    input_anchor1 = common_cv.Spherical_cv_anchor()
-    input_anchor1.radius = 0.05
-    input_anchor1.starting_amber_params = base.Amber_params()
-    input_anchor1.starting_amber_params.prmtop_filename = \
-        os.path.join(this_dir, "../data/hostguest_files/hostguest.parm7")
-    #input_anchor1.starting_amber_params.inpcrd_filename = \
-    #    os.path.join(this_dir, "../data/hostguest_files/hostguest.rst7")
-    input_anchor1.starting_amber_params.pdb_coordinates_filename = \
-        os.path.join(this_dir, "../data/hostguest_files/hostguest_at0.5.pdb")
-    input_anchor1.bound_state = True
-    cv_input1.input_anchors.append(input_anchor1)
-    
-    input_anchor2 = common_cv.Spherical_cv_anchor()
-    input_anchor2.radius = 0.15
-    input_anchor2.starting_amber_params = base.Amber_params()
-    input_anchor2.starting_amber_params.prmtop_filename = \
-        os.path.join(this_dir, "../data/hostguest_files/hostguest.parm7")
-    #input_anchor2.starting_amber_params.inpcrd_filename = \
-    #    os.path.join(this_dir, "../data/hostguest_files/hostguest.rst7")
-    input_anchor2.starting_amber_params.pdb_coordinates_filename = \
-        os.path.join(this_dir, "../data/hostguest_files/hostguest_at1.5.pdb")
-    input_anchor2.bound_state = False
-    cv_input1.input_anchors.append(input_anchor2)
-    
-    input_anchor3 = common_cv.Spherical_cv_anchor()
-    input_anchor3.radius = 0.25
-    input_anchor3.starting_amber_params = base.Amber_params()
-    input_anchor3.starting_amber_params.prmtop_filename = \
-        os.path.join(this_dir, "../data/hostguest_files/hostguest.parm7")
-    #input_anchor3.starting_amber_params.inpcrd_filename = \
-    #    os.path.join(this_dir, "../data/hostguest_files/hostguest.rst7")
-    input_anchor3.starting_amber_params.pdb_coordinates_filename = \
-        os.path.join(this_dir, "../data/hostguest_files/hostguest_at2.5.pdb")
-    input_anchor3.bound_state = False
-    cv_input1.input_anchors.append(input_anchor3)
-    
-    input_anchor4 = common_cv.Spherical_cv_anchor()
-    input_anchor4.radius = 0.35
-    input_anchor4.starting_amber_params = base.Amber_params()
-    input_anchor4.starting_amber_params.prmtop_filename = \
-        os.path.join(this_dir, "../data/hostguest_files/hostguest.parm7")
-    #input_anchor4.starting_amber_params.inpcrd_filename = \
-    #    os.path.join(this_dir, "../data/hostguest_files/hostguest.rst7")
-    input_anchor4.starting_amber_params.pdb_coordinates_filename = \
-        os.path.join(this_dir, "../data/hostguest_files/hostguest_at3.5.pdb")
-    input_anchor4.bound_state = False
-    cv_input1.input_anchors.append(input_anchor4)
-    
-    input_anchor5 = common_cv.Spherical_cv_anchor()
-    input_anchor5.radius = 0.45
-    input_anchor5.starting_amber_params = base.Amber_params()
-    input_anchor5.starting_amber_params.prmtop_filename = \
-        os.path.join(this_dir, "../data/hostguest_files/hostguest.parm7")
-    #input_anchor5.starting_amber_params.inpcrd_filename = \
-    #    os.path.join(this_dir, "../data/hostguest_files/hostguest.rst7")
-    input_anchor5.starting_amber_params.pdb_coordinates_filename = \
-        os.path.join(this_dir, "../data/hostguest_files/hostguest_at4.5.pdb")
-    input_anchor5.bound_state = False
-    cv_input1.input_anchors.append(input_anchor5)
-    
-    input_anchor6 = common_cv.Spherical_cv_anchor()
-    input_anchor6.radius = 0.55
-    input_anchor6.starting_amber_params = base.Amber_params()
-    input_anchor6.starting_amber_params.prmtop_filename = \
-        os.path.join(this_dir, "../data/hostguest_files/hostguest.parm7")
-    #input_anchor6.starting_amber_params.inpcrd_filename = \
-    #    os.path.join(this_dir, "../data/hostguest_files/hostguest.rst7")
-    input_anchor6.starting_amber_params.pdb_coordinates_filename = \
-        os.path.join(this_dir, "../data/hostguest_files/hostguest_at5.5.pdb")
-    input_anchor6.bound_state = False
-    cv_input1.input_anchors.append(input_anchor6)
-    
-    input_anchor7 = common_cv.Spherical_cv_anchor()
-    input_anchor7.radius = 0.65
-    input_anchor7.starting_amber_params = base.Amber_params()
-    input_anchor7.starting_amber_params.prmtop_filename = \
-        os.path.join(this_dir, "../data/hostguest_files/hostguest.parm7")
-    #input_anchor7.starting_amber_params.inpcrd_filename = \
-    #    os.path.join(this_dir, "../data/hostguest_files/hostguest.rst7")
-    input_anchor7.starting_amber_params.pdb_coordinates_filename = \
-        os.path.join(this_dir, "../data/hostguest_files/hostguest_at6.5.pdb")
-    input_anchor7.bound_state = False
-    cv_input1.input_anchors.append(input_anchor7)
-    
-    input_anchor8 = common_cv.Spherical_cv_anchor()
-    input_anchor8.radius = 0.75
-    input_anchor8.starting_amber_params = base.Amber_params()
-    input_anchor8.starting_amber_params.prmtop_filename = \
-        os.path.join(this_dir, "../data/hostguest_files/hostguest.parm7")
-    #input_anchor8.starting_amber_params.inpcrd_filename = \
-    #    os.path.join(this_dir, "../data/hostguest_files/hostguest.rst7")
-    input_anchor8.starting_amber_params.pdb_coordinates_filename = \
-        os.path.join(this_dir, "../data/hostguest_files/hostguest_at7.5.pdb")
-    input_anchor8.bound_state = False
-    cv_input1.input_anchors.append(input_anchor8)
-    
-    input_anchor9 = common_cv.Spherical_cv_anchor()
-    input_anchor9.radius = 0.85
-    input_anchor9.starting_amber_params = base.Amber_params()
-    input_anchor9.starting_amber_params.prmtop_filename = \
-        os.path.join(this_dir, "../data/hostguest_files/hostguest.parm7")
-    #input_anchor9.starting_amber_params.inpcrd_filename = \
-    #    os.path.join(this_dir, "../data/hostguest_files/hostguest.rst7")
-    input_anchor9.starting_amber_params.pdb_coordinates_filename = \
-        os.path.join(this_dir, "../data/hostguest_files/hostguest_at8.5.pdb")
-    input_anchor9.bound_state = False
-    cv_input1.input_anchors.append(input_anchor9)
-    
-    input_anchor10 = common_cv.Spherical_cv_anchor()
-    input_anchor10.radius = 0.95
-    input_anchor10.starting_amber_params = base.Amber_params()
-    input_anchor10.starting_amber_params.prmtop_filename = \
-        os.path.join(this_dir, "../data/hostguest_files/hostguest.parm7")
-    #input_anchor10.starting_amber_params.inpcrd_filename = \
-    #    os.path.join(this_dir, "../data/hostguest_files/hostguest.rst7")
-    input_anchor10.starting_amber_params.pdb_coordinates_filename = \
-        os.path.join(this_dir, "../data/hostguest_files/hostguest_at9.5.pdb")
-    input_anchor10.bound_state = False
-    cv_input1.input_anchors.append(input_anchor10)
-    
-    input_anchor11 = common_cv.Spherical_cv_anchor()
-    input_anchor11.radius = 1.05
-    input_anchor11.starting_amber_params = base.Amber_params()
-    input_anchor11.starting_amber_params.prmtop_filename = \
-        os.path.join(this_dir, "../data/hostguest_files/hostguest.parm7")
-    #input_anchor11.starting_amber_params.inpcrd_filename = \
-    #    os.path.join(this_dir, "../data/hostguest_files/hostguest.rst7")
-    input_anchor11.starting_amber_params.pdb_coordinates_filename = \
-        os.path.join(this_dir, "../data/hostguest_files/hostguest_at10.5.pdb")
-    input_anchor11.bound_state = False
-    cv_input1.input_anchors.append(input_anchor11)
-    
-    input_anchor12 = common_cv.Spherical_cv_anchor()
-    input_anchor12.radius = 1.15
-    input_anchor12.starting_amber_params = base.Amber_params()
-    input_anchor12.starting_amber_params.prmtop_filename = \
-        os.path.join(this_dir, "../data/hostguest_files/hostguest.parm7")
-    #input_anchor12.starting_amber_params.inpcrd_filename = \
-    #    os.path.join(this_dir, "../data/hostguest_files/hostguest.rst7")
-    input_anchor12.starting_amber_params.pdb_coordinates_filename = \
-        os.path.join(this_dir, "../data/hostguest_files/hostguest_at11.5.pdb")
-    input_anchor12.bound_state = False
-    cv_input1.input_anchors.append(input_anchor12)
-    
-    input_anchor13 = common_cv.Spherical_cv_anchor()
-    input_anchor13.radius = 1.25
-    input_anchor13.starting_amber_params = base.Amber_params()
-    input_anchor13.starting_amber_params.prmtop_filename = \
-        os.path.join(this_dir, "../data/hostguest_files/hostguest.parm7")
-    #input_anchor13.starting_amber_params.inpcrd_filename = \
-    #    os.path.join(this_dir, "../data/hostguest_files/hostguest.rst7")
-    input_anchor13.starting_amber_params.pdb_coordinates_filename = \
-        os.path.join(this_dir, "../data/hostguest_files/hostguest_at12.5.pdb")
-    input_anchor13.bound_state = False
-    cv_input1.input_anchors.append(input_anchor13)
-    
-    input_anchor14 = common_cv.Spherical_cv_anchor()
-    input_anchor14.radius = 1.35
-    input_anchor14.starting_amber_params = base.Amber_params()
-    input_anchor14.starting_amber_params.prmtop_filename = ""
-    #input_anchor14.starting_amber_params.inpcrd_filename = ""
-    input_anchor14.starting_amber_params.pdb_coordinates_filename = ""
-    input_anchor14.bound_state = False
-    input_anchor14.bulk_anchor = True
-    cv_input1.input_anchors.append(input_anchor14)
-    
-    model_input.cv_inputs = [cv_input1]
-    return model_input
+TEST_DIRECTORY = os.path.dirname(__file__)
 
-def test_Input_model(tmp_path):
-    model_input = create_model_input(tmp_path)
-    assert model_input.temperature == 282.55
-    assert model_input.calculation_settings.md_output_interval == 12345
-    assert model_input.calculation_settings.md_steps_per_anchor == 76543
-    
-    assert len(model_input.cv_inputs) == 1
-    assert len(model_input.cv_inputs[0].input_anchors) == 14
-    print("model_input.root_directory:", model_input.root_directory)
-    
+def test_namd_model_input(host_guest_mmvt_model_input):
+    """
+    Test the ability to create a NAMD model input system.
+    """
+    model_input = host_guest_mmvt_model_input
+    host_guest_mmvt_model_input.browndye_settings_input = None
+    model_input.md_program = "namd"
+    os.chdir(TEST_DIRECTORY)
     model, xml_path = prepare.generate_seekr2_model_and_filetree(
         model_input, True)
-    model.anchor_rootdir = tmp_path
-    assert os.path.exists(os.path.join(model.anchor_rootdir, "anchor_1"))
-    assert os.path.exists(os.path.join(model.anchor_rootdir, "anchor_1", 
-                                       "prod"))
-    assert os.path.exists(os.path.join(model.anchor_rootdir, "anchor_1", 
-                                       "building"))
-    assert os.path.exists(os.path.join(model.anchor_rootdir, "anchor_1", 
-                                       "building", "hostguest.parm7"))
-    #assert os.path.exists(os.path.join(model.anchor_rootdir, "anchor_1", 
-    #                                   "building", "hostguest.rst7"))
-    assert os.path.exists(os.path.join(model.anchor_rootdir, "anchor_1", 
-                                       "building", "hostguest_at1.5.pdb"))
-    assert model.temperature == 282.55
-    assert model.num_anchors == 14
-    assert model.num_milestones == 13
-    assert len(model.anchors) == 14
-    assert len(model.collective_variables) == 1
-    assert model.openmm_settings.initial_temperature == 282.55
-    assert model.calculation_settings.energy_reporter_interval == 12345
-    assert model.calculation_settings.restart_checkpoint_interval == 12345
-    assert model.calculation_settings.trajectory_reporter_interval == 12345
-    assert model.calculation_settings.num_production_steps == 76543
+    return
 
-""" # this test needs the serializer to be able to find the Spherical_cv_input 
-    #class
-def test_read_simplified_input(tmp_path):
-    this_dir = os.path.dirname(os.path.abspath(__file__))
-    model_input_filename = os.path.join(this_dir, "../data/sample_input.xml")
-    model_input = prepare_1d_spherical.Model_input()
-    model_input.deserialize(model_input_filename, user_input = True)
-    model_input.root_directory = os.path.join(tmp_path, "test_mmvt")
-    prepare_1d_spherical.generate_openmmvt_model_and_filetree(model_input)
-"""
+def test_move_add_delete_input_anchors(tryp_ben_mmvt_model_input):
+    """
+    Test common_prepare.py's ability to move, add, and delete anchors
+    in the model.
+    """
+    tmp_bd_settings = tryp_ben_mmvt_model_input.browndye_settings_input
+    tryp_ben_mmvt_model_input.browndye_settings_input = None
+    tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[0].radius = 0.06
+    tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[0].upper_milestone_radius = 0.11
+    tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[1].lower_milestone_radius = 0.11
+    os.chdir(TEST_DIRECTORY)
+    model2, model2_xml_path \
+        = prepare.generate_seekr2_model_and_filetree(
+            tryp_ben_mmvt_model_input, force_overwrite=True)
+    model_dir = os.path.dirname(model2_xml_path)
+    model2.anchor_rootdir = os.path.abspath(model_dir)
+    assert model2.anchors[0].variables["r_0"] == 0.06
+    assert model2.anchors[0].milestones[0].variables['radius'] == 0.11
+    assert model2.anchors[1].milestones[0].variables['radius'] == 0.11
+    assert len(model2.anchors) == 12
+    assert model2.num_anchors == 12
+    assert len(glob.glob(os.path.join(model2.anchor_rootdir, "anchor_*"))) == 11
+    
+    # Add anchor
+    new_input_anchor = common_cv.Spherical_cv_anchor()
+    new_input_anchor.radius = 0.1
+    new_input_anchor.starting_amber_params = base.Amber_params()
+    tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors.insert(1, new_input_anchor)
+    tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[0].upper_milestone_radius = None
+    tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[2].lower_milestone_radius = None
+    os.chdir(TEST_DIRECTORY)
+    model3, model3_xml_path \
+        = prepare.generate_seekr2_model_and_filetree(
+            tryp_ben_mmvt_model_input, force_overwrite=False)
+    model_dir = os.path.dirname(model3_xml_path)
+    model3.anchor_rootdir = os.path.abspath(model_dir)
+    assert model3.anchors[1].variables["r_0"] == 0.1
+    assert model3.anchors[1].milestones[0].variables['radius'] == 0.08
+    assert model3.anchors[1].milestones[1].variables['radius'] == 0.125
+    assert len(model3.anchors) == 13
+    assert model3.num_anchors == 13
+    assert len(glob.glob(os.path.join(model3.anchor_rootdir, "anchor_*"))) == 12
+    
+    # Delete anchor
+    tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors.pop(1)
+    tryp_ben_mmvt_model_input.browndye_settings_input = tmp_bd_settings
+    os.chdir(TEST_DIRECTORY)
+    model4, model4_xml_path \
+        = prepare.generate_seekr2_model_and_filetree(
+            tryp_ben_mmvt_model_input, force_overwrite=False)
+    model_dir = os.path.dirname(model4_xml_path)
+    model4.anchor_rootdir = os.path.abspath(model_dir)
+    assert model4.anchors[0].milestones[0].variables['radius'] == 0.105
+    assert model4.anchors[1].milestones[0].variables['radius'] == 0.105
+    assert model4.anchors[1].milestones[1].variables['radius'] == 0.2
+    assert len(model4.anchors) == 12
+    assert model4.num_anchors == 12
+    assert len(glob.glob(os.path.join(model4.anchor_rootdir, "anchor_*"))) == 11
+    
+    # adjust BD milestone location
+    tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[-3].upper_milestone_radius = 1.65
+    tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[-2].lower_milestone_radius = 1.65
+    tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[-2].upper_milestone_radius = 1.85
+    tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[-1].lower_milestone_radius = 1.85
+    os.chdir(TEST_DIRECTORY)
+    model5, model5_xml_path \
+        = prepare.generate_seekr2_model_and_filetree(
+            tryp_ben_mmvt_model_input, force_overwrite=False)
+    model_dir = os.path.dirname(model5_xml_path)
+    model5.anchor_rootdir = os.path.abspath(model_dir)
+    assert model5.k_on_info.bd_milestones[0].outer_milestone.variables["radius"] == 1.85
+    assert model5.k_on_info.bd_milestones[0].inner_milestone.variables["radius"] == 1.65
+    
+    # delete BD calculation
+    tryp_ben_mmvt_model_input.browndye_settings_input = None
+    os.chdir(TEST_DIRECTORY)
+    model6, model6_xml_path \
+        = prepare.generate_seekr2_model_and_filetree(
+            tryp_ben_mmvt_model_input, force_overwrite=True)
+    model_dir = os.path.dirname(model6_xml_path)
+    model6.anchor_rootdir = os.path.abspath(model_dir)
+    
+    return

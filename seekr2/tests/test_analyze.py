@@ -103,20 +103,6 @@ def test_minor1d():
     assert common_analyze.minor1d(A, 2).all() == D.all()
     return
 
-def test_pretty_string_value_error():
-    mystr = common_analyze.pretty_string_value_error(
-        5.6e-2, 2.0e-3, error_digits=1, use_unicode=False)
-    expectedstr = "(5.6 +/- 0.2) * 10^-02"
-    assert(mystr == expectedstr)
-    mystr = common_analyze.pretty_string_value_error(
-        5.6e-2, 2.0e-1, error_digits=1, use_unicode=False)
-    expectedstr = "(5.6 +/- 20.0) * 10^-02"
-    assert(mystr == expectedstr)
-    mystr = common_analyze.pretty_string_value_error(
-        1.23456789e8, 4.5678e5, error_digits=2, use_unicode=False)
-    expectedstr = "(1.2346 +/- 0.0046) * 10^+08"
-    assert(mystr == expectedstr)
-
 def make_fake_output_file_osc(anchor, tmp_path, timestep=1.0):
     num_steps = 50
     
@@ -164,34 +150,7 @@ def make_fake_output_file2(anchor, tmp_path, ups=1, downs=9, timestep=1.0):
                     f.write(line)
     return
 
-def test_solve_rate_matrix():
-    Q = np.array(
-        [[-0.5, 0.5, 0.0, 0.0],
-         [0.1, -0.3, 0.2, 0.0],
-         [0.0, 0.15, -0.3, 0.15],
-         [0.0, 0.0, 0.3, -0.4]])
-    
-    K = np.zeros(Q.shape, dtype=np.longdouble)
-    for i in range(Q.shape[0]):
-        for j in range(Q.shape[0]):
-            if i == j:
-                K[i,j] = 0.0
-            else:
-                K[i,j] = -Q[i,j] / Q[i,i]
-         
-    for i in range(K.shape[0]-1):
-        my_sum = sum(K[i,:])
-        for j in range(K.shape[0]):
-            K[i,j] = K[i,j] / my_sum
-            
-    test_times_1 = common_analyze.solve_rate_matrix(Q)
-    
-    one_vector = np.ones((Q.shape[0]))
-    test_times_2 = np.linalg.solve(Q, -one_vector)
-    
-    error = np.linalg.norm(test_times_2 - test_times_1)
-    assert error < 1e-8
-    return
+
 
 """
 def make_smol_calculation(tmp_path, func=None):

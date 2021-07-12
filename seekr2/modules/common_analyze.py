@@ -26,7 +26,6 @@ DEFAULT_IMAGE_DIR = "images_and_plots/"
 
 class MissingStatisticsError(Exception):
     """Catch a very specific type of error in analysis stage."""
-    
     pass
 
 def solve_rate_matrix(Q_hat, max_iter=100, ETOL=1e-10):
@@ -298,7 +297,6 @@ def browndye_run_compute_rate_constant(compute_rate_constant_program,
         
 def browndye_parse_bd_milestone_results(results_filename_list, 
                                         sample_error_from_normal=False):
-    # common
     """
     Read and extract transition probabilities for a BD milestone.
     
@@ -359,7 +357,8 @@ def browndye_parse_bd_milestone_results(results_filename_list,
         else:
             transition_probabilities[key] = avg
             
-        completed_prob += transition_probabilities[key]
+        if key not in ["escaped", "stuck"]:
+            completed_prob += transition_probabilities[key]
     
     transition_probabilities["escaped"] = 1.0 - completed_prob
     return transition_probabilities, transition_counts

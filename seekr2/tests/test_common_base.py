@@ -64,3 +64,33 @@ def test_box_vectors():
     assert np.isclose(box_vector_q2.value_in_unit(unit.nanometers)[2][1], -3.0)
     assert np.isclose(box_vector_q2.value_in_unit(unit.nanometers)[2][2], 5.3)
     
+def test_Barostat_settings():
+    """
+    Initialize the Barostat_settings_openmm and Barostat_settings_namd
+    object to get more coverage.
+    """
+    dummy1 = base.Barostat_settings_openmm()
+    dummy2 = base.Barostat_settings_namd()
+    return
+    
+def test_Cuda_platform_settings():
+    """
+    Initialize the Cuda_platforms_settings() object.
+    """
+    cuda_platform_settings = base.Cuda_platform_settings()
+    properties = cuda_platform_settings.make_properties_dict()
+    assert properties["CudaDeviceIndex"] == "0"
+    assert properties["CudaPrecision"] == "mixed"
+    return
+
+def test_model_get_type(tryp_ben_mmvt_model, tryp_ben_elber_model):
+    """
+    Assure that the model.get_type() function is working properly
+    """
+    assert tryp_ben_mmvt_model.get_type() == "mmvt"
+    assert tryp_ben_elber_model.get_type() == "elber"
+    tryp_ben_mmvt_model.calculation_type = "wrong"
+    with pytest.raises(Exception) as e_info:
+        tryp_ben_mmvt_model.get_type()
+    return
+    
