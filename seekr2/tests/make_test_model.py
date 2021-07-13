@@ -244,7 +244,7 @@ def make_test_model(tmp_dir, num_anchors=3, milestone_type="spherical",
         mymodel.browndye_settings.ghost_indices_rec = [147]
         mymodel.browndye_settings.ghost_indices_lig = [15]
         mymodel.k_on_info.b_surface_directory = "b_surface"
-        mymodel.k_on_info.b_surface_num_steps = 100
+        mymodel.k_on_info.b_surface_num_trajectories = 10
         ion1 = base.Ion()
         ion1.radius = 1.2
         ion1.charge = -1.0
@@ -273,7 +273,7 @@ def make_test_model(tmp_dir, num_anchors=3, milestone_type="spherical",
         
         bd_milestone.inner_milestone = milestone1
         
-        bd_milestone.num_steps = 1
+        bd_milestone.num_trajectories = 1
         bd_milestone.receptor_indices = list(range(147))
         bd_milestone.ligand_indices = list(range(15))
         
