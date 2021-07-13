@@ -5,6 +5,8 @@ makes a Model object for testing purposes in sim_openmm.py,
 runner_openmm.py, and others.
 """
 
+# TODO: File marked for removal
+
 import os
 from shutil import copyfile
 

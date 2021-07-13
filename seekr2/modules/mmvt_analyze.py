@@ -545,7 +545,8 @@ class MMVT_anchor_statistics():
         print("self.R_i_alpha_average:", self.R_i_alpha_average)
         print("self.R_i_alpha_std_dev:", self.R_i_alpha_std_dev)
         print("self.R_i_alpha_total:", self.R_i_alpha_total)
-        print("len(self.R_i_alpha_list):", len(self.R_i_alpha_list))
+        if self.R_i_alpha_list is not None:
+            print("len(self.R_i_alpha_list):", len(self.R_i_alpha_list))
         print("self.T_alpha_average:", self.T_alpha_average)
         print("self.T_alpha_std_dev:", self.T_alpha_std_dev)
         print("self.T_alpha_total:", self.T_alpha_total)

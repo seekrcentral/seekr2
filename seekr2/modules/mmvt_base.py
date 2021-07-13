@@ -556,6 +556,6 @@ class MMVT_anchor(Serializer):
         """
         id_key_alias_value_dict, alias_key_id_value_dict, \
             neighbor_id_key_alias_value_dict = self._make_milestone_collection()
-        return id_key_alias_value_dict.keys()
+        return list(id_key_alias_value_dict.keys())
     
     

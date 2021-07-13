@@ -116,7 +116,7 @@ def tryp_ben_elber_model_input_persistent(tmpdir_factory):
     rootdir = tmpdir_factory.mktemp("tryp_ben_elber")
     tryp_ben_elber_model_input_persistent_obj \
         = create_model_input.create_tryp_ben_elber_model_input(
-            rootdir, bd=True)
+            rootdir, bd=False)
     return tryp_ben_elber_model_input_persistent_obj
 
 @pytest.fixture(scope="session")

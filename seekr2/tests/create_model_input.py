@@ -8,7 +8,24 @@ import seekr2.modules.common_base as base
 import seekr2.modules.common_prepare as common_prepare
 import seekr2.modules.common_cv as common_cv
 
-def create_host_guest_mmvt_model_input(root_dir, bd=True):
+def assign_amber_params(input_anchor, prmtop_filename, pdb_filename):
+    input_anchor.starting_amber_params = base.Amber_params()
+    input_anchor.starting_amber_params.prmtop_filename = prmtop_filename
+    input_anchor.starting_amber_params.pdb_coordinates_filename = pdb_filename
+    return
+
+def assign_forcefield_params(input_anchor, built_in_ff_list, custom_ff_list, 
+                             pdb_filename):
+    input_anchor.starting_forcefield_params = base.Forcefield_params()
+    input_anchor.starting_forcefield_params.built_in_forcefield_filenames \
+        = built_in_ff_list
+    input_anchor.starting_forcefield_params.custom_forcefield_filenames \
+        = custom_ff_list
+    input_anchor.starting_forcefield_params.pdb_coordinates_filename \
+        = pdb_filename
+    return
+
+def create_host_guest_mmvt_model_input(root_dir, bd=True, ff="amber"):
     """
     Create a generic host-guest model input object.
     """
@@ -32,6 +49,50 @@ def create_host_guest_mmvt_model_input(root_dir, bd=True):
     cv_input1.group2 = list(range(147, 162))
     cv_input1.input_anchors = []
     
+    radius_list = [0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 0.95,
+                   1.05, 1.15, 1.25, 1.35]
+    amber_prmtop_filename = "../data/hostguest_files/hostguest.parm7"
+    forcefield_built_in_ff_list = ["amber14/tip3pfb.xml"]
+    forcefield_custom_ff_list = ["../data/hostguest_files/hostguest.xml"]
+    pdb_filenames = ["../data/hostguest_files/hostguest_at0.5.pdb",
+                     "../data/hostguest_files/hostguest_at1.5.pdb",
+                     "../data/hostguest_files/hostguest_at2.5.pdb",
+                     "../data/hostguest_files/hostguest_at3.5.pdb",
+                     "../data/hostguest_files/hostguest_at4.5.pdb",
+                     "../data/hostguest_files/hostguest_at5.5.pdb",
+                     "../data/hostguest_files/hostguest_at6.5.pdb",
+                     "../data/hostguest_files/hostguest_at7.5.pdb",
+                     "../data/hostguest_files/hostguest_at8.5.pdb",
+                     "../data/hostguest_files/hostguest_at9.5.pdb",
+                     "../data/hostguest_files/hostguest_at10.5.pdb",
+                     "../data/hostguest_files/hostguest_at11.5.pdb",
+                     "../data/hostguest_files/hostguest_at12.5.pdb",
+                     ""]
+    for i, (radius, pdb_filename) in enumerate(zip(radius_list, pdb_filenames)):
+        input_anchor = common_cv.Spherical_cv_anchor()
+        input_anchor.radius = radius
+        if ff == "amber":
+            assign_amber_params(input_anchor, amber_prmtop_filename, 
+                                pdb_filename)
+        elif ff == "forcefield":
+            assign_forcefield_params(input_anchor, forcefield_built_in_ff_list, 
+                                     forcefield_custom_ff_list, pdb_filename)
+        else:
+            raise Exception("ff type not supported: {}".format(ff))
+        
+        if i == 0:
+            input_anchor.bound_state = True
+        else:
+            input_anchor.bound_state = False
+            
+        if i == len(radius_list)-1:
+            input_anchor.bulk_anchor = True
+        else:
+            input_anchor.bulk_anchor = False
+    
+        cv_input1.input_anchors.append(input_anchor)
+        
+    """ # TODO: marked for removal
     input_anchor1 = common_cv.Spherical_cv_anchor()
     input_anchor1.radius = 0.05
     input_anchor1.starting_amber_params = base.Amber_params()
@@ -213,6 +274,7 @@ def create_host_guest_mmvt_model_input(root_dir, bd=True):
     input_anchor14.bound_state = False
     input_anchor14.bulk_anchor = True
     cv_input1.input_anchors.append(input_anchor14)
+    """
     
     model_input.cv_inputs = [cv_input1]
     
