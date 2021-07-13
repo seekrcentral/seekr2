@@ -174,7 +174,6 @@ def choose_next_simulation_openmm(
                 
             if alpha != integer_instruction:
                 continue
-            
         if min_total_simulation_length is None:
             if model.get_type() == "mmvt":
                 min_total_simulation_length \
@@ -576,6 +575,7 @@ def run(model, instruction, min_total_simulation_length=None,
         "root directory was provided."
     
     counter = 0
+    print("mark0")
     while not md_complete:
         if model.openmm_settings is not None:
             anchor_info_to_run = choose_next_simulation_openmm(
@@ -673,6 +673,27 @@ def run(model, instruction, min_total_simulation_length=None,
             raise Exception("BD while loop appears to be stuck.")
         
     return
+
+def catch_erroneous_instruction(instruction):
+    """
+    Catch instructions that are not valid and throw an error.
+    """
+    error_msg = "Available instructions are: 'any', 'any_md', any_bd', "\
+        "'#', or 'b#', where '#' is an integer."
+    if instruction not in ["any", "any_md", "any_bd"]:
+        try:
+            integer_instruction = int(instruction)
+        except ValueError:
+            if instruction.startswith("b"):
+                try:
+                    bd_integer_instruction = int(instruction[1:])
+                except ValueError:
+                    print(error_msg)
+                    return False
+            else:
+                print(error_msg)
+                return False
+    return True
 
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser(description=__doc__)
@@ -840,6 +861,8 @@ if __name__ == "__main__":
     min_bd_milestone_encounters = args["min_bd_milestone_encounters"]
     num_rev_launches = args["num_rev_launches"]
     umbrella_restart_mode = args["umbrella_restart_mode"]
+    
+    assert catch_erroneous_instruction(instruction)
     
     assert os.path.exists(model_file), \
         "A nonexistent input file was provided: {}.".format(model_file)

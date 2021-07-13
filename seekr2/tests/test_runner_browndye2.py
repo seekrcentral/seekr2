@@ -131,6 +131,8 @@ def test_modify_variables(tryp_ben_mmvt_model):
     bd_directory = os.path.join(
         tryp_ben_mmvt_model.anchor_rootdir,
         tryp_ben_mmvt_model.k_on_info.b_surface_directory)
+    print("bd_directory:", bd_directory)
+    assert os.path.exists(bd_directory)
     runner_browndye2.run_bd_top(
         tryp_ben_mmvt_model.browndye_settings.browndye_bin_dir, 
         bd_directory)
