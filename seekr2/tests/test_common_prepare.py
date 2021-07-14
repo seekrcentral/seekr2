@@ -33,13 +33,14 @@ def test_namd_model_input(host_guest_mmvt_model_input):
         model_input, True)
     return
 
-def test_move_add_delete_input_anchors(tryp_ben_mmvt_model_input):
+def test_move_add_delete_input_anchors(tmp_path, tryp_ben_mmvt_model_input):
     """
     Test common_prepare.py's ability to move, add, and delete anchors
     in the model.
     """
     tmp_bd_settings = tryp_ben_mmvt_model_input.browndye_settings_input
     tryp_ben_mmvt_model_input.browndye_settings_input = None
+    tryp_ben_mmvt_model_input.root_directory = os.path.join(tmp_path, "tryp_ben_mmvt_2")
     tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[0].radius = 0.06
     tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[0].upper_milestone_radius = 0.11
     tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[1].lower_milestone_radius = 0.11
@@ -63,6 +64,7 @@ def test_move_add_delete_input_anchors(tryp_ben_mmvt_model_input):
     tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors.insert(1, new_input_anchor)
     tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[0].upper_milestone_radius = None
     tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[2].lower_milestone_radius = None
+    tryp_ben_mmvt_model_input.root_directory = os.path.join(tmp_path, "tryp_ben_mmvt_3")
     os.chdir(TEST_DIRECTORY)
     model3, model3_xml_path \
         = prepare.generate_seekr2_model_and_filetree(
@@ -79,6 +81,7 @@ def test_move_add_delete_input_anchors(tryp_ben_mmvt_model_input):
     # Delete anchor
     tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors.pop(1)
     tryp_ben_mmvt_model_input.browndye_settings_input = tmp_bd_settings
+    tryp_ben_mmvt_model_input.root_directory = os.path.join(tmp_path, "tryp_ben_mmvt_4")
     os.chdir(TEST_DIRECTORY)
     model4, model4_xml_path \
         = prepare.generate_seekr2_model_and_filetree(
@@ -97,6 +100,7 @@ def test_move_add_delete_input_anchors(tryp_ben_mmvt_model_input):
     tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[-2].lower_milestone_radius = 1.65
     tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[-2].upper_milestone_radius = 1.85
     tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[-1].lower_milestone_radius = 1.85
+    tryp_ben_mmvt_model_input.root_directory = os.path.join(tmp_path, "tryp_ben_mmvt_5")
     os.chdir(TEST_DIRECTORY)
     model5, model5_xml_path \
         = prepare.generate_seekr2_model_and_filetree(
@@ -108,6 +112,7 @@ def test_move_add_delete_input_anchors(tryp_ben_mmvt_model_input):
     
     # delete BD calculation
     tryp_ben_mmvt_model_input.browndye_settings_input = None
+    tryp_ben_mmvt_model_input.root_directory = os.path.join(tmp_path, "tryp_ben_mmvt_6")
     os.chdir(TEST_DIRECTORY)
     model6, model6_xml_path \
         = prepare.generate_seekr2_model_and_filetree(
