@@ -206,7 +206,7 @@
     <browndye_settings_input class="Browndye_settings_input">
         <binary_directory></binary_directory>
         <receptor_pqr_filename>data/hostguest_files/hostguest_receptor.pqr</receptor_pqr_filename>
-        <ligand_pqr_filename>data/hostguest_files/hostguest_ligand_sep_resid.pqr</ligand_pqr_filename>
+        <ligand_pqr_filename>data/hostguest_files/hostguest_ligand_.pqr</ligand_pqr_filename>
         <apbs_grid_spacing>0.5</apbs_grid_spacing>
         <receptor_indices>[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 
             15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 
