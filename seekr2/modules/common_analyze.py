@@ -711,7 +711,6 @@ class Data_sample():
             for end_milestone in end_milestones:
                 K_hat[end_milestone, :] = 0.0
                 K_hat[end_milestone, end_milestone] = 1.0
-            print("K_hat:", K_hat)
             
             p_i_hat = self.p_i[:]
             n = K_hat.shape[0]
@@ -771,13 +770,8 @@ class Data_sample():
                             else:
                                 K_hat[source_index, key] = value
                 
-                print("K_hat:", K_hat)
                 K_hat_inf = np.linalg.matrix_power(K_hat, MATRIX_EXPONENTIAL)
-                print("K_hat_inf:", K_hat_inf)
-                print("K_hat_inf.T:", K_hat_inf.T)
-                print("source_vec:", source_vec)
                 end_k_ons = np.dot(K_hat_inf.T, source_vec)
-                print("end_k_ons:", end_k_ons)
                 for end_milestone in end_milestones:
                     k_ons[end_milestone] = end_k_ons[end_milestone]
                 self.K_hat = K_hat

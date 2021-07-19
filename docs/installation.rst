@@ -62,14 +62,29 @@ which can be found in the "OpenMM Installation from Source" sections below.
 
 If you're OK with installing OpenMM with Conda, then type::
 
-  install -c conda-forge openmm
+  conda install -c conda-forge openmm
   conda install swig
-
-Make sure to take note of the CMAKE_INSTALL_PREFIX variable, which, in this 
-documentation, will be referred to as /path/to/openmm.
 
 If you desire to use NAMD, then see the "Install NAMD" section below.
 
+Make sure that CUDA is installed and working on your computer system. Many
+times, cuda is located in /usr/local/cuda:
+
+  ls /usr/local/cuda
+  
+If CUDA is located here, then the OpenMM plugin should be able to automatically
+detect it there. If CUDA is not in /usr/local/cuda, then you can also sometimes
+find the CUDA compile 'nvcc' using 'which'. You can also see whether the 
+CUDA_HOME environmental variable is defined:
+
+  which nvcc
+  echo $CUDA_HOME
+  
+If the commands didn't return a path to nvcc, or a value or CUDA_HOME, SEEKR2
+is likely to have difficulty finding CUDA on it's own. You may have to take
+more trouble to explicitly assign the necessary variables to the cmake or 
+ccmake commands.  
+  
 The following commands will install the SEEKR2 OpenMM Plugin::
 
   git clone https://github.com/seekrcentral/seekr2_openmm_plugin.git

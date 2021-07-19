@@ -575,7 +575,6 @@ def run(model, instruction, min_total_simulation_length=None,
         "root directory was provided."
     
     counter = 0
-    print("mark0")
     while not md_complete:
         if model.openmm_settings is not None:
             anchor_info_to_run = choose_next_simulation_openmm(
