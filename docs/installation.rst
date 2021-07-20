@@ -65,11 +65,6 @@ If you're OK with installing OpenMM with Conda, then type::
   conda install -c conda-forge openmm
   conda install swig
 
-Make sure to take note of the CMAKE_INSTALL_PREFIX variable, which, in this 
-documentation, will be referred to as /path/to/openmm.
-
-If you desire to use NAMD, then see the "Install NAMD" section below.
-
 The following commands will install the SEEKR2 OpenMM Plugin::
 
   git clone https://github.com/seekrcentral/seekr2_openmm_plugin.git

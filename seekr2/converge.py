@@ -123,7 +123,7 @@ def print_convergence_results(model, convergence_results, cutoff,
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser(description=__doc__)
     argparser.add_argument(
-        "input_file", metavar="MODEL_FILE", type=str, 
+        "model_file", metavar="MODEL_FILE", type=str, 
         help="name of model file for SEEKR2 calculation. This would be the "\
         "XML file generated in the prepare stage.")
     argparser.add_argument(
