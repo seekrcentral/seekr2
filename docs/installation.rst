@@ -62,7 +62,7 @@ which can be found in the "OpenMM Installation from Source" sections below.
 
 If you're OK with installing OpenMM with Conda, then type::
 
-  install -c conda-forge openmm
+  conda install -c conda-forge openmm
   conda install swig
 
 Make sure to take note of the CMAKE_INSTALL_PREFIX variable, which, in this 
