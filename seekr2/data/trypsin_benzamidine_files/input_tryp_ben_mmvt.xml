@@ -8,7 +8,7 @@
     <temperature>298.0</temperature>
     <pressure>1.0</pressure>
     <ensemble>nvt</ensemble>
-    <root_directory>~/tryp_ben_mmvt_seekr2_DELETE/</root_directory>
+    <root_directory>~/tryp_ben_mmvt_seekr2/</root_directory>
     <md_program>openmm</md_program>
     <constraints>HBonds</constraints>
     <rigidWater>True</rigidWater>

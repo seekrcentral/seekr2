@@ -220,6 +220,11 @@ if __name__ == "__main__":
     transition_minima, transition_details \
         = common_converge.calc_transition_steps(
         model, data_sample_list[-1])
-    print_convergence_results(model, rmsd_convergence_results, cutoff, 
+    if data_sample_list[-1] is not None:
+        print_convergence_results(model, rmsd_convergence_results, cutoff, 
                               transition_details, minimum_anchor_transitions,
                               data_sample_list[-1].bd_transition_counts)
+    else:
+        print_convergence_results(model, rmsd_convergence_results, cutoff, 
+                              transition_details, minimum_anchor_transitions,
+                              {})
