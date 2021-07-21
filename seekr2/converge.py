@@ -206,11 +206,13 @@ if __name__ == "__main__":
         print("All available options for --k_on_state include:", end_milestones)
         if k_on_state is None:
             k_on_state = end_milestones[0]
-            print("No milestone has been provided for k_on_state. "\
-                  "The milestone %d has been chosen by default." % k_on_state)
+            print("No BD milestone has been provided for k_on_state. "\
+                  "The BD milestone %d has been chosen by default." \
+                  % k_on_state)
         else:
             assert k_on_state in end_milestones, "The provided "\
-                "milestone of %d for k_on_state is not available." % k_on_state
+                "BD milestone of %d for k_on_state is not available." \
+                % k_on_state
     
     data_sample_list = converge(model, k_on_state, image_directory, 
                                 verbose=True)
