@@ -725,7 +725,7 @@ class MMVT_data_sample(common_analyze.Data_sample):
                             flux_matrix[alpha, beta] = 0.0
                         else:
                             if dead_end_anchor:
-                                flux_matrix[alpha, beta] = 2.0 *\
+                                flux_matrix[alpha, beta] = 1.0 *\
                                      self.k_alpha_beta[(alpha, beta)]
                             else:
                                 flux_matrix[alpha, beta] = \
