@@ -20,7 +20,6 @@ import seekr2.modules.mmvt_cv as mmvt_cv
 import seekr2.modules.elber_cv as elber_cv
 import seekr2.modules.common_sim_browndye2 as sim_browndye2
 import seekr2.modules.runner_browndye2 as runner_browndye2
-#import seekr2.libraries.serializer.serializer as serializer
 from abserdes import Serializer
 
 def anchor_has_files(model, anchor):
@@ -388,6 +387,10 @@ def model_factory(model_input, use_absolute_directory=False):
         namd_settings.langevin_integrator.timestep = model_input.timestep
         namd_settings.rigidWater = model_input.rigidWater
         model.namd_settings = namd_settings
+    
+    elif model_input.md_program.lower() == "toy":
+        toy_settings = base.Toy_settings()
+        model.toy_settings = toy_settings
         
     else:
         raise Exception("Invalid MD program entered:", 

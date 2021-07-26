@@ -84,22 +84,23 @@ class Elber_anchor_statistics():
         The attribute represents the number of times a transition was
         observed within cell alpha going from surface i to surface j.
         The keys of the dict are a tuple (i,j) composed of two ints,
-        and the value is an int count of transitions.
+        and the value is an int count of transitions. The int i and j
+        are alias_id's.
         
-    R_i_list : dict
+    R_i_list : list
         Represents the R_i_alpha quantities in the Elber calculation.
         The attribute represents the total time a transition spent
         after bouncing off of surface i before touching another 
         surface, and was observed within cell alpha. The keys of the 
         dict are an int i, and the value is a float representing time.
     
-    R_i_average : dict
-        The averages of the values in R_i_list.
+    R_i_average : float
+        The average of the values in R_i_list.
         
-    R_i_std_dev : dict
-        The standard deviations of the values in R_i_list.
+    R_i_std_dev : float
+        The standard deviation of the values in R_i_list.
         
-    R_i_total : dict
+    R_i_total : float
         The sum total of the values in R_i_list.
     
     i : int
@@ -212,7 +213,13 @@ class Elber_data_sample(common_analyze.Data_sample):
         self.MFPTs = {}
         self.k_off = None
         self.k_ons = {}
+        self.b_surface_k_ons_src = None
+        self.b_surface_k_on_errors_src = None
+        #self.b_surface_reaction_probabilities = None # REMOVE?
+        #self.b_surface_reaction_probability_errors = None # REMOVE?
+        #self.b_surface_transition_counts = None # REMOVE?
         self.bd_transition_counts = {}
+        self.bd_transition_probabilities = {}
         return
     
     def fill_out_data_quantities(self):

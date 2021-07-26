@@ -513,7 +513,78 @@ class Data_sample():
         self.MFPTs = None
         self.k_off = None
         self.k_ons = {}
+        self.b_surface_k_ons_src = None
+        self.b_surface_k_on_errors_src = None
+        #self.b_surface_reaction_probabilities = None # REMOVE?
+        #self.b_surface_reaction_probability_errors = None # REMOVE?
+        #self.b_surface_transition_counts = None # REMOVE?
         self.bd_transition_counts = {}
+        self.bd_transition_probabilities = {}
+    
+    def parse_browndye_results(self, bd_sample_from_normal=False):
+        """
+        Parse Browndye2 output files to fill out the milestoning model.
+        
+        Parameters:
+        -----------
+        
+        bd_sample_from_normal : bool, default False
+            If set to True, then k-on quantities will have a random
+            fluctuation introduced in a magnitude proportional to k-on
+            errors. This is used only for error estimations.
+        """
+        
+        b_surface_output_file_glob = os.path.join(
+            self.model.anchor_rootdir,
+            self.model.k_on_info.b_surface_directory, 
+            self.model.k_on_info.bd_output_glob)
+        output_file_list = glob.glob(b_surface_output_file_glob)
+        output_file_list = base.order_files_numerically(output_file_list)
+        if len(output_file_list) > 0:
+            if self.model.browndye_settings is not None:
+                k_ons_src, k_on_errors_src, reaction_probabilities, \
+                    reaction_probability_errors, transition_counts = \
+                    browndye_run_compute_rate_constant(os.path.join(
+                        self.model.browndye_settings.browndye_bin_dir,
+                        "compute_rate_constant"), output_file_list, 
+                        sample_error_from_normal=bd_sample_from_normal)
+                self.bd_transition_counts["b_surface"] = transition_counts
+                self.bd_transition_probabilities["b_surface"] = reaction_probabilities
+                self.b_surface_k_ons_src = k_ons_src
+                self.b_surface_b_surface_k_on_errors_src = k_on_errors_src
+                #self.b_surface_reaction_probabilities = reaction_probabilities # REMOVE?
+                #self.b_surface_reaction_probability_errors = reaction_probability_errors # REMOVE?
+            else:
+                raise Exception("No valid BD program settings provided.")
+            
+        if len(self.model.k_on_info.bd_milestones) > 0:
+            for bd_milestone in self.model.k_on_info.bd_milestones:
+                bd_milestone_results_file = os.path.join(
+                    self.model.anchor_rootdir, bd_milestone.directory, 
+                    "results.xml")
+                
+                if not os.path.exists(bd_milestone_results_file):
+                    bd_directory_list_glob = os.path.join(
+                        self.model.anchor_rootdir, 
+                        bd_milestone.directory, 
+                        "first_hitting_point_distribution", "lig*/")
+                    bd_directory_list = glob.glob(
+                        bd_directory_list_glob)
+                    if len(bd_directory_list) == 0:
+                        continue
+                    combine_fhpd_results(bd_milestone, 
+                                         bd_directory_list, 
+                                         bd_milestone_results_file)
+                    
+                transition_probabilities, transition_counts = \
+                    browndye_parse_bd_milestone_results(
+                        [bd_milestone_results_file])
+                self.bd_transition_counts[bd_milestone.index] \
+                    = transition_counts
+                self.bd_transition_probabilities[bd_milestone.index] \
+                        = transition_probabilities
+                        
+        return
     
     def compute_rate_matrix(self):
         """
@@ -591,8 +662,7 @@ class Data_sample():
         
         return
         
-    def calculate_kinetics(self, pre_equilibrium_approx=False, 
-                           bd_sample_from_normal=False):
+    def calculate_kinetics(self, pre_equilibrium_approx=False):
         """
         Once the rate matrix Q is computed, determine the timescales 
         and probabilities of transfers between different states. Fill
@@ -605,10 +675,7 @@ class Data_sample():
             Whether to use the pre-equilibrium approximation for
             computing kinetics.
             
-        bd_sample_from_normal : bool, default False
-            If set to True, then k-on quantities will have a random
-            fluctuation introduced in a magnitude proportional to k-on
-            errors. This is used only for error estimations.
+        
         """
         
         end_milestones = []
@@ -697,16 +764,6 @@ class Data_sample():
                 MFPTs[(end_milestone_src, end_milestone_dest)] = mfpt
         
         if self.model.k_on_info:
-            #if self.model.get_type() == "elber":
-            #    K_hat = make_elber_K_matrix(self.K)
-            #    for end_milestone in end_milestones:
-            #        K_hat[end_milestone, :] = 0.0
-            #        K_hat[end_milestone, end_milestone] = 1.0
-            #else:
-            #    K_hat = self.K[:,:]
-            #    for end_milestone in end_milestones:
-            #        K_hat[end_milestone, :] = 0.0
-            #        K_hat[end_milestone, end_milestone] = 1.0
             K_hat = self.K[:,:]
             for end_milestone in end_milestones:
                 K_hat[end_milestone, :] = 0.0
@@ -715,53 +772,18 @@ class Data_sample():
             p_i_hat = self.p_i[:]
             n = K_hat.shape[0]
             source_vec = np.zeros((n,1))
-            output_file_glob = os.path.join(
-                self.model.anchor_rootdir,
-                self.model.k_on_info.b_surface_directory, 
-                self.model.k_on_info.bd_output_glob)
-            output_file_list = glob.glob(output_file_glob)
-            output_file_list = base.order_files_numerically(output_file_list)
-            if len(output_file_list) > 0:
-                if self.model.browndye_settings is not None:
-                    k_ons_src, k_on_errors_src, reaction_probabilities, \
-                        reaction_probability_errors, transition_counts = \
-                        browndye_run_compute_rate_constant(os.path.join(
-                            self.model.browndye_settings.browndye_bin_dir,
-                            "compute_rate_constant"), output_file_list, 
-                            sample_error_from_normal=bd_sample_from_normal)
-                    self.bd_transition_counts["b_surface"] = transition_counts
-                else:
-                    raise Exception("No valid BD program settings provided.")
-                
+            
+            if self.bd_transition_counts is not None:
                 if len(bulk_milestones) > 0:
                     bulk_milestone = bulk_milestones[0]
                     for bd_milestone in self.model.k_on_info.bd_milestones:
-                        bd_results_file = os.path.join(
-                            self.model.anchor_rootdir, bd_milestone.directory, 
-                            "results.xml")
-                        
-                        if not os.path.exists(bd_results_file):
-                            bd_directory_list_glob = os.path.join(
-                                self.model.anchor_rootdir, 
-                                bd_milestone.directory, 
-                                "first_hitting_point_distribution", "lig*/")
-                            bd_directory_list = glob.glob(
-                                bd_directory_list_glob)
-                            if len(bd_directory_list) == 0:
-                                continue
-                            combine_fhpd_results(bd_milestone, 
-                                                 bd_directory_list, 
-                                                 bd_results_file)
-                        
                         source_index = bd_milestone.outer_milestone.index
-                        source_vec[source_index] = k_ons_src[source_index]
-                        results_filename_list = [bd_results_file]
-                        transition_probabilities, transition_counts = \
-                            browndye_parse_bd_milestone_results(
-                                results_filename_list)
-                        self.bd_transition_counts[bd_milestone.index] \
-                            = transition_counts
-                        #src_index = bd_milestone.outer_milestone.index
+                        source_vec[source_index] \
+                            = self.b_surface_k_ons_src[source_index]
+                            
+                        transition_probabilities \
+                            = self.bd_transition_probabilities[
+                                bd_milestone.index]
                         K_hat[source_index, :] = 0.0
                         for key in transition_probabilities:
                             value = transition_probabilities[key]
@@ -769,7 +791,6 @@ class Data_sample():
                                 pass
                             else:
                                 K_hat[source_index, key] = value
-                
                 K_hat_inf = np.linalg.matrix_power(K_hat, MATRIX_EXPONENTIAL)
                 end_k_ons = np.dot(K_hat_inf.T, source_vec)
                 for end_milestone in end_milestones:

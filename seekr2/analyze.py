@@ -424,6 +424,7 @@ class Analysis:
         """
         self.main_data_sample.calculate_pi_alpha()
         self.main_data_sample.fill_out_data_quantities()
+        self.main_data_sample.parse_browndye_results()
         self.main_data_sample.compute_rate_matrix()
         self.main_data_sample.calculate_thermodynamics()
         self.main_data_sample.calculate_kinetics(pre_equilibrium_approx)
@@ -439,10 +440,10 @@ class Analysis:
             data_sample = self.data_sample_list[i]
             data_sample.calculate_pi_alpha()
             data_sample.fill_out_data_quantities()
+            data_sample.parse_browndye_results(bd_sample_from_normal=True)
             data_sample.compute_rate_matrix()
             data_sample.calculate_thermodynamics()
-            data_sample.calculate_kinetics(pre_equilibrium_approx, 
-                                           bd_sample_from_normal=True)
+            data_sample.calculate_kinetics(pre_equilibrium_approx)
             k_offs.append(data_sample.k_off)
             p_i_list.append(data_sample.p_i)
             pi_alpha_list.append(data_sample.pi_alpha)
@@ -540,7 +541,7 @@ class Analysis:
             R_i_total.append(R_i_element)
             R_i_std_dev.append(R_i_std_element)
             R_i_count.append(R_i_count_element)            
-            
+        
         self.main_data_sample = elber_analyze.Elber_data_sample(
             self.model, N_i_j_list, R_i_total)
         self.main_data_sample.fill_out_data_quantities()
@@ -557,6 +558,7 @@ class Analysis:
         compute the thermodynamic and kinetic quantities and their
         uncertainties. Applies to systems using Elber milestoning.
         """
+        self.main_data_sample.parse_browndye_results()
         self.main_data_sample.compute_rate_matrix()
         #self.main_data_sample.Q = common_analyze.minor2d(
         #    self.main_data_sample.Q, bulkstate, bulkstate)
@@ -686,9 +688,10 @@ class Analysis:
             print("  Dissociation constant (M) to state", key, ":", 
                   common_analyze.pretty_string_value_error(
                       diss_constant, diss_constant_err))
-            print("  \u0394G (kcal/mol) to state", key, ":", 
-                  common_analyze.pretty_string_value_error(
-                      delta_G, delta_G_err))
+            if key in self.k_ons_error:
+                print("  \u0394G (kcal/mol) to state", key, ":", 
+                      common_analyze.pretty_string_value_error(
+                          delta_G, delta_G_err))
         
         print("Mean first passage times (s):")
         for key in self.MFPTs:

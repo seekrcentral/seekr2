@@ -36,6 +36,15 @@ Make sure Conda is installed by running:
 
 ``which conda``
 
+You will want to use Python 3.8, so you can see which version you are with
+the command:
+
+``python -V``
+
+If it says any other version besides Python 3.8, then enter:
+
+``conda install python=3.8``
+
 If you want you can create a conda environment, but you can also just install 
 all packages straight to the base environment. Whenever installing or running
 anything involving OpenMM or SEEKR2, make sure that you have activated your 

@@ -16,7 +16,7 @@ def openmm_read_output_file_list(output_file_list, max_time=None,
     SEEKR2 and extract transition statistics and times
     """
     
-    MAX_ITER = 200000
+    MAX_ITER = 1000000000
     if len(existing_lines) == 0:
         files_lines = []
         start_times = []
@@ -101,8 +101,8 @@ def openmm_read_output_file_list(output_file_list, max_time=None,
             if not skip_restart_check:
                 assert time_diff >= 0.0, "incubation times cannot be "\
                     "negative. Has an output file been concatenated "\
-                    "incorrectly? file name: %s, line number: %d" % (
-                    output_file_name, counter)
+                    "incorrectly? file name(s): %s, line number: %d" % (
+                    ",".join(output_file_list), counter)
             N_i_j_alpha[(src_boundary, dest_boundary)] += 1
             R_i_alpha_list[src_boundary].append(time_diff)
             src_boundary = dest_boundary
@@ -663,7 +663,13 @@ class MMVT_data_sample(common_analyze.Data_sample):
         self.MFPTs = {}
         self.k_off = None
         self.k_ons = {}
+        self.b_surface_k_ons_src = None
+        self.b_surface_k_on_errors_src = None
+        #self.b_surface_reaction_probabilities = None # REMOVE?
+        #self.b_surface_reaction_probability_errors = None # REMOVE?
+        #self.b_surface_transition_counts = None # REMOVE?
         self.bd_transition_counts = {}
+        self.bd_transition_probabilities = {}
         
         # Fill out N_alpha
         for alpha, anchor in enumerate(model.anchors):
@@ -725,7 +731,12 @@ class MMVT_data_sample(common_analyze.Data_sample):
                             flux_matrix[alpha, beta] = 0.0
                         else:
                             if dead_end_anchor:
-                                flux_matrix[alpha, beta] = 2.0 *\
+                                # This line was supposed to work for a 1D
+                                # Smoluchowski system, but with a 3D
+                                # spherical system, the 2.0 needs to be 1.0.
+                                #flux_matrix[alpha, beta] = 2.0 *\
+                                #     self.k_alpha_beta[(alpha, beta)]
+                                flux_matrix[alpha, beta] = 1.0 *\
                                      self.k_alpha_beta[(alpha, beta)]
                             else:
                                 flux_matrix[alpha, beta] = \
