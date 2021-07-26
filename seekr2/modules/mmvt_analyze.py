@@ -16,7 +16,7 @@ def openmm_read_output_file_list(output_file_list, max_time=None,
     SEEKR2 and extract transition statistics and times
     """
     
-    MAX_ITER = 200000
+    MAX_ITER = 1000000000
     if len(existing_lines) == 0:
         files_lines = []
         start_times = []
