@@ -185,6 +185,7 @@ def smoluchowski_mmvt_model_persistent(tmpdir_factory,
     bd_milestone.outer_milestone = smoluchowski_mmvt_model_obj.anchors[-1].milestones[0]
     bd_milestone.inner_milestone = smoluchowski_mmvt_model_obj.anchors[-2].milestones[0]
     smoluchowski_mmvt_model_obj.k_on_info.bd_milestones.append(bd_milestone)
+    smoluchowski_mmvt_model_obj.browndye_settings = base.Browndye_settings()
     
     return smoluchowski_mmvt_model_obj
 
@@ -221,6 +222,13 @@ def smoluchowski_elber_model_persistent(tmpdir_factory,
             smoluchowski_elber_model_input_persistent, force_overwrite=False)
     model_dir = os.path.dirname(model_xml_path)
     smoluchowski_elber_model_obj.anchor_rootdir = os.path.abspath(model_dir)
+    smoluchowski_elber_model_obj.k_on_info = base.K_on_info()
+    bd_milestone = base.BD_milestone()
+    bd_milestone.index = 0
+    bd_milestone.outer_milestone = smoluchowski_elber_model_obj.anchors[-1].milestones[1]
+    bd_milestone.inner_milestone = smoluchowski_elber_model_obj.anchors[-2].milestones[1]
+    smoluchowski_elber_model_obj.k_on_info.bd_milestones.append(bd_milestone)
+    smoluchowski_elber_model_obj.browndye_settings = base.Browndye_settings()
     return smoluchowski_elber_model_obj
 
 @pytest.fixture

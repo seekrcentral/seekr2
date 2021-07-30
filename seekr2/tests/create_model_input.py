@@ -672,4 +672,5 @@ def create_smoluchowski_elber_model_input(root_dir):
     cv_input1.input_anchors.append(input_anchor5)
     
     model_input.cv_inputs = [cv_input1]
+    model_input.browndye_settings_input  = None
     return model_input

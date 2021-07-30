@@ -583,7 +583,7 @@ class Data_sample():
                     = transition_counts
                 self.bd_transition_probabilities[bd_milestone.index] \
                         = transition_probabilities
-                        
+                                                
         return
     
     def compute_rate_matrix(self):
@@ -778,6 +778,7 @@ class Data_sample():
                     bulk_milestone = bulk_milestones[0]
                     for bd_milestone in self.model.k_on_info.bd_milestones:
                         source_index = bd_milestone.outer_milestone.index
+                        print("source_index:", source_index)
                         source_vec[source_index] \
                             = self.b_surface_k_ons_src[source_index]
                             

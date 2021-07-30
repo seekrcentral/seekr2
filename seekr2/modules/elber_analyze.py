@@ -16,7 +16,7 @@ def openmm_read_output_file_list(output_file_list, max_time=None,
     Read the output files produced by the plugin (backend) of 
     openmmvt and extract transition statistics and times
     """
-    MAX_ITER = 200000
+    MAX_ITER = 1000000000
     if len(existing_lines) == 0:
         files_lines = []
         for i, output_file_name in enumerate(output_file_list):
@@ -27,7 +27,8 @@ def openmm_read_output_file_list(output_file_list, max_time=None,
                         continue
                     line_list = line.strip().split(",")
                     dest_boundary = line_list[0]
-                    incubation_time = float(line_list[1])
+                    transition_counter = line_list[1]
+                    incubation_time = float(line_list[2])
                     if dest_boundary.endswith("*"):
                         continue
                     line_list = (int(dest_boundary), incubation_time)

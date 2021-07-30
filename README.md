@@ -50,20 +50,31 @@ some must be installed separately, and are installed first, before SEEKR2.
 OpenMM is recommended for the molecular dynamics (MD) stage of SEEKR2. SEEKR2 
 also needs the SEEKR2 OpenMM Plugin in order to use OpenMM for MD simulations.
 
+In order to get the best performance from SEEKR2, you will need to have a
+recent version of CUDA installed on your system. Check which version you 
+have with the following command:
+
+```
+echo $CUDA_HOME
+```
+
+If nothing was returned, you may need to install or import CUDA to your
+system. Contact your system administrator or consult NVIDIA's CUDA installation
+guide here: 
+https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html
+
 The easiest, quickest way to install the SEEKR2 OpenMM Plugin is to use
-Conda. If you don't already have Conda installed, Download Conda from 
+Conda. If you don't already have Conda installed, Download Conda with 
+Python version 3.8 from 
 https://conda.io/en/latest/miniconda.html and run the downloaded script and 
 fill out the prompts. 
 
-It is recommended that you download and use Python version 3.8.
-
 With Conda working, install OpenMM and Swig:
 
-WARNING: If you already have a version of CUDA installed, these commands
-will cause the most recent version of CUDA Tools to be installed in the Conda
-environment, which could cause version conflicts and errors. If you already
-have CUDA installed, consider installing OpenMM from source, instructions
-for which can be found at https://seekr2.readthedocs.io/en/latest.
+WARNING: If you already have a version of OpenMM installed (say, from source), 
+these commands will cause the most recent version of CUDA Tools to be 
+installed in the Conda environment, which could cause version conflicts and 
+errors. Therefore, only follow these steps if OpenMM isn't already installed.
 
 ```
 conda install -c conda-forge openmm

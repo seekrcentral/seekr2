@@ -5,6 +5,8 @@ Define the object used by the Toy engine's Smoluchowski integrator, as well
 as some of SEEKR2's tests.
 """
 
+from collections import defaultdict
+
 import numpy as np
 from scipy.integrate import simps
 import matplotlib.pyplot as plt
@@ -103,10 +105,10 @@ class SmoluchowskiSphericalRegion():
         self.compute_outward_flux()
         self.compute_inward_flux()
         self.weight = 0.0
-        self.k_alpha_down = None
-        self.k_alpha_up = None
-        self.N_alpha_down_up = None
-        self.N_alpha_up_down = None
+        self.N_alpha_down = None
+        self.N_alpha_up = None
+        self.N_alpha_down_up = 0.0
+        self.N_alpha_up_down = 0.0
         self.R_alpha = None
         self.make_mmvt_statistics()
         
@@ -265,14 +267,15 @@ class SmoluchowskiSphericalRegion():
         area = 4.0*np.pi*simps(area_vals, dx=self.h)
         return area
     
-    def make_mmvt_statistics(self):
+    """
+   def make_mmvt_statistics(self):
         w_a = self.potential_energy_function.evaluate_energy(self.a)
         w_b = self.potential_energy_function.evaluate_energy(self.b)
-        self.N_alpha_down = self.a**2 * expBetaW(w_a, self.beta)
-        self.N_alpha_up = self.b**2 * expBetaW(w_b, self.beta)
+        #self.N_alpha_down = self.a**2 * expBetaW(w_a, self.beta)
+        #self.N_alpha_up = self.b**2 * expBetaW(w_b, self.beta)
         self.T_alpha = self.partition_function
-        self.k_alpha_down = self.N_alpha_down / self.T_alpha
-        self.k_alpha_up = self.N_alpha_up / self.T_alpha
+        #self.k_alpha_down = self.N_alpha_down / self.T_alpha
+        #self.k_alpha_up = self.N_alpha_up / self.T_alpha
         # I denotes current - flux J integrated over area
         I_outward_weighted = 4.0 * np.pi * self.b**2 * self.J_outward
         I_inward_weighted = 4.0 * np.pi * self.a**2 * self.J_inward
@@ -288,6 +291,45 @@ class SmoluchowskiSphericalRegion():
         self.N_alpha_down_up = 1.0 #I_outward_weighted / denominator
         self.R_alpha = 1.0 / denominator
         self.R_alpha_down_up = 1.0 / I_outward_weighted
+        return
+    """
+    
+    # fix this better tomorrow...
+    
+    def make_mmvt_statistics(self):
+        w_a = self.potential_energy_function.evaluate_energy(self.a)
+        w_b = self.potential_energy_function.evaluate_energy(self.b)
+        #self.N_alpha_down = self.a**2 * expBetaW(w_a, self.beta)
+        #self.N_alpha_up = self.b**2 * expBetaW(w_b, self.beta)
+        self.T_alpha = 1000.0 #self.partition_function
+        #self.k_alpha_down = self.N_alpha_down / self.T_alpha
+        #self.k_alpha_up = self.N_alpha_up / self.T_alpha
+        # I denotes current - flux J integrated over area
+        I_outward_weighted = 4.0 * np.pi * self.b**2 * self.J_outward
+        I_inward_weighted = 4.0 * np.pi * self.a**2 * self.J_inward
+        
+        total_flux = (I_outward_weighted + I_inward_weighted)
+        if np.isclose(I_inward_weighted, 0.0):
+            self.R_alpha_up_down = 0.0
+            self.N_alpha_up_down = 0.0
+            
+            #time_per_transition_down_up = 1.0 / I_outward_weighted
+            #self.N_alpha_down_up = self.T_alpha / time_per_transition_down_up #1.0 
+            #self.R_alpha = #1.0 / denominator
+            self.R_alpha_down_up = self.T_alpha
+        else:
+            time_per_transition_up_down = 1.0 / I_inward_weighted
+            time_per_transition_down_up = 1.0 / I_outward_weighted
+            time_per_transition_sum = time_per_transition_up_down + time_per_transition_down_up
+            time_fraction_up_down = time_per_transition_up_down / time_per_transition_sum
+            time_fraction_down_up = time_per_transition_down_up / time_per_transition_sum
+            self.R_alpha_up_down = self.T_alpha * time_fraction_up_down
+            self.N_alpha_up_down =  self.T_alpha / time_per_transition_sum
+            
+            self.R_alpha_down_up = self.T_alpha * time_fraction_down_up
+            self.N_alpha_down_up = self.T_alpha / time_per_transition_sum
+            self.R_alpha = None
+            
         return
     
     def plot_functions(self):
@@ -307,7 +349,38 @@ class SmoluchowskiSphericalRegion():
         plt.title("Inward flux concentration")
         plt.show()
         return
+    
+    def produce_mmvt_statistics(self, i):
+        T_alpha = self.T_alpha
+        N_backwards = self.N_alpha_down
+        N_forwards = self.N_alpha_up
+        R_i_backwards = self.R_alpha_up_down
+        R_i_forwards = self.R_alpha_down_up
+        N_ij_backwards = self.N_alpha_up_down
+        N_ij_forwards = self.N_alpha_down_up
         
+        N_i_j_alpha_dict = defaultdict(int)
+        R_i_alpha_dict = defaultdict(float)
+        N_alpha_beta_dict = defaultdict(int)
+        new_time_factor = (R_i_forwards + R_i_backwards) / T_alpha
+        new_T_alpha = new_time_factor * T_alpha
+        if i == 0:
+            N_alpha_beta_dict[1] = N_forwards #new_time_factor
+            R_i_alpha_dict[1] = new_T_alpha
+        else:
+            N_i_j_alpha_dict[(1, 2)] = N_ij_forwards
+            N_i_j_alpha_dict[(2, 1)] = N_ij_backwards
+            R_i_alpha_dict[1] = R_i_forwards
+            R_i_alpha_dict[2] = R_i_backwards
+            N_alpha_beta_dict[1] = N_backwards # * new_time_factor
+            if N_forwards is not None:
+                N_alpha_beta_dict[2] = N_forwards # * new_time_factor
+            else:
+                N_alpha_beta_dict[2] = N_backwards
+        
+        return N_i_j_alpha_dict, R_i_alpha_dict, N_alpha_beta_dict, new_T_alpha
+        
+"""
 class SmoluchowskiSphericalMMVTIntegrator(Integrator):
     def __init__(self, temperature):
         self.boltzmanns_constant
@@ -323,6 +396,7 @@ class SmoluchowskiSphericalMMVTIntegrator(Integrator):
 class Simulation():
     def __init__(self):
         pass
+"""
 
 class SmoluchowskiCalculation1d():
     def __init__(self, potential_energy_function, milestones, 
@@ -338,6 +412,7 @@ class SmoluchowskiCalculation1d():
         self.partition_function = 0.0
         self.make_regions()
         self.make_elber_statistics()
+        self.make_state_transition_rates()
         return
     
     def make_regions(self):
@@ -364,6 +439,29 @@ class SmoluchowskiCalculation1d():
         for region in self.regions:
             region.weight = region.partition_function / self.partition_function
         return
+    
+    def make_state_transition_rates(self):
+        #self.downward_rates = []
+        #self.upward_rates = []
+        N_MAGNITUDE = 100.0 # 100.0
+        prev_rate = 0.0
+        for i in range(len(self.regions)-1):
+            a = self.regions[i].partition_function
+            b = self.regions[i+1].partition_function
+            if self.regions[i].N_alpha_down_up > 1.0:
+                down_rate = N_MAGNITUDE*self.regions[i].N_alpha_down_up
+            else:
+                down_rate = 10000.0
+            up_rate = (b*down_rate - prev_rate)/a
+            #self.downward_rates.append(down_rate)
+            #self.upward_rates.append(up_rate)
+            self.regions[i].N_alpha_up = up_rate
+            self.regions[i+1].N_alpha_down = down_rate
+            prev_rate = -a*up_rate + b*down_rate
+            
+        #print("self.upward_rates:", self.upward_rates)
+        #print("self.downward_rates:", self.downward_rates)
+        return
             
     def make_elber_statistics(self):
         self.n_list = []
@@ -380,6 +478,42 @@ class SmoluchowskiCalculation1d():
                 self.n_list.append((n_down, n_up))
             time = 1.0 / (lower_region.J_inward + upper_region.J_outward)
             self.t_list.append(time)
+            
+    def produce_elber_statistics(self):
+        elberN_ij = defaultdict(float)
+        elberR_i = defaultdict(float)
+        num_milestones = len(self.regions)
+        for i, region1 in enumerate(self.regions):
+            if i == 0:
+                region2 = self.regions[i+1]
+                elberN_ij[(0,1)] = 1.0
+                # need to make sure that u and exp(-beta*W) match up
+                #  on the edge.
+                w_b1 = self.potential_energy_function.evaluate_energy(region1.b)
+                region1_edge_value = expBetaW(w_b1, region1.beta)
+                region2_edge_value = region2.u_r_outward[0]
+                region2_current_I = 4.0 * np.pi * region2.b**2 * region2.J_outward
+                elberR_i[0] = (region1.partition_function * region2_edge_value/region1_edge_value + 1.0) / (region2_current_I)
+                
+            elif i == num_milestones-1:
+                elberN_ij[(num_milestones-1, num_milestones-2)] = 1.0
+                region1_current_I = 4.0 * np.pi * region1.a**2 * region1.J_inward / region1_edge_value
+                elberR_i[i] = 1.0 / region1_current_I
+                    
+            else:
+                region2 = self.regions[i+1]
+                region1_edge_value = region1.u_r_inward[-1]
+                region2_edge_value = region2.u_r_outward[0]
+                region1_current_I = 4.0 * np.pi * region1.a**2 * region1.J_inward / region1_edge_value
+                region2_current_I = 4.0 * np.pi * region2.b**2 * region2.J_outward / region2_edge_value
+                new_total_volume = 1/region1_edge_value + 1/region2_edge_value
+                
+                total_flux = region2_current_I + region1_current_I
+                elberN_ij[(i,i+1)] = region2_current_I / total_flux
+                elberN_ij[(i,i-1)] = region1_current_I / total_flux 
+                elberR_i[i] = new_total_volume / total_flux
+                
+        return elberN_ij, elberR_i
             
 def make_smoluchowski_calculation_from_model(model, potential_energy_function,
                                              beta=1.0, diffusion=1.0):
@@ -404,8 +538,8 @@ if __name__ == "__main__":
     #potential_energy_function = QuadraticPotentialEnergyFunction(a=0.1)
     smol = SmoluchowskiSphericalRegion(1.0, 2.0, potential_energy_function, 1.0, 1.0)
     
-    print("smol.k_alpha_down: ", smol.k_alpha_down)
-    print("smol.k_alpha_up: ", smol.k_alpha_up)
+    #print("smol.k_alpha_down: ", smol.k_alpha_down)
+    #print("smol.k_alpha_up: ", smol.k_alpha_up)
     print("smol.N_alpha_down_up: ", smol.N_alpha_down_up)
     print("smol.N_alpha_up_down: ", smol.N_alpha_up_down)
     print("smol.R_alpha: ", smol.R_alpha)

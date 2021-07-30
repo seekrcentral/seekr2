@@ -63,11 +63,10 @@ instructions for how install OpenMM and SEEKR2 from source.
 The remainder of this section assumes that you will be installing OpenMM for
 the first time using Conda.
 
-WARNING: If you already have a version of CUDA installed, these commands will 
-cause the most recent version of CUDA Tools to be installed in the Conda 
-environment, which could cause version conflicts and errors. If you already 
-have CUDA installed, consider installing OpenMM from source, instructions for 
-which can be found in the "OpenMM Installation from Source" sections below.
+WARNING: If you already have a version of OpenMM installed (say, from source), 
+these commands will cause the most recent version of CUDA Tools to be 
+installed in the Conda environment, which could cause version conflicts and 
+errors. Therefore, only follow these steps if OpenMM isn't already installed.
 
 If you're OK with installing OpenMM with Conda, then type::
 
@@ -76,8 +75,12 @@ If you're OK with installing OpenMM with Conda, then type::
 
 If you desire to use NAMD, then see the "Install NAMD" section below.
 
-Make sure that CUDA is installed and working on your computer system. Many
-times, cuda is located in /usr/local/cuda:
+Make sure that CUDA is installed and working on your computer system. If you 
+need to install CUDA, contact your system administrator or consult NVIDIA's 
+CUDA installation guide here: 
+https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html
+
+Many times, cuda is located in /usr/local/cuda:
 
   ls /usr/local/cuda
   

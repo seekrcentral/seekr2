@@ -74,6 +74,7 @@ def openmm_read_output_file_list(output_file_list, max_time=None,
     src_boundary = None
     src_time = None
     for counter, line in enumerate(lines):
+        
         dest_boundary = int(line[0])
         bounce_index = int(line[1])
         # TODO: change the following value to interval time
@@ -238,7 +239,7 @@ def namd_read_output_file_list(output_file_list, anchor, timestep,
     T_alpha : float
         Total time spent within this cell.
     """
-    MAX_ITER = 200000
+    MAX_ITER = 1000000000
     if len(existing_lines) == 0:
         files_lines = []
         start_times = []
@@ -370,6 +371,8 @@ def namd_read_output_file_list(output_file_list, anchor, timestep,
                     "negative. Has an output file been concatenated "\
                     "incorrectly? file name: %s, line number: %d" % (
                         output_file_name, counter)
+                alias_src = None
+                alias_dest = None
                 for milestone in anchor.milestones:
                     if milestone.index == src_boundary:
                         alias_src = milestone.alias_index
