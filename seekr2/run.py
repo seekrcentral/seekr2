@@ -57,7 +57,11 @@ def choose_next_simulation_browndye2(
     bd_milestone_info_to_run_unsorted = []
     data_sample_list = converge.converge(model)
     data_sample = data_sample_list[-1]
-    bd_transition_counts = data_sample.bd_transition_counts
+    if data_sample is None:
+        bd_transition_counts = {}
+    else:
+        bd_transition_counts = data_sample.bd_transition_counts
+        
     if instruction in ["any", "any_bd", "b_surface"]:
         # then try to run the b-surface simulations
         if "b_surface" not in bd_transition_counts:
@@ -575,7 +579,6 @@ def run(model, instruction, min_total_simulation_length=None,
         "root directory was provided."
     
     counter = 0
-    print("mark0")
     while not md_complete:
         if model.openmm_settings is not None:
             anchor_info_to_run = choose_next_simulation_openmm(

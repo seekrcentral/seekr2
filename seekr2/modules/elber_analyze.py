@@ -16,7 +16,7 @@ def openmm_read_output_file_list(output_file_list, max_time=None,
     Read the output files produced by the plugin (backend) of 
     openmmvt and extract transition statistics and times
     """
-    MAX_ITER = 200000
+    MAX_ITER = 1000000000
     if len(existing_lines) == 0:
         files_lines = []
         for i, output_file_name in enumerate(output_file_list):
@@ -27,7 +27,8 @@ def openmm_read_output_file_list(output_file_list, max_time=None,
                         continue
                     line_list = line.strip().split(",")
                     dest_boundary = line_list[0]
-                    incubation_time = float(line_list[1])
+                    transition_counter = line_list[1]
+                    incubation_time = float(line_list[2])
                     if dest_boundary.endswith("*"):
                         continue
                     line_list = (int(dest_boundary), incubation_time)
@@ -84,22 +85,23 @@ class Elber_anchor_statistics():
         The attribute represents the number of times a transition was
         observed within cell alpha going from surface i to surface j.
         The keys of the dict are a tuple (i,j) composed of two ints,
-        and the value is an int count of transitions.
+        and the value is an int count of transitions. The int i and j
+        are alias_id's.
         
-    R_i_list : dict
+    R_i_list : list
         Represents the R_i_alpha quantities in the Elber calculation.
         The attribute represents the total time a transition spent
         after bouncing off of surface i before touching another 
         surface, and was observed within cell alpha. The keys of the 
         dict are an int i, and the value is a float representing time.
     
-    R_i_average : dict
-        The averages of the values in R_i_list.
+    R_i_average : float
+        The average of the values in R_i_list.
         
-    R_i_std_dev : dict
-        The standard deviations of the values in R_i_list.
+    R_i_std_dev : float
+        The standard deviation of the values in R_i_list.
         
-    R_i_total : dict
+    R_i_total : float
         The sum total of the values in R_i_list.
     
     i : int
@@ -197,7 +199,7 @@ class Elber_data_sample(common_analyze.Data_sample):
         the end states.
     """
     
-    def __init__(self, model, N_i_j_list, R_i_list):
+    def __init__(self, model, N_i_j_list=None, R_i_list=None):
         self.model = model
         self.N_i_j_list = N_i_j_list
         self.R_i_list = R_i_list
@@ -212,7 +214,13 @@ class Elber_data_sample(common_analyze.Data_sample):
         self.MFPTs = {}
         self.k_off = None
         self.k_ons = {}
+        self.b_surface_k_ons_src = None
+        self.b_surface_k_on_errors_src = None
+        #self.b_surface_reaction_probabilities = None # REMOVE?
+        #self.b_surface_reaction_probability_errors = None # REMOVE?
+        #self.b_surface_transition_counts = None # REMOVE?
         self.bd_transition_counts = {}
+        self.bd_transition_probabilities = {}
         return
     
     def fill_out_data_quantities(self):
@@ -220,7 +228,10 @@ class Elber_data_sample(common_analyze.Data_sample):
         Compute quantities such as N_ij and R_i for eventual 
         construction of rate matrix Q.
         """
-        
+        if self.N_i_j_list is None or self.R_i_list is None:
+            raise Exception("Unable to call fill_out_data_quantities(): "\
+                            "No statistics present in Data Sample.")
+            
         self.N_ij = defaultdict(int)
         self.R_i = defaultdict(float)
         for i, anchor in enumerate(self.model.anchors):

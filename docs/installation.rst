@@ -36,6 +36,15 @@ Make sure Conda is installed by running:
 
 ``which conda``
 
+You will want to use Python 3.8, so you can see which version you are with
+the command:
+
+``python -V``
+
+If it says any other version besides Python 3.8, then enter:
+
+``conda install python=3.8``
+
 If you want you can create a conda environment, but you can also just install 
 all packages straight to the base environment. Whenever installing or running
 anything involving OpenMM or SEEKR2, make sure that you have activated your 
@@ -54,16 +63,39 @@ instructions for how install OpenMM and SEEKR2 from source.
 The remainder of this section assumes that you will be installing OpenMM for
 the first time using Conda.
 
-WARNING: If you already have a version of CUDA installed, these commands will 
-cause the most recent version of CUDA Tools to be installed in the Conda 
-environment, which could cause version conflicts and errors. If you already 
-have CUDA installed, consider installing OpenMM from source, instructions for 
-which can be found in the "OpenMM Installation from Source" sections below.
+WARNING: If you already have a version of OpenMM installed (say, from source), 
+these commands will cause the most recent version of CUDA Tools to be 
+installed in the Conda environment, which could cause version conflicts and 
+errors. Therefore, only follow these steps if OpenMM isn't already installed.
 
 If you're OK with installing OpenMM with Conda, then type::
 
   conda install -c conda-forge openmm
   conda install swig
+
+If you desire to use NAMD, then see the "Install NAMD" section below.
+
+Make sure that CUDA is installed and working on your computer system. If you 
+need to install CUDA, contact your system administrator or consult NVIDIA's 
+CUDA installation guide here: 
+https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html
+
+Many times, cuda is located in /usr/local/cuda:
+
+  ls /usr/local/cuda
+  
+If CUDA is located here, then the OpenMM plugin should be able to automatically
+detect it there. If CUDA is not in /usr/local/cuda, then you can also sometimes
+find the CUDA compile 'nvcc' using 'which'. You can also see whether the 
+CUDA_HOME environmental variable is defined:
+
+  which nvcc
+  echo $CUDA_HOME
+  
+If the commands didn't return a path to nvcc, or a value or CUDA_HOME, SEEKR2
+is likely to have difficulty finding CUDA on it's own. You may have to take
+more trouble to explicitly assign the necessary variables to the cmake or 
+ccmake commands.  
 
 The following commands will install the SEEKR2 OpenMM Plugin::
 

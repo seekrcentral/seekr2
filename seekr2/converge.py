@@ -63,7 +63,7 @@ def converge(model, k_on_state=None, image_directory=None,
 
 def print_convergence_results(model, convergence_results, cutoff, 
                               transition_results, minimum_anchor_transitions,
-                              bd_transition_counts):
+                              bd_transition_counts={}):
     """Print the results of a convergence test."""
     
     print("Molecular dynamics results:")
@@ -222,11 +222,9 @@ if __name__ == "__main__":
     transition_minima, transition_details \
         = common_converge.calc_transition_steps(
         model, data_sample_list[-1])
-    if data_sample_list[-1] is not None:
-        print_convergence_results(model, rmsd_convergence_results, cutoff, 
+
+    bd_transition_counts = data_sample_list[-1].bd_transition_counts
+        
+    print_convergence_results(model, rmsd_convergence_results, cutoff, 
                               transition_details, minimum_anchor_transitions,
-                              data_sample_list[-1].bd_transition_counts)
-    else:
-        print_convergence_results(model, rmsd_convergence_results, cutoff, 
-                              transition_details, minimum_anchor_transitions,
-                              {})
+                              bd_transition_counts)

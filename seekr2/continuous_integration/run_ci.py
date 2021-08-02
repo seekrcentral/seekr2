@@ -23,8 +23,8 @@ def run_short_ci(model_input, cuda_device_index):
     model_dir = os.path.dirname(xml_path)
     model.anchor_rootdir = os.path.abspath(model_dir)
     check.check_pre_simulation_all(model)
-    run.run(model, "any", min_b_surface_simulation_length=1000,
-        min_bd_milestone_simulation_length=100, 
+    run.run(model, "any", min_b_surface_simulation_length=100,
+        min_bd_milestone_simulation_length=10, 
         max_b_surface_trajs_to_extract=10, num_rev_launches=10, 
         cuda_device_index=cuda_device_index,
         save_state_file=True)

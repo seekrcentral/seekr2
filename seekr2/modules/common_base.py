@@ -397,7 +397,22 @@ class Namd_settings(Serializer):
         self.initial_temperature = 298.15
         self.eval_stride = 10
         return
+
+class Toy_settings(Serializer):
+    """
+    Contains settings used by Toy simulation program.
     
+    Attributes:
+    -----------
+    dynamics : str, Default "smoluchowski"
+        Which dynamics to use in this model. Options at this time only include:
+        "smoluchowski".
+    """
+    
+    def __init__(self):
+        self.dynamics = "smoluchowski"
+        return
+
 class Browndye_settings(Serializer):
     """
     Read and parse the outputs from the BrownDye program, which runs
@@ -758,6 +773,7 @@ class Model(Serializer):
         self.num_milestones = -1
         self.openmm_settings = None
         self.namd_settings = None
+        self.toy_settings = None
         self.browndye_settings = None
         self.k_on_info = None
         self.collective_variables = []

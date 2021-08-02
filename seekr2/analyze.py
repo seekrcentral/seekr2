@@ -424,6 +424,8 @@ class Analysis:
         """
         self.main_data_sample.calculate_pi_alpha()
         self.main_data_sample.fill_out_data_quantities()
+        if self.model.k_on_info is not None:
+            self.main_data_sample.parse_browndye_results()
         self.main_data_sample.compute_rate_matrix()
         self.main_data_sample.calculate_thermodynamics()
         self.main_data_sample.calculate_kinetics(pre_equilibrium_approx)
@@ -439,10 +441,11 @@ class Analysis:
             data_sample = self.data_sample_list[i]
             data_sample.calculate_pi_alpha()
             data_sample.fill_out_data_quantities()
+            if self.model.k_on_info is not None:
+                data_sample.parse_browndye_results(bd_sample_from_normal=True)
             data_sample.compute_rate_matrix()
             data_sample.calculate_thermodynamics()
-            data_sample.calculate_kinetics(pre_equilibrium_approx, 
-                                           bd_sample_from_normal=True)
+            data_sample.calculate_kinetics(pre_equilibrium_approx)
             k_offs.append(data_sample.k_off)
             p_i_list.append(data_sample.p_i)
             pi_alpha_list.append(data_sample.pi_alpha)
@@ -540,7 +543,7 @@ class Analysis:
             R_i_total.append(R_i_element)
             R_i_std_dev.append(R_i_std_element)
             R_i_count.append(R_i_count_element)            
-            
+        
         self.main_data_sample = elber_analyze.Elber_data_sample(
             self.model, N_i_j_list, R_i_total)
         self.main_data_sample.fill_out_data_quantities()
@@ -557,6 +560,8 @@ class Analysis:
         compute the thermodynamic and kinetic quantities and their
         uncertainties. Applies to systems using Elber milestoning.
         """
+        if self.model.k_on_info is not None:
+            self.main_data_sample.parse_browndye_results()
         self.main_data_sample.compute_rate_matrix()
         #self.main_data_sample.Q = common_analyze.minor2d(
         #    self.main_data_sample.Q, bulkstate, bulkstate)
@@ -564,6 +569,7 @@ class Analysis:
         #    self.main_data_sample.K, bulkstate, bulkstate)
         self.main_data_sample.calculate_thermodynamics()
         self.main_data_sample.calculate_kinetics(pre_equilibrium_approx)
+        """
         error_sample = self.data_sample_list[0]
         error_sample.compute_rate_matrix()
         #self.main_data_sample.Q = common_analyze.minor2d(
@@ -571,23 +577,29 @@ class Analysis:
         #self.main_data_sample.K = common_analyze.minor2d(
         #    self.main_data_sample.K, bulkstate, bulkstate)
         error_sample.calculate_thermodynamics()
-        error_sample.calculate_kinetics(pre_equilibrium_approx, 
-                                       bd_sample_from_normal=True)
-        p_i_error, free_energy_profile_err, MFPTs_error, k_off_error, \
-            k_ons_error = error_sample.monte_carlo_milestoning_error(
-                num=self.num_error_samples,
-                pre_equilibrium_approx=pre_equilibrium_approx)
-        
+        error_sample.calculate_kinetics(pre_equilibrium_approx)
+        if self.num_error_samples > 0:
+            p_i_error, free_energy_profile_err, MFPTs_error, k_off_error, \
+                k_ons_error = error_sample.monte_carlo_milestoning_error(
+                    num=self.num_error_samples,
+                    pre_equilibrium_approx=pre_equilibrium_approx)
+        """
         self.p_i = self.main_data_sample.p_i
-        self.p_i_error = p_i_error
         self.free_energy_profile = self.main_data_sample.free_energy_profile
-        self.free_energy_profile_err = free_energy_profile_err
         self.MFPTs = self.main_data_sample.MFPTs
-        self.MFPTs_error = MFPTs_error
         self.k_off = self.main_data_sample.k_off
-        self.k_off_error = k_off_error
         self.k_ons = self.main_data_sample.k_ons
-        self.k_ons_error = k_ons_error
+        if self.num_error_samples > 0:
+            p_i_error, free_energy_profile_err, MFPTs_error, k_off_error, \
+                k_ons_error = self.main_data_sample.monte_carlo_milestoning_error(
+                    num=self.num_error_samples,
+                    pre_equilibrium_approx=pre_equilibrium_approx)
+            self.p_i_error = p_i_error
+            self.free_energy_profile_err = free_energy_profile_err
+            self.MFPTs_error = MFPTs_error
+            self.k_off_error = k_off_error
+            self.k_ons_error = k_ons_error
+        
         return
         
     def fill_out_data_samples(self):
@@ -686,9 +698,10 @@ class Analysis:
             print("  Dissociation constant (M) to state", key, ":", 
                   common_analyze.pretty_string_value_error(
                       diss_constant, diss_constant_err))
-            print("  \u0394G (kcal/mol) to state", key, ":", 
-                  common_analyze.pretty_string_value_error(
-                      delta_G, delta_G_err))
+            if key in self.k_ons_error:
+                print("  \u0394G (kcal/mol) to state", key, ":", 
+                      common_analyze.pretty_string_value_error(
+                          delta_G, delta_G_err))
         
         print("Mean first passage times (s):")
         for key in self.MFPTs:
