@@ -105,6 +105,7 @@ def make_smoluchowski_mmvt_analysis(mymodel, potential_energy_function,
         
         # transition info
         my_analysis.main_data_sample.bd_transition_probabilities[0] = transition_probs
+        my_analysis.main_data_sample.bd_transition_counts[0] = transition_probs
     
     my_analysis.main_data_sample.compute_rate_matrix()
     my_analysis.main_data_sample.calculate_thermodynamics()
@@ -143,6 +144,7 @@ def make_smoluchowski_elber_analysis(mymodel, potential_energy_function,
         
         # transition info
         my_analysis.main_data_sample.bd_transition_probabilities[0] = transition_probs
+        my_analysis.main_data_sample.bd_transition_counts[0] = transition_probs
         
     my_analysis.main_data_sample.compute_rate_matrix()
     #self.main_data_sample.Q = common_analyze.minor2d(
@@ -520,7 +522,7 @@ def test_smoluchowski_k_off_from_elber_openmm_output_files(smoluchowski_elber_mo
         smoluchowski_elber_model, potential_energy_function)
     assert np.isclose(elber_time, standard_time, rtol=1e-1)
     
-    potential_energy_function = smol.QuadraticPotentialEnergyFunction()
+    potential_energy_function = smol.QuadraticPotentialEnergyFunction(a=0.1)
     elber_time, dummy = make_elber_calculation_based_on_output_files(
         smoluchowski_elber_model, potential_energy_function)
     standard_time = make_smoluchowski_standard_for_k_off(

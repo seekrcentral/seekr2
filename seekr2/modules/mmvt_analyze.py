@@ -36,6 +36,9 @@ def openmm_read_output_file_list(output_file_list, max_time=None,
                     if start_time is None:
                         start_time = dest_time
                 
+                if len(file_lines) == 0:
+                    continue
+                
                 if start_time is None:
                     start_times.append(0.0)
                 else:
@@ -539,6 +542,7 @@ class MMVT_anchor_statistics():
         assert self.T_alpha_total >= 0.0
         #assert len(self.k_alpha_beta) > 0, \
         #    "Missing statistics for anchor %d" % anchor.index
+        #self.print_stats()
         return
     
     def print_stats(self):
@@ -642,8 +646,8 @@ class MMVT_data_sample(common_analyze.Data_sample):
         can end at, and whose values are the counts of encountering
         those states.
     """
-    def __init__(self, model, N_alpha_beta, k_alpha_beta, N_i_j_alpha, 
-                 R_i_alpha, T_alpha):
+    def __init__(self, model, N_alpha_beta=None, k_alpha_beta=None, 
+                 N_i_j_alpha=None, R_i_alpha=None, T_alpha=None):
         self.model = model
         self.N_alpha_beta = N_alpha_beta
         self.k_alpha_beta = k_alpha_beta
@@ -674,6 +678,11 @@ class MMVT_data_sample(common_analyze.Data_sample):
         self.bd_transition_counts = {}
         self.bd_transition_probabilities = {}
         
+        if self.N_alpha_beta is None or self.k_alpha_beta is None \
+                or self.N_i_j_alpha is None or self.R_i_alpha is None \
+                or self.T_alpha is None:
+            return
+        
         # Fill out N_alpha
         for alpha, anchor in enumerate(model.anchors):
             if anchor.bulkstate:
@@ -697,6 +706,12 @@ class MMVT_data_sample(common_analyze.Data_sample):
         in MMVT theory. The value self.pi_alpha gets set by this 
         function.
         """
+        if self.N_alpha_beta is None or self.k_alpha_beta is None \
+                or self.N_i_j_alpha is None or self.R_i_alpha is None \
+                or self.T_alpha is None:
+            raise Exception("Unable to call calculate_pi_alpha(): "\
+                            "No statistics present in Data Sample.")
+        
         flux_matrix_dimension = self.model.num_anchors
         self.pi_alpha = np.zeros(flux_matrix_dimension)
         flux_matrix = np.zeros((flux_matrix_dimension, flux_matrix_dimension))
@@ -758,7 +773,12 @@ class MMVT_data_sample(common_analyze.Data_sample):
         Compute quantities such as N_ij, R_i, and T for eventual 
         construction of rate matrix Q.
         """
-        
+        if self.N_alpha_beta is None or self.k_alpha_beta is None \
+                or self.N_i_j_alpha is None or self.R_i_alpha is None \
+                or self.T_alpha is None:
+            raise Exception("Unable to call fill_out_data_quantities(): "\
+                            "No statistics present in Data Sample.")
+            
         self.N_ij = defaultdict(float)
         self.R_i = defaultdict(float)
         self.T = 0.0

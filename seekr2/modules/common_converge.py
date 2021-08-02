@@ -155,12 +155,14 @@ def analyze_kinetics(model, analysis, max_step_list, k_on_state=None,
     except common_analyze.MissingStatisticsError:
         if model.get_type() == "mmvt":
             #data_sample = common_analyze.Data_sample(model)
-            data_sample = None
+            data_sample = mmvt_analyze.MMVT_data_sample(model)
         elif model.get_type() == "elber":
-            data_sample = None
+            data_sample = elber_analyze.Elber_data_sample(model)
             
         #analyze_bd_only(model, data_sample)
-        analysis.main_data_sample = None #data_sample
+        if model.k_on_info is not None:
+            data_sample.parse_browndye_results()
+        analysis.main_data_sample = data_sample
         return 0.0, 0.0, {}, {}
 
 def get_mmvt_max_steps(model, dt):
@@ -538,8 +540,9 @@ def calc_transition_steps(model, data_sample):
         if anchor.bulkstate:
             continue
         
-        if data_sample is None:
+        if data_sample.T_alpha is None:
             transition_minima.append(0)
+            transition_details.append(transition_detail)
             continue
         
         if len(anchor.milestones) == 1:
@@ -597,7 +600,7 @@ def calc_RMSD_conv_amount(model, data_sample_list, window_size=30,
             bound1 = len(data_sample_list) - window_size - backwards
             bound2 = len(data_sample_list) - backwards
             for data_sample in data_sample_list[bound1:bound2]:
-                if data_sample is None:
+                if data_sample.T_alpha is None:
                     RMSD_window_conv_list.append(1e99)
                     break
                 if len(anchor.milestones) == 1:

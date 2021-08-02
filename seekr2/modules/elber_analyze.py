@@ -199,7 +199,7 @@ class Elber_data_sample(common_analyze.Data_sample):
         the end states.
     """
     
-    def __init__(self, model, N_i_j_list, R_i_list):
+    def __init__(self, model, N_i_j_list=None, R_i_list=None):
         self.model = model
         self.N_i_j_list = N_i_j_list
         self.R_i_list = R_i_list
@@ -228,7 +228,10 @@ class Elber_data_sample(common_analyze.Data_sample):
         Compute quantities such as N_ij and R_i for eventual 
         construction of rate matrix Q.
         """
-        
+        if self.N_i_j_list is None or self.R_i_list is None:
+            raise Exception("Unable to call fill_out_data_quantities(): "\
+                            "No statistics present in Data Sample.")
+            
         self.N_ij = defaultdict(int)
         self.R_i = defaultdict(float)
         for i, anchor in enumerate(self.model.anchors):

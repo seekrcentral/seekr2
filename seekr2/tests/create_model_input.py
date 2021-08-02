@@ -33,7 +33,7 @@ def create_host_guest_mmvt_model_input(root_dir, bd=True, ff="amber"):
     model_input.calculation_type = "mmvt"
     model_input.calculation_settings = common_prepare.MMVT_input_settings()
     model_input.calculation_settings.md_output_interval = 10000
-    model_input.calculation_settings.md_steps_per_anchor = 1000000
+    model_input.calculation_settings.md_steps_per_anchor = 100000 #1000000
     model_input.temperature = 298.15
     model_input.pressure = 1.0
     model_input.ensemble = "nvt"
@@ -115,9 +115,9 @@ def create_host_guest_mmvt_model_input(root_dir, bd=True, ff="amber"):
         ion2.charge = 1.0
         ion2.conc = 0.0
         model_input.browndye_settings_input.ions = [ion1, ion2]
-        model_input.browndye_settings_input.num_bd_milestone_trajectories = 1000
+        model_input.browndye_settings_input.num_bd_milestone_trajectories = 100
         model_input.browndye_settings_input.num_b_surface_trajectories = 10000
-        model_input.browndye_settings_input.max_b_surface_trajs_to_extract = 1000
+        model_input.browndye_settings_input.max_b_surface_trajs_to_extract = 100
         model_input.browndye_settings_input.n_threads = 1
     else:
         model_input.browndye_settings_input = None
