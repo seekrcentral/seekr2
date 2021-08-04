@@ -192,6 +192,7 @@ providing feedback, bug reports, or other comments.
 * Rommie Amaro (principal investigator)
 * Ilker Deveci (contributor)
 * Hilliary Frank (contributor)
+* Ben Jagger (developer)
 * Anand Ojha (developer)
 * Andy Stokely (developer)
 * Natalie Timms (contributor)

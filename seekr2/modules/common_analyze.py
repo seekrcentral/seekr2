@@ -895,8 +895,7 @@ class Data_sample():
                 self.Q = Qnew
                 self.K = Q_to_K(self.Q)
                 self.calculate_thermodynamics()
-                self.calculate_kinetics(pre_equilibrium_approx,
-                                        bd_sample_from_normal=True)
+                self.calculate_kinetics(pre_equilibrium_approx)
                 p_i_list.append(self.p_i)
                 free_energy_profile_list.append(self.free_energy_profile)
                 for key in self.MFPTs:
