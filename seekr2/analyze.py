@@ -41,32 +41,6 @@ class Analysis:
     pi_alpha_error : numpy.array
         The uncertainty for each value in pi_alpha.
         
-    N_ij : defaultdict
-        The N_ij quantity in MMVT theory - It represents an estimate of
-        the relative number of transitions starting from milestone i 
-        and ending in milestone j, regardless of the anchor the system
-        is in. In this defaultdict object, the keys are tuples of ints
-        (i,j), which represent the milestone indices of the source and
-        destination milestones, respectively, and the values are floats
-        representing the relative 'counts' of transitions from i to j.
-    
-    R_i : defaultdict
-        The R_i quantity in MMVT theory - it represents an estimate of
-        the relative time spent after encountering milestone i, 
-        regardless of the anchor the system is in. In this defaultdict
-        object, the keys are ints i representing the milestone index
-        and the values are floats representing time.
-        
-    T : float
-        The T quantity in MMVT theory - it represents the "total" time
-        spent in simulation. It is merely used as a normalization and
-        to cancel units in the theory.
-        
-    Q : numpy.array
-        The rate matrix Q in MMVT theory - most of the important
-        quantities in MMVT are computed using Q. Each element in row
-        i and column j represents the rate of transition between i and
-        j.
         
     K : numpy.array
         The transition matrix K, which appears in MMVT theory as well

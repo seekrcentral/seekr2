@@ -534,23 +534,28 @@ def calc_transition_steps(model, data_sample):
     and the minimum transitions between a pair of milestones.
     """
     transition_minima = []
-    transition_details = []
+    transition_prob_details = []
+    transition_time_details = []
     for alpha, anchor in enumerate(model.anchors):
         transition_detail = {}
+        transition_time_detail = {}
         if anchor.bulkstate:
             continue
         
         if data_sample.T_alpha is None:
             transition_minima.append(0)
-            transition_details.append(transition_detail)
+            transition_prob_details.append(transition_detail)
+            transition_time_details.append(transition_time_detail)
             continue
         
         if len(anchor.milestones) == 1:
             # if this is a dead-end milestone
             if model.get_type() == "mmvt":
                 transition_dict = data_sample.N_alpha_beta
+                k_rate_dict = data_sample.k_alpha_beta
                 if len(transition_dict) == 0:
                     transition_quantity = 0
+                    
                 else:
                     lowest_value = 1e99
                     for key in transition_dict:
@@ -558,7 +563,16 @@ def calc_transition_steps(model, data_sample):
                                 < lowest_value:
                             lowest_value  = transition_dict[key]
                     transition_quantity = lowest_value
+                    
+                    lowest_value = 1e99
+                    for key in k_rate_dict:
+                        if key[0] == alpha and k_rate_dict[key] \
+                                < lowest_value:
+                            lowest_value  = 1.0 / k_rate_dict[key]
+                    transition_time = lowest_value
+                    
                     transition_detail = {(alpha,alpha):transition_quantity}
+                    transition_time_detail = {(alpha,alpha):transition_time}
                     
             elif model.get_type() == "elber":
                 raise Exception("Elber simulations cannot have one milestone.")
@@ -566,22 +580,32 @@ def calc_transition_steps(model, data_sample):
         else:
             if model.get_type() == "mmvt":
                 transition_dict = data_sample.N_i_j_alpha[alpha]
+                time_dict = data_sample.R_i_alpha[alpha]
                 
             elif model.get_type() == "elber":
                 transition_dict = data_sample.N_i_j_list[alpha]
+                time_dict = data_sample.R_i_list[alpha]
                 
             if len(transition_dict) == 0:
                 transition_quantity = 0
             else:
                 lowest_value = 1e99
+                highest_value = 0
                 for key in transition_dict:
-                    if transition_dict[key]  < lowest_value:
+                    if transition_dict[key] < lowest_value:
                         lowest_value  = transition_dict[key]
+                    if transition_dict[key] > highest_value:
+                        highest_value  = transition_dict[key]
                     transition_detail[key] = transition_dict[key]
                 transition_quantity = lowest_value
+                
+                for key in time_dict:
+                    transition_time_detail[key] = time_dict[key] / highest_value
+                
         transition_minima.append(transition_quantity)
-        transition_details.append(transition_detail)
-    return transition_minima, transition_details
+        transition_prob_details.append(transition_detail)
+        transition_time_details.append(transition_time_detail)
+    return transition_minima, transition_prob_details, transition_time_details
 
 def calc_RMSD_conv_amount(model, data_sample_list, window_size=30,
                                number_of_convergence_windows=20):

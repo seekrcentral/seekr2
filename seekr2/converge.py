@@ -15,6 +15,8 @@ import seekr2.modules.common_converge as common_converge
 N_IJ_DIR = "N_ij/"
 R_I_DIR = "R_i/"
 
+AVG_TRANSITION_TIME_MINIMUM = 0.1 # ps
+
 def converge(model, k_on_state=None, image_directory=None, 
              pre_equilibrium_approx=False, verbose=False):
     """
@@ -62,7 +64,8 @@ def converge(model, k_on_state=None, image_directory=None,
     return data_sample_list
 
 def print_convergence_results(model, convergence_results, cutoff, 
-                              transition_results, minimum_anchor_transitions,
+                              transition_results, transition_time_results,
+                              minimum_anchor_transitions, 
                               bd_transition_counts={}):
     """Print the results of a convergence test."""
     
@@ -76,13 +79,30 @@ def print_convergence_results(model, convergence_results, cutoff,
             is_converged = True
         else:
             is_converged = False
+            
         transition_detail = transition_results[alpha]
+        transition_avg_times = transition_time_results[alpha]
         transition_string = ""
+        time_string = ""
         for key in transition_detail:
-            transition_string += " {}->{} : {}".format(
-                key[0],key[1],transition_detail[key])
+            transition_string += " {}->{} : {},".format(
+                key[0], key[1], transition_detail[key])
+        
+        warnstr = ""
+        for key in transition_avg_times:
+            if transition_avg_times[key] < AVG_TRANSITION_TIME_MINIMUM \
+                    and len(transition_detail) > 1:
+                warnstr = "\n    WARNING: transition time(s) for this "\
+                    "milestone are below the recommended minimum "\
+                    "({} ps) ".format(AVG_TRANSITION_TIME_MINIMUM) \
+                    +"You should consider increasing the space between "\
+                    "milestones."
+            time_string += " {} : {:.3f},".format(
+                key, transition_avg_times[key])
         anchor_string = " - Anchor {}: ".format(anchor.index) \
-            +"\n     Milestone transitions:{}. ".format(transition_string) \
+            +"\n     Milestone transitions:{} ".format(transition_string) \
+            +"\n     Milestone avg. transition time (ps):{}"\
+                .format(time_string) + warnstr \
             +"\n     Convergence value: " \
             +"{:.4e}. ".format(convergence_results[alpha]) \
             +"\n     Converged? {}".format(is_converged)
@@ -219,12 +239,13 @@ if __name__ == "__main__":
         
     rmsd_convergence_results = common_converge.calc_RMSD_conv_amount(
         model, data_sample_list)
-    transition_minima, transition_details \
+    transition_minima, transition_prob_results, transition_time_results \
         = common_converge.calc_transition_steps(
         model, data_sample_list[-1])
 
     bd_transition_counts = data_sample_list[-1].bd_transition_counts
         
     print_convergence_results(model, rmsd_convergence_results, cutoff, 
-                              transition_details, minimum_anchor_transitions,
+                              transition_prob_results, transition_time_results,
+                              minimum_anchor_transitions,
                               bd_transition_counts)
