@@ -440,14 +440,18 @@ def create_cvs_and_anchors(model, collective_variable_inputs):
         if model.get_type() == "mmvt":
             if isinstance(cv_input, common_cv.Spherical_cv_input):
                 cv = mmvt_cv.make_mmvt_spherical_cv_object(cv_input, index=i)
+            elif isinstance(cv_input, common_cv.Tiwary_cv_input):
+                cv = mmvt_cv.make_mmvt_tiwary_cv_object(cv_input, index=i)
             else:
-                raise Exception("CV type not implemented: %s" % type(cv_input))
+                raise Exception("CV type not implemented in MMVT: %s" \
+                                % type(cv_input))
             
         elif model.get_type() == "elber":
             if isinstance(cv_input, common_cv.Spherical_cv_input):
                 cv = elber_cv.make_elber_spherical_cv_object(cv_input, index=i)
             else:
-                raise Exception("CV type not implemented: %s" % type(cv_input))
+                raise Exception("CV type not implemented in Elber: %s" \
+                                % type(cv_input))
         
         cvs.append(cv)
         cv_indices.append(i)

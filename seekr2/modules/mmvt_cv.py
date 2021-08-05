@@ -59,3 +59,15 @@ def make_mmvt_milestoning_objects_spherical(
         milestones.append(milestone2)
     
     return milestones, milestone_alias, milestone_index
+
+def make_mmvt_tiwary_cv_object(tiwary_cv_input, index):
+    """
+    Create a Tiwary CV object to be placed into the Model.
+    """
+    
+    #groups = [spherical_cv_input.group1, spherical_cv_input.group2]
+    #cv = mmvt_base.MMVT_spherical_CV(index, groups)
+    cv = mmvt_base.MMVT_tiwary_CV(
+        index, tiwary_cv_input.order_parameters, 
+        tiwary_cv_input.order_parameter_weights)
+    return cv
