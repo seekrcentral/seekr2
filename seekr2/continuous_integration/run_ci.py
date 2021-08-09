@@ -31,12 +31,13 @@ def run_short_ci(model_input, cuda_device_index):
     data_sample_list = converge.converge(model, k_on_state=0)
     rmsd_convergence_results = common_converge.calc_RMSD_conv_amount(
         model, data_sample_list)
-    transition_minima, transition_details \
+    transition_minima, transition_details, transition_times \
         = common_converge.calc_transition_steps(
         model, data_sample_list[-1])
     converge.print_convergence_results(
         model, rmsd_convergence_results, cutoff=0.1, 
         transition_results=transition_details, 
+        transition_time_results=transition_times,
         minimum_anchor_transitions=10, 
         bd_transition_counts=data_sample_list[-1].bd_transition_counts)
     check.check_post_simulation_all(model, long_check=True)

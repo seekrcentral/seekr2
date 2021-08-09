@@ -4,19 +4,12 @@ Installation
 At this time, SEEKR2 has only been tested on Linux systems. Therefore, all
 installation instructions are for Linux only.
 
-Installation begins with cloning and installing the SEEKR2 python API::
-
-  git clone https://github.com/seekrcentral/seekr2.git
-  cd seekr2
-  python setup.py install
-
-Next, you must choose which MD engine you will use: either OpenMM or NAMD.
+First, you must choose which MD engine you will use: either OpenMM or NAMD.
 Each engine has their own advantages - OpenMM is faster on GPUs and is likely
 to give slightly more accurate results in SEEKR2. NAMD is optimized for 
 distributed computing systems, such as supercomputers or cluster which use 
 large numbers of CPU cores. If you are uncertain which to choose, OpenMM is 
-a good default
-choice.
+a good default choice.
 
 Install Conda
 -------------
@@ -80,14 +73,14 @@ need to install CUDA, contact your system administrator or consult NVIDIA's
 CUDA installation guide here: 
 https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html
 
-Many times, cuda is located in /usr/local/cuda:
+Many times, cuda is located in /usr/local/cuda::
 
   ls /usr/local/cuda
   
 If CUDA is located here, then the OpenMM plugin should be able to automatically
 detect it there. If CUDA is not in /usr/local/cuda, then you can also sometimes
 find the CUDA compile 'nvcc' using 'which'. You can also see whether the 
-CUDA_HOME environmental variable is defined:
+CUDA_HOME environmental variable is defined::
 
   which nvcc
   echo $CUDA_HOME
@@ -113,6 +106,13 @@ The following commands will install the SEEKR2 OpenMM Plugin::
   make PythonInstall
   make test # Optional
 
+Installation of SEEKR2 itself begins with cloning and installing the SEEKR2 
+python API::
+
+  git clone https://github.com/seekrcentral/seekr2.git
+  cd seekr2
+  python setup.py install
+
 Once OpenMM and the OpenMM SEEKR2 Plugin is installed, it is recommended that 
 you run tests of SEEKR2. Navigate to where the "seekr2" git repository was cloned. From within the
 "seekr2/" directory, run:
@@ -128,6 +128,13 @@ calculations, you should follow the
 NAMD is also often available on shared scientific computing resources such as
 most supercomputers and clusters. Consult the resource manual or system
 administrators to see if NAMD is installed on the available shared resource.
+
+SEEKR2 itself must be installed by cloning and installing the SEEKR2 
+python API::
+
+  git clone https://github.com/seekrcentral/seekr2.git
+  cd seekr2
+  python setup.py install
 
 OpenMM and Plugin Installation from Source on Local Machine (If not using Conda to install OpenMM)
 --------------------------------------------------------------------------------------------------
@@ -256,7 +263,14 @@ Close the GUI by pressing 'c' and then 'g'. Then make the plugin::
   make install
   make PythonInstall
   make test # Optional
-  
+
+Installation of SEEKR2 itself begins with cloning and installing the SEEKR2 
+python API::
+
+  git clone https://github.com/seekrcentral/seekr2.git
+  cd seekr2
+  python setup.py install
+
 At this point, its a good idea to run the SEEKR2 tests. Navigate to where the 
 "seekr2" git repository was cloned. From within the "seekr2/" directory, run:
 

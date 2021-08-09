@@ -11,6 +11,7 @@ calculation.
 import os
 import glob
 import shutil
+from collections import defaultdict
 
 import seekr2.modules.common_base as base
 import seekr2.modules.mmvt_base as mmvt_base
@@ -423,7 +424,36 @@ def model_factory(model_input, use_absolute_directory=False):
         model.k_on_info = k_on_info
     
     return model
+
+def resolve_connections(connection_flag_dict, anchors):
+    """
+    Given connection information between anchors, merge anchors
+    that are connected.
+    """
+    anchor_indices_to_remove = []
+    for key in connection_flag_dict:
+        anchor_connection_list = connection_flag_dict[key]
+        assert len(anchor_connection_list) > 1, \
+            "Connection flag {} needs to have enpoints ".format(key) \
+            +"in at least two anchors."
+        anchor_kept = anchor_connection_list[0]
+        for anchor_discarded in anchor_connection_list[1:]:
+            anchor_indices_to_remove.append(anchor_discarded)
+            anchor_kept.milestones += anchor_discarded.milestones
+            anchor_kept.variables.update(anchor_discarded.variables)
+            
+    anchor_indices_to_remove = sorted(set(anchor_indices_to_remove), 
+                                      reverse=True)
+    for anchor_index_to_remove in anchor_indices_to_remove:
+        anchors.pop(anchor_index_to_remove)
+        if len(anchors) > anchor_index_to_remove:
+            for lower_anchor in anchors[anchor_index_to_remove:]:
+                lower_anchor.index -= 1
+                lower_anchor.name = "anchor_"+str(lower_anchor.index)
+                lower_anchor.directory = lower_anchor.name
         
+    return anchors
+
 def create_cvs_and_anchors(model, collective_variable_inputs):
     """
     Create the collective variable and Anchor objects for the Model.
@@ -434,6 +464,7 @@ def create_cvs_and_anchors(model, collective_variable_inputs):
     cv_indices = []
     cvs = []
     anchors = []
+    connection_flag_dict = defaultdict(list)
     for i, cv_input in enumerate(collective_variable_inputs):
         cv_input.index = i
         cv_input.check()
@@ -442,6 +473,8 @@ def create_cvs_and_anchors(model, collective_variable_inputs):
                 cv = mmvt_cv.make_mmvt_spherical_cv_object(cv_input, index=i)
             elif isinstance(cv_input, common_cv.Tiwary_cv_input):
                 cv = mmvt_cv.make_mmvt_tiwary_cv_object(cv_input, index=i)
+            elif isinstance(cv_input, common_cv.Planar_cv_input):
+                cv = mmvt_cv.make_mmvt_planar_cv_object(cv_input, index=i)
             else:
                 raise Exception("CV type not implemented in MMVT: %s" \
                                 % type(cv_input))
@@ -473,35 +506,14 @@ def create_cvs_and_anchors(model, collective_variable_inputs):
             if input_anchor.bound_state:
                 anchor.endstate = True
             
-            if input_anchor.lower_milestone_radius is not None:
-                assert j > 0, "lower_milestone_radius must be None for lowest "\
-                    "anchor in cv."
-                assert input_anchor.lower_milestone_radius \
-                    == cv_input.input_anchors[j-1].upper_milestone_radius,\
-                    "If lower_milestone_radius is defined for anchor "\
-                    "{}, the anchor below (number {}).".format(j, j-1)\
-                    +" must have a corresponding upper_milestone_radius."
-                    
-            if input_anchor.upper_milestone_radius is not None:
-                assert j < len(cv_input.input_anchors), \
-                    "upper_milestone_radius must be None for highest anchor "\
-                    "in cv."
-                assert input_anchor.upper_milestone_radius \
-                    == cv_input.input_anchors[j+1].lower_milestone_radius,\
-                    "If upper_milestone_radius is defined for anchor "\
-                    "{} at value {}, the anchor above ".format(j, 
-                    input_anchor.upper_milestone_radius)\
-                    +"(number {}).".format(j+1)\
-                    +" must have a corresponding lower_milestone_radius, "\
-                    "current value: {}.".format(
-                        cv_input.input_anchors[j+1].lower_milestone_radius)
+            input_anchor.check(j, cv_input)
             
             milestone_alias = 1
             if model.get_type() == "mmvt":
                 milestones, milestone_alias, milestone_index = \
-                    mmvt_cv.make_mmvt_milestoning_objects_spherical(
-                    cv_input, milestone_alias, milestone_index, anchor_index, 
-                    cv_input.input_anchors)
+                    cv_input.make_mmvt_milestoning_objects(
+                    milestone_alias, milestone_index, anchor_index)
+                
             elif model.get_type() == "elber":
                 milestones, milestone_alias, milestone_index = \
                     elber_cv.make_elber_milestoning_objects_spherical(
@@ -511,13 +523,17 @@ def create_cvs_and_anchors(model, collective_variable_inputs):
                 
             anchor.milestones += milestones
             variable_name = "{}_{}".format(cv.variable_name, i)
-            variable_value = input_anchor.radius # TODO: hard-coded
+            variable_value = input_anchor.get_variable_value()
             anchor.variables[variable_name] = variable_value
+            for connection_flag in input_anchor.connection_flags:
+                connection_flag_dict[connection_flag].append(anchor)
             anchors.append(anchor)
             anchor_index += 1
     
     if model.get_type() == "elber":
         milestone_index += 1
+    
+    anchors = resolve_connections(connection_flag_dict, anchors)
     
     return cvs, anchors, anchor_index, milestone_index
 

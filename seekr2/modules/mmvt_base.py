@@ -167,7 +167,7 @@ class MMVT_spherical_CV(MMVT_collective_variable):
         a force object created.
         
         In this implementation of MMVT in OpenMM, CustomForce objects
-        are used to provide the boundary definitions of the MMVt cell.
+        are used to provide the boundary definitions of the MMVT cell.
         These 'forces' are designed to never affect atomic motions,
         but are merely monitored by the plugin for bouncing event.
         So while they are technically OpenMM force objects, we don't
@@ -338,11 +338,11 @@ boundary at {:.4f} nm.""".format(radius, milestone_radius)
         """
         Return a 2-list of this CV's atomic groups.
         """
-        return[self.group1, self.group2]
+        return [self.group1, self.group2]
             
         
 """
-class MMVT_planar_CV(CollectiveVariable):
+class MMVT_planar_CV(MMVT_collective_variable):
     def __init__(self, index, groups):
         super(PlanarCV, self).__init__(groups)
         self.name = "mmvt_planar"
@@ -379,7 +379,7 @@ class MMVT_planar_CV(CollectiveVariable):
         
         return values_list
 
-class MMVT_angular_CV(CollectiveVariable):
+class MMVT_angular_CV(MMVT_collective_variable):
 
     def __init__(self, groups):
         super(PlanarCV, self).__init__(index, groups)
@@ -421,6 +421,384 @@ class MMVT_angular_CV(CollectiveVariable):
         
         return values_list
 """
+
+class MMVT_tiwary_CV(MMVT_collective_variable):
+    """
+    A Tiwary collective variable which is a linear function of order
+    parameters.
+    
+    """+MMVT_collective_variable.__doc__
+    
+    def __init__(self, index, order_parameters, order_parameter_weights):
+        self.index = index
+        self.order_parameters = order_parameters
+        self.order_parameter_weights = order_parameter_weights
+        self.name = "mmvt_tiwary"
+        self.num_groups = 0
+        self.assign_expressions_and_variables()
+        self._mygroup_list = None
+        self.variable_name = "v"
+        return
+
+    def __name__(self):
+        return "MMVT_tiwary_CV"
+    
+    def assign_expressions_and_variables(self):
+        openmm_expression_list = []
+        self.per_dof_variables = []
+        for i, (order_parameter, order_parameter_weight) in enumerate(zip(
+                self.order_parameters, self.order_parameter_weights)):
+            weight_var = "c{}".format(i)
+            this_expr = weight_var + "*" \
+                + order_parameter.get_openmm_expression(group_index=self.num_groups+1)
+            self.per_dof_variables.append(weight_var)
+            openmm_expression_list.append(this_expr)
+            self.num_groups += order_parameter.get_num_groups()
+        self.openmm_expression = "step(k*("+" + ".join(openmm_expression_list)\
+            + " - value))"
+        self.per_dof_variables.append("k")
+        self.per_dof_variables.append("value")
+        self.global_variables = []
+        #print("self.openmm_expression:", self.openmm_expression)
+        #print("self.per_dof_variables:", self.per_dof_variables)
+        return
+    
+    def make_force_object(self):
+        """
+        Create an OpenMM force object which will be used to compute
+        the value of the CV's mathematical expression as the simulation
+        propagates. Each *milestone* in a cell, not each CV, will have
+        a force object created.
+        
+        In this implementation of MMVT in OpenMM, CustomForce objects
+        are used to provide the boundary definitions of the MMVT cell.
+        These 'forces' are designed to never affect atomic motions,
+        but are merely monitored by the plugin for bouncing event.
+        So while they are technically OpenMM force objects, we don't
+        refer to them as forces outside of this layer of the code,
+        preferring instead the term: boundary definitions.
+        """
+        try:
+            import openmm
+        except ImportError:
+            import simtk.openmm as openmm
+            
+        assert self.num_groups > 1
+        expression_w_bitcode = "bitcode*"+self.openmm_expression
+        return openmm.CustomCentroidBondForce(
+            self.num_groups, expression_w_bitcode)
+        
+    def make_namd_colvar_string(self):
+        """
+        This string will be put into a NAMD colvar file for tracking
+        MMVT bounces.
+        """
+        raise Exception("MMVT Tiwary CVs are not available in NAMD")
+        
+    def add_parameters(self, force):
+        """
+        An OpenMM custom force object needs a list of variables
+        provided to it that will occur within its expression. Both
+        the per-dof and global variables are combined within the
+        variable_names_list. The numerical values of these variables
+        will be provided at a later step.
+        """
+        
+        self._mygroup_list = []
+        variable_names_list = []
+        for order_parameter in self.order_parameters:
+            for i in range(order_parameter.get_num_groups()):
+                group = order_parameter.get_group(i)
+                mygroup = force.addGroup(group)
+                self._mygroup_list.append(mygroup)
+        
+        variable_names_list.append("bitcode")
+        force.addPerBondParameter("bitcode")
+        if self.per_dof_variables is not None:
+            for per_dof_variable in self.per_dof_variables:
+                force.addPerBondParameter(per_dof_variable)
+                variable_names_list.append(per_dof_variable)
+        
+        if self.global_variables is not None:
+            for global_variable in self.global_variables:
+                force.addGlobalParameter(global_variable)
+                variable_names_list.append(global_variable)
+        
+        return variable_names_list
+    
+    def add_groups_and_variables(self, force, variables):
+        """
+        Provide the custom force with additional information it needs,
+        which includes a list of the groups of atoms involved with the
+        CV, as well as a list of the variables' *values*.
+        """
+        assert len(self._mygroup_list) == self.num_groups
+        force.addBond(self._mygroup_list, variables)
+        return
+    
+    def get_variable_values_list(self, milestone):
+        """
+        Create the list of CV variables' values in the proper order
+        so they can be provided to the custom force object.
+        """
+        assert milestone.cv_index == self.index
+        values_list = []
+        bitcode = 2**(milestone.alias_index-1)
+        k = milestone.variables['k'] * unit.kilojoules_per_mole/unit.angstrom**2
+        radius = milestone.variables['value'] * unit.nanometers
+        values_list.append(bitcode)
+        for i, order_parameter in enumerate(self.order_parameters):
+            key = "c{}".format(i)
+            c = milestone.variables[key]
+            values_list.append(c)
+        values_list.append(k)
+        values_list.append(radius)
+        return values_list
+    
+    def get_namd_evaluation_string(self, milestone, cv_val_var="cv_val"):
+        """
+        For a given milestone, return a string that can be evaluated
+        my NAMD to monitor for a crossing event. Essentially, if the 
+        function defined by the string ever returns True, then a
+        bounce will occur
+        """
+        raise Exception("MMVT Tiwary CVs are not available in NAMD")
+    
+    def check_mdtraj_within_boundary(self, traj, milestone_variables, 
+                                     verbose=False):
+        """
+        Check if an mdtraj Trajectory describes a system that remains
+        within the expected anchor. Return True if passed, return
+        False if failed.
+        """
+        print("check_mdtraj_within_boundary not yet implemented for Tiwary CVs")
+        return True
+    
+    def check_mdtraj_close_to_boundary(self, traj, milestone_variables, 
+                                     verbose=False, max_avg=0.03, max_std=0.05):
+        """
+        Given an mdtraj Trajectory, check if the system lies close
+        to the MMVT boundary. Return True if passed, return False if 
+        failed.
+        """
+        print("check_mdtraj_close_to_boundary not yet implemented for Tiwary CVs")
+        return True
+    
+    def get_atom_groups(self):
+        """
+        Return a list of this CV's atomic groups.
+        """
+        group_list = []
+        for order_parameter in self.order_parameters:
+            for i in range(order_parameter.get_num_groups()):
+                group = order_parameter.get_group(i)
+                group_list.append(group)
+            
+        return group_list
+            
+class MMVT_planar_CV(MMVT_collective_variable):
+    """
+    A planar incremental variable represents the distance between two
+    different groups of atoms.
+    
+    """+MMVT_collective_variable.__doc__
+    
+    def __init__(self, index, start_group, end_group, mobile_group):
+        self.index = index
+        self.start_group = start_group
+        self.end_group = end_group
+        self.mobile_group = mobile_group
+        self.name = "mmvt_planar"
+        self.openmm_expression = "step(k*("\
+            "((x2-x1)*(x3-x1) + (y2-y1)*(y3-y1) + (z2-z1)*(z3-z1))"\
+            "/ (distance(g1, g2)*distance(g1, g3)) - value))"
+        self.num_groups = 3
+        self.per_dof_variables = ["k", "value"]
+        self.global_variables = []
+        self._mygroup_list = None
+        self.variable_name = "v"
+        return
+
+    def __name__(self):
+        return "MMVT_planar_CV"
+    
+    def make_force_object(self):
+        """
+        Create an OpenMM force object which will be used to compute
+        the value of the CV's mathematical expression as the simulation
+        propagates. Each *milestone* in a cell, not each CV, will have
+        a force object created.
+        
+        In this implementation of MMVT in OpenMM, CustomForce objects
+        are used to provide the boundary definitions of the MMVT cell.
+        These 'forces' are designed to never affect atomic motions,
+        but are merely monitored by the plugin for bouncing event.
+        So while they are technically OpenMM force objects, we don't
+        refer to them as forces outside of this layer of the code,
+        preferring instead the term: boundary definitions.
+        """
+        try:
+            import openmm
+        except ImportError:
+            import simtk.openmm as openmm
+            
+        assert self.num_groups == 3
+        expression_w_bitcode = "bitcode*"+self.openmm_expression
+        return openmm.CustomCentroidBondForce(
+            self.num_groups, expression_w_bitcode)
+        
+    def make_namd_colvar_string(self):
+        """
+        This string will be put into a NAMD colvar file for tracking
+        MMVT bounces.
+        """
+        raise Exception("MMVT Planar CVs are not available in NAMD")
+        
+    def add_parameters(self, force):
+        """
+        An OpenMM custom force object needs a list of variables
+        provided to it that will occur within its expression. Both
+        the per-dof and global variables are combined within the
+        variable_names_list. The numerical values of these variables
+        will be provided at a later step.
+        """
+        self._mygroup_list = []
+        mygroup1 = force.addGroup(self.start_group)
+        self._mygroup_list.append(mygroup1)
+        mygroup2 = force.addGroup(self.end_group)
+        self._mygroup_list.append(mygroup2)
+        mygroup3 = force.addGroup(self.mobile_group)
+        self._mygroup_list.append(mygroup3)
+        variable_names_list = []
+        
+        variable_names_list.append("bitcode")
+        force.addPerBondParameter("bitcode")
+        if self.per_dof_variables is not None:
+            for per_dof_variable in self.per_dof_variables:
+                force.addPerBondParameter(per_dof_variable)
+                variable_names_list.append(per_dof_variable)
+        
+        if self.global_variables is not None:
+            for global_variable in self.global_variables:
+                force.addGlobalParameter(global_variable)
+                variable_names_list.append(global_variable)
+        
+        return variable_names_list
+    
+    def add_groups_and_variables(self, force, variables):
+        """
+        Provide the custom force with additional information it needs,
+        which includes a list of the groups of atoms involved with the
+        CV, as well as a list of the variables' *values*.
+        """
+        assert len(self._mygroup_list) == self.num_groups
+        force.addBond(self._mygroup_list, variables)
+        return
+    
+    def get_variable_values_list(self, milestone):
+        """
+        Create the list of CV variables' values in the proper order
+        so they can be provided to the custom force object.
+        """
+        assert milestone.cv_index == self.index
+        values_list = []
+        bitcode = 2**(milestone.alias_index-1)
+        k = milestone.variables['k'] * unit.kilojoules_per_mole/unit.angstrom**2
+        value = milestone.variables['value'] * unit.nanometers
+        values_list.append(bitcode)
+        values_list.append(k)
+        values_list.append(value)
+        return values_list
+    
+    def get_namd_evaluation_string(self, milestone, cv_val_var="cv_val"):
+        """
+        For a given milestone, return a string that can be evaluated
+        my NAMD to monitor for a crossing event. Essentially, if the 
+        function defined by the string ever returns True, then a
+        bounce will occur
+        """
+        raise Exception("MMVT Planar CVs are not available in NAMD")
+    
+    def check_mdtraj_within_boundary(self, traj, milestone_variables, 
+                                     verbose=False):
+        """
+        Check if an mdtraj Trajectory describes a system that remains
+        within the expected anchor. Return True if passed, return
+        False if failed.
+        """
+        TOL = 0.001
+        traj1 = traj.atom_slice(self.start_group)
+        traj2 = traj.atom_slice(self.end_group)
+        traj3 = traj.atom_slice(self.mobile_group)
+        com1_array = mdtraj.compute_center_of_mass(traj1)
+        com2_array = mdtraj.compute_center_of_mass(traj2)
+        com3_array = mdtraj.compute_center_of_mass(traj3)
+        for frame_index in range(traj.n_frames):
+            com1 = com1_array[frame_index,:]
+            com2 = com2_array[frame_index,:]
+            com3 = com3_array[frame_index,:]
+            dist1_2 = np.linalg.norm(com2-com1)
+            dist1_3 = np.linalg.norm(com3-com1)
+            value = ((com2[0]-com1[0])*(com3[0]-com1[0]) \
+                   + (com2[1]-com1[1])*(com3[1]-com1[1]) \
+                   + (com2[2]-com1[2])*(com3[2]-com1[2]))/(dist1_2*dist1_3)
+            milestone_k = milestone_variables["k"]
+            milestone_value = milestone_variables["value"]
+            if milestone_k*(value - milestone_value) > TOL:
+                if verbose:
+                    warnstr = """The value of planar milestone was found to be {:.4f}.
+This distance falls outside of the milestone
+boundary at {:.4f}.""".format(value, milestone_value)
+                    print(warnstr)
+                return False
+            
+        return True
+    
+    def check_mdtraj_close_to_boundary(self, traj, milestone_variables, 
+                                     verbose=False, max_avg=0.03, max_std=0.05):
+        """
+        Given an mdtraj Trajectory, check if the system lies close
+        to the MMVT boundary. Return True if passed, return False if 
+        failed.
+        """
+        traj1 = traj.atom_slice(self.start_group)
+        traj2 = traj.atom_slice(self.end_group)
+        traj3 = traj.atom_slice(self.mobile_group)
+        com1_array = mdtraj.compute_center_of_mass(traj1)
+        com2_array = mdtraj.compute_center_of_mass(traj2)
+        com3_array = mdtraj.compute_center_of_mass(traj3)
+        values = []
+        for frame_index in range(traj.n_frames):
+            com1 = com1_array[frame_index,:]
+            com2 = com2_array[frame_index,:]
+            com3 = com3_array[frame_index,:]
+            dist1_2 = np.linalg.norm(com2-com1)
+            dist1_3 = np.linalg.norm(com3-com1)
+            value = ((com2[0]-com1[0])*(com3[0]-com1[0]) \
+                   + (com2[1]-com1[1])*(com3[1]-com1[1]) \
+                   + (com2[2]-com1[2])*(com3[2]-com1[2]))/(dist1_2*dist1_3)
+            milestone_value = milestone_variables["value"]
+            values.append(value - milestone_value)
+            
+        avg_distance = np.mean(values)
+        std_distance = np.std(values)
+        if abs(avg_distance) > max_avg or std_distance > max_std:
+            if verbose:
+                warnstr = """The distance between the system and central 
+    milestone were found on average to be {:.4f} apart.
+    The standard deviation was {:.4f}.""".format(avg_distance, std_distance)
+                print(warnstr)
+            return False
+            
+        return True
+    
+    def get_atom_groups(self):
+        """
+        Return a 3-list of this CV's atomic groups.
+        """
+        return [self.start_group, self.end_group, self.mobile_group]
+            
+        
 
 class MMVT_anchor(Serializer):
     """
@@ -557,5 +935,4 @@ class MMVT_anchor(Serializer):
         id_key_alias_value_dict, alias_key_id_value_dict, \
             neighbor_id_key_alias_value_dict = self._make_milestone_collection()
         return list(id_key_alias_value_dict.keys())
-    
     

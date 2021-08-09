@@ -224,7 +224,7 @@ def choose_next_simulation_openmm(
         if steps_to_go_to_minimum <= 0:
             data_sample_list = converge.converge(model)
             steps_to_go_to_minimum = 0
-            transition_minima, dummy \
+            transition_minima, dummy1, dummy2 \
                 = common_converge.calc_transition_steps(
                 model, data_sample_list[-1])
             
@@ -548,7 +548,7 @@ def run_namd(model, anchor_index, restart, total_simulation_length,
 
 def run(model, instruction, min_total_simulation_length=None, 
         max_total_simulation_length=None, convergence_cutoff=None, 
-        directory=None, minimum_anchor_transitions=None, 
+        minimum_anchor_transitions=None, 
         cuda_device_index=None, force_overwrite=False, save_state_file=False,
         save_state_boundaries=False, namd_command="namd2", namd_arguments="", 
         min_b_surface_simulation_length=None,
@@ -568,12 +568,6 @@ def run(model, instruction, min_total_simulation_length=None,
         bd_force_overwrite = force_overwrite
     else:
         bd_force_overwrite = False
-        
-    if directory is not None:
-        model.anchor_rootdir = os.path.abspath(directory)
-    elif model.anchor_rootdir == ".":
-        model_dir = os.path.dirname(model_file)
-        model.anchor_rootdir = os.path.abspath(model_dir)
         
     assert os.path.exists(model.anchor_rootdir), "An incorrect anchor "\
         "root directory was provided."
@@ -871,10 +865,15 @@ if __name__ == "__main__":
         "A nonexistent input file was provided: {}.".format(model_file)
     model = base.Model()
     model.deserialize(model_file)
+    if directory is not None:
+        model.anchor_rootdir = os.path.abspath(directory)
+    elif model.anchor_rootdir == ".": # TODO: fix - this isn't right
+        model_dir = os.path.dirname(model_file)
+        model.anchor_rootdir = os.path.abspath(model_dir)
     
     run(model, instruction, min_total_simulation_length, 
         max_total_simulation_length, convergence_cutoff, 
-        directory, minimum_anchor_transitions, cuda_device_index, 
+        minimum_anchor_transitions, cuda_device_index, 
         force_overwrite, save_state_file, save_state_for_all_boundaries,
         namd_command, namd_arguments,
         minimum_b_surface_trajectories, minimum_bd_milestone_trajectories,
