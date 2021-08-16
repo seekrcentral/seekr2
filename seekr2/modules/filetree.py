@@ -106,6 +106,7 @@ def generate_filetree(model, rootdir, empty_rootdir=False):
         b_surface_filetree = Filetree(
             {model.k_on_info.b_surface_directory:b_surface_dict})
         b_surface_filetree.make_tree(rootdir)
+        """ # TODO: remove
         for bd_milestone in model.k_on_info.bd_milestones:
             bd_milestone_dict = {}
             bd_milestone_dict[bd_milestone.extracted_directory] = {}
@@ -114,6 +115,7 @@ def generate_filetree(model, rootdir, empty_rootdir=False):
             bd_milestone_filetree = Filetree(
                 {bd_milestone.directory:bd_milestone_dict})
             bd_milestone_filetree.make_tree(rootdir)
+        """
     
     return
 

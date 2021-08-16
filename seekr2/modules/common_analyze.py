@@ -294,7 +294,8 @@ def browndye_run_compute_rate_constant(compute_rate_constant_program,
     assert k_ons.keys() == transition_counts.keys()
     return k_ons, k_on_errors, reaction_probabilities, \
         reaction_probability_errors, transition_counts
-        
+
+#TODO: remove - extraneous function since BD milestones now handled differently
 def browndye_parse_bd_milestone_results(results_filename_list, 
                                         sample_error_from_normal=False):
     """
@@ -556,9 +557,29 @@ class Data_sample():
                 #self.b_surface_reaction_probability_errors = reaction_probability_errors # REMOVE?
             else:
                 raise Exception("No valid BD program settings provided.")
-            
+        
+        
         if len(self.model.k_on_info.bd_milestones) > 0:
             for bd_milestone in self.model.k_on_info.bd_milestones:
+                transition_counts_bd_milestone = defaultdict(int)
+                transition_probabilities_bd_milestone = defaultdict(float)
+                inner_milestone_index = bd_milestone.inner_milestone.index
+                outer_milestone_index = bd_milestone.outer_milestone.index
+                transition_counts_bd_milestone[inner_milestone_index] \
+                    = transition_counts[inner_milestone_index]
+                transition_counts_bd_milestone["escaped"] \
+                    = transition_counts[outer_milestone_index] \
+                    - transition_counts[inner_milestone_index]
+                
+                transition_probabilities_bd_milestone[inner_milestone_index] \
+                    = transition_counts_bd_milestone[inner_milestone_index] \
+                    / sum(transition_counts_bd_milestone.values())
+                
+                transition_probabilities_bd_milestone["escaped"] \
+                    = transition_counts_bd_milestone["escaped"] \
+                    / sum(transition_counts_bd_milestone.values())
+                
+                """
                 bd_milestone_results_file = os.path.join(
                     self.model.anchor_rootdir, bd_milestone.directory, 
                     "results.xml")
@@ -579,11 +600,12 @@ class Data_sample():
                 transition_probabilities, transition_counts = \
                     browndye_parse_bd_milestone_results(
                         [bd_milestone_results_file])
+                """
                 self.bd_transition_counts[bd_milestone.index] \
-                    = transition_counts
+                    = transition_counts_bd_milestone
                 self.bd_transition_probabilities[bd_milestone.index] \
-                        = transition_probabilities
-                                                
+                        = transition_probabilities_bd_milestone
+                
         return
     
     def compute_rate_matrix(self):
@@ -783,7 +805,11 @@ class Data_sample():
                             
                         source_vec[source_index] \
                             = self.b_surface_k_ons_src[source_index]
-                            
+                        
+                        if bd_milestone.index \
+                                not in self.bd_transition_probabilities:
+                            break
+                        
                         transition_probabilities \
                             = self.bd_transition_probabilities[
                                 bd_milestone.index]

@@ -224,29 +224,42 @@ def make_browndye_reaction_xml(model, abs_reaction_path, bd_milestone=None):
     for i, bd_milestone2 in enumerate(model.k_on_info.bd_milestones):
         ghost_index_rec = ghost_indices_rec[i] # comes from the model?
         ghost_index_lig = ghost_indices_lig[i]
-        rxn = sim_browndye2.Reaction()
-        pair = sim_browndye2.Pair()
-        if bd_milestone_name == bd_milestone2.name:
-            rxn.name = str(bd_milestone2.inner_milestone.index)
-            rxn.state_after = str(bd_milestone2.inner_milestone.index)
-            pair.distance = bd_milestone2.inner_milestone.variables['radius'] \
-                * 10.0
-        else:
-            rxn.name = str(bd_milestone2.outer_milestone.index)
-            rxn.state_after = str(bd_milestone2.outer_milestone.index)
-            pair.distance = bd_milestone2.outer_milestone.variables['radius'] \
-                * 10.0
-        rxn.state_before = rxnroot.first_state
-        rxn.molecule0_group = sim_browndye2.BROWNDYE_RECEPTOR
-        rxn.molecule0_core = sim_browndye2.BROWNDYE_RECEPTOR
-        rxn.molecule1_group = sim_browndye2.BROWNDYE_LIGAND
-        rxn.molecule1_core = sim_browndye2.BROWNDYE_LIGAND
-        rxn.n_needed = 1
-        pair.atom1_index = ghost_index_rec
-        pair.atom2_index = ghost_index_lig
+        rxn_outer = sim_browndye2.Reaction()
+        pair1 = sim_browndye2.Pair()
+        # TODO: modify name to FROM_to_TO?
+        rxn_outer.name = str(bd_milestone2.outer_milestone.index)
+        rxn_outer.state_after = str(bd_milestone2.outer_milestone.index)
+        pair1.distance = bd_milestone2.outer_milestone.variables['radius'] * 10.0
+        rxn_outer.state_before = rxnroot.first_state
+        rxn_outer.molecule0_group = sim_browndye2.BROWNDYE_RECEPTOR
+        rxn_outer.molecule0_core = sim_browndye2.BROWNDYE_RECEPTOR
+        rxn_outer.molecule1_group = sim_browndye2.BROWNDYE_LIGAND
+        rxn_outer.molecule1_core = sim_browndye2.BROWNDYE_LIGAND
+        rxn_outer.n_needed = 1
+        pair1.atom1_index = ghost_index_rec
+        pair1.atom2_index = ghost_index_lig
+        rxn_outer.pair_list.append(pair1)
+        rxnroot.reaction_list.append(rxn_outer)
         
-        rxn.pair_list.append(pair)
-        rxnroot.reaction_list.append(rxn)
+        rxn_inner = sim_browndye2.Reaction()
+        pair2 = sim_browndye2.Pair()
+        # TODO: modify name to FROM_to_TO?
+        rxn_inner.name = str(bd_milestone2.inner_milestone.index)
+        rxn_inner.state_after = str(bd_milestone2.inner_milestone.index)
+        pair2.distance = bd_milestone2.inner_milestone.variables['radius'] * 10.0
+        rxn_inner.state_before = str(bd_milestone2.outer_milestone.index)
+        rxn_inner.molecule0_group = sim_browndye2.BROWNDYE_RECEPTOR
+        rxn_inner.molecule0_core = sim_browndye2.BROWNDYE_RECEPTOR
+        rxn_inner.molecule1_group = sim_browndye2.BROWNDYE_LIGAND
+        rxn_inner.molecule1_core = sim_browndye2.BROWNDYE_LIGAND
+        rxn_inner.n_needed = 1
+        pair2.atom1_index = ghost_index_rec
+        pair2.atom2_index = ghost_index_lig
+        rxn_inner.pair_list.append(pair2)
+        rxnroot.reaction_list.append(rxn_inner)
+        
+        # TODO: Loop through other BD milestones and add reaction criteria
+        
     rxnroot.write(abs_reaction_path)
     return
 

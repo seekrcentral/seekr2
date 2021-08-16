@@ -110,6 +110,7 @@ def choose_next_simulation_browndye2(
             
             else:
                 return []
+            
         if min_bd_milestone_simulation_length is None:
             min_bd_milestone_simulation_length = bd_milestone.num_trajectories
             
@@ -130,6 +131,7 @@ def choose_next_simulation_browndye2(
                 bd_transition_counts[bd_milestone.index].values())
             steps_to_go_minimum = min_bd_milestone_simulation_length \
                 * max_b_surface_trajs_to_extract - total_b_surface_sims
+                
             if steps_to_go_minimum > 0:
                 bd_milestone_info_to_run_unsorted.append(
                     [steps_to_go_minimum, total_b_surface_encounters, \
@@ -147,7 +149,7 @@ def choose_next_simulation_browndye2(
                         [0, total_b_surface_encounters, \
                          bd_milestone.index, True, total_bd_simulation_length, \
                          max_b_surface_trajs_to_extract])
-            
+    
     return bd_milestone_info_to_run_unsorted
 
 def choose_next_simulation_openmm(
@@ -276,6 +278,7 @@ def choose_next_simulation_openmm(
     anchor_info_to_run = sorted(
         anchor_info_to_run_unsorted, 
         key=lambda item: (min_total_simulation_length-item[0], item[1]))
+    
     return anchor_info_to_run
 
 def choose_next_simulation_namd(
@@ -568,7 +571,7 @@ def run(model, instruction, min_total_simulation_length=None,
         bd_force_overwrite = force_overwrite
     else:
         bd_force_overwrite = False
-        
+    
     assert os.path.exists(model.anchor_rootdir), "An incorrect anchor "\
         "root directory was provided."
     
@@ -640,7 +643,7 @@ def run(model, instruction, min_total_simulation_length=None,
         #if max_b_surface_trajs_to_extract is None:
         #    #max_b_surface_trajs_to_extract = 1e99
         #    max_b_surface_trajs_to_extract = model.
-            
+                
         bd_milestone_info_to_run = choose_next_simulation_browndye2(
             model, instruction, min_b_surface_simulation_length, 
             min_bd_milestone_simulation_length, 
