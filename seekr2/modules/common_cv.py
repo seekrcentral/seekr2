@@ -72,11 +72,11 @@ class Spherical_cv_anchor(Serializer):
             assert self.upper_milestone_radius \
                 == cv_input.input_anchors[j+1].lower_milestone_radius,\
                 "If upper_milestone_radius is defined for anchor "\
-                "{} at value {}, the anchor above ".format(j, 
+                "{} at value {:.3f}, the anchor above ".format(j, 
                 self.upper_milestone_radius)\
                 +"(number {}).".format(j+1)\
                 +" must have a corresponding lower_milestone_radius, "\
-                "current value: {}.".format(
+                "current value: {:.3f}.".format(
                     cv_input.input_anchors[j+1].lower_milestone_radius)
         return
     
@@ -236,11 +236,11 @@ class Tiwary_cv_anchor(Serializer):
             assert self.upper_milestone_value \
                 == cv_input.input_anchors[j+1].lower_milestone_value,\
                 "If upper_milestone_value is defined for anchor "\
-                "{} at value {}, the anchor above ".format(j, 
+                "{} at value {:.3f}, the anchor above ".format(j, 
                 self.upper_milestone_value)\
                 +"(number {}).".format(j+1)\
                 +" must have a corresponding lower_milestone_value, "\
-                "current value: {}.".format(
+                "current value: {:.3f}.".format(
                     cv_input.input_anchors[j+1].lower_milestone_value)
         return
     
@@ -383,7 +383,7 @@ class Tiwary_cv_input(Serializer):
         """
         
         last_value = -1e9
-        found_bulk_anchor = False
+        num_bulk_anchors = 0
         for i, input_anchor in enumerate(self.input_anchors):
             value = input_anchor.value
             assert value >= 0.0, "A value must be greater than "\
@@ -400,10 +400,8 @@ class Tiwary_cv_input(Serializer):
             if input_anchor.bulk_anchor is None:
                 input_anchor.bulk_anchor = False
                 
-            assert input_anchor.bulk_anchor == False, \
-                "Tiwary anchors may not have their 'bulk_anchor' property "\
-                "set to True. This shape is currently not supported in "\
-                "Brownian dynamics software."
+            if input_anchor.bulk_anchor:
+                num_bulk_anchors += 1
             
             if i > 0:
                 assert not input_anchor.bound_state, "Only the lowest"\
@@ -411,6 +409,9 @@ class Tiwary_cv_input(Serializer):
                     
             assert len(self.input_anchors) > 1, "A CV must contain "\
                 "more than one anchor."
+        
+        assert num_bulk_anchors <= 1, "There cannot be more than one bulk "\
+            "anchor."
         return
     
     def make_mmvt_milestoning_objects(self, milestone_alias, milestone_index, 
@@ -486,11 +487,11 @@ class Planar_cv_anchor(Serializer):
             assert self.upper_milestone_value \
                 == cv_input.input_anchors[j+1].lower_milestone_value,\
                 "If upper_milestone_value is defined for anchor "\
-                "{} at value {}, the anchor above ".format(j, 
+                "{} at value {:.3f}, the anchor above ".format(j, 
                 self.upper_milestone_value)\
                 +"(number {}).".format(j+1)\
                 +" must have a corresponding lower_milestone_value, "\
-                "current value: {}.".format(
+                "current value: {:.3f}.".format(
                     cv_input.input_anchors[j+1].lower_milestone_value)
         return
     
@@ -543,7 +544,7 @@ class Planar_cv_input(Serializer):
         """
         
         last_value = -1e9
-        found_bulk_anchor = False
+        num_bulk_anchors = 0
         for i, input_anchor in enumerate(self.input_anchors):
             value = input_anchor.value
             assert value > last_value, "Each subsequent value "\
@@ -558,10 +559,8 @@ class Planar_cv_input(Serializer):
             if input_anchor.bulk_anchor is None:
                 input_anchor.bulk_anchor = False
                 
-            assert input_anchor.bulk_anchor == False, \
-                "Planar anchors may not have their 'bulk_anchor' property "\
-                "set to True. This shape is currently not supported in "\
-                "Brownian dynamics software."
+            if input_anchor.bulk_anchor:
+                num_bulk_anchors += 1
             
             if i > 0:
                 assert not input_anchor.bound_state, "Only the lowest"\
@@ -569,6 +568,9 @@ class Planar_cv_input(Serializer):
                     
             assert len(self.input_anchors) > 1, "A CV must contain "\
                 "more than one anchor."
+        assert num_bulk_anchors <= 1, "There cannot be more than one bulk "\
+            "anchor."
+            
         return
     
     def make_mmvt_milestoning_objects(self, milestone_alias, milestone_index, 

@@ -226,8 +226,9 @@ def make_browndye_reaction_xml(model, abs_reaction_path, bd_milestone=None):
         ghost_index_lig = ghost_indices_lig[i]
         rxn_outer = sim_browndye2.Reaction()
         pair1 = sim_browndye2.Pair()
-        # TODO: modify name to FROM_to_TO?
-        rxn_outer.name = str(bd_milestone2.outer_milestone.index)
+        from_state = "b"
+        to_state = str(bd_milestone2.outer_milestone.index)
+        rxn_outer.name = "{}_{}".format(from_state, to_state)
         rxn_outer.state_after = str(bd_milestone2.outer_milestone.index)
         pair1.distance = bd_milestone2.outer_milestone.variables['radius'] * 10.0
         rxn_outer.state_before = rxnroot.first_state
@@ -243,8 +244,9 @@ def make_browndye_reaction_xml(model, abs_reaction_path, bd_milestone=None):
         
         rxn_inner = sim_browndye2.Reaction()
         pair2 = sim_browndye2.Pair()
-        # TODO: modify name to FROM_to_TO?
-        rxn_inner.name = str(bd_milestone2.inner_milestone.index)
+        from_state = str(bd_milestone2.outer_milestone.index)
+        to_state = str(bd_milestone2.inner_milestone.index)
+        rxn_inner.name = "{}_{}".format(from_state, to_state)
         rxn_inner.state_after = str(bd_milestone2.inner_milestone.index)
         pair2.distance = bd_milestone2.inner_milestone.variables['radius'] * 10.0
         rxn_inner.state_before = str(bd_milestone2.outer_milestone.index)
@@ -259,6 +261,26 @@ def make_browndye_reaction_xml(model, abs_reaction_path, bd_milestone=None):
         rxnroot.reaction_list.append(rxn_inner)
         
         # TODO: Loop through other BD milestones and add reaction criteria
+        for j, bd_milestone3 in enumerate(model.k_on_info.bd_milestones):
+            if bd_milestone2.index == bd_milestone3.index:
+                continue
+            rxn_other = sim_browndye2.Reaction()
+            pair3 = sim_browndye2.Pair()
+            from_state = str(bd_milestone2.outer_milestone.index)
+            to_state = str(bd_milestone3.outer_milestone.index)
+            rxn_other.name = "{}_{}".format(from_state, to_state)
+            rxn_other.state_after = str(bd_milestone3.outer_milestone.index)
+            pair3.distance = bd_milestone3.outer_milestone.variables['radius'] * 10.0
+            rxn_other.state_before = str(bd_milestone2.outer_milestone.index)
+            rxn_other.molecule0_group = sim_browndye2.BROWNDYE_RECEPTOR
+            rxn_other.molecule0_core = sim_browndye2.BROWNDYE_RECEPTOR
+            rxn_other.molecule1_group = sim_browndye2.BROWNDYE_LIGAND
+            rxn_other.molecule1_core = sim_browndye2.BROWNDYE_LIGAND
+            rxn_other.n_needed = 1
+            pair3.atom1_index = ghost_index_rec
+            pair3.atom2_index = ghost_index_lig
+            rxn_other.pair_list.append(pair3)
+            rxnroot.reaction_list.append(rxn_other)
         
     rxnroot.write(abs_reaction_path)
     return
@@ -963,6 +985,7 @@ if __name__ == "__main__":
             model.anchor_rootdir, model.k_on_info.b_surface_directory)
         
     else:
+        raise Exception("b_surface is the only option allowed at this time.")
         assert bd_milestone_index >= 0, "only positive indices allowed."
         try:
             bd_milestone = model.k_on_info.bd_milestones[bd_milestone_index]

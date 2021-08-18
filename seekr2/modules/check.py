@@ -396,8 +396,8 @@ def check_pre_sim_MD_and_BD_salt_concentration(model):
         if not np.isclose(md_ionic_strength, bd_ionic_strength, 
                           rtol=RELATIVE_TOLERANCE, atol=ABSOLUTE_TOLERANCE):
             print("""CHECK FAILURE: BD simulation has significantly different
-    ionic strength of {} M*e^2 than MD simulation ionic strength of 
-    {} M*e^2 for anchor {}. Please check the ion concentrations in the 
+    ionic strength of {:.3f} M*e^2 than MD simulation ionic strength of 
+    {:.3f} M*e^2 for anchor {}. Please check the ion concentrations in the 
     BD simulation settings, and also count the number of ions 
     in the MD simulations. Counterions added to neutralize the protein in an
     MD simulation may also trigger this failure. If that is the case, simply 
@@ -672,7 +672,7 @@ def check_pqr_residues(model):
     
     warnstr1 = """CHECK FAILURE: The PQR file {} is comprised of a single
     residue, named {}. By default, Browndye2 will lump all the charges in
-    a residue into a single "test charge". This feature can be overidden by
+    a residue into a single "test charge". This feature can be overridden by
     numbering every atom in your PQR file(s) as a different residue. If you
     don't mind this, and wish to proceed, then run this script again, skipping
     all checks."""
@@ -689,6 +689,24 @@ def check_pqr_residues(model):
         return False
     
     return True
+
+def check_for_one_bulk_anchor(model):
+    """
+    In order for the model to work properly, exactly one bulk anchor is
+    required
+    """
+    num_bulk_anchors = 0
+    for anchor in model.anchors:
+        if anchor.bulkstate:
+            num_bulk_anchors += 1
+            
+    if num_bulk_anchors == 1:
+        return True
+    else:
+        warnstr = """CHECK FAILURE: {} bulk anchors were found. There needs
+        to be exactly one bulk anchor per model."""
+        print(warnstr.format(num_bulk_anchors))
+        return False
 
 def check_pre_simulation_all(model):
     """
@@ -712,6 +730,7 @@ def check_pre_simulation_all(model):
     check_passed_list.append(check_systems_within_Voronoi_cells(model))
     check_passed_list.append(check_atom_selections_MD_BD(model))
     check_passed_list.append(check_pqr_residues(model))
+    check_passed_list.append(check_for_one_bulk_anchor(model))
     
     no_failures = True
     for check_passed in check_passed_list:
@@ -854,6 +873,7 @@ def find_parmed_structure_com(structure, indices):
     assert total_mass > 0.0
     return com_vector / total_mass
 
+# TODO: remove? This check no longer used since BD milestones have changed
 def check_bd_simulation_end_state(model):
     """
     The BD stage simulation program, Browndye2, can save encounter
@@ -887,8 +907,8 @@ def check_bd_simulation_end_state(model):
                 warnstr = """CHECK FAILURE: The BD milestone number {}
     has saved FHPD structures from the b-surface simulations
     that were significantly far away from the outermost 
-    milestone of this binding site. Observed distance: {}. 
-    Expected distance: {}.""".format(bd_milestone.index, distance, outer_radius)
+    milestone of this binding site. Observed distance: {:.3f}. 
+    Expected distance: {:.3f}.""".format(bd_milestone.index, distance, outer_radius)
                 print(warnstr)
                 return False
     return True
@@ -916,7 +936,8 @@ def check_post_simulation_all(model, long_check=False):
     check_passed_list = []
     check_passed_list.append(check_elber_umbrella_stage(model))
     check_passed_list.append(check_mmvt_in_Voronoi_cell(model))
-    check_passed_list.append(check_bd_simulation_end_state(model))
+    # TODO: remove?
+    #check_passed_list.append(check_bd_simulation_end_state(model))
     if long_check:
         check_passed_list.append(check_xml_boundary_states(model))
     

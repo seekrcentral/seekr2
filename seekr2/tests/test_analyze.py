@@ -335,19 +335,22 @@ def make_mmvt_calculation_based_on_output_files(model, potential_energy_function
     k_on = None
     if k_on_src is not None:
         highest_milestone_index = model.anchors[-1].milestones[0].index
+        print("transition_probs:", transition_probs)
         b_surface_transition_probs = {"escaped": 0.9, highest_milestone_index:0.1}
+        print("b_surface_transition_probs:", b_surface_transition_probs)
         b_surface_output_file_name = os.path.join(
             model.anchor_rootdir, 
             model.k_on_info.b_surface_directory, "results1.xml")
         toy_engine.write_b_surface_output_file(
-            b_surface_output_file_name, k_on_src*10.0, b_surface_transition_probs)
+            b_surface_output_file_name, k_on_src*10.0, 
+            b_surface_transition_probs, transition_probs)
         
-        
-        bd_milestone_output_file_name = os.path.join(
-            model.anchor_rootdir, 
-            model.k_on_info.bd_milestones[0].directory, "results.xml")
-        toy_engine.write_b_surface_output_file(
-            bd_milestone_output_file_name, k_on_src, transition_probs)
+        # TODO: remove because uses old BD milestone method
+        #bd_milestone_output_file_name = os.path.join(
+        #    model.anchor_rootdir, 
+        #    model.k_on_info.bd_milestones[0].directory, "results.xml")
+        #toy_engine.write_b_surface_output_file(
+        #    bd_milestone_output_file_name, k_on_src, transition_probs)
     
     my_analysis = analyze.analyze(model, num_error_samples=0)
     mmvt_time = my_analysis.main_data_sample.MFPTs[(0,"bulk")]
@@ -487,14 +490,16 @@ def make_elber_calculation_based_on_output_files(model, potential_energy_functio
             model.anchor_rootdir, 
             model.k_on_info.b_surface_directory, "results1.xml")
         toy_engine.write_b_surface_output_file(
-            b_surface_output_file_name, k_on_src*10.0, b_surface_transition_probs)
+            b_surface_output_file_name, k_on_src*10.0, 
+            b_surface_transition_probs, transition_probs)
         
-        
+        """
         bd_milestone_output_file_name = os.path.join(
             model.anchor_rootdir, 
             model.k_on_info.bd_milestones[0].directory, "results.xml")
         toy_engine.write_b_surface_output_file(
             bd_milestone_output_file_name, k_on_src, transition_probs)
+        """
     
     my_analysis = analyze.analyze(model, num_error_samples=0)
     elber_time = my_analysis.main_data_sample.MFPTs[(0,"bulk")]

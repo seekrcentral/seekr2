@@ -20,6 +20,8 @@ import seekr2.modules.mmvt_analyze as mmvt_analyze
 import seekr2.modules.elber_analyze as elber_analyze
 import seekr2.modules.check as check
 
+MAX_SINGULAR_MATRIX_ERRORS = 10
+
 class Analysis:
     """
     Compute MMVT thermodynamics and kinetics from model data and 
@@ -404,7 +406,7 @@ class Analysis:
         self.main_data_sample.calculate_thermodynamics()
         self.main_data_sample.calculate_kinetics(pre_equilibrium_approx)
         # do data_sample_list here
-                     
+        
         k_offs = []
         p_i_list = []
         pi_alpha_list = []

@@ -9,6 +9,7 @@ import glob
 import pathlib # for 'touching' a nonexistent file
 import shutil
 
+import pytest
 import seekr2.tests.make_test_model as make_test_model
 import seekr2.modules.common_sim_browndye2 as sim_browndye2
 import seekr2.modules.runner_browndye2 as runner_browndye2
@@ -70,6 +71,7 @@ def test_runner_browndye2_b_surface_default(tmp_path):
     shutil.copyfile(traj_index_src_filename, traj_index_dest_filename)
     bd_milestone.outer_milestone.index = 13
     
+    """ # TODO: remove
     lig_pqr_filenames, rec_pqr_filenames = runner_browndye2.extract_bd_surface(
         model, bd_milestone, 2)
     bd_directory_list = runner_browndye2.make_fhpd_directories(
@@ -88,7 +90,7 @@ def test_runner_browndye2_b_surface_default(tmp_path):
     runner_browndye2.combine_fhpd_results(
         model, bd_milestone, bd_directory_list)
     assert os.path.exists(os.path.join(bd_milestone_abs_path, "results.xml"))
-    
+    """
     return
 
 def test_make_empty_pqrxml(tmp_path):
@@ -142,6 +144,8 @@ def test_modify_variables(tryp_ben_mmvt_model):
         n_trajectories_per_output=25)
     return
 
+# TODO: remove test: association with old BD milestone way
+@pytest.mark.skip()
 def test_make_proc_file_last_frame(tmp_path):
     """
     Test the function that extracts the last frame of the BD simulation

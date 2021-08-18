@@ -115,8 +115,6 @@ class Browndye_settings_input(Serializer):
         self.apbs_grid_spacing = -1.0
         self.ions = []
         self.num_b_surface_trajectories = -1
-        self.num_bd_milestone_trajectories = -1
-        self.max_b_surface_trajs_to_extract = -1
         self.receptor_indices = []
         self.ligand_indices = []
         self.n_threads = 1
@@ -573,12 +571,12 @@ def create_bd_milestones(model, model_input):
                     "A BD outer milestone must be spherical."
                 bd_milestone.inner_milestone = anchor.milestones[0]
             
-            bd_milestone.num_trajectories = \
-                model_input.browndye_settings_input\
-                    .num_bd_milestone_trajectories
-            bd_milestone.max_b_surface_trajs_to_extract = \
-                model_input.browndye_settings_input\
-                    .max_b_surface_trajs_to_extract
+            #bd_milestone.num_trajectories = \
+            #    model_input.browndye_settings_input\
+            #        .num_bd_milestone_trajectories
+            #bd_milestone.max_b_surface_trajs_to_extract = \
+            #    model_input.browndye_settings_input\
+            #        .max_b_surface_trajs_to_extract
             bd_milestone.receptor_indices = \
                 model_input.browndye_settings_input.receptor_indices
             bd_milestone.ligand_indices = \
@@ -662,8 +660,7 @@ def generate_bd_files(model, rootdir):
             model, rootdir, receptor_xml_filename, ligand_xml_filename,
             model.k_on_info.b_surface_num_trajectories)
         model.browndye_settings.debye_length = debye_length
-        abs_reaction_path = os.path.join(b_surface_dir, 
-                                         reaction_filename)
+        abs_reaction_path = os.path.join(b_surface_dir, reaction_filename)
         runner_browndye2.make_browndye_reaction_xml(model, abs_reaction_path)
         return
     

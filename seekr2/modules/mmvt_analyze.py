@@ -763,6 +763,8 @@ class MMVT_data_sample(common_analyze.Data_sample):
                 
             flux_matrix[alpha, alpha] = -column_sum[alpha]
             
+        assert bulk_index is not None, "A bulk state has not been defined, "\
+            "but is required."
         prob_equil = np.zeros((flux_matrix_dimension,1))
         prob_equil[bulk_index] = 1.0
         self.pi_alpha = abs(la.solve(flux_matrix.T, prob_equil))

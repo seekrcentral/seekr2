@@ -126,7 +126,8 @@ def test_add_ghost_atom_to_pqr_from_atoms_center_of_mass(tmp_path):
     pqr_struct = parmed.load_file(output_pqr_filename, skip_bonds=True)
     ghost_atom = pqr_struct.atoms[ghost_index-1]
     assert(ghost_atom.name == "GHO")
-    expected_ghost_location = np.array([[-0.056, -0.323, 2.439]])
+    #expected_ghost_location = np.array([[-0.056, -0.323, 2.439]])
+    expected_ghost_location = np.array([[0.0, 0.0, 0.0]])
     ghost_location = pqr_struct.coordinates[ghost_index-1]
     difference = np.linalg.norm(expected_ghost_location - ghost_location)
     assert(difference == 0.0)

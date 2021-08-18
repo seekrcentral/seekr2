@@ -648,12 +648,13 @@ class BD_milestone(Serializer):
         self.name = ""
         self.outer_milestone = None
         self.inner_milestone = None
-        self.num_trajectories = -1
+        #self.num_trajectories = -1
         self.receptor_indices = []
         self.ligand_indices = []
-        self.extracted_directory = "extracted_from_b_surface"
-        self.fhpd_directory = "first_hitting_point_distribution"
-        self.max_b_surface_trajs_to_extract = -1
+        # TODO: remove
+        #self.extracted_directory = "extracted_from_b_surface"
+        #self.fhpd_directory = "first_hitting_point_distribution"
+        #self.max_b_surface_trajs_to_extract = -1
         return
     
 class Milestone(Serializer):

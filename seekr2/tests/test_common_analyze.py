@@ -156,7 +156,9 @@ def test_browndye_run_compute_rate_constant():
     expected_transition_counts = {10: 4553, "escaped": 95447, "stuck": 0}
     compare_dicts(transition_counts, expected_transition_counts)
     return
-    
+
+# TODO: remove test since it's for old BD milestoning way
+@pytest.mark.skip()
 def test_browndye_parse_bd_milestone_results():
     """
     Test the function which extracts Browndye results from the BD
@@ -174,7 +176,9 @@ def test_browndye_parse_bd_milestone_results():
                   expected_transition_probabilities)
     expected_transition_counts = {9: 600, "escaped": 400, "stuck": 0}
     compare_dicts(transition_counts, expected_transition_counts)
-    
+
+#TODO: modify for writing FHPD structures without old BD milestoning way
+@pytest.mark.skip()
 def test_combine_fhpd_results(tryp_ben_mmvt_model):
     test_bd_results_filename = os.path.join(
         TEST_DIRECTORY, "data/sample_bd_milestone_results.xml")

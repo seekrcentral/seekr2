@@ -31,8 +31,12 @@ bd_results_string = \
     <stuck> 0 </stuck>
     <escaped> {escaped} </escaped>
     <completed>
-      <name> {name} </name>
-      <n> {n} </n>
+      <name> {name1} </name>
+      <n> {n1} </n>
+    </completed>
+    <completed>
+      <name> {name2} </name>
+      <n> {n2} </n>
     </completed>
   </reactions>
   <n_bd_steps> 0 </n_bd_steps>
@@ -41,20 +45,30 @@ bd_results_string = \
 
 import numpy as np
 
-def write_b_surface_output_file(output_file_name, k_on_src, transition_probs):
+def write_b_surface_output_file(output_file_name, k_on_src, b_transition_probs,
+                                milestone_transition_probs):
     CONV_FACTOR = 602000000.0
     b_reaction_rate = k_on_src / CONV_FACTOR
     N_TRAJS = 1000000000
-    for key in transition_probs:
+    for key in b_transition_probs:
         if key == "escaped":
-            escaped = int(transition_probs["escaped"] * N_TRAJS)
+            escaped = int(b_transition_probs["escaped"] * N_TRAJS)
         else:
-            name = key
-            n = int(transition_probs[key] * N_TRAJS)
+            key1 = key
+            name1 = "b_%s" % key
+            n1 = int(b_transition_probs[key] * N_TRAJS)
+            
+    for key in milestone_transition_probs:
+        if key == "escaped":
+            escaped2 = int(milestone_transition_probs["escaped"] * n1)
+            pass
+        else:
+            name2 = "%s_%s" % (key1, key)
+            n2 = int(milestone_transition_probs[key] * n1)
     
     new_result = bd_results_string.format(
         b_radius=0.0, b_reaction_rate=b_reaction_rate, n_trajectories=N_TRAJS,
-        escaped=escaped, name=name, n=n)
+        escaped=escaped+escaped2, name1=name1, n1=n1, name2=name2, n2=n2)
     #print("new_result:", new_result)
     with open(output_file_name, "w") as f:
         f.write(new_result)

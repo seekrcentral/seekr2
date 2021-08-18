@@ -66,13 +66,6 @@ def Q_to_K(Q):
                 K[i,j] = -Q[i,j] / Q[i,i]
     return K
 
-#def make_elber_K_matrix(oldK):
-#    """Make a K matrix that is compatible with Elber milestoning."""
-#    old_shape = oldK.shape
-#    print("oldK:", oldK)
-#    exit()
-#    K_hat
-
 def quadriture(err1, err2):
     """Add two errors in quadriture."""
     
@@ -242,15 +235,16 @@ def browndye_run_compute_rate_constant(compute_rate_constant_program,
         stuck = int(reactions.find("stuck").text.strip())
         escaped = int(reactions.find("escaped").text.strip())
         for completed in reactions.iter("completed"):
-            name = int(completed.find("name").text.strip())
+            name = completed.find("name").text.strip().split("_")
+            #src = name[0]
+            dest = int(name[1])
             n = int(completed.find("n").text.strip())
-            transition_counts[name] += n
+            transition_counts[dest] += n
         transition_counts["escaped"] += escaped
         transition_counts["stuck"] += stuck
         
         # now obtain probabilities and rates
         for rate in root.iter("rate"):
-            name = int(rate.find("name").text.strip())
             rate_constant = rate.find("rate_constant")
             k_on_tag = rate_constant.find("mean")
             k_on_tag_high = rate_constant.find("high")
@@ -260,11 +254,11 @@ def browndye_run_compute_rate_constant(compute_rate_constant_program,
             k_on_error = 0.5*(float(k_on_tag_high.text) - k_on)
             reaction_probability = rate.find("reaction_probability")
             beta_tag = reaction_probability.find("mean")
-            beta_tag_high = reaction_probability.find("high")
+            #beta_tag_high = reaction_probability.find("high")  # TODO: remove
             assert beta_tag is not None
-            assert beta_tag_high is not None
+            #assert beta_tag_high is not None  # TODO: remove
             beta = float(beta_tag.text)
-            beta_error = 0.5*(float(beta_tag_high.text) - beta)
+            #beta_error = 0.5*(float(beta_tag_high.text) - beta) # TODO: remove
             if beta != 0.0:
                 k_b = k_on / beta
             
@@ -294,75 +288,6 @@ def browndye_run_compute_rate_constant(compute_rate_constant_program,
     assert k_ons.keys() == transition_counts.keys()
     return k_ons, k_on_errors, reaction_probabilities, \
         reaction_probability_errors, transition_counts
-
-#TODO: remove - extraneous function since BD milestones now handled differently
-def browndye_parse_bd_milestone_results(results_filename_list, 
-                                        sample_error_from_normal=False):
-    """
-    Read and extract transition probabilities for a BD milestone.
-    
-    Parameters:
-    -----------
-    results_filename_list : list
-        A list of paths to the results XML files for a BD milestone,
-        which is an output from running the BrownDye program.
-        
-    sample_error_from_normal : bool, default False
-        Add a fluctuation to the probabilities sampled from a
-        normal distribution with a standard deviation equal to
-        1/sqrt(n-1). This is used by the error estimators to 
-        incorporate the error in the probabilities.
-    
-    Results:
-    --------
-    transition_probabilities : defaultdict
-        The probabilities of transitions.
-    
-    transition_counts : defaultdict
-        The counts of transitions to all visited states.    
-    """
-    
-    transition_counts = defaultdict(int)
-    transition_probabilities = defaultdict(float)
-    completed_prob = 0.0
-    completed_count = 0
-    
-    for results_filename in results_filename_list:
-        assert os.path.exists(results_filename), "You must perform successful "\
-            "extractions and runs of all BD milestones if k-on settings are "\
-            "provided in the model XML. Missing file: " \
-            + results_filename
-        root = ET.parse(results_filename)
-        reactions = root.find("reactions")
-        n_trajectories = int(reactions.find("n_trajectories").text.strip())
-        stuck = int(reactions.find("stuck").text.strip())
-        escaped = int(reactions.find("escaped").text.strip())
-        
-        for completed in reactions.iter("completed"):
-            name = int(completed.find("name").text.strip())
-            n = int(completed.find("n").text.strip())
-            transition_counts[name] += n
-            completed_count += n
-            
-        transition_counts["escaped"] += escaped
-        transition_counts["stuck"] += stuck
-    
-    for key in transition_counts:
-        n = transition_counts[key]
-        avg = n / (completed_count + escaped)
-        if sample_error_from_normal:
-            assert n > 1, "Too few transitions to compute error."
-            std_dev = avg / np.sqrt(n-1)
-            transition_probabilities[key] = np.random.normal(
-                loc=avg, scale=std_dev)
-        else:
-            transition_probabilities[key] = avg
-            
-        if key not in ["escaped", "stuck"]:
-            completed_prob += transition_probabilities[key]
-    
-    transition_probabilities["escaped"] = 1.0 - completed_prob
-    return transition_probabilities, transition_counts
 
 def combine_fhpd_results(bd_milestone, fhpd_directories, 
                          combined_results_filename):
@@ -509,16 +434,12 @@ class Data_sample():
         self.K = None
         self.K_hat = None
         self.p_i = None
-        #self.p_i_hat = None
         self.free_energy_profile = None
         self.MFPTs = None
         self.k_off = None
         self.k_ons = {}
         self.b_surface_k_ons_src = None
         self.b_surface_k_on_errors_src = None
-        #self.b_surface_reaction_probabilities = None # REMOVE?
-        #self.b_surface_reaction_probability_errors = None # REMOVE?
-        #self.b_surface_transition_counts = None # REMOVE?
         self.bd_transition_counts = {}
         self.bd_transition_probabilities = {}
     
@@ -553,13 +474,12 @@ class Data_sample():
                 self.bd_transition_probabilities["b_surface"] = reaction_probabilities
                 self.b_surface_k_ons_src = k_ons_src
                 self.b_surface_b_surface_k_on_errors_src = k_on_errors_src
-                #self.b_surface_reaction_probabilities = reaction_probabilities # REMOVE?
-                #self.b_surface_reaction_probability_errors = reaction_probability_errors # REMOVE?
             else:
                 raise Exception("No valid BD program settings provided.")
         
         
-        if len(self.model.k_on_info.bd_milestones) > 0:
+        if len(self.model.k_on_info.bd_milestones) > 0 \
+                and len(output_file_list) > 0:
             for bd_milestone in self.model.k_on_info.bd_milestones:
                 transition_counts_bd_milestone = defaultdict(int)
                 transition_probabilities_bd_milestone = defaultdict(float)
@@ -579,28 +499,6 @@ class Data_sample():
                     = transition_counts_bd_milestone["escaped"] \
                     / sum(transition_counts_bd_milestone.values())
                 
-                """
-                bd_milestone_results_file = os.path.join(
-                    self.model.anchor_rootdir, bd_milestone.directory, 
-                    "results.xml")
-                
-                if not os.path.exists(bd_milestone_results_file):
-                    bd_directory_list_glob = os.path.join(
-                        self.model.anchor_rootdir, 
-                        bd_milestone.directory, 
-                        "first_hitting_point_distribution", "lig*/")
-                    bd_directory_list = glob.glob(
-                        bd_directory_list_glob)
-                    if len(bd_directory_list) == 0:
-                        continue
-                    combine_fhpd_results(bd_milestone, 
-                                         bd_directory_list, 
-                                         bd_milestone_results_file)
-                    
-                transition_probabilities, transition_counts = \
-                    browndye_parse_bd_milestone_results(
-                        [bd_milestone_results_file])
-                """
                 self.bd_transition_counts[bd_milestone.index] \
                     = transition_counts_bd_milestone
                 self.bd_transition_probabilities[bd_milestone.index] \
@@ -720,8 +618,6 @@ class Data_sample():
         # first, make the bulk state the sink state to compute k_offs
         Q_hat = self.Q[:,:]
         p_i_hat = self.p_i[:]
-        #if self.model.k_on_info:
-        #    K_hat = self.K[:,:]
         
         n = len(self.Q)
         for bulk_milestone in sorted(bulk_milestones, reverse=True):
@@ -829,7 +725,6 @@ class Data_sample():
                 self.k_ons = k_ons
         
         self.Q_hat = Q_hat
-        #self.p_i_hat = p_i_hat # TODO: remove after successful CI test
         self.MFPTs = MFPTs
         self.k_off = k_off
         return

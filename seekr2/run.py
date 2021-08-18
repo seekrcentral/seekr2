@@ -18,23 +18,18 @@ import seekr2.modules.common_converge as common_converge
 # run 20 ns between convergence checks
 CONVERGENCE_INTERVAL = 100000
 B_SURFACE_CONVERGENCE_INTERVAL = 10000
-BD_MILESTONE_CONVERGENCE_INTERVAL = 100
+#BD_MILESTONE_CONVERGENCE_INTERVAL = 100
 MAX_ITER = 999
 
 def choose_next_simulation_browndye2(
         model, instruction, min_b_surface_simulation_length, 
-        min_bd_milestone_simulation_length, max_b_surface_trajs_to_extract,
-        force_overwrite, min_b_surface_encounters=None, 
-        min_bd_milestone_encounters=None):
+        force_overwrite, min_b_surface_encounters=None):
     """
     Examine the model and all Browndye2 simulations that have run so
     far (if any), then construct a list of which BD milestones to
     run, in order.
     """
-    if instruction == "any_md":
-        return []
-    
-    if instruction not in ["any", "any_bd"] and not instruction.startswith("b"):
+    if instruction not in ["any", "any_bd", "b_surface"]:
         return []
     
     import seekr2.modules.common_sim_browndye2 as sim_browndye2
@@ -50,10 +45,7 @@ def choose_next_simulation_browndye2(
     if force_overwrite and instruction in ["any", "any_bd", "b_surface"]:
         runner_browndye2.cleanse_bd_outputs(b_surface_directory, 
                                             check_mode=False)
-        for bd_milestone in model.k_on_info.bd_milestones:
-            bd_milestone_directory = os.path.join(
-                model.anchor_rootdir, bd_milestone.directory)
-            
+        
     bd_milestone_info_to_run_unsorted = []
     data_sample_list = converge.converge(model)
     data_sample = data_sample_list[-1]
@@ -67,8 +59,7 @@ def choose_next_simulation_browndye2(
         if "b_surface" not in bd_transition_counts:
             bd_milestone_info_to_run_unsorted.append(
                 [min_b_surface_simulation_length, 0, "b_surface", False, 
-                 min_b_surface_simulation_length, 
-                 max_b_surface_trajs_to_extract])
+                 min_b_surface_simulation_length])
         else:
             # see how many simulations need to be run in b_surface
             total_b_surface_sims = sum(
@@ -77,12 +68,11 @@ def choose_next_simulation_browndye2(
                 bd_transition_counts["b_surface"].values())
             steps_to_go_minimum = min_b_surface_simulation_length \
                 - total_b_surface_sims
-            #print("steps_to_go_minimum:", steps_to_go_minimum)
+            
             if steps_to_go_minimum > 0:
                 bd_milestone_info_to_run_unsorted.append(
                     [steps_to_go_minimum, total_b_surface_encounters, \
-                     "b_surface", True, steps_to_go_minimum, \
-                     max_b_surface_trajs_to_extract])
+                     "b_surface", True, steps_to_go_minimum])
             
             elif min_b_surface_encounters is not None:
                 if total_b_surface_encounters < min_b_surface_encounters:
@@ -93,62 +83,7 @@ def choose_next_simulation_browndye2(
                     bd_milestone_info_to_run_unsorted.append(
                         [total_bd_simulation_length-total_b_surface_sims, \
                          total_b_surface_encounters, "b_surface", True, \
-                         total_bd_simulation_length, \
-                         max_b_surface_trajs_to_extract])
-    
-    for i, bd_milestone in enumerate(model.k_on_info.bd_milestones):
-        if instruction == "b_surface": break
-        if instruction not in ["any", "any_bd"]:
-            if instruction.startswith("b"):
-                try:
-                    integer_instruction = int(instruction[1:])
-                except ValueError:
-                    return []
-                    
-                if bd_milestone.index != integer_instruction:
-                    continue
-            
-            else:
-                return []
-            
-        if min_bd_milestone_simulation_length is None:
-            min_bd_milestone_simulation_length = bd_milestone.num_trajectories
-            
-        if max_b_surface_trajs_to_extract is None:
-            max_b_surface_trajs_to_extract \
-                = bd_milestone.max_b_surface_trajs_to_extract
-        
-        if bd_milestone.index not in bd_transition_counts:
-            bd_milestone_info_to_run_unsorted.append(
-                [min_bd_milestone_simulation_length, 0, bd_milestone.index, 
-                 False, min_bd_milestone_simulation_length, 
-                 max_b_surface_trajs_to_extract])
-        else:
-            # see how many simulations need to be run in b_surface
-            total_b_surface_sims = sum(
-                bd_transition_counts[bd_milestone.index].values())
-            total_b_surface_encounters = min(
-                bd_transition_counts[bd_milestone.index].values())
-            steps_to_go_minimum = min_bd_milestone_simulation_length \
-                * max_b_surface_trajs_to_extract - total_b_surface_sims
-                
-            if steps_to_go_minimum > 0:
-                bd_milestone_info_to_run_unsorted.append(
-                    [steps_to_go_minimum, total_b_surface_encounters, \
-                     bd_milestone.index, True, \
-                     min_bd_milestone_simulation_length, \
-                     max_b_surface_trajs_to_extract])
-            
-            elif min_bd_milestone_encounters is not None:
-                if total_b_surface_encounters < min_bd_milestone_encounters:
-                    total_bd_simulation_length \
-                        = (total_b_surface_sims \
-                        // BD_MILESTONE_CONVERGENCE_INTERVAL + 1) \
-                        * BD_MILESTONE_CONVERGENCE_INTERVAL
-                    bd_milestone_info_to_run_unsorted.append(
-                        [0, total_b_surface_encounters, \
-                         bd_milestone.index, True, total_bd_simulation_length, \
-                         max_b_surface_trajs_to_extract])
+                         total_bd_simulation_length])
     
     return bd_milestone_info_to_run_unsorted
 
@@ -162,7 +97,7 @@ def choose_next_simulation_openmm(
     number of steps, minimum convergence, maximum number of steps,
     etc.), construct a list of anchors to run, in order.
     """
-    if (instruction in ["any_bd", "b_surface",]) or instruction.startswith("b"):
+    if (instruction in ["any_bd", "b_surface",]):
         return []
     
     import seekr2.modules.runner_openmm as runner_openmm
@@ -294,7 +229,7 @@ def choose_next_simulation_namd(
     import seekr2.modules.runner_namd as runner_namd
     import seekr2.modules.mmvt_sim_namd as mmvt_sim_namd
         
-    if (instruction in ["any_bd", "b_surface",]) or instruction.startswith("b"):
+    if (instruction in ["any_bd", "b_surface",]):
         return []
     
     anchor_info_to_run_unsorted = []
@@ -399,7 +334,7 @@ def choose_next_simulation_namd(
     return anchor_info_to_run
 
 def run_browndye2(model, bd_milestone_index, restart, n_trajectories, 
-                  force_overwrite=False, max_b_surface_trajs_to_extract=1000):
+                  force_overwrite=False):
     """Run a Browndye2 simulation."""
     import seekr2.modules.runner_browndye2 as runner_browndye2
     
@@ -407,25 +342,6 @@ def run_browndye2(model, bd_milestone_index, restart, n_trajectories,
         bd_milestone_directory = os.path.join(
             model.anchor_rootdir, model.k_on_info.b_surface_directory)
         bd_directory_list = [bd_milestone_directory]
-    
-    else:
-        assert bd_milestone_index >= 0, "only positive indices allowed."
-        try:
-            bd_milestone = model.k_on_info.bd_milestones[bd_milestone_index]
-        except IndexError:
-            print("Invalid bd_milestone index provided.")
-            exit()
-        bd_milestone_directory = os.path.join(
-            model.anchor_rootdir, bd_milestone.directory)
-        #assert not b_surface, "Extraction may not be performed on the "\
-        #    "b-surface."
-        lig_pqr_filenames, rec_pqr_filenames \
-            = runner_browndye2.extract_bd_surface(
-            model, bd_milestone, max_b_surface_trajs_to_extract, 
-            force_overwrite, restart)
-        bd_directory_list = runner_browndye2.make_fhpd_directories(
-            model, bd_milestone, lig_pqr_filenames, rec_pqr_filenames, 
-            force_overwrite)
         
     for bd_directory in bd_directory_list:
         runner_browndye2.run_bd_top(
@@ -443,9 +359,6 @@ def run_browndye2(model, bd_milestone_index, restart, n_trajectories,
             model.browndye_settings.browndye_bin_dir, bd_directory, 
             model.k_on_info.bd_output_glob)
     
-    if bd_milestone_index != "b_surface":
-        runner_browndye2.combine_fhpd_results(
-            model, bd_milestone, bd_directory_list)
     return
 
 def run_openmm(model, anchor_index, restart, total_simulation_length, 
@@ -554,11 +467,8 @@ def run(model, instruction, min_total_simulation_length=None,
         minimum_anchor_transitions=None, 
         cuda_device_index=None, force_overwrite=False, save_state_file=False,
         save_state_boundaries=False, namd_command="namd2", namd_arguments="", 
-        min_b_surface_simulation_length=None,
-        min_bd_milestone_simulation_length=None, 
-        max_b_surface_trajs_to_extract=None, min_b_surface_encounters=None, 
-        min_bd_milestone_encounters=None, num_rev_launches=1, 
-        umbrella_restart_mode=False):
+        min_b_surface_simulation_length=None, min_b_surface_encounters=None, 
+        num_rev_launches=1, umbrella_restart_mode=False):
     """
     Run all simulations, both MD and BD, as specified by the user 
     inputs.
@@ -567,7 +477,7 @@ def run(model, instruction, min_total_simulation_length=None,
     bd_complete = False
     
     # Only cleanse BD files if BD is being run in this instance
-    if (instruction in ["any", "any_bd"]) or instruction.startswith("b"):
+    if (instruction in ["any", "any_bd", "b_surface"]):
         bd_force_overwrite = force_overwrite
     else:
         bd_force_overwrite = False
@@ -640,20 +550,13 @@ def run(model, instruction, min_total_simulation_length=None,
         if model.k_on_info is None:
             break
         
-        #if max_b_surface_trajs_to_extract is None:
-        #    #max_b_surface_trajs_to_extract = 1e99
-        #    max_b_surface_trajs_to_extract = model.
-                
         bd_milestone_info_to_run = choose_next_simulation_browndye2(
             model, instruction, min_b_surface_simulation_length, 
-            min_bd_milestone_simulation_length, 
-            max_b_surface_trajs_to_extract, bd_force_overwrite,
-            min_b_surface_encounters, min_bd_milestone_encounters)
+            bd_force_overwrite, min_b_surface_encounters)
         
         for bd_milestone_info in bd_milestone_info_to_run:
             steps_to_go_to_minimum, num_transitions, bd_milestone_index, \
-                restart, total_num_trajs, max_b_surface_trajs_to_extract \
-                = bd_milestone_info
+                restart, total_num_trajs = bd_milestone_info
             if bd_force_overwrite and restart:
                 restart = False
             print("running BD:", bd_milestone_index, "restart:", 
@@ -661,8 +564,7 @@ def run(model, instruction, min_total_simulation_length=None,
                   "transitions so far:", num_transitions)
             run_browndye2(
                 model, bd_milestone_index, restart, steps_to_go_to_minimum, 
-                force_overwrite=bd_force_overwrite, 
-                max_b_surface_trajs_to_extract=max_b_surface_trajs_to_extract)
+                force_overwrite=bd_force_overwrite)
         if len(bd_milestone_info_to_run) > 0:
             bd_complete = False
         else:
@@ -679,20 +581,14 @@ def catch_erroneous_instruction(instruction):
     Catch instructions that are not valid and throw an error.
     """
     error_msg = "Available instructions are: 'any', 'any_md', any_bd', "\
-        "'#', or 'b#', where '#' is an integer."
-    if instruction not in ["any", "any_md", "any_bd"]:
+        "'b_surface', or '#', where '#' is an integer."
+    if instruction not in ["any", "any_md", "any_bd", "b_surface"]:
         try:
             integer_instruction = int(instruction)
         except ValueError:
-            if instruction.startswith("b"):
-                try:
-                    bd_integer_instruction = int(instruction[1:])
-                except ValueError:
-                    print(error_msg)
-                    return False
-            else:
-                print(error_msg)
-                return False
+            print(error_msg)
+            return False
+            
     return True
 
 if __name__ == "__main__":
@@ -705,8 +601,7 @@ if __name__ == "__main__":
         "'any_bd' will run any unfinished BD calculations. The argument 'any' "\
         "will run either MD or BD calculations that still need to finish. "\
         "One may also use the argument 'b_surface' to run the b-surface "\
-        "simulations. One may also use the letter 'b' followed by an integer "\
-        "(Ex. 'b0', 'b1',...) to simulation one of the BD milestones.")
+        "simulations.")
     argparser.add_argument(
         "model_file", metavar="MODEL_FILE", type=str, 
         help="The name of the model file for SEEKR2 calculation. This would "\
@@ -791,36 +686,10 @@ if __name__ == "__main__":
                            "other specified criteria are not met, such as the "\
                            "--min_b_surface_encounters, for example.",
                            type=int)
-    argparser.add_argument("-B", "--minimum_bd_milestone_trajectories", 
-                           dest="minimum_bd_milestone_trajectories", 
-                           default=None,
-                           help="Enter a minimum number of BD trajectories to "\
-                           "run for a BD milestone if a different number of "\
-                           "trajectories are desired than what is indicated "\
-                           "in the <num_trajectories> tag in the "\
-                           "<bd_milestone> tag of the "\
-                           "MODEL_FILE. A longer simulation may be run if "\
-                           "other specified criteria are not met, such as the "\
-                           "--min_bd_milestone_encounters, for example.",
-                           type=int)
-    argparser.add_argument("-e", "--max_b_surface_trajs_to_extract", 
-                           dest="max_b_surface_trajs_to_extract", default=None,
-                           help="Enter a maximum number of b-surface "\
-                           "encounter complexes to extract to construct the "\
-                           "first hitting point distribution (FHPD) to run "\
-                           "the simulations for any BD milestones that might "\
-                           "be run. By default, all b-surface encounter "\
-                           "complexes will be extracted.", type=int)
     argparser.add_argument("-y", "--min_b_surface_encounters", 
                            dest="min_b_surface_encounters", default=None,
                            help="Enter a minimum number of encounters that " \
                            "must be observed for the b-surface "\
-                           "as a criteria to finish running simulations.",
-                           type=int)
-    argparser.add_argument("-z", "--min_bd_milestone_encounters", 
-                           dest="min_bd_milestone_encounters", default=None,
-                           help="Enter a minimum number of encounters that " \
-                           "must be observed for the BD milestone "\
                            "as a criteria to finish running simulations.",
                            type=int)
     argparser.add_argument("-l", "--num_rev_launches", dest="num_rev_launches",
@@ -854,11 +723,7 @@ if __name__ == "__main__":
     namd_command = args["namd_command"]
     namd_arguments = args["namd_arguments"]
     minimum_b_surface_trajectories = args["minimum_b_surface_trajectories"]
-    minimum_bd_milestone_trajectories = args[
-        "minimum_bd_milestone_trajectories"]
-    max_b_surface_trajs_to_extract = args["max_b_surface_trajs_to_extract"]
     min_b_surface_encounters = args["min_b_surface_encounters"]
-    min_bd_milestone_encounters = args["min_bd_milestone_encounters"]
     num_rev_launches = args["num_rev_launches"]
     umbrella_restart_mode = args["umbrella_restart_mode"]
     
@@ -870,7 +735,7 @@ if __name__ == "__main__":
     model.deserialize(model_file)
     if directory is not None:
         model.anchor_rootdir = os.path.abspath(directory)
-    elif model.anchor_rootdir == ".": # TODO: fix - this isn't right
+    elif model.anchor_rootdir == ".":
         model_dir = os.path.dirname(model_file)
         model.anchor_rootdir = os.path.abspath(model_dir)
     
@@ -878,8 +743,6 @@ if __name__ == "__main__":
         max_total_simulation_length, convergence_cutoff, 
         minimum_anchor_transitions, cuda_device_index, 
         force_overwrite, save_state_file, save_state_for_all_boundaries,
-        namd_command, namd_arguments,
-        minimum_b_surface_trajectories, minimum_bd_milestone_trajectories,
-        max_b_surface_trajs_to_extract, min_b_surface_encounters, 
-        min_bd_milestone_encounters, num_rev_launches, umbrella_restart_mode)
+        namd_command, namd_arguments,minimum_b_surface_trajectories, 
+        min_b_surface_encounters, num_rev_launches, umbrella_restart_mode)
         

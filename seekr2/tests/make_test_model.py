@@ -281,8 +281,6 @@ def make_test_model(tmp_dir, num_anchors=3, milestone_type="spherical",
         
         for bd_milestone in mymodel.k_on_info.bd_milestones:
             bd_milestone_dict = {}
-            bd_milestone_dict[bd_milestone.extracted_directory] = {}
-            bd_milestone_dict[bd_milestone.fhpd_directory] = {}
             
             bd_milestone_filetree = filetree.Filetree(
                 {bd_milestone.directory:bd_milestone_dict})

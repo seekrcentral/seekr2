@@ -886,14 +886,31 @@ def add_ghost_atom_to_pqr_from_atoms_center_of_mass(
     if new_pqr_filename is None:
         new_pqr_filename = pqr_filename
     pqr_struct = parmed.load_file(pqr_filename, skip_bonds=True)
+    
+    # Compute the center of mass for the selected group of atoms
     center_of_mass = np.array([[0., 0., 0.]])
     total_mass = 0.0
     for atom_index in atom_index_list:
         atom_pos = pqr_struct.coordinates[atom_index,:]
         atom_mass = pqr_struct.atoms[atom_index].mass
+        if atom_mass == 0.0:
+            atom_mass = 0.0001
         center_of_mass += atom_mass * atom_pos
         total_mass += atom_mass
     center_of_mass = center_of_mass / total_mass
+    
+    # Compute the center of mass of the entire molecule to be transposed
+    mol_center_of_mass = np.array([[0., 0., 0.]])
+    mol_total_mass = 0.0
+    for atom_index, atom in enumerate(pqr_struct.atoms):
+        atom_pos = pqr_struct.coordinates[atom_index,:]
+        atom_mass = pqr_struct.atoms[atom_index].mass
+        if atom_mass == 0.0:
+            atom_mass = 0.0001
+        mol_center_of_mass += atom_mass * atom_pos
+        mol_total_mass += atom_mass
+    mol_center_of_mass = mol_center_of_mass / mol_total_mass
+    
     ghost_atom = parmed.Atom(name="GHO", mass=0.0, charge=0.0, solvent_radius=0.0)
     ghost_structure = parmed.Structure()
     ghost_structure.add_atom(ghost_atom, "GHO", 1)
@@ -902,6 +919,12 @@ def add_ghost_atom_to_pqr_from_atoms_center_of_mass(
     for residue in complex.residues:
         residue.chain = ""
     
+    new_coordinates = np.zeros(complex.coordinates.shape)
+    for atom_index, atom in enumerate(complex.atoms):
+        new_coordinates[atom_index,:] = complex.coordinates[atom_index,:] \
+            - mol_center_of_mass[0,:]
+    
+    complex.coordinates = new_coordinates
     complex.save(new_pqr_filename, overwrite=True)
     ghost_index = len(complex.atoms)
     return ghost_index
