@@ -24,10 +24,8 @@ def run_short_ci(model_input, cuda_device_index):
     model.anchor_rootdir = os.path.abspath(model_dir)
     check.check_pre_simulation_all(model)
     run.run(model, "any", min_b_surface_simulation_length=100,
-        min_bd_milestone_simulation_length=10, 
-        max_b_surface_trajs_to_extract=10, num_rev_launches=10, 
-        cuda_device_index=cuda_device_index,
-        save_state_file=True)
+            num_rev_launches=10, cuda_device_index=cuda_device_index,
+            save_state_file=True)
     data_sample_list = converge.converge(model, k_on_state=0)
     rmsd_convergence_results = common_converge.calc_RMSD_conv_amount(
         model, data_sample_list)
