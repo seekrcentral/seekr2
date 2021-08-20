@@ -43,8 +43,8 @@ Required Arguments
   will attempt to be smart about this, and focus on running undersampled 
   anchors.
   
-  **any_bd** - Instruct run.py to run any unfinished BD simulations (either 
-  the b-surface or a BD milestone). As mentioned with the **any_md**
+  **any_bd** - Instruct run.py to run any unfinished BD simulations (at this 
+  time, this is only the b-surface). As mentioned with the **any_md**
   instruction above, this argument can be useful if one wishes to run BD on a
   separate machine than MD.
   
@@ -52,14 +52,7 @@ Required Arguments
   etc.), the MD anchor with that index will be run to completion or 
   interruption.
 
-  **b_surface** - Run the b-surface BD simulations. This must be run before any
-  BD milestones.
-  
-  **"b"+(integer value)** - By entering the character 'b' immediately followed 
-  by an integer value (Examples: "b0", "b1", etc.), one may run one of the BD
-  milestone with with the index of the integer value. The b-surface simulations
-  must be at least partially completed before simulations of a BD milestone may
-  be started.
+  **b_surface** - Run the b-surface BD simulations.
   
 **MODEL_FILE**
   Provide a path to a file named "model.xml" which can be found
@@ -138,27 +131,9 @@ Optional Arguments
   MODEL_FILE. A longer simulation may be run if other specified criteria are
   not met, such as the --min_b_surface_encounters, for example.
 
-**-B MINIMUM_BD_MILESTONE_TRAJECTORIES, --minimum_bd_milestone_trajectories MINIMUM_BD_MILESTONE_TRAJECTORIES**
-  Enter a minimum number of BD trajectories
-  to run for a BD milestone if a different number of trajectories are desired 
-  than what is indicated in the <num_trajectories> tag in the <bd_milestone> 
-  tag of the MODEL_FILE. A longer simulation may be run if other specified 
-  criteria are not met, such as the --min_bd_milestone_encounters, for example.
-
-**-e MAX_B_SURFACE_TRAJS_TO_EXTRACT, --max_b_surface_trajs_to_extract MAX_B_SURFACE_TRAJS_TO_EXTRACT**
-  Enter a maximum number of b-surface 
-  encounter complexes to extract to construct the first hitting point 
-  distribution (FHPD) to run the simulations for any BD milestones that might be
-  run. By default, all b-surface encounter complexes will be extracted.
-
 **-y MIN_B_SURFACE_ENCOUNTERS, --min_b_surface_encounters MIN_B_SURFACE_ENCOUNTERS**
   Enter a minimum number of encounters that must 
   be observed for the b-surface as a criteria to finish running simulations.
-
-**-z MIN_BD_MILESTONE_ENCOUNTERS, --min_bd_milestone_encounters MIN_BD_MILESTONE_ENCOUNTERS**
-  Enter a minimum number of encounters that 
-  must be observed for the BD milestone as a criteria to finish running 
-  simulations.
 
 **-l NUM_REV_LAUNCHES, --num_rev_launches NUM_REV_LAUNCHES**
   In Elber milestoning, this parameter defines how many reversals to launch 

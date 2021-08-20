@@ -31,8 +31,8 @@ thermodynamics and kinetics.
 
 Prepare and run milestoning calculations in the OpenMM, NAMD, and/or Browndye2
 simulation engines to obtain the kinetics and thermodynamics of molecular 
-processes such as: ligand-receptor binding and unbinding, 
-membrane permeability, internal molecular dynamics, and many other potential 
+processes such as: ligand-receptor binding and unbinding, membrane 
+permeability, internal molecular dynamics, and many other potential 
 situations.
 
 This README is only a quickstart guide to get SEEKR2 up and running as soon as
@@ -50,59 +50,17 @@ some must be installed separately, and are installed first, before SEEKR2.
 OpenMM is recommended for the molecular dynamics (MD) stage of SEEKR2. SEEKR2 
 also needs the SEEKR2 OpenMM Plugin in order to use OpenMM for MD simulations.
 
-In order to get the best performance from SEEKR2, you will need to have a
-recent version of CUDA installed on your system. Check which version you 
-have with the following command:
-
-```
-echo $CUDA_HOME
-```
-
-If nothing was returned, you may need to install or import CUDA to your
-system. Contact your system administrator or consult NVIDIA's CUDA installation
-guide here: 
-https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html
-
 The easiest, quickest way to install the SEEKR2 OpenMM Plugin is to use
 Conda. If you don't already have Conda installed, Download Conda with 
 Python version 3.8 from 
 https://conda.io/en/latest/miniconda.html and run the downloaded script and 
 fill out the prompts. 
 
-With Conda working, install OpenMM and Swig:
-
-WARNING: If you already have a version of OpenMM installed (say, from source), 
-these commands will cause the most recent version of CUDA Tools to be 
-installed in the Conda environment, which could cause version conflicts and 
-errors. Therefore, only follow these steps if OpenMM isn't already installed.
+With Conda working, install the SEEKR2 OpenMM Plugin:
 
 ```
-conda install -c conda-forge openmm
-conda install swig
+conda install -c conda-forge seekr2_openmm_plugin
 ```
-
-Now that OpenMM is installed, we will install the SEEKR2 OpenMM Plugin. In the 
-directory of your choice, execute the following commands:
-
-```
-git clone https://github.com/seekrcentral/seekr2_openmm_plugin.git
-cd seekr2_openmm_plugin/seekr2plugin
-mkdir build
-cd build
-export OPENMM_INSTALL_DIR=${CONDA_PREFIX}
-export OPENMM_LIB_PATH=$OPENMM_INSTALL_DIR/lib
-export OPENMM_PLUGIN_DIR=$OPENMM_LIB_PATH/plugins
-export LD_LIBRARY_PATH=$OPENMM_LIB_PATH:$OPENMM_PLUGIN_DIR:$LD_LIBRARY_PATH
-cmake -DCMAKE_INSTALL_PREFIX=${CONDA_PREFIX} -DSEEKR2_BUILD_OPENCL_LIB=OFF -DOPENMM_DIR=${CONDA_PREFIX} ..
-make
-make install
-make PythonInstall
-make test # Optional
-```
-
-This is a *very* brief overview of OpenMM installation. Additional 
-installation instructions and information for OpenMM can be found at
-http://docs.openmm.org/latest/userguide/application.html#installing-openmm
 
 Alternatively, NAMD2 may be used for MD if desired. See the NAMD2 section
 below for installation instructions.
@@ -113,7 +71,7 @@ SEEKR2 needs Browndye2 if Brownian dynamics (BD) simulations will be run
 (necessary for k-on calculations). Please see (https://browndye.ucsd.edu/) 
 for Browndye2 installation instructions.
 
-#### NAMD2 (optional, if not using OpenMM)
+#### NAMD2 (optional, required if not using OpenMM)
 
 If OpenMM is not desirable or available for the MD simulations, SEEKR2 may 
 use NAMD2 in order to run MD simulations. NAMD2 is frequently already 
@@ -141,8 +99,8 @@ To test SEEKR2, run the following command in the seekr2/ directory:
 python setup.py test
 ```
 
-Additional continuous integration tests may be run from the
-seekr2/seekr2/continuous_integration/ directory.
+Additional continuous integration tests may be run from the Python scripts in 
+the seekr2/seekr2/continuous_integration/ directory.
 
 ## Run
 
@@ -173,7 +131,6 @@ the following options are available:
   * "any_bd" - run any BD calculation that still needs to be run.
   * INTEGER - run the MD anchor whose index is INTEGER. Examples: "0", "1", etc.
   * "b_surface" - run BD simulations starting at the b-surface.
-  * "b"+INTEGER - run the BD milestone with index INTEGER. Example: "b0", b1", ...
 
 * When an option must be modified, it is usually necessary to make the change
 in the **input file** and not the **model file**, and then re-run 

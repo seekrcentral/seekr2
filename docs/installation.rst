@@ -7,14 +7,14 @@ installation instructions are for Linux only.
 First, you must choose which MD engine you will use: either OpenMM or NAMD.
 Each engine has their own advantages - OpenMM is faster on GPUs and is likely
 to give slightly more accurate results in SEEKR2. NAMD is optimized for 
-distributed computing systems, such as supercomputers or cluster which use 
+distributed computing systems, such as supercomputers or clusters which use 
 large numbers of CPU cores. If you are uncertain which to choose, OpenMM is 
 a good default choice.
 
 Install Conda
 -------------
 
-It is recommended, though not mandatory, that you install Conda along with 
+It is recommended, though not mandatory, that you install Conda to use with 
 SEEKR2. Without Conda, all dependencies will need to be installed by hand.
 
 If you do not already have Conda, it can be easily installed by completing the
@@ -38,40 +38,90 @@ If it says any other version besides Python 3.8, then enter:
 
 ``conda install python=3.8``
 
-If you want you can create a conda environment, but you can also just install 
-all packages straight to the base environment. Whenever installing or running
+If you want you can create a conda environment, 
+
+``conda create --name SEEKR python=3.8``
+
+but you can also just install all packages straight to the base environment
+if you wish to. If using an environment, whenever you're installing or running 
 anything involving OpenMM or SEEKR2, make sure that you have activated your 
-environment by running ``conda activate``.
+environment by running ``conda activate SEEKR``.
 
 Install OpenMM and Plugin with Conda
 ------------------------------------
+This section describes the fasted and easiest way to get SEEKR2 working.
+
 If you desire to use OpenMM, you must install OpenMM either from conda or from 
-source. Please see the official 
-`OpenMM guide to installing from source <http://docs.openmm.org/latest/userguide/library.html#compiling-openmm-from-source-code>`_ 
-for complete OpenMM installation instructions. The fastest way is to install
-OpenMM with Conda, but we've also had great luck with installing OpenMM from
-source. See the "OpenMM Installation from Source" sections below for specific
-instructions for how install OpenMM and SEEKR2 from source.
-
-The remainder of this section assumes that you will be installing OpenMM for
-the first time using Conda.
-
-WARNING: If you already have a version of OpenMM installed (say, from source), 
-these commands will cause the most recent version of CUDA Tools to be 
-installed in the Conda environment, which could cause version conflicts and 
-errors. Therefore, only follow these steps if OpenMM isn't already installed.
-
-If you're OK with installing OpenMM with Conda, then type::
-
-  conda install -c conda-forge openmm
-  conda install swig
+source. If you wish to install from source, see the "Installing OpenMM from
+Source" sections below.
 
 If you desire to use NAMD, then see the "Install NAMD" section below.
 
-Make sure that CUDA is installed and working on your computer system. If you 
-need to install CUDA, contact your system administrator or consult NVIDIA's 
-CUDA installation guide here: 
+With Conda working, You may create and activate any environment you wish, 
+or use the base environment. Install the SEEKR2 OpenMM Plugin:
+
+``conda install -c conda-forge seekr2_openmm_plugin``
+
+OpenMM will be installed automatically alongside the plugin.
+
+Installation of SEEKR2 itself begins with cloning and installing the SEEKR2 
+python API::
+
+  git clone https://github.com/seekrcentral/seekr2.git
+  cd seekr2
+  python setup.py install
+
+Once OpenMM and the OpenMM SEEKR2 Plugin are installed, it is recommended that 
+you run tests of SEEKR2. From within the "seekr2/" directory, run:
+
+``python setup.py test``
+
+One or two tests may fail depending on whether NAMD2 and/or Browndye2 have been
+installed, and can be safely ignored if those programs are not needed.
+
+Additional continuous integration tests may be run from the Python scripts in
+the seekr2/seekr2/continuous_integration/ directory if extra testing is
+desired.
+
+You should now be able to use SEEKR2.
+
+Install NAMD (If not using OpenMM)
+----------------------------------
+If you desire not to use OpenMM, but rather to use NAMD for your MD 
+calculations, you should follow the 
+`NAMD installation instructions <https://www.ks.uiuc.edu/Research/namd/2.9/ug/node91.html>`_
+
+NAMD is also often available on shared scientific computing resources such as
+most supercomputers and clusters. Consult the resource manual or system
+administrators to see if NAMD2 is installed on the available shared resource.
+
+SEEKR2 itself must be installed by cloning and installing the SEEKR2 
+python API::
+
+  git clone https://github.com/seekrcentral/seekr2.git
+  cd seekr2
+  python setup.py install
+
+OpenMM and Plugin Installation from Source on Local Machine (If not using Conda to install OpenMM and Plugin)
+-------------------------------------------------------------------------------------------------------------
+Compiling OpenMM from source is tricky, but may be desirable if the Conda 
+installation doesn't work, or if you wish to optimize OpenMM's performance.
+
+Please see the official 
+`OpenMM guide to installing from source <http://docs.openmm.org/latest/userguide/library.html#compiling-openmm-from-source-code>`_ 
+for complete OpenMM installation instructions. 
+
+If you want to use a GPU to accelerate your OpenMM simulations (highly 
+recommended) you must ensure that a recent version of CUDA is installed and
+loaded. 
+
+If you need to install CUDA, it is highly recommended that you contact your 
+system administrator about this, although if you have to install CUDA by 
+yourself, you should carefully read and follow all instructions from 
+`NVIDIA's CUDA toolkit installation instructions 
+<https://developer.nvidia.com/cuda-toolkit>`_ or 
 https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html
+.
 
 Many times, cuda is located in /usr/local/cuda::
 
@@ -89,66 +139,6 @@ If the commands didn't return a path to nvcc, or a value or CUDA_HOME, SEEKR2
 is likely to have difficulty finding CUDA on it's own. You may have to take
 more trouble to explicitly assign the necessary variables to the cmake or 
 ccmake commands.  
-
-The following commands will install the SEEKR2 OpenMM Plugin::
-
-  git clone https://github.com/seekrcentral/seekr2_openmm_plugin.git
-  cd seekr2_openmm_plugin/seekr2plugin
-  mkdir build
-  cd build
-  export OPENMM_INSTALL_DIR=${CONDA_PREFIX}
-  export OPENMM_LIB_PATH=$OPENMM_INSTALL_DIR/lib
-  export OPENMM_PLUGIN_DIR=$OPENMM_LIB_PATH/plugins
-  export LD_LIBRARY_PATH=$OPENMM_LIB_PATH:$OPENMM_PLUGIN_DIR:$LD_LIBRARY_PATH
-  cmake -DCMAKE_INSTALL_PREFIX=${CONDA_PREFIX} -DSEEKR2_BUILD_OPENCL_LIB=OFF -DOPENMM_DIR=${CONDA_PREFIX} ..
-  make
-  make install
-  make PythonInstall
-  make test # Optional
-
-Installation of SEEKR2 itself begins with cloning and installing the SEEKR2 
-python API::
-
-  git clone https://github.com/seekrcentral/seekr2.git
-  cd seekr2
-  python setup.py install
-
-Once OpenMM and the OpenMM SEEKR2 Plugin is installed, it is recommended that 
-you run tests of SEEKR2. Navigate to where the "seekr2" git repository was cloned. From within the
-"seekr2/" directory, run:
-
-``python setup.py test``
-
-Install NAMD (If not using OpenMM)
-----------------------------------
-If you desire not to use OpenMM, but rather to use NAMD for your MD 
-calculations, you should follow the 
-`NAMD installation instructions <https://www.ks.uiuc.edu/Research/namd/2.9/ug/node91.html>`_
-
-NAMD is also often available on shared scientific computing resources such as
-most supercomputers and clusters. Consult the resource manual or system
-administrators to see if NAMD is installed on the available shared resource.
-
-SEEKR2 itself must be installed by cloning and installing the SEEKR2 
-python API::
-
-  git clone https://github.com/seekrcentral/seekr2.git
-  cd seekr2
-  python setup.py install
-
-OpenMM and Plugin Installation from Source on Local Machine (If not using Conda to install OpenMM)
---------------------------------------------------------------------------------------------------
-Compiling OpenMM from source is tricky, but necessary if a version of CUDA 
-already exists on your machine, if the Conda installation doesn't work, or if
-you wish to optimize OpenMM's performance.
-
-If you want to use a GPU to accelerate your OpenMM simulations (highly 
-recommended) you must ensure that a recent version of CUDA is installed and
-loaded. It is highly recommended that you contact your system administrator
-about this, although if you have to install CUDA by yourself, you should 
-carefully read and follow all instructions from 
-`NVIDIA's CUDA toolkit installation instructions 
-<https://developer.nvidia.com/cuda-toolkit>`_.
 
 In order to use CUDA, you may also need to define the following environmental
 variable by placing it in your .bashrc file: 
@@ -180,7 +170,7 @@ Make sure 'doxygen' is installed.
 
 ``conda install -c conda-forge doxygen``
 
-Install Cython:
+Upgrade Cython:
 
 ``pip install --upgrade cython``
 
@@ -221,7 +211,7 @@ Next, build, install, and test OpenMM::
   make PythonInstall
   make test # Optional
 
-If the PythonInstall step fails, then make sure you have installed cython
+If the PythonInstall step fails, then make sure you have upgraded cython
 
 ``pip install --upgrade cython``
 
@@ -278,6 +268,10 @@ At this point, its a good idea to run the SEEKR2 tests. Navigate to where the
 
 OpenMM Installation from Source on Cluster or Shared Resource
 -------------------------------------------------------------
+
+A simple Conda installation on a Cluster or Supercomputer would probably
+work just fine, but if you wish to install from source, this section provides
+some helpful information to that end.
 
 Installation of OpenMM on a shared resource is almost identical to the
 local installation of OpenMM as detailed in the previous section. However, the
