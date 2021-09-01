@@ -50,7 +50,7 @@ setup(
     # Additional entries you may want simply uncomment the lines you want and fill in the data
     # url='http://www.my_package.com',  # Website
     install_requires=["numpy", "scipy", "parmed", "pytest", "matplotlib", 
-                       "nptyping", "mdtraj", "bubblebuster"],       
+                       "nptyping", "mdtraj", "bubblebuster", "abserdes"],       
     platforms=['Linux',
     #            'Mac OS-X',
                 'Unix',]
@@ -61,6 +61,7 @@ setup(
     # zip_safe=False,
 
 )
+"""
 if "install" in sys.argv:
     try:
         import abserdes
@@ -82,3 +83,4 @@ if "install" in sys.argv:
             ))
         
         subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
+"""

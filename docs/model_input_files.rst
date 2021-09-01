@@ -125,7 +125,15 @@ to their own systems.
 **<cv_inputs>**
   Settings defining the collective variables (CV) and their
   associated anchors and milestones will be defined within this block.
-  
+
+Spherical Collective Variable
+-----------------------------
+
+A "spherical" collective variable is defined as, simply, the distance between
+two center of masses of groups of atoms. This CV is called "spherical" because
+the surfaces located at constant values of the CV create spherical milestones.
+
+
   **<cv_input>**
     One of the input structures for a CV. The type of CV is 
     defined by the "class" attribute in the XML tag.
@@ -136,6 +144,10 @@ to their own systems.
       on how many inputs there are to the CV function, a given CV will have
       a certain number of atomic groups. These parameters are lists of atom
       indices in the input structures (starting from zero).
+      
+    **<bd_group#>**
+      Define the atoms within the PQR files that will be used in the BD
+      simulations to define the CV.
       
     **<input_anchors>**
       The "input anchors" are not actual anchor objects, 
@@ -148,13 +160,7 @@ to their own systems.
         contain different attributes. The "class" attribute of the input_anchor
         matches to a particular CV.
         
-Spherical Collective Variable
------------------------------
-
-A "spherical" collective variable is defined as, simply, the distance between
-two center of masses of groups of atoms. This CV is called "spherical" because
-the surfaces located at constant values of the CV create spherical milestones.
-
+        
 The following are attributes of spherical anchor inputs:
 
 **<radius>**
@@ -279,19 +285,10 @@ calculations are desired.
     
     **<conc>**
       The concentration of the electrolyte (in moles per liter)
-    
-**<num_bd_milestone_trajectories>**
-  The number of BD trajectories to run
-  per encounter complex extracted from the b-surface simulations
   
 **<num_b_surface_trajectories>**
   The total number of trajectories to run for
   the b-surface simulations.
-  
-**<max_b_surface_trajs_to_extract>**
-  The maximum number of encounter 
-  complexes extracted from the b-surface simulations to run the BD milestones
-  simulations.
   
 **<n_threads>**
   The number of CPUs to use in the Browndye2 calculations.

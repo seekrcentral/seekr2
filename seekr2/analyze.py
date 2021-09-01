@@ -789,18 +789,20 @@ if __name__ == "__main__":
     
     args = argparser.parse_args() # parse the args into a dictionary
     args = vars(args)
-    xmlfile = args["model_file"]
+    model_file = args["model_file"]
     force_warning = args["force_warning"]
     num_error_samples = args["num_error_samples"]
     pre_equilibrium_approx = args["pre_equilibrium_approx"]
     image_directory = args["image_directory"]
     skip_checks = args["skip_checks"]
     
-    model = base.Model()
-    model.deserialize(xmlfile)
-    if model.anchor_rootdir == ".":
-        model_dir = os.path.dirname(xmlfile)
-        model.anchor_rootdir = os.path.abspath(model_dir)
+    # TODO: remove
+    #model = base.Model()
+    #model.deserialize(xmlfile)
+    #if model.anchor_rootdir == ".":
+    #    model_dir = os.path.dirname(xmlfile)
+    #    model.anchor_rootdir = os.path.abspath(model_dir)
+    model = base.load_model(model_file)
     
     if image_directory is None:
         image_directory = os.path.join(model.anchor_rootdir, 

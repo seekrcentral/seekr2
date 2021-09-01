@@ -185,11 +185,13 @@ if __name__ == "__main__":
     minimum_anchor_transitions = args["minimum_anchor_transitions"]
     pre_equilibrium_approx = args["pre_equilibrium_approx"]
     
-    model = base.Model()
-    model.deserialize(model_file)
-    if model.anchor_rootdir == ".":
-        model_dir = os.path.dirname(model_file)
-        model.anchor_rootdir = os.path.abspath(model_dir)
+    # TODO: remove
+    #model = base.Model()
+    #model.deserialize(model_file)
+    #if model.anchor_rootdir == ".":
+    #    model_dir = os.path.dirname(model_file)
+    #    model.anchor_rootdir = os.path.abspath(model_dir)
+    model = base.load_model(model_file)
     
     if image_directory is None:
         image_directory = os.path.join(model.anchor_rootdir, 

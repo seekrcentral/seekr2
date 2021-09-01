@@ -75,7 +75,7 @@ When the command is complete, enter the new directory and see what is there::
   ls
 
 You'll see a number of directories starting with "anchor", as well as a 
-"b_surface" and "BD_milestone" directory. Let's talk about each of these
+"b_surface" directory. Let's talk about each of these
 files/directories. (Consider viewing the contents of the files and directories
 as we talk about them).
 
@@ -100,12 +100,6 @@ as we talk about them).
 
 * **b_surface** - This directory contains the input files for BD simulations
   starting from the b-surface and either escaping or ending at the BD milestone.
-  
-* **bd_milestone_0** - This directory will contain BD simulation files starting
-  from the BD surface and either escaping or ending at the milestone beneath
-  the BD milestone. For now, there are only a couple of empty directories 
-  inside here, since the starting structure and parameters must be extracted
-  from the b-surface simulations once they are completed.
 
 The preparation stage is complete. Next, we complete the run stage.
 
@@ -154,7 +148,8 @@ To analyze our results, we use the analyze.py program::
   python analyze.py ~/test_mmvt_openmm/model.xml
   
 After a few minutes, the script should display kinetic and thermodynamic 
-results:
+results (your results will be different due to the stochastic nature of
+simulations):
 
 .. figure:: media/tutorial_hostguest_analysis_results.png
    :align:  center

@@ -110,6 +110,8 @@ class Spherical_cv_input(Serializer):
         self.index = 0
         self.group1 = []
         self.group2 = []
+        self.bd_group1 = []
+        self.bd_group2 = []
         self.input_anchors = []
         return
         
@@ -165,11 +167,11 @@ class Spherical_cv_input(Serializer):
         return
     
     def make_mmvt_milestoning_objects(self, milestone_alias, milestone_index, 
-                                      anchor_index):
+                                      input_anchor_index, anchor_index):
         milestones, milestone_alias, milestone_index = \
             mmvt_cv.make_mmvt_milestoning_objects_spherical(
-            self, milestone_alias, milestone_index, anchor_index, 
-            self.input_anchors)
+            self, milestone_alias, milestone_index, input_anchor_index, 
+            anchor_index, self.input_anchors)
         return milestones, milestone_alias, milestone_index
     
 class Tiwary_cv_anchor(Serializer):
@@ -415,11 +417,11 @@ class Tiwary_cv_input(Serializer):
         return
     
     def make_mmvt_milestoning_objects(self, milestone_alias, milestone_index, 
-                                      anchor_index):
+                                      input_anchor_index, anchor_index):
         milestones, milestone_alias, milestone_index = \
             mmvt_cv.make_mmvt_milestoning_objects_tiwary(
-            self, milestone_alias, milestone_index, anchor_index, 
-            self.input_anchors)
+            self, milestone_alias, milestone_index, input_anchor_index, 
+            anchor_index, self.input_anchors)
         return milestones, milestone_alias, milestone_index
     
 class Planar_cv_anchor(Serializer):
@@ -574,10 +576,10 @@ class Planar_cv_input(Serializer):
         return
     
     def make_mmvt_milestoning_objects(self, milestone_alias, milestone_index, 
-                                      anchor_index):
+                                      input_anchor_index, anchor_index):
         milestones, milestone_alias, milestone_index = \
             mmvt_cv.make_mmvt_milestoning_objects_planar(
-            self, milestone_alias, milestone_index, anchor_index, 
-            self.input_anchors)
+            self, milestone_alias, milestone_index, input_anchor_index,
+            anchor_index, self.input_anchors)
         return milestones, milestone_alias, milestone_index
     

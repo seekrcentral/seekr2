@@ -729,15 +729,17 @@ if __name__ == "__main__":
     
     assert catch_erroneous_instruction(instruction)
     
-    assert os.path.exists(model_file), \
-        "A nonexistent input file was provided: {}.".format(model_file)
-    model = base.Model()
-    model.deserialize(model_file)
-    if directory is not None:
-        model.anchor_rootdir = os.path.abspath(directory)
-    elif model.anchor_rootdir == ".":
-        model_dir = os.path.dirname(model_file)
-        model.anchor_rootdir = os.path.abspath(model_dir)
+    # TODO: remove
+    #assert os.path.exists(model_file), \
+    #    "A nonexistent input file was provided: {}.".format(model_file)
+    #model = base.Model()
+    #model.deserialize(model_file)
+    #if directory is not None:
+    #    model.anchor_rootdir = os.path.abspath(directory)
+    #elif model.anchor_rootdir == ".":
+    #    model_dir = os.path.dirname(model_file)
+    #    model.anchor_rootdir = os.path.abspath(model_dir)
+    model = base.load_model(model_file, directory)
     
     run(model, instruction, min_total_simulation_length, 
         max_total_simulation_length, convergence_cutoff, 

@@ -390,9 +390,11 @@ def check_pre_sim_MD_and_BD_salt_concentration(model):
                         found_ion = True
                     
                 if not found_ion:
-                    print("Found unbonded atom with index: "\
-                          "{} and name: {}.".format(index, atom.name)\
-                          +"Charge is uncertain, assuming zero.")
+                    print("check_pre_sim_MD_and_BD_salt_concentration - "\
+                          "Found unbonded atom with index: "\
+                          "{} and name: {}. ".format(index, atom.name)\
+                          +"Charge is uncertain. Assuming its contribution to "\
+                          "solvent ionic strength is zero.")
         if not np.isclose(md_ionic_strength, bd_ionic_strength, 
                           rtol=RELATIVE_TOLERANCE, atol=ABSOLUTE_TOLERANCE):
             print("""CHECK FAILURE: BD simulation has significantly different
@@ -605,38 +607,38 @@ def check_atom_selections_MD_BD(model):
             for md_atom_group, bd_atom_group in zip(
                     md_atom_groups, bd_atom_groups):
                 if len(md_atom_group) != len(bd_atom_group):
-                    bd_error_str = "{} atoms".format(len(bd_atom_group))
-                    md_error_str = "{} atoms".format(len(md_atom_group))
+                    bd_error_str = "{} atom(s)".format(len(bd_atom_group))
+                    md_error_str = "{} atom(s)".format(len(md_atom_group))
                     print(warnstr2.format(bd_error_str, md_error_str))
                     return False
-                md_atomic_number_dict = collections.defaultdict(int)
-                bd_atomic_number_dict = collections.defaultdict(int)
+                md_atomic_name_dict = collections.defaultdict(int)
+                bd_atomic_name_dict = collections.defaultdict(int)
                 for md_atom_idx in md_atom_group:
                     md_atom = md_structure.atoms[md_atom_idx]
-                    md_atomic_number_dict[md_atom.atomic_number] += 1
+                    md_atomic_name_dict[md_atom.name] += 1
                 rec_pqr_indices = bd_milestone.receptor_indices
                 lig_pqr_indices = bd_milestone.ligand_indices
                 if bd_atom_group == rec_pqr_indices:
                     for bd_atom_idx in rec_pqr_indices:
                         bd_atom = rec_pqr_structure.atoms[bd_atom_idx]
-                        bd_atomic_number_dict[bd_atom.atomic_number] += 1
+                        bd_atomic_name_dict[bd_atom.name] += 1
                 elif bd_atom_group == lig_pqr_indices:
                     for bd_atom_idx in lig_pqr_indices:
                         bd_atom = lig_pqr_structure.atoms[bd_atom_idx]
-                        bd_atomic_number_dict[bd_atom.atomic_number] += 1
+                        bd_atomic_name_dict[bd_atom.name] += 1
                 else:
                     raise Exception("BD/MD mismatch in atom groups")
                 
-                if md_atomic_number_dict != bd_atomic_number_dict:
+                if md_atomic_name_dict != bd_atomic_name_dict:
                     bd_err_str = ""
-                    for key in bd_atomic_number_dict:
-                        this_str = "{} atoms with atomic number {}, ".format(
-                            bd_atomic_number_dict[key], key)
+                    for key in bd_atomic_name_dict:
+                        this_str = "{} atoms with atomic number {}".format(
+                            bd_atomic_name_dict[key], key)
                         bd_err_str += this_str
                     md_err_str = ""
-                    for key in md_atomic_number_dict:
-                        this_str = "{} atoms with atomic number {}, ".format(
-                            md_atomic_number_dict[key], key)
+                    for key in md_atomic_name_dict:
+                        this_str = "{} atoms with atomic number {}".format(
+                            md_atomic_name_dict[key], key)
                         md_err_str += this_str
                     print(warnstr2.format(bd_err_str, md_err_str))
                     return False
@@ -692,7 +694,7 @@ def check_pqr_residues(model):
 
 def check_for_one_bulk_anchor(model):
     """
-    In order for the model to work properly, exactly one bulk anchor is
+    In order for the model to work properly, one or more bulk anchors is
     required
     """
     num_bulk_anchors = 0
@@ -700,11 +702,11 @@ def check_for_one_bulk_anchor(model):
         if anchor.bulkstate:
             num_bulk_anchors += 1
             
-    if num_bulk_anchors == 1:
+    if num_bulk_anchors >= 1:
         return True
     else:
         warnstr = """CHECK FAILURE: {} bulk anchors were found. There needs
-        to be exactly one bulk anchor per model."""
+        to be exactly one or more bulk anchors per model."""
         print(warnstr.format(num_bulk_anchors))
         return False
 

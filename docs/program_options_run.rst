@@ -17,9 +17,7 @@ usage::
               [-m MINIMUM_ANCHOR_TRANSITIONS] [-d DIRECTORY] [-f] [-s] [-S]
               [-n NAMD_COMMAND] [-a NAMD_ARGUMENTS] 
               [-b MINIMUM_B_SURFACE_TRAJECTORIES]
-              [-B MINIMUM_BD_MILESTONE_TRAJECTORIES] 
-              [-e MAX_B_SURFACE_TRAJS_TO_EXTRACT] [-y MIN_B_SURFACE_ENCOUNTERS]
-              [-z MIN_BD_MILESTONE_ENCOUNTERS] [-l NUM_REV_LAUNCHES] [-u]
+              [-y MIN_B_SURFACE_ENCOUNTERS] [-l NUM_REV_LAUNCHES] [-u]
               INSTRUCTION MODEL_FILE
 
   

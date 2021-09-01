@@ -19,6 +19,7 @@ import seekr2.modules.elber_base as elber_base
 import seekr2.modules.common_cv as common_cv
 import seekr2.modules.mmvt_cv as mmvt_cv
 import seekr2.modules.elber_cv as elber_cv
+import seekr2.modules.filetree as filetree
 import seekr2.modules.common_sim_browndye2 as sim_browndye2
 import seekr2.modules.runner_browndye2 as runner_browndye2
 from abserdes import Serializer
@@ -186,6 +187,21 @@ class Elber_input_settings(Serializer):
         self.rev_output_interval = 500
         self.fwd_output_interval = 500
 
+class Connector(Serializer):
+    """
+    A Connector defines a connection between two input anchors of different
+    (or possibly the same) CVs. A connection between two input anchors will
+    results in a single anchor in the final model.
+    """
+    
+    def __init__(self):
+        self.index = -1
+        self.flag = -1
+        self.starting_amber_params = None
+        self.starting_forcefield_params = None
+        self.bound_state = False
+        self.bulk_anchor = False
+
 class Model_input(Serializer):
     """
     The serializable object representing parameters that would be
@@ -280,6 +296,7 @@ class Model_input(Serializer):
         self.nonbonded_cutoff = 0.9
         self.browndye_settings_input = None
         self.cv_inputs = []
+        self.connectors = []
         
     def read_plain_input_file(self, filename):
         """
@@ -401,6 +418,8 @@ def model_factory(model_input, use_absolute_directory=False):
     
     else:
         k_on_info = base.K_on_info()
+        if model_input.browndye_settings_input.ions is None:
+            model_input.browndye_settings_input.ions = []
         k_on_info.ions = model_input.browndye_settings_input.ions
         k_on_info.b_surface_num_trajectories = \
             model_input.browndye_settings_input.num_b_surface_trajectories
@@ -431,15 +450,36 @@ def resolve_connections(connection_flag_dict, anchors):
     anchor_indices_to_remove = []
     for key in connection_flag_dict:
         anchor_connection_list = connection_flag_dict[key]
-        assert len(anchor_connection_list) > 1, \
-            "Connection flag {} needs to have enpoints ".format(key) \
-            +"in at least two anchors."
+        bulk_anchor = None
+        if key == "bulk":
+            bulk_anchor = anchor_connection_list[0]
+            for anchor_discarded in anchor_connection_list:
+                anchor_indices_to_remove.append(anchor_discarded.index)
+        
+        if not key == "bulk":
+            assert len(anchor_connection_list) > 1, \
+                "Connection flag {} needs to have endpoints ".format(key) \
+                +"in at least two anchors."
         anchor_kept = anchor_connection_list[0]
         for anchor_discarded in anchor_connection_list[1:]:
-            anchor_indices_to_remove.append(anchor_discarded)
+            assert anchor_kept.endstate == anchor_discarded.endstate, \
+                "The anchors connected by connection flag {} ".format(key) \
+                +"must have the same value for 'bound_state'."
+            assert anchor_kept.bulkstate == anchor_discarded.bulkstate, \
+                "The anchors connected by connection flag {} ".format(key) \
+                +"must have the same value for 'bulk_anchor'."   
+            # Ensure that both anchors don't have starting structures 
+            # defined
+            assert anchor_kept.amber_params is None or \
+                    anchor_kept.amber_params is None, \
+                "The anchors connected by connection flag {} ".format(key) \
+                +"may not both have starting structures defined. One or both" \
+                "must be left blank."
+            anchor_indices_to_remove.append(anchor_discarded.index)
             anchor_kept.milestones += anchor_discarded.milestones
             anchor_kept.variables.update(anchor_discarded.variables)
-            
+    
+    # sort and remove all redundant anchors
     anchor_indices_to_remove = sorted(set(anchor_indices_to_remove), 
                                       reverse=True)
     for anchor_index_to_remove in anchor_indices_to_remove:
@@ -449,10 +489,16 @@ def resolve_connections(connection_flag_dict, anchors):
                 lower_anchor.index -= 1
                 lower_anchor.name = "anchor_"+str(lower_anchor.index)
                 lower_anchor.directory = lower_anchor.name
-        
+    
+    # make sure the bulk anchor is the last anchor always
+    bulk_anchor.index = len(anchors)
+    bulk_anchor.name = "anchor_"+str(bulk_anchor.index)
+    bulk_anchor.directory = bulk_anchor.name
+    anchors.append(bulk_anchor)
+    
     return anchors
 
-def create_cvs_and_anchors(model, collective_variable_inputs):
+def create_cvs_and_anchors(model, collective_variable_inputs, root_directory):
     """
     Create the collective variable and Anchor objects for the Model.
     """
@@ -486,6 +532,7 @@ def create_cvs_and_anchors(model, collective_variable_inputs):
         
         cvs.append(cv)
         cv_indices.append(i)
+        input_anchor_index = 0
         for j, input_anchor in enumerate(cv_input.input_anchors):
             if model.get_type() == "mmvt":
                 anchor = mmvt_base.MMVT_anchor()
@@ -510,13 +557,14 @@ def create_cvs_and_anchors(model, collective_variable_inputs):
             if model.get_type() == "mmvt":
                 milestones, milestone_alias, milestone_index = \
                     cv_input.make_mmvt_milestoning_objects(
-                    milestone_alias, milestone_index, anchor_index)
+                    milestone_alias, milestone_index, input_anchor_index,
+                    anchor_index)
                 
             elif model.get_type() == "elber":
                 milestones, milestone_alias, milestone_index = \
                     elber_cv.make_elber_milestoning_objects_spherical(
-                    cv_input, milestone_alias, milestone_index, anchor_index, 
-                    cv_input.input_anchors, 
+                    cv_input, milestone_alias, milestone_index, 
+                    input_anchor_index, anchor_index, cv_input.input_anchors, 
                     model.calculation_settings.umbrella_force_constant)
                 
             anchor.milestones += milestones
@@ -525,15 +573,19 @@ def create_cvs_and_anchors(model, collective_variable_inputs):
             anchor.variables[variable_name] = variable_value
             for connection_flag in input_anchor.connection_flags:
                 connection_flag_dict[connection_flag].append(anchor)
+            if input_anchor.bulk_anchor:
+                connection_flag_dict["bulk"].append(anchor)
+            filetree.generate_filetree_by_anchor(anchor, root_directory)
+            filetree.copy_building_files_by_anchor(anchor, input_anchor, 
+                                                   root_directory)
             anchors.append(anchor)
             anchor_index += 1
+            input_anchor_index += 1
     
     if model.get_type() == "elber":
         milestone_index += 1
     
-    anchors = resolve_connections(connection_flag_dict, anchors)
-    
-    return cvs, anchors, anchor_index, milestone_index
+    return cvs, anchors, milestone_index, connection_flag_dict
 
 def create_bd_milestones(model, model_input):
     """
@@ -554,7 +606,6 @@ def create_bd_milestones(model, model_input):
                 bd_milestone.outer_milestone = anchor.milestones[0]
                 assert "radius" in bd_milestone.outer_milestone.variables,\
                     "A BD outer milestone must be spherical."
-                    
                 neighbor_anchor = model.anchors[
                     bd_milestone.outer_milestone.neighbor_anchor_index]
                 for neighbor_milestone in neighbor_anchor.milestones:
@@ -577,10 +628,20 @@ def create_bd_milestones(model, model_input):
             #bd_milestone.max_b_surface_trajs_to_extract = \
             #    model_input.browndye_settings_input\
             #        .max_b_surface_trajs_to_extract
-            bd_milestone.receptor_indices = \
-                model_input.browndye_settings_input.receptor_indices
-            bd_milestone.ligand_indices = \
-                model_input.browndye_settings_input.ligand_indices
+            
+            cv_index = bd_milestone.outer_milestone.cv_index
+            cv_input = model_input.cv_inputs[cv_index]
+            if len(cv_input.bd_group1)>0:
+                bd_milestone.receptor_indices = cv_input.bd_group1
+            else:
+                bd_milestone.receptor_indices = \
+                    model_input.browndye_settings_input.receptor_indices
+            
+            if len(cv_input.bd_group2)>0:
+                bd_milestone.ligand_indices = cv_input.bd_group2
+            else:
+                bd_milestone.ligand_indices = \
+                    model_input.browndye_settings_input.ligand_indices
             
             model.k_on_info.bd_milestones.append(bd_milestone)
             bd_milestone_counter += 1
@@ -593,8 +654,8 @@ def prepare_model_cvs_and_anchors(model, model_input):
     input objects.
     """
     
-    cvs, anchors, num_anchors, num_milestones = create_cvs_and_anchors(
-        model, model_input.cv_inputs)
+    cvs, anchors, num_milestones, connection_flag_dict = create_cvs_and_anchors(
+        model, model_input.cv_inputs, model_input.root_directory)
     model.collective_variables = cvs
     model.anchors = anchors
     if model.get_type() == "mmvt":
@@ -615,10 +676,11 @@ def prepare_model_cvs_and_anchors(model, model_input):
                 anchor.md_output_glob = elber_base.NAMD_ELBER_GLOB
         model.num_milestones = num_milestones-1
         
-    model.num_anchors = num_anchors
     if model_input.browndye_settings_input is not None:
-        create_bd_milestones(
-            model, model_input)
+        create_bd_milestones(model, model_input)
+    
+    anchors = resolve_connections(connection_flag_dict, anchors)
+    model.num_anchors = len(anchors)
     
     return
     

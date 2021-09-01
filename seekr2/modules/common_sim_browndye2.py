@@ -952,8 +952,9 @@ def make_and_run_apbs(root, input_apbs_xml, browndye2_bin="",
     """
     assert root.system.solvent.ions is not None, \
         "Ions must be included for APBS calculations"
-    assert len(root.system.solvent.ions) > 0, \
-        "Ions must be included for APBS calculations"
+    # TODO: remove
+    #assert len(root.system.solvent.ions) > 0, \
+    #    "Ions must be included for APBS calculations"
     mol_name_list = []
     for group in root.system.group_list:
         mol_name = group.name

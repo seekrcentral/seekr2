@@ -388,7 +388,7 @@ def create_tryp_ben_elber_model_input(root_dir, bd=False):
     input_anchor1.radius = 0.1
     input_anchor1.starting_amber_params = base.Amber_params()
     input_anchor1.starting_amber_params.prmtop_filename \
-        = "../data/trypsin_benzamidine_files/tryp_ben.prmtop"
+        = "../data/trypsin_benzamidine_files/elber/tryp_ben.prmtop"
     input_anchor1.starting_amber_params.pdb_coordinates_filename = \
         "../data/trypsin_benzamidine_files/elber/tryp_ben_at1.pdb"
     input_anchor1.bound_state = True
@@ -399,7 +399,7 @@ def create_tryp_ben_elber_model_input(root_dir, bd=False):
     input_anchor2.radius = 0.15
     input_anchor2.starting_amber_params = base.Amber_params()
     input_anchor2.starting_amber_params.prmtop_filename \
-        = "../data/trypsin_benzamidine_files/tryp_ben.prmtop"
+        = "../data/trypsin_benzamidine_files/elber/tryp_ben.prmtop"
     input_anchor2.starting_amber_params.pdb_coordinates_filename = \
         "../data/trypsin_benzamidine_files/elber/tryp_ben_at1.5.pdb"
     input_anchor2.bound_state = False
@@ -410,7 +410,7 @@ def create_tryp_ben_elber_model_input(root_dir, bd=False):
     input_anchor3.radius = 0.2
     input_anchor3.starting_amber_params = base.Amber_params()
     input_anchor3.starting_amber_params.prmtop_filename \
-        = "../data/trypsin_benzamidine_files/tryp_ben.prmtop"
+        = "../data/trypsin_benzamidine_files/elber/tryp_ben.prmtop"
     input_anchor3.starting_amber_params.pdb_coordinates_filename = \
         "../data/trypsin_benzamidine_files/elber/tryp_ben_at2.pdb"
     input_anchor3.bound_state = False
@@ -421,7 +421,7 @@ def create_tryp_ben_elber_model_input(root_dir, bd=False):
     input_anchor4.radius = 0.3
     input_anchor4.starting_amber_params = base.Amber_params()
     input_anchor4.starting_amber_params.prmtop_filename \
-        = "../data/trypsin_benzamidine_files/tryp_ben.prmtop"
+        = "../data/trypsin_benzamidine_files/elber/tryp_ben.prmtop"
     input_anchor4.starting_amber_params.pdb_coordinates_filename \
         = "../data/trypsin_benzamidine_files/elber/tryp_ben_at3.pdb"
     input_anchor4.bound_state = False
@@ -432,7 +432,7 @@ def create_tryp_ben_elber_model_input(root_dir, bd=False):
     input_anchor5.radius = 0.4
     input_anchor5.starting_amber_params = base.Amber_params()
     input_anchor5.starting_amber_params.prmtop_filename \
-        = "../data/trypsin_benzamidine_files/tryp_ben.prmtop"
+        = "../data/trypsin_benzamidine_files/elber/tryp_ben.prmtop"
     input_anchor5.starting_amber_params.pdb_coordinates_filename \
         = "../data/trypsin_benzamidine_files/elber/tryp_ben_at4.pdb"
     input_anchor5.bound_state = False
@@ -443,7 +443,7 @@ def create_tryp_ben_elber_model_input(root_dir, bd=False):
     input_anchor6.radius = 0.6
     input_anchor6.starting_amber_params = base.Amber_params()
     input_anchor6.starting_amber_params.prmtop_filename \
-        = "../data/trypsin_benzamidine_files/tryp_ben.prmtop"
+        = "../data/trypsin_benzamidine_files/elber/tryp_ben.prmtop"
     input_anchor6.starting_amber_params.pdb_coordinates_filename \
         = "../data/trypsin_benzamidine_files/elber/tryp_ben_at6.pdb"
     input_anchor6.bound_state = False
@@ -454,7 +454,7 @@ def create_tryp_ben_elber_model_input(root_dir, bd=False):
     input_anchor7.radius = 0.8
     input_anchor7.starting_amber_params = base.Amber_params()
     input_anchor7.starting_amber_params.prmtop_filename \
-        = "../data/trypsin_benzamidine_files/tryp_ben.prmtop"
+        = "../data/trypsin_benzamidine_files/elber/tryp_ben.prmtop"
     input_anchor7.starting_amber_params.pdb_coordinates_filename \
         = "../data/trypsin_benzamidine_files/elber/tryp_ben_at8.pdb"
     input_anchor7.bound_state = False
@@ -465,7 +465,7 @@ def create_tryp_ben_elber_model_input(root_dir, bd=False):
     input_anchor8.radius = 1.0
     input_anchor8.starting_amber_params = base.Amber_params()
     input_anchor8.starting_amber_params.prmtop_filename \
-        = "../data/trypsin_benzamidine_files/tryp_ben.prmtop"
+        = "../data/trypsin_benzamidine_files/elber/tryp_ben.prmtop"
     input_anchor8.starting_amber_params.pdb_coordinates_filename \
         = "../data/trypsin_benzamidine_files/elber/tryp_ben_at10.pdb"
     input_anchor8.bound_state = False
@@ -476,7 +476,7 @@ def create_tryp_ben_elber_model_input(root_dir, bd=False):
     input_anchor9.radius = 1.2
     input_anchor9.starting_amber_params = base.Amber_params()
     input_anchor9.starting_amber_params.prmtop_filename \
-        = "../data/trypsin_benzamidine_files/tryp_ben.prmtop"
+        = "../data/trypsin_benzamidine_files/elber/tryp_ben.prmtop"
     input_anchor9.starting_amber_params.pdb_coordinates_filename \
         = "../data/trypsin_benzamidine_files/elber/tryp_ben_at12.pdb"
     input_anchor9.bound_state = False
@@ -487,7 +487,7 @@ def create_tryp_ben_elber_model_input(root_dir, bd=False):
     input_anchor10.radius = 1.4
     input_anchor10.starting_amber_params = base.Amber_params()
     input_anchor10.starting_amber_params.prmtop_filename \
-        = "../data/trypsin_benzamidine_files/tryp_ben.prmtop"
+        = "../data/trypsin_benzamidine_files/elber/tryp_ben.prmtop"
     input_anchor10.starting_amber_params.pdb_coordinates_filename \
         = "../data/trypsin_benzamidine_files/elber/tryp_ben_at14.pdb"
     input_anchor10.bound_state = False
@@ -498,7 +498,7 @@ def create_tryp_ben_elber_model_input(root_dir, bd=False):
     input_anchor11.radius = 1.6
     input_anchor11.starting_amber_params = base.Amber_params()
     input_anchor11.starting_amber_params.prmtop_filename \
-        = "../data/trypsin_benzamidine_files/tryp_ben.prmtop"
+        = "../data/trypsin_benzamidine_files/elber/tryp_ben.prmtop"
     input_anchor11.starting_amber_params.pdb_coordinates_filename \
         = ""
     input_anchor11.bound_state = False

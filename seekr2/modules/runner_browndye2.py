@@ -277,8 +277,10 @@ def make_browndye_reaction_xml(model, abs_reaction_path, bd_milestone=None):
             rxn_other.molecule1_group = sim_browndye2.BROWNDYE_LIGAND
             rxn_other.molecule1_core = sim_browndye2.BROWNDYE_LIGAND
             rxn_other.n_needed = 1
-            pair3.atom1_index = ghost_index_rec
-            pair3.atom2_index = ghost_index_lig
+            other_ghost_index_rec = ghost_indices_rec[j] # comes from the model?
+            other_ghost_index_lig = ghost_indices_lig[j]
+            pair3.atom1_index = other_ghost_index_rec
+            pair3.atom2_index = other_ghost_index_lig
             rxn_other.pair_list.append(pair3)
             rxnroot.reaction_list.append(rxn_other)
         

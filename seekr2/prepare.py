@@ -27,8 +27,10 @@ def generate_seekr2_model_and_filetree(model_input, force_overwrite):
     for each anchor and serialize the Model to XML.
     """
     model = common_prepare.model_factory(model_input)
-    common_prepare.prepare_model_cvs_and_anchors(model, model_input)
     root_directory = os.path.expanduser(model_input.root_directory)
+    model_input.root_directory = root_directory
+    filetree.generate_filetree_root(model, root_directory)
+    common_prepare.prepare_model_cvs_and_anchors(model, model_input)
     xml_path = os.path.join(root_directory, "model.xml")
     if os.path.exists(xml_path):
         # then a model file already exists at this location: update
@@ -38,8 +40,10 @@ def generate_seekr2_model_and_filetree(model_input, force_overwrite):
         common_prepare.modify_model(old_model, model, root_directory,
                                     force_overwrite)
     
-    filetree.generate_filetree(model, root_directory)
-    filetree.copy_building_files(model, model_input, root_directory)
+    #filetree.generate_filetree(model, root_directory)
+    #filetree.copy_building_files(model, model_input, root_directory)
+    filetree.generate_filetree_bd(model, root_directory)
+    filetree.copy_bd_files(model, model_input, root_directory)
     common_prepare.generate_bd_files(model, root_directory)
     model.serialize(xml_path)
     return model, xml_path

@@ -218,7 +218,8 @@ def browndye_run_compute_rate_constant(compute_rate_constant_program,
     reaction_probabilities = defaultdict(float)
     reaction_probability_errors = defaultdict(float)
     transition_counts = defaultdict(int)
-    k_b = None
+    #k_b = None
+    k_b = 0.0
     total_n_trajectories = 0
     
     for results_filename in results_filename_list:
@@ -264,9 +265,10 @@ def browndye_run_compute_rate_constant(compute_rate_constant_program,
             
             if sample_error_from_normal:
                 k_on = np.random.normal(loc=k_on, scale=k_on_error)
-            
-    assert k_b is not None, "No BD reactions from the b-surface " \
-        "successfully reached any of the milestone surfaces."
+    
+    # TODO: remove
+    #assert k_b is not None, "No BD reactions from the b-surface " \
+    #    "successfully reached any of the milestone surfaces."
     
     for key in transition_counts:
         reaction_probabilities[key] \
@@ -490,14 +492,18 @@ class Data_sample():
                 transition_counts_bd_milestone["escaped"] \
                     = transition_counts[outer_milestone_index] \
                     - transition_counts[inner_milestone_index]
-                
-                transition_probabilities_bd_milestone[inner_milestone_index] \
-                    = transition_counts_bd_milestone[inner_milestone_index] \
-                    / sum(transition_counts_bd_milestone.values())
-                
-                transition_probabilities_bd_milestone["escaped"] \
-                    = transition_counts_bd_milestone["escaped"] \
-                    / sum(transition_counts_bd_milestone.values())
+                if sum(transition_counts_bd_milestone.values()) == 0:
+                    transition_probabilities_bd_milestone[inner_milestone_index] \
+                        = 0
+                    transition_probabilities_bd_milestone["escaped"] \
+                        = 0
+                else:
+                    transition_probabilities_bd_milestone[inner_milestone_index] \
+                        = transition_counts_bd_milestone[inner_milestone_index] \
+                        / sum(transition_counts_bd_milestone.values())
+                    transition_probabilities_bd_milestone["escaped"] \
+                        = transition_counts_bd_milestone["escaped"] \
+                        / sum(transition_counts_bd_milestone.values())
                 
                 self.bd_transition_counts[bd_milestone.index] \
                     = transition_counts_bd_milestone
