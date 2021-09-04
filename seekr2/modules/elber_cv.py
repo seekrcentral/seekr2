@@ -49,7 +49,7 @@ def make_elber_milestoning_objects_spherical(
     
     milestone2 = base.Milestone()
     milestone2.index = milestone_index
-    milestone2.neighbor_anchor_index = None
+    milestone2.neighbor_anchor_index = milestone_index
     #milestone2.alias_index = milestone_alias
     milestone2.alias_index = 2
     milestone2.is_source_milestone = True

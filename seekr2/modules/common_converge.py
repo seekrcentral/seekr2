@@ -136,9 +136,9 @@ def analyze_kinetics(model, analysis, max_step_list, k_on_state=None,
     R_i : dict
         An n dict representing the incubation times at each milestone.
     """
+    analysis.extract_data(max_step_list, silence_errors=True)
+    analysis.fill_out_data_samples()
     try:
-        analysis.extract_data(max_step_list, silence_errors=True)
-        analysis.fill_out_data_samples()
         sufficient_statistics = analysis.check_extraction()
         if sufficient_statistics:
             analysis.process_data_samples(pre_equilibrium_approx)
@@ -155,14 +155,18 @@ def analyze_kinetics(model, analysis, max_step_list, k_on_state=None,
     except (common_analyze.MissingStatisticsError, np.linalg.LinAlgError) as e:
         if model.get_type() == "mmvt":
             #data_sample = common_analyze.Data_sample(model)
-            data_sample = mmvt_analyze.MMVT_data_sample(model)
+            #data_sample = mmvt_analyze.MMVT_data_sample(model)
+            pass
         elif model.get_type() == "elber":
-            data_sample = elber_analyze.Elber_data_sample(model)
+            #data_sample = elber_analyze.Elber_data_sample(model)
+            pass
             
         #analyze_bd_only(model, data_sample)
         if model.k_on_info is not None:
-            data_sample.parse_browndye_results()
-        analysis.main_data_sample = data_sample
+            #data_sample.parse_browndye_results()
+            analysis.main_data_sample.parse_browndye_results()
+            
+        #analysis.main_data_sample = data_sample
         return 0.0, 0.0, {}, {}
 
 def get_mmvt_max_steps(model, dt):
@@ -566,6 +570,9 @@ def calc_transition_steps(model, data_sample):
                     
                     lowest_value = 1e99
                     for key in k_rate_dict:
+                        if k_rate_dict[key] == 0.0:
+                            lowest_value = 0.0
+                            continue
                         if key[0] == alpha and k_rate_dict[key] \
                                 < lowest_value:
                             lowest_value  = 1.0 / k_rate_dict[key]

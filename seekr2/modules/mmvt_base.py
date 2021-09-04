@@ -149,6 +149,7 @@ class MMVT_spherical_CV(MMVT_collective_variable):
         self.group2 = groups[1]
         self.name = "mmvt_spherical"
         self.openmm_expression = "step(k*(distance(g1, g2)^2 - radius^2))"
+        self.restraining_expression = "0.5*k*(distance(g1, g2) - radius)^2"
         self.num_groups = 2
         self.per_dof_variables = ["k", "radius"]
         self.global_variables = []
@@ -183,7 +184,20 @@ class MMVT_spherical_CV(MMVT_collective_variable):
         expression_w_bitcode = "bitcode*"+self.openmm_expression
         return openmm.CustomCentroidBondForce(
             self.num_groups, expression_w_bitcode)
+    
+    def make_restraining_force(self):
+        """
         
+        """
+        try:
+            import openmm
+        except ImportError:
+            import simtk.openmm as openmm
+            
+        assert self.num_groups == 2
+        return openmm.CustomCentroidBondForce(
+            self.num_groups, self.restraining_expression)
+    
     def make_namd_colvar_string(self):
         """
         This string will be put into a NAMD colvar file for tracking
@@ -487,7 +501,13 @@ class MMVT_tiwary_CV(MMVT_collective_variable):
         expression_w_bitcode = "bitcode*"+self.openmm_expression
         return openmm.CustomCentroidBondForce(
             self.num_groups, expression_w_bitcode)
+    
+    def make_restraining_force(self):
+        """
         
+        """
+        raise Exception("Not yet implemented for Tiwary milestone.")
+    
     def make_namd_colvar_string(self):
         """
         This string will be put into a NAMD colvar file for tracking
@@ -612,6 +632,9 @@ class MMVT_planar_CV(MMVT_collective_variable):
         self.openmm_expression = "step(k*("\
             "((x2-x1)*(x3-x1) + (y2-y1)*(y3-y1) + (z2-z1)*(z3-z1))"\
             "/ (distance(g1, g2)*distance(g1, g3)) - value))"
+        self.restraining_expression = "k*("\
+            "((x2-x1)*(x3-x1) + (y2-y1)*(y3-y1) + (z2-z1)*(z3-z1))"\
+            "/ (distance(g1, g3)) - value*distance(g1, g2))^2"
         self.num_groups = 3
         self.per_dof_variables = ["k", "value"]
         self.global_variables = []
@@ -646,7 +669,20 @@ class MMVT_planar_CV(MMVT_collective_variable):
         expression_w_bitcode = "bitcode*"+self.openmm_expression
         return openmm.CustomCentroidBondForce(
             self.num_groups, expression_w_bitcode)
+    
+    def make_restraining_force(self):
+        """
         
+        """
+        try:
+            import openmm
+        except ImportError:
+            import simtk.openmm as openmm
+            
+        assert self.num_groups == 3
+        return openmm.CustomCentroidBondForce(
+            self.num_groups, self.restraining_expression)
+    
     def make_namd_colvar_string(self):
         """
         This string will be put into a NAMD colvar file for tracking

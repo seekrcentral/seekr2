@@ -77,13 +77,7 @@ def create_openmm_system(sim_openmm, model, anchor):
         prmtop_filename = os.path.join(
             building_directory, anchor.amber_params.prmtop_filename)
         prmtop = openmm_app.AmberPrmtopFile(prmtop_filename)
-        assert anchor.amber_params.pdb_coordinates_filename is not None
-        """ # TODO: remove
-        pdb_coordinates_filename = os.path.join(
-            building_directory, 
-            anchor.amber_params.pdb_coordinates_filename)
-        positions = openmm_app.PDBFile(pdb_coordinates_filename)
-        """
+        #assert anchor.amber_params.pdb_coordinates_filename is not None
         if anchor.amber_params.pdb_coordinates_filename is None \
                 or anchor.amber_params.pdb_coordinates_filename == "":
             positions = None

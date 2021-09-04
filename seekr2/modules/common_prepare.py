@@ -442,20 +442,27 @@ def model_factory(model_input, use_absolute_directory=False):
     
     return model
 
-def resolve_connections(connection_flag_dict, anchors):
+def resolve_connections(connection_flag_dict, anchors, associated_input_anchor,
+                        root_directory):
     """
     Given connection information between anchors, merge anchors
     that are connected.
     """
     anchor_indices_to_remove = []
+    index_reference = {}
+    for anchor in anchors:
+        index_reference[anchor.index] = anchor.index
+    
     for key in connection_flag_dict:
         anchor_connection_list = connection_flag_dict[key]
         bulk_anchor = None
+        bulk_discarded_indices = []
         if key == "bulk":
             bulk_anchor = anchor_connection_list[0]
             for anchor_discarded in anchor_connection_list:
                 anchor_indices_to_remove.append(anchor_discarded.index)
-        
+                bulk_discarded_indices.append(anchor_discarded.index)
+                
         if not key == "bulk":
             assert len(anchor_connection_list) > 1, \
                 "Connection flag {} needs to have endpoints ".format(key) \
@@ -478,7 +485,8 @@ def resolve_connections(connection_flag_dict, anchors):
             anchor_indices_to_remove.append(anchor_discarded.index)
             anchor_kept.milestones += anchor_discarded.milestones
             anchor_kept.variables.update(anchor_discarded.variables)
-    
+            index_reference[anchor_discarded.index] = anchor_kept.index
+            
     # sort and remove all redundant anchors
     anchor_indices_to_remove = sorted(set(anchor_indices_to_remove), 
                                       reverse=True)
@@ -486,15 +494,29 @@ def resolve_connections(connection_flag_dict, anchors):
         anchors.pop(anchor_index_to_remove)
         if len(anchors) > anchor_index_to_remove:
             for lower_anchor in anchors[anchor_index_to_remove:]:
-                lower_anchor.index -= 1
-                lower_anchor.name = "anchor_"+str(lower_anchor.index)
-                lower_anchor.directory = lower_anchor.name
+                index_reference[lower_anchor.index] -= 1
     
     # make sure the bulk anchor is the last anchor always
-    bulk_anchor.index = len(anchors)
-    bulk_anchor.name = "anchor_"+str(bulk_anchor.index)
-    bulk_anchor.directory = bulk_anchor.name
     anchors.append(bulk_anchor)
+    index_reference[bulk_anchor.index] = len(anchors) - 1
+    for bulk_discarded in bulk_discarded_indices:
+        index_reference[bulk_discarded] = len(anchors) - 1
+    
+    for old_index in index_reference:
+        new_index = index_reference[old_index]
+        if new_index < len(anchors):
+            anchors[new_index].index = new_index
+            anchors[new_index].name = "anchor_"+str(anchors[new_index].index)
+            anchors[new_index].directory = anchors[new_index].name
+            for milestone in anchors[new_index].milestones:
+                neighbor_id = milestone.neighbor_anchor_index
+                milestone.neighbor_anchor_index = index_reference[neighbor_id]
+            
+            input_anchor = associated_input_anchor[old_index]
+            filetree.generate_filetree_by_anchor(
+                anchors[new_index], root_directory)
+            filetree.copy_building_files_by_anchor(
+                anchors[new_index], input_anchor, root_directory)
     
     return anchors
 
@@ -509,6 +531,7 @@ def create_cvs_and_anchors(model, collective_variable_inputs, root_directory):
     cvs = []
     anchors = []
     connection_flag_dict = defaultdict(list)
+    associated_input_anchor = {}
     for i, cv_input in enumerate(collective_variable_inputs):
         cv_input.index = i
         cv_input.check()
@@ -575,9 +598,10 @@ def create_cvs_and_anchors(model, collective_variable_inputs, root_directory):
                 connection_flag_dict[connection_flag].append(anchor)
             if input_anchor.bulk_anchor:
                 connection_flag_dict["bulk"].append(anchor)
-            filetree.generate_filetree_by_anchor(anchor, root_directory)
-            filetree.copy_building_files_by_anchor(anchor, input_anchor, 
-                                                   root_directory)
+            #filetree.generate_filetree_by_anchor(anchor, root_directory)
+            #filetree.copy_building_files_by_anchor(anchor, input_anchor, 
+            #                                       root_directory)
+            associated_input_anchor[anchor.index] = input_anchor
             anchors.append(anchor)
             anchor_index += 1
             input_anchor_index += 1
@@ -585,7 +609,8 @@ def create_cvs_and_anchors(model, collective_variable_inputs, root_directory):
     if model.get_type() == "elber":
         milestone_index += 1
     
-    return cvs, anchors, milestone_index, connection_flag_dict
+    return cvs, anchors, milestone_index, connection_flag_dict, \
+        associated_input_anchor
 
 def create_bd_milestones(model, model_input):
     """
@@ -622,13 +647,6 @@ def create_bd_milestones(model, model_input):
                     "A BD outer milestone must be spherical."
                 bd_milestone.inner_milestone = anchor.milestones[0]
             
-            #bd_milestone.num_trajectories = \
-            #    model_input.browndye_settings_input\
-            #        .num_bd_milestone_trajectories
-            #bd_milestone.max_b_surface_trajs_to_extract = \
-            #    model_input.browndye_settings_input\
-            #        .max_b_surface_trajs_to_extract
-            
             cv_index = bd_milestone.outer_milestone.cv_index
             cv_input = model_input.cv_inputs[cv_index]
             if len(cv_input.bd_group1)>0:
@@ -654,8 +672,9 @@ def prepare_model_cvs_and_anchors(model, model_input):
     input objects.
     """
     
-    cvs, anchors, num_milestones, connection_flag_dict = create_cvs_and_anchors(
-        model, model_input.cv_inputs, model_input.root_directory)
+    cvs, anchors, num_milestones, connection_flag_dict, associated_input_anchor\
+        = create_cvs_and_anchors(
+            model, model_input.cv_inputs, model_input.root_directory)
     model.collective_variables = cvs
     model.anchors = anchors
     if model.get_type() == "mmvt":
@@ -679,7 +698,9 @@ def prepare_model_cvs_and_anchors(model, model_input):
     if model_input.browndye_settings_input is not None:
         create_bd_milestones(model, model_input)
     
-    anchors = resolve_connections(connection_flag_dict, anchors)
+    anchors = resolve_connections(connection_flag_dict, anchors, 
+                                  associated_input_anchor, 
+                                  model_input.root_directory)
     model.num_anchors = len(anchors)
     
     return

@@ -151,7 +151,7 @@ jobs:
         export PATH="/home/runner/work/seekr2/seekr2/browndye2/bin:$PATH"
         export PATH="/home/runner/work/seekr2/seekr2/namd/Linux-x86_64-g++/:$PATH"
         python setup.py install
-        python -m simtk.testInstallation
+        python -m openmm.testInstallation
         pytest -v --cov=seekr2 --cov-report=xml --color=yes seekr2/tests/
         # python setup.py test
 

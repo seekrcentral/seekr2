@@ -537,7 +537,7 @@ class Data_sample():
                 self.Q[i,i] = -new_row_sum
             else:
                 self.Q[i,i] = -row_sum
-        
+                
         self.K = Q_to_K(self.Q)
         return
     
