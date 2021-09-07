@@ -759,6 +759,8 @@ def modify_model(old_model, new_model, root_directory, force_overwrite=False):
     anchor_pairs = []
     old_anchors_to_delete = []
     new_anchors_to_create = []
+    # Look through the new and old milestones and pair them up by the value
+    #  of their variables
     for alpha, anchor1 in enumerate(new_model.anchors):
         if anchor1.bulkstate:
             continue
@@ -858,7 +860,10 @@ def modify_model(old_model, new_model, root_directory, force_overwrite=False):
     for cleansing_anchor in cleansing_anchors:
         print("removing output files from anchor:", cleansing_anchor.name)
         cleanse_anchor_outputs(old_model, cleansing_anchor)
-        
+    
+    # Now that the equivalent anchors are known, we know which ones will
+    # be deleted, and which ones are being changed, with or without
+    # simulation data, 
     for pair in anchor_pairs:
         (alpha, beta) = pair
         anchor1 = old_model.anchors[beta]
@@ -886,6 +891,11 @@ def modify_model(old_model, new_model, root_directory, force_overwrite=False):
             
             print("moving directory {} to {}".format(anchor1.directory, 
                                                  anchor2.directory))
+            # If it gets here, it's because a new directory was made that
+            # has no data in it. It can be safely deleted
+            if os.path.exists(full_path2):
+                shutil.rmtree(full_path2)
+                
             os.rename(full_path1, full_path2)
     
     # TODO: check for BD milestone changes

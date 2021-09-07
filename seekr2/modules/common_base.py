@@ -808,3 +808,10 @@ def load_model(model_file, directory=None):
         model_dir = os.path.dirname(model_file)
         model.anchor_rootdir = os.path.abspath(model_dir)
     return model
+
+def save_model(model, model_file):
+    """
+    
+    """
+    model.serialize(model_file)
+    return
