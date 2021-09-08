@@ -9,7 +9,6 @@ test_prepare_1d_spherical.py
 import os
 import sys
 import glob
-
 import pytest
 
 import seekr2.modules.common_base as base
@@ -18,6 +17,7 @@ import seekr2.prepare as prepare
 from seekr2.modules import common_prepare
 import seekr2.modules.common_cv as common_cv 
 from seekr2.modules.common_cv import Spherical_cv_input
+import seekr2.modules.check as check 
 
 TEST_DIRECTORY = os.path.dirname(__file__)
 
@@ -40,10 +40,13 @@ def test_move_add_delete_input_anchors(tmp_path, tryp_ben_mmvt_model_input):
     """
     tmp_bd_settings = tryp_ben_mmvt_model_input.browndye_settings_input
     tryp_ben_mmvt_model_input.browndye_settings_input = None
-    tryp_ben_mmvt_model_input.root_directory = os.path.join(tmp_path, "tryp_ben_mmvt_2")
+    tryp_ben_mmvt_model_input.root_directory = os.path.join(
+        tmp_path, "tryp_ben_mmvt_2")
     tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[0].radius = 0.06
-    tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[0].upper_milestone_radius = 0.11
-    tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[1].lower_milestone_radius = 0.11
+    tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[0]\
+        .upper_milestone_radius = 0.11
+    tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[1]\
+        .lower_milestone_radius = 0.11
     os.chdir(TEST_DIRECTORY)
     model2, model2_xml_path \
         = prepare.generate_seekr2_model_and_filetree(
@@ -61,10 +64,14 @@ def test_move_add_delete_input_anchors(tmp_path, tryp_ben_mmvt_model_input):
     new_input_anchor = common_cv.Spherical_cv_anchor()
     new_input_anchor.radius = 0.1
     new_input_anchor.starting_amber_params = base.Amber_params()
-    tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors.insert(1, new_input_anchor)
-    tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[0].upper_milestone_radius = None
-    tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[2].lower_milestone_radius = None
-    tryp_ben_mmvt_model_input.root_directory = os.path.join(tmp_path, "tryp_ben_mmvt_3")
+    tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors.insert(
+        1, new_input_anchor)
+    tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[0]\
+        .upper_milestone_radius = None
+    tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[2]\
+        .lower_milestone_radius = None
+    tryp_ben_mmvt_model_input.root_directory = os.path.join(
+        tmp_path, "tryp_ben_mmvt_3")
     os.chdir(TEST_DIRECTORY)
     model3, model3_xml_path \
         = prepare.generate_seekr2_model_and_filetree(
@@ -81,7 +88,8 @@ def test_move_add_delete_input_anchors(tmp_path, tryp_ben_mmvt_model_input):
     # Delete anchor
     tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors.pop(1)
     tryp_ben_mmvt_model_input.browndye_settings_input = tmp_bd_settings
-    tryp_ben_mmvt_model_input.root_directory = os.path.join(tmp_path, "tryp_ben_mmvt_4")
+    tryp_ben_mmvt_model_input.root_directory = os.path.join(
+        tmp_path, "tryp_ben_mmvt_4")
     os.chdir(TEST_DIRECTORY)
     model4, model4_xml_path \
         = prepare.generate_seekr2_model_and_filetree(
@@ -96,23 +104,31 @@ def test_move_add_delete_input_anchors(tmp_path, tryp_ben_mmvt_model_input):
     assert len(glob.glob(os.path.join(model4.anchor_rootdir, "anchor_*"))) == 11
     
     # adjust BD milestone location
-    tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[-3].upper_milestone_radius = 1.65
-    tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[-2].lower_milestone_radius = 1.65
-    tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[-2].upper_milestone_radius = 1.85
-    tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[-1].lower_milestone_radius = 1.85
-    tryp_ben_mmvt_model_input.root_directory = os.path.join(tmp_path, "tryp_ben_mmvt_5")
+    tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[-3]\
+        .upper_milestone_radius = 1.65
+    tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[-2]\
+        .lower_milestone_radius = 1.65
+    tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[-2]\
+        .upper_milestone_radius = 1.85
+    tryp_ben_mmvt_model_input.cv_inputs[0].input_anchors[-1]\
+        .lower_milestone_radius = 1.85
+    tryp_ben_mmvt_model_input.root_directory = os.path.join(
+        tmp_path, "tryp_ben_mmvt_5")
     os.chdir(TEST_DIRECTORY)
     model5, model5_xml_path \
         = prepare.generate_seekr2_model_and_filetree(
             tryp_ben_mmvt_model_input, force_overwrite=False)
     model_dir = os.path.dirname(model5_xml_path)
     model5.anchor_rootdir = os.path.abspath(model_dir)
-    assert model5.k_on_info.bd_milestones[0].outer_milestone.variables["radius"] == 1.85
-    assert model5.k_on_info.bd_milestones[0].inner_milestone.variables["radius"] == 1.65
+    assert model5.k_on_info.bd_milestones[0].outer_milestone\
+        .variables["radius"] == 1.85
+    assert model5.k_on_info.bd_milestones[0].inner_milestone\
+        .variables["radius"] == 1.65
     
     # delete BD calculation
     tryp_ben_mmvt_model_input.browndye_settings_input = None
-    tryp_ben_mmvt_model_input.root_directory = os.path.join(tmp_path, "tryp_ben_mmvt_6")
+    tryp_ben_mmvt_model_input.root_directory = os.path.join(
+        tmp_path, "tryp_ben_mmvt_6")
     os.chdir(TEST_DIRECTORY)
     model6, model6_xml_path \
         = prepare.generate_seekr2_model_and_filetree(
@@ -121,3 +137,112 @@ def test_move_add_delete_input_anchors(tmp_path, tryp_ben_mmvt_model_input):
     model6.anchor_rootdir = os.path.abspath(model_dir)
     
     return
+
+def test_modify_model(tmp_path, host_guest_mmvt_model_input):
+    """
+    Test the ability to modify models from the input and save the
+    resulting anchors and files.
+    """
+    host_guest_mmvt_model_input.root_directory = os.path.join(
+        tmp_path, "host_guest_mmvt_2")
+    os.chdir(TEST_DIRECTORY)
+    model2, model2_xml_path \
+        = prepare.generate_seekr2_model_and_filetree(
+            host_guest_mmvt_model_input, force_overwrite=False)
+    model_dir = os.path.dirname(model2_xml_path)
+    model2.anchor_rootdir = os.path.abspath(model_dir)
+    check.check_systems_within_Voronoi_cells(model2)
+    
+    # First, move an input milestone
+    host_guest_mmvt_model_input.cv_inputs[0].input_anchors[0].radius = 0.06
+    host_guest_mmvt_model_input.cv_inputs[0].input_anchors[0]\
+        .upper_milestone_radius = 0.11
+    host_guest_mmvt_model_input.cv_inputs[0].input_anchors[1]\
+        .lower_milestone_radius = 0.11
+    os.chdir(TEST_DIRECTORY)
+    model2, model2_xml_path \
+        = prepare.generate_seekr2_model_and_filetree(
+            host_guest_mmvt_model_input, force_overwrite=False)
+    model_dir = os.path.dirname(model2_xml_path)
+    model2.anchor_rootdir = os.path.abspath(model_dir)
+    check.check_systems_within_Voronoi_cells(model2)
+        
+    # Next, add an input milestone
+    new_input_anchor = common_cv.Spherical_cv_anchor()
+    new_input_anchor.radius = 0.1
+    new_input_anchor.starting_amber_params = base.Amber_params()
+    host_guest_mmvt_model_input.cv_inputs[0].input_anchors.insert(
+        1, new_input_anchor)
+    host_guest_mmvt_model_input.cv_inputs[0].input_anchors[0]\
+        .upper_milestone_radius = None
+    host_guest_mmvt_model_input.cv_inputs[0].input_anchors[2]\
+        .lower_milestone_radius = None
+    os.chdir(TEST_DIRECTORY)
+    model2, model2_xml_path \
+        = prepare.generate_seekr2_model_and_filetree(
+            host_guest_mmvt_model_input, force_overwrite=False)
+    model_dir = os.path.dirname(model2_xml_path)
+    model2.anchor_rootdir = os.path.abspath(model_dir)
+    check.check_systems_within_Voronoi_cells(model2)
+        
+    # Add an output file to a relevant anchor
+    new_anchor_directory = os.path.join(model_dir, "anchor_1")
+    output_file_name = os.path.join(new_anchor_directory, "prod/mmvt1.out")
+    with open(output_file_name, "w") as f:
+        f.write("MMVT output")
+    
+    # Test that attempting to delete that anchor will fail
+    host_guest_mmvt_model_input.cv_inputs[0].input_anchors.pop(1)
+    os.chdir(TEST_DIRECTORY)
+    with pytest.raises(Exception) as my_exception:
+        model2, model2_xml_path \
+            = prepare.generate_seekr2_model_and_filetree(
+                host_guest_mmvt_model_input, force_overwrite=False)
+    
+    # Test that attempting to move that anchor will fail
+    new_input_anchor = common_cv.Spherical_cv_anchor()
+    new_input_anchor.radius = 0.105
+    new_input_anchor.starting_amber_params = base.Amber_params()
+    host_guest_mmvt_model_input.cv_inputs[0].input_anchors.insert(
+        1, new_input_anchor)
+    os.chdir(TEST_DIRECTORY)
+    with pytest.raises(Exception) as my_exception:
+        model2, model2_xml_path \
+            = prepare.generate_seekr2_model_and_filetree(
+                host_guest_mmvt_model_input, force_overwrite=False)
+    
+    # Force delete the anchor
+    os.chdir(TEST_DIRECTORY)
+    model2, model2_xml_path \
+        = prepare.generate_seekr2_model_and_filetree(
+            host_guest_mmvt_model_input, force_overwrite=True)
+    model_dir = os.path.dirname(model2_xml_path)
+    model2.anchor_rootdir = os.path.abspath(model_dir)
+    check.check_systems_within_Voronoi_cells(model2)
+    
+    # Add an output file to the BD directory
+    b_surface_directory = os.path.join(model_dir, "b_surface")
+    output_file_name = os.path.join(b_surface_directory, "results1.xml")
+    with open(output_file_name, "w") as f:
+        f.write("BD output")
+    
+    # Modify the BD anchor
+    host_guest_mmvt_model_input.cv_inputs[0].input_anchors[-1].radius = 1.37
+    os.chdir(TEST_DIRECTORY)
+    with pytest.raises(Exception) as my_exception:
+        model2, model2_xml_path \
+            = prepare.generate_seekr2_model_and_filetree(
+                host_guest_mmvt_model_input, force_overwrite=False)
+    model_dir = os.path.dirname(model2_xml_path)
+    model2.anchor_rootdir = os.path.abspath(model_dir)
+    check.check_systems_within_Voronoi_cells(model2)
+    
+    # Force modification of BD milestone
+    host_guest_mmvt_model_input.cv_inputs[0].input_anchors[0].radius = 1.37
+    os.chdir(TEST_DIRECTORY)
+    model2, model2_xml_path \
+        = prepare.generate_seekr2_model_and_filetree(
+            host_guest_mmvt_model_input, force_overwrite=True)
+    model_dir = os.path.dirname(model2_xml_path)
+    model2.anchor_rootdir = os.path.abspath(model_dir)
+    check.check_systems_within_Voronoi_cells(model2)

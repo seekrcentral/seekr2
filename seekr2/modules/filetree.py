@@ -66,47 +66,8 @@ class Filetree():
 
 def generate_filetree_root(model, rootdir, empty_rootdir=False):
     """
-    
-    """
-    if empty_rootdir and os.path.isdir(rootdir):
-        print("Deleting all subdirectories/files in rootdir:", rootdir)
-        shutil.rmtree(rootdir)
-        
-    if not os.path.isdir(rootdir):
-        os.mkdir(rootdir)
-    
-    return
-
-def generate_filetree_by_anchor(anchor, rootdir):
-    """
-    
-    """
-    if not anchor.md:
-        return
-    anchor_dict = {}
-    anchor_dict[anchor.production_directory] = {}
-    anchor_dict[anchor.building_directory] = {}    
-    anchor_filetree = Filetree({anchor.name:anchor_dict})
-    anchor_filetree.make_tree(rootdir)
-    return
-
-def generate_filetree_bd(model, rootdir):
-    """
-    
-    """
-    if model.k_on_info is not None:
-        b_surface_dict = {}
-        b_surface_filetree = Filetree(
-            {model.k_on_info.b_surface_directory:b_surface_dict})
-        b_surface_filetree.make_tree(rootdir)
-    
-    return
-
-# TODO: remove function
-def generate_filetree(model, rootdir, empty_rootdir=False):
-    """
-    Create (or recreate) the filetree within a model, including the
-    anchor directories and subdirectories.
+    Create (or recreate) the lowest directory of a filetree within 
+    a model.
     
     Parameters:
     -----------
@@ -128,38 +89,73 @@ def generate_filetree(model, rootdir, empty_rootdir=False):
         
     if not os.path.isdir(rootdir):
         os.mkdir(rootdir)
-        
-    for anchor in model.anchors:
-        if not anchor.md:
-            continue
-        anchor_dict = {}
-        anchor_dict[anchor.production_directory] = {}
-        anchor_dict[anchor.building_directory] = {}
-        
-        anchor_filetree = Filetree({anchor.name:anchor_dict})
-        anchor_filetree.make_tree(rootdir)
-        
+    
+    return
+
+def generate_filetree_by_anchor(anchor, rootdir):
+    """
+    Create (or recreate) the filetree within a model, including the
+    anchor directories and subdirectories.
+    
+    Parameters:
+    -----------
+    anchor : Anchor()
+        The anchor to generate the filetree for
+    
+    rootdir : str
+        A string path to the Model's root directory, where all the
+        anchors and other directories will be located.
+    
+    """
+    if not anchor.md:
+        return
+    anchor_dict = {}
+    anchor_dict[anchor.production_directory] = {}
+    anchor_dict[anchor.building_directory] = {}    
+    anchor_filetree = Filetree({anchor.name:anchor_dict})
+    anchor_filetree.make_tree(rootdir)
+    return
+
+def generate_filetree_bd(model, rootdir):
+    """
+    Create (or recreate) the filetree used in BD calculations.
+    
+    Parameters:
+    -----------
+    model : Model()
+        The MMVT Model to generate an entire filetree for
+    
+    rootdir : str
+        A string path to the Model's root directory, where all the
+        anchors and other directories will be located.
+    
+   
+    """
     if model.k_on_info is not None:
-        
         b_surface_dict = {}
         b_surface_filetree = Filetree(
             {model.k_on_info.b_surface_directory:b_surface_dict})
         b_surface_filetree.make_tree(rootdir)
-        """ # TODO: remove
-        for bd_milestone in model.k_on_info.bd_milestones:
-            bd_milestone_dict = {}
-            bd_milestone_dict[bd_milestone.extracted_directory] = {}
-            bd_milestone_dict[bd_milestone.fhpd_directory] = {}
-            
-            bd_milestone_filetree = Filetree(
-                {bd_milestone.directory:bd_milestone_dict})
-            bd_milestone_filetree.make_tree(rootdir)
-        """
     
     return
 
 def copy_building_files_by_anchor(anchor, input_anchor, rootdir):
     """
+    For each of the anchors and other directories, copy the necessary
+    initial simulation (building) files for the simulations into those
+    directories.
+    
+    Parameters:
+    -----------
+    anchor : Anchor
+        the Anchor to copy the building files into.
+        
+    input_anchor : Input_anchor
+        Input_model's Input_anchor() objects which contain the input 
+        files to copy.
+        
+    rootdir : str
+        A path to the model's root directory.
     
     """
     if not anchor.md:
@@ -168,10 +164,7 @@ def copy_building_files_by_anchor(anchor, input_anchor, rootdir):
                                     anchor.building_directory)
     assert os.path.exists(anchor_building_dir)
     
-    #try: # TODO: fix simple XML parser so this isn't necessary
     amber = input_anchor.starting_amber_params
-    #except AttributeError:
-    #    amber = None
     new_prmtop_filename = None
     
     if amber is not None:
@@ -204,10 +197,7 @@ def copy_building_files_by_anchor(anchor, input_anchor, rootdir):
                 anchor.amber_params.box_vectors.from_quantity(
                     pdb_structure.box_vectors)
         
-    #try: # TODO: fix simple XML parser so this isn't necessary
     forcefield = input_anchor.starting_forcefield_params
-    #except AttributeError:
-    #    forcefield = None
         
     if forcefield is not None:
         assert amber is None, "Parameters may not be included for both "\
@@ -251,176 +241,22 @@ def copy_building_files_by_anchor(anchor, input_anchor, rootdir):
     
 def copy_bd_files(model, input_model, rootdir):
     """
-    
-    """
-    if model.k_on_info is not None:
-        bd_settings = model.browndye_settings
-        bd_input_settings = input_model.browndye_settings_input
-        k_on_info = model.k_on_info
-        b_surface_dir = os.path.join(rootdir, k_on_info.b_surface_directory)
-        
-        ligand_pqr_filename = os.path.basename(bd_settings.ligand_pqr_filename)
-        ligand_pqr_dest_filename = os.path.join(
-            b_surface_dir, ligand_pqr_filename)
-        copyfile(os.path.expanduser(bd_input_settings.ligand_pqr_filename), 
-                 ligand_pqr_dest_filename)
-        
-        receptor_pqr_filename = os.path.basename(
-            bd_settings.receptor_pqr_filename)
-        receptor_pqr_dest_filename = os.path.join(
-            b_surface_dir, receptor_pqr_filename)
-        copyfile(os.path.expanduser(bd_input_settings.receptor_pqr_filename), 
-                 receptor_pqr_dest_filename)
-    
-    return
-
-# TODO: remove function
-def copy_building_files(model, input_model, rootdir):
-    """
-    For each of the anchors and other directories, copy the necessary
-    files for the simulations into those directories.
+    Copy the necessary files for the BD simulations into those 
+    directories.
     
     Parameters:
     -----------
-    model : list
-        the Model to prepare files for
+    model : Model
+        the Model to prepare files for.
         
-    input_anchors : list
-        An equivalent list of the Input_model's Input_anchor() objects.
-        Which contain the input files to copy.
+    input_model : Input_Model
+        The Input_model's object which contains the input files
+        information to copy over.
         
     rootdir : str
         A path to the model's root directory.
     
     """
-    #input_anchors = input_model.cv_inputs[0].input_anchors
-    input_anchors = []
-    for cv_input in input_model.cv_inputs:
-        input_anchors += cv_input.input_anchors
-    
-    for anchor, input_anchor in zip(model.anchors, input_anchors):
-        if not anchor.md:
-            continue
-        anchor_building_dir = os.path.join(rootdir, anchor.directory, 
-                                        anchor.building_directory)
-        assert os.path.exists(anchor_building_dir)
-        
-        try: # TODO: fix simple XML parser so this isn't necessary
-            amber = input_anchor.starting_amber_params
-        except AttributeError:
-            amber = None
-        new_prmtop_filename = None
-        
-        if amber is not None:
-            anchor.amber_params = base.Amber_params()
-            #assert amber.prmtop_filename is not None, \
-            #    "Amber PRMTOP file must be provided for anchor {}".format(
-            #        anchor.index)
-            #assert amber.prmtop_filename != "", \
-            #    "Amber PRMTOP file must be provided for anchor {}".format(
-            #        anchor.index)
-            if amber.prmtop_filename is not None and \
-                    amber.prmtop_filename != "":
-                amber.prmtop_filename = os.path.expanduser(
-                    amber.prmtop_filename)
-                assert os.path.exists(amber.prmtop_filename), \
-                    "Provided file does not exist: {}".format(
-                        amber.prmtop_filename)
-                prmtop_filename = os.path.basename(amber.prmtop_filename)
-                new_prmtop_filename = os.path.join(anchor_building_dir, 
-                                                   prmtop_filename)
-                copyfile(amber.prmtop_filename, new_prmtop_filename)
-                anchor.amber_params.prmtop_filename = prmtop_filename
-                
-            """# TODO: remove
-            if amber.inpcrd_filename is not None and \
-                    amber.inpcrd_filename != "":
-                amber.inpcrd_filename = os.path.expanduser(
-                    amber.inpcrd_filename)
-                assert os.path.exists(amber.inpcrd_filename), \
-                    "Provided file does not exist: {}".format(
-                        amber.inpcrd_filename)
-                inpcrd_filename = os.path.basename(amber.inpcrd_filename)
-                new_inpcrd_filename = os.path.join(anchor_building_dir, 
-                                                   inpcrd_filename)
-                copyfile(amber.inpcrd_filename, new_inpcrd_filename)
-                anchor.amber_params.inpcrd_filename = inpcrd_filename
-                if anchor.amber_params.box_vectors is None:
-                    assert new_prmtop_filename is not None
-                    anchor.amber_params.box_vectors = base.Box_vectors()
-                    inpcrd_structure = parmed.load_file(new_prmtop_filename, 
-                                                xyz=new_inpcrd_filename)
-                    anchor.amber_params.box_vectors.from_quantity(
-                        inpcrd_structure.box_vectors)
-            """
-            
-            #assert amber.pdb_coordinates_filename is not None and \
-            #    amber.pdb_coordinates_filename != "", \
-            #    "PDB file must be provided for anchor {}".format(
-            #        anchor.index)
-            #amber.pdb_coordinates_filename = os.path.expanduser(
-            #    amber.pdb_coordinates_filename)
-            #assert os.path.exists(amber.pdb_coordinates_filename), \
-            #    "Provided file does not exist: {}".format(
-            #        amber.pdb_coordinates_filename)
-            if amber.pdb_coordinates_filename is not None and \
-                    amber.pdb_coordinates_filename != "":
-                pdb_filename = os.path.basename(amber.pdb_coordinates_filename)
-                new_pdb_filename = os.path.join(anchor_building_dir, 
-                                                pdb_filename)
-                copyfile(os.path.expanduser(amber.pdb_coordinates_filename), 
-                         new_pdb_filename)
-                anchor.amber_params.pdb_coordinates_filename = pdb_filename
-                anchor.amber_params.box_vectors = amber.box_vectors
-                if anchor.amber_params.box_vectors is None:
-                    anchor.amber_params.box_vectors = base.Box_vectors()
-                    pdb_structure = parmed.load_file(new_pdb_filename)
-                    anchor.amber_params.box_vectors.from_quantity(
-                        pdb_structure.box_vectors)
-            
-        try: # TODO: fix simple XML parser so this isn't necessary
-            forcefield = input_anchor.starting_forcefield_params
-        except AttributeError:
-            forcefield = None
-            
-        if forcefield is not None:
-            assert amber is None, "Parameters may not be included for both "\
-                "Amber and Forcefield inputs."
-            anchor.forcefield_params = base.Forcefield_params()
-            if forcefield.built_in_forcefield_filenames is not None and \
-                    len(forcefield.built_in_forcefield_filenames) > 0:
-                for filename in forcefield.built_in_forcefield_filenames:
-                    anchor.forcefield_params.built_in_forcefield_filenames.\
-                        append(os.path.expanduser(filename))
-                        
-            if forcefield.custom_forcefield_filenames is not None and \
-                    len(forcefield.custom_forcefield_filenames) > 0:
-                for filename in forcefield.custom_forcefield_filenames:
-                    ff_filename = os.path.basename(filename)
-                    new_ff_filename = os.path.join(anchor_building_dir, 
-                                                   ff_filename)
-                    copyfile(filename, new_ff_filename)
-                    anchor.forcefield_params.custom_forcefield_filenames.\
-                        append(os.path.expanduser(ff_filename))
-            
-            if forcefield.pdb_filename is not None and \
-                    forcefield.pdb_filename != "":
-                forcefield.pdb_filename = os.path.expanduser(
-                    forcefield.pdb_filename)
-                assert os.path.exists(forcefield.pdb_filename), \
-                    "Provided file does not exist: {}".format(
-                        forcefield.pdb_filename)
-                pdb_filename = os.path.basename(forcefield.pdb_filename)
-                new_pdb_filename = os.path.join(anchor_building_dir, 
-                                                pdb_filename)
-                copyfile(forcefield.pdb_filename, new_pdb_filename)
-                anchor.forcefield_params.pdb_filename = pdb_filename
-                anchor.forcefield_params.box_vectors = forcefield.box_vectors
-                if anchor.forcefield_params.box_vectors is None:
-                    pdb_structure = parmed.load_file(new_pdb_filename)
-                    anchor.forcefield_params.box_vectors.from_quantity(
-                        pdb_structure.box_vectors)
-                
     if model.k_on_info is not None:
         bd_settings = model.browndye_settings
         bd_input_settings = input_model.browndye_settings_input
@@ -439,4 +275,5 @@ def copy_building_files(model, input_model, rootdir):
             b_surface_dir, receptor_pqr_filename)
         copyfile(os.path.expanduser(bd_input_settings.receptor_pqr_filename), 
                  receptor_pqr_dest_filename)
+    
     return

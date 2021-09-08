@@ -161,6 +161,9 @@ def cleanse_anchor_outputs(model, anchor, skip_umbrella_files=False):
     output_restarts_list = glob.glob(output_files_glob)
     for output_file in output_restarts_list:
         os.remove(output_file)
+    mmvt_dcd_glob = os.path.join(output_directory, "mmvt*.dcd")
+    for dcd_file in glob.glob(mmvt_dcd_glob):
+        os.remove(dcd_file)
     if not skip_umbrella_files:
         umbrella_dcd_glob = os.path.join(output_directory, "umbrella*.dcd")
         for dcd_file in glob.glob(umbrella_dcd_glob):
