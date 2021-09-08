@@ -442,12 +442,13 @@ def model_factory(model_input, use_absolute_directory=False):
     
     return model
 
-def resolve_connections(connection_flag_dict, anchors, associated_input_anchor,
-                        root_directory):
+def resolve_connections(connection_flag_dict, model, associated_input_anchor,
+                        root_directory, force_overwrite):
     """
     Given connection information between anchors, merge anchors
     that are connected.
     """
+    anchors = model.anchors
     anchor_indices_to_remove = []
     index_reference = {}
     for anchor in anchors:
@@ -501,6 +502,15 @@ def resolve_connections(connection_flag_dict, anchors, associated_input_anchor,
     index_reference[bulk_anchor.index] = len(anchors) - 1
     for bulk_discarded in bulk_discarded_indices:
         index_reference[bulk_discarded] = len(anchors) - 1
+    
+    xml_path = os.path.join(root_directory, "model.xml")
+    if os.path.exists(xml_path):
+        # then a model file already exists at this location: update
+        # the anchor directories.
+        old_model = base.Model()
+        old_model.deserialize(xml_path)
+        modify_model(old_model, model, root_directory,
+                                    force_overwrite)
     
     for old_index in index_reference:
         new_index = index_reference[old_index]
@@ -666,7 +676,7 @@ def create_bd_milestones(model, model_input):
                 
     return
 
-def prepare_model_cvs_and_anchors(model, model_input):
+def prepare_model_cvs_and_anchors(model, model_input, force_overwrite):
     """
     Fill out the CV and anchor items within the model based on the 
     input objects.
@@ -698,9 +708,9 @@ def prepare_model_cvs_and_anchors(model, model_input):
     if model_input.browndye_settings_input is not None:
         create_bd_milestones(model, model_input)
     
-    anchors = resolve_connections(connection_flag_dict, anchors, 
+    anchors = resolve_connections(connection_flag_dict, model, 
                                   associated_input_anchor, 
-                                  model_input.root_directory)
+                                  model_input.root_directory, force_overwrite)
     model.num_anchors = len(anchors)
     
     return
@@ -897,6 +907,12 @@ def modify_model(old_model, new_model, root_directory, force_overwrite=False):
                 shutil.rmtree(full_path2)
                 
             os.rename(full_path1, full_path2)
+    
+    for new_anchor_index_to_create in new_anchors_to_create:
+        print("creating new anchor {}".format(new_anchor_index_to_create))
+    #    anchor = new_model.anchors[new_anchor_index_to_create]
+    #    filetree.generate_filetree_by_anchor(anchor, root_directory)
+    #    copy_building_files_by_anchor(anchor, input_anchor, rootdir)
     
     # TODO: check for BD milestone changes
     if old_model.k_on_info is not None:
