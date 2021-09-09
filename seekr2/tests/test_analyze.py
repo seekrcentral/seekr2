@@ -385,21 +385,21 @@ def test_smoluchowski_k_off_from_mmvt_namd_output_files(smoluchowski_mmvt_model)
         smoluchowski_mmvt_model, potential_energy_function, style="namd")
     standard_time = make_smoluchowski_standard_for_k_off(
         smoluchowski_mmvt_model, potential_energy_function)
-    assert np.isclose(mmvt_time, standard_time, rtol=1e-1)
+    assert np.isclose(mmvt_time, standard_time, rtol=2e-1)
     
     potential_energy_function = smol.LinearPotentialEnergyFunction()
     mmvt_time, dummy = make_mmvt_calculation_based_on_output_files(
         smoluchowski_mmvt_model, potential_energy_function, style="namd")
     standard_time = make_smoluchowski_standard_for_k_off(
         smoluchowski_mmvt_model, potential_energy_function)
-    assert np.isclose(mmvt_time, standard_time, rtol=1e-1)
+    assert np.isclose(mmvt_time, standard_time, rtol=2e-1)
     
     potential_energy_function = smol.QuadraticPotentialEnergyFunction(a=0.1)
     mmvt_time, dummy = make_mmvt_calculation_based_on_output_files(
         smoluchowski_mmvt_model, potential_energy_function, style="namd")
     standard_time = make_smoluchowski_standard_for_k_off(
         smoluchowski_mmvt_model, potential_energy_function)
-    assert np.isclose(mmvt_time, standard_time, rtol=1e-1)
+    assert np.isclose(mmvt_time, standard_time, rtol=2e-1)
     return
 
 def test_smoluchowski_k_on_from_mmvt_openmm_output_files(smoluchowski_mmvt_model):
@@ -486,21 +486,21 @@ def test_smoluchowski_k_off_from_elber_openmm_output_files(smoluchowski_elber_mo
         smoluchowski_elber_model, potential_energy_function)
     standard_time = make_smoluchowski_standard_for_k_off(
         smoluchowski_elber_model, potential_energy_function)
-    assert np.isclose(elber_time, standard_time, rtol=1e-1)
+    assert np.isclose(elber_time, standard_time, rtol=2e-1)
     
     potential_energy_function = smol.LinearPotentialEnergyFunction()
     elber_time, dummy = make_elber_calculation_based_on_output_files(
         smoluchowski_elber_model, potential_energy_function)
     standard_time = make_smoluchowski_standard_for_k_off(
         smoluchowski_elber_model, potential_energy_function)
-    assert np.isclose(elber_time, standard_time, rtol=1e-1)
+    assert np.isclose(elber_time, standard_time, rtol=2e-1)
     
     potential_energy_function = smol.QuadraticPotentialEnergyFunction(a=0.1)
     elber_time, dummy = make_elber_calculation_based_on_output_files(
         smoluchowski_elber_model, potential_energy_function)
     standard_time = make_smoluchowski_standard_for_k_off(
         smoluchowski_elber_model, potential_energy_function)
-    assert np.isclose(elber_time, standard_time, rtol=1e-1)
+    assert np.isclose(elber_time, standard_time, rtol=2e-1)
     return
 
 def test_smoluchowski_k_on_from_elber_openmm_output_files(smoluchowski_elber_model):
