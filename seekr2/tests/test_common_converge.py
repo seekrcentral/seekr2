@@ -48,7 +48,7 @@ def make_model_completed(smoluchowski_model, steps):
     return smoluchowski_model, standard_time, standard_k_on
 
 def test_analyze_bd_only(smoluchowski_mmvt_model):
-    steps = 1000
+    steps = 10000
     cutoff = 0.1
     minimum_anchor_transitions = 100
     image_directory = None
@@ -64,7 +64,7 @@ def test_analyze_bd_only(smoluchowski_mmvt_model):
     return
 
 def test_mmvt_max_steps(smoluchowski_mmvt_model):
-    steps = 1000
+    steps = 10000
     cutoff = 0.1
     minimum_anchor_transitions = 100
     image_directory = None
@@ -77,7 +77,7 @@ def test_mmvt_max_steps(smoluchowski_mmvt_model):
     return
 
 def test_elber_max_steps(smoluchowski_elber_model):
-    steps = 1000
+    steps = 10000
     cutoff = 0.1
     minimum_anchor_transitions = 100
     image_directory = None
@@ -90,7 +90,7 @@ def test_elber_max_steps(smoluchowski_elber_model):
     return
 
 def test_check_milestone_convergence(smoluchowski_mmvt_model):
-    steps = 1000
+    steps = 10000
     k_on_state = 0
     smoluchowski_mmvt_model, standard_time, standard_k_on\
         = make_model_completed(smoluchowski_mmvt_model, steps)
@@ -103,7 +103,7 @@ def test_check_milestone_convergence(smoluchowski_mmvt_model):
     
 def test_check_milestone_convergence_pre_equilibrium_approx(
         smoluchowski_mmvt_model):
-    steps = 1000
+    steps = 10000
     k_on_state = 0
     smoluchowski_mmvt_model, standard_time, standard_k_on\
         = make_model_completed(smoluchowski_mmvt_model, steps)
@@ -115,7 +115,7 @@ def test_check_milestone_convergence_pre_equilibrium_approx(
     return
 
 def test_plot_scalar_conv(smoluchowski_mmvt_model):
-    steps = 1000
+    steps = 10000
     k_on_state = 0
     smoluchowski_mmvt_model, standard_time, standard_k_on\
         = make_model_completed(smoluchowski_mmvt_model, steps)
@@ -131,7 +131,7 @@ def test_plot_scalar_conv(smoluchowski_mmvt_model):
     return
 
 def test_plot_dict_conv(smoluchowski_mmvt_model):
-    steps = 1000
+    steps = 10000
     k_on_state = 0
     smoluchowski_mmvt_model, standard_time, standard_k_on\
         = make_model_completed(smoluchowski_mmvt_model, steps)
@@ -168,7 +168,7 @@ def test_calc_window_rmsd():
     assert np.isclose(average, expected_average)
     
 def test_calc_transition_steps(smoluchowski_mmvt_model):
-    steps = 1000
+    steps = 10000
     cutoff = 0.1
     minimum_anchor_transitions = 100
     image_directory = None
@@ -184,7 +184,7 @@ def test_calc_transition_steps(smoluchowski_mmvt_model):
     return
 
 def test_calc_RMSD_conv_amount(smoluchowski_mmvt_model):
-    steps = 1000
+    steps = 10000
     cutoff = 0.1
     minimum_anchor_transitions = 100
     image_directory = None
