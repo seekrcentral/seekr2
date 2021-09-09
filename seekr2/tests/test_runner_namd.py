@@ -16,69 +16,96 @@ import seekr2.modules.mmvt_sim_namd as mmvt_sim_namd
 import seekr2.modules.runner_namd as runner_namd
 import seekr2.tests.make_test_model as make_test_model
 
-def test_Runner_namd_default(tmp_path):
-    if not os.path.exists(tmp_path):
-        os.mkdir(tmp_path)
-    mymodel = make_test_model.make_test_model(tmp_path, engine="namd")
-    #sim_namd_factory = sim_namd.Sim_namd_factory()
-    myanchor = mymodel.anchors[1]
-    mmvt_output_filename = os.path.join(
-                    tmp_path, myanchor.name, "prod", 
-                    "%s%d" % (mmvt_base.NAMDMMVT_BASENAME, 1))
+def test_Runner_namd_default(host_guest_mmvt_model):
+    host_guest_mmvt_model.calculation_settings.num_production_steps = 10
+    host_guest_mmvt_model.namd_settings = base.Namd_settings()
+    myanchor = host_guest_mmvt_model.anchors[1]
     namd_command = "namd2"
     namd_arguments = ""
-    runner = runner_namd.Runner_namd(mymodel, myanchor, namd_command, 
-                                     namd_arguments)
+    runner = runner_namd.Runner_namd(
+        host_guest_mmvt_model, myanchor, namd_command, namd_arguments)
     default_output_file, output_basename, state_file_prefix, restart_index = \
-    runner.prepare()
-    #sim_namd_factory = sim_namd.Sim_namd_factory()
-    my_sim_namd = mmvt_sim_namd.create_sim_namd(mymodel, myanchor, 
-                                                      mmvt_output_filename)
+        runner.prepare()
+    mmvt_output_filename = os.path.join(
+        host_guest_mmvt_model.anchor_rootdir, myanchor.name, "prod", 
+        "%s%d" % (mmvt_base.NAMDMMVT_BASENAME, 1))
+    my_sim_namd = mmvt_sim_namd.create_sim_namd(
+        host_guest_mmvt_model, myanchor, mmvt_output_filename)
     my_sim_namd.namd_root.periodic_boundary_conditions.PMEGridSpacing = None
-    print("PME turned off")
     runner.run(my_sim_namd, mmvt_output_filename+".out")
     myglob = mmvt_output_filename+".out*"
     outfiles = glob.glob(myglob)
     outfile = outfiles[0]
     assert os.path.exists(outfile)
-    has_correct_line1 = False
-    has_correct_line2 = False
-    with open(outfile,"r") as f:
-        for line in f:
-            if re.search("^WallClock", line):
-                has_correct_line1 = True
-            if re.search("^WRITING", line):
-                has_correct_line2 = True
-    assert has_correct_line1 == True
-    assert has_correct_line2 == True
-    """
-    namd_arguments = "+wtf"
-    runner = runner_namd.Runner_namd(mymodel, myanchor, namd_command, 
-                                     namd_arguments)
+    return
+
+def test_Runner_namd_load_state(host_guest_mmvt_model):
+    host_guest_mmvt_model.calculation_settings.num_production_steps = 10
+    host_guest_mmvt_model.namd_settings = base.Namd_settings()
+    myanchor = host_guest_mmvt_model.anchors[1]
+    namd_command = "namd2"
+    namd_arguments = ""
+    runner = runner_namd.Runner_namd(
+        host_guest_mmvt_model, myanchor, namd_command, namd_arguments)
     default_output_file, output_basename, state_file_prefix, restart_index = \
-    runner.prepare(force_overwrite=True)
-    #sim_namd_factory = sim_namd.Sim_namd_factory()
-    my_sim_namd = mmvt_sim_namd.create_sim_namd(mymodel, myanchor, 
-                                                      mmvt_output_filename)
+        runner.prepare()
+    mmvt_output_filename = os.path.join(
+        host_guest_mmvt_model.anchor_rootdir, myanchor.name, "prod", 
+        "%s%d" % (mmvt_base.NAMDMMVT_BASENAME, 1))
+    loading_state_filename = os.path.join(host_guest_mmvt_model.anchor_rootdir, 
+                                          "start.state")
+    my_sim_namd = mmvt_sim_namd.create_sim_namd(
+        host_guest_mmvt_model, myanchor, mmvt_output_filename)
+    my_sim_namd.namd_root.periodic_boundary_conditions.PMEGridSpacing = None
     runner.run(my_sim_namd, mmvt_output_filename+".out")
     myglob = mmvt_output_filename+".out*"
     outfiles = glob.glob(myglob)
     outfile = outfiles[0]
     assert os.path.exists(outfile)
-    has_correct_line1 = False
-    has_correct_line2 = False
-    with open(outfile,"r") as f:
-        for line in f:
-            print("line:", line)
-            
-            if re.search("^WallClock", line):
-                has_correct_line1 = True
-            if re.search("^WRITING", line):
-                has_correct_line2 = True
-    
-    with pytest.raises(Exception):
-        assert has_correct_line1 == True
-    with pytest.raises(Exception):
-        assert has_correct_line2 == True
-    """
+    return
+
+def test_Runner_namd_save_states(host_guest_mmvt_model):
+    host_guest_mmvt_model.calculation_settings.num_production_steps = 10
+    host_guest_mmvt_model.namd_settings = base.Namd_settings()
+    myanchor = host_guest_mmvt_model.anchors[1]
+    namd_command = "namd2"
+    namd_arguments = ""
+    runner = runner_namd.Runner_namd(
+        host_guest_mmvt_model, myanchor, namd_command, namd_arguments)
+    default_output_file, output_basename, state_file_prefix, restart_index = \
+        runner.prepare(force_overwrite=True, save_state_file=True)
+    mmvt_output_filename = os.path.join(
+        host_guest_mmvt_model.anchor_rootdir, myanchor.name, "prod", 
+        "%s%d" % (mmvt_base.NAMDMMVT_BASENAME, 1))
+    my_sim_namd = mmvt_sim_namd.create_sim_namd(
+        host_guest_mmvt_model, myanchor, mmvt_output_filename)
+    my_sim_namd.namd_root.periodic_boundary_conditions.PMEGridSpacing = None
+    runner.run(my_sim_namd, mmvt_output_filename+".out")
+    myglob = mmvt_output_filename+".out*"
+    outfiles = glob.glob(myglob)
+    outfile = outfiles[0]
+    assert os.path.exists(outfile)
+    return
+
+def test_Runner_namd_save_states_until_all_bounds(host_guest_mmvt_model):
+    host_guest_mmvt_model.calculation_settings.num_production_steps = 10
+    host_guest_mmvt_model.namd_settings = base.Namd_settings()
+    myanchor = host_guest_mmvt_model.anchors[1]
+    namd_command = "namd2"
+    namd_arguments = ""
+    runner = runner_namd.Runner_namd(
+        host_guest_mmvt_model, myanchor, namd_command, namd_arguments)
+    default_output_file, output_basename, state_file_prefix, restart_index = \
+        runner.prepare(force_overwrite=True, save_state_boundaries=True)
+    mmvt_output_filename = os.path.join(
+        host_guest_mmvt_model.anchor_rootdir, myanchor.name, "prod", 
+        "%s%d" % (mmvt_base.NAMDMMVT_BASENAME, 1))
+    my_sim_namd = mmvt_sim_namd.create_sim_namd(
+        host_guest_mmvt_model, myanchor, mmvt_output_filename)
+    my_sim_namd.namd_root.periodic_boundary_conditions.PMEGridSpacing = None
+    runner.run(my_sim_namd, mmvt_output_filename+".out")
+    myglob = mmvt_output_filename+".out*"
+    outfiles = glob.glob(myglob)
+    outfile = outfiles[0]
+    assert os.path.exists(outfile)
     return

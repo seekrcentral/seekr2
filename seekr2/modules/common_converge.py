@@ -19,8 +19,6 @@ from parmed import unit
 import seekr2.analyze as analyze
 import seekr2.modules.common_base as base
 import seekr2.modules.common_analyze as common_analyze
-import seekr2.modules.mmvt_analyze as mmvt_analyze
-import seekr2.modules.elber_analyze as elber_analyze
 
 # The default number of points to include in convergence plots
 DEFAULT_NUM_POINTS = 100
@@ -36,7 +34,9 @@ PROGRESS_UPDATE_INTERVAL = DEFAULT_NUM_POINTS // 10
 
 def analyze_bd_only(model, data_sample):
     """
-    
+    If there are missing MD statistics, then perhaps only a BD analysis
+    should be performed. This function only performs a BD analysis on
+    a particular data sample.
     """
     bulk_milestones = []
     MFPTs = {}
@@ -161,12 +161,10 @@ def analyze_kinetics(model, analysis, max_step_list, k_on_state=None,
             #data_sample = elber_analyze.Elber_data_sample(model)
             pass
             
-        #analyze_bd_only(model, data_sample)
         if model.k_on_info is not None:
             #data_sample.parse_browndye_results()
             analysis.main_data_sample.parse_browndye_results()
             
-        #analysis.main_data_sample = data_sample
         return 0.0, 0.0, {}, {}
 
 def get_mmvt_max_steps(model, dt):
@@ -195,7 +193,7 @@ def get_mmvt_max_steps(model, dt):
                         step = int(mytime / dt)
                     elif model.namd_settings is not None:
                         step = 0
-                        for counter, line in enumerate(output_file):
+                        for line in output_file:
                             line = line.decode("UTF-8")
                             if not line.startswith("SEEKR") \
                                     or len(line.strip()) == 0:
@@ -475,62 +473,19 @@ def plot_dict_conv(conv_dict, conv_intervals, label_base, timestep_in_ns,
         name_list.append(name)
     return fig_list, ax_list, title_list, name_list
 
-def make_windows(seq, n):
-    """
-    Returns a sliding window (of width n) over data from the iterable
-       s -> (s0,s1,...s[n-1]), (s1,s2,...,sn), ...                   
-    """
-    it = iter(seq)
-    result = tuple(islice(it, n))
-    if len(result) == n:
-        yield result
-    for elem in it:
-        result = result[1:] + (elem,)
-        yield result
-        
 def calc_window_rmsd(conv_values):
     """
     For a window of convergence values, compute the RMSD and average
     of those values.
     """
+    if len(conv_values) == 0:
+        return 0.0, 0.0
     average = np.mean(conv_values)
     RMSD_sum = 0.0
     for i, conv_value in enumerate(conv_values):
         RMSD_sum += (conv_value - average)**2
-    RMSD = np.sqrt(RMSD_sum) / (len(conv_values)-1)
+    RMSD = np.sqrt(RMSD_sum / len(conv_values))
     return RMSD, average
-
-def find_conv_min(conv_values, conv_intervals, window_size, cutoff, 
-                   conv_windows):
-    """
-    Find the time at which the convergence values converged, if ever.
-    """
-    conv_times = defaultdict(float)
-    for key in conv_values:
-        if np.sum(conv_values[key][:]) != 0:
-            conv_times[key] = np.nan
-            rmsd_list = []
-            windows = make_windows(conv_values[key][:], window_size)
-            index = 0
-            conv_counter = 0
-            for w in windows:
-                RMSD, window_average = calc_window_rmsd(w)
-                if RMSD <= (cutoff * window_average):
-                    conv_counter += 1
-                    if conv_counter == conv_windows:
-                        max_int = index + window_size
-                        min_time = conv_intervals[max_int]
-                        conv_times[key] = min_time
-                        break
-                else: conv_counter = 0
-                index += 1
-            
-            """    
-            if np.isnan(conv_times[key]): print(
-                "Entry %s did not meet minimum convergence criteria of "\
-                "%i windows" %(str(key), conv_windows))
-            """
-    return conv_times
 
 def calc_transition_steps(model, data_sample):
     """
@@ -674,89 +629,13 @@ def calc_RMSD_conv_amount(model, data_sample_list, window_size=30,
                 conv_list.append(conv_quantity)
                 
             RMSD, window_average = calc_window_rmsd(conv_list)
-            fraction = RMSD / window_average
-            if np.isnan(fraction):
+            if window_average == 0.0:
                 RMSD_window_conv_list.append(1e99)
             else:
+                fraction = RMSD / window_average
                 RMSD_window_conv_list.append(fraction)
-        
+            
         max_RMSD = np.max(RMSD_window_conv_list)
         convergence_results.append(max_RMSD)
     
     return convergence_results
-
-def calc_RMSD_conv_time(model, N_conv, R_conv, conv_intervals, window_size, 
-                   cutoff, conv_windows, timestep_in_ns):
-    """ Estimate the convergence of sampling for each milestone using 
-    a sliding window RMSD cutoff. Milestones are considered converged 
-    when the values of BOTH N and R remain below the cutoff threshold 
-    for a specified number of windows.
-
-    The cutoff is a percentage of the magnutude of the corresponding 
-    value (e.g. less than 5% of the magnutude of N).
-
-    Parameters
-    -----------
-    model : object
-        milestoning model object containing all milestone information 
-        and transition statistics
-    N_conv: list
-        list of transition count matrix N for each convergence interval
-    R_conv : list
-        list of transition time matrix R for each convergence interval 
-    conv_intervals : list
-        list of stepnumbers for which convergence samples were 
-        extracted and calculated
-    window size : int
-        number of convergence samples used in a window RMSD 
-        calculation
-    cutoff : float, Default 0.01
-        RMSD must be less than the cutoff times the magnitude of the 
-        quantity (N or R) to be considered converged
-    conv_windows : int, Default 20
-        number of consecutive windows the RMSD must remain below the 
-        cutoff to be considered converged
-    timestep_in_ns : float
-        The length of the timestep in units of nanoseconds
-    
-    Return
-    -------
-    min_anchor_times : list
-        list of times (in stepnumbers) for each voronoi cell where 
-        the convergence criteria are satisfied
-    """
-
-    min_anchor_times = np.zeros((len(conv_intervals)))
-    n_conv_times = find_conv_min(N_conv, conv_intervals, window_size, cutoff,
-                                  conv_windows)
-    r_conv_times = find_conv_min(R_conv, conv_intervals, window_size, cutoff,
-                                  conv_windows)
-    for anchor in model.anchors:
-        n_steps = 0
-        r_steps = 0
-        milestones = []
-        for milestone in anchor.milestones:
-            milestones.append(milestone.index)
-            
-        for key in n_conv_times:
-            if key[0] in milestones and key[1] in milestones:
-                if np.isnan(n_conv_times[key]):
-                    n_steps = None
-                    break
-                if n_conv_times[key] > n_steps:
-                    n_steps = n_conv_times[key]
-        
-        for key in r_conv_times:
-            if key in milestones:
-                if np.isnan(r_conv_times[key]):
-                    r_steps = None
-                    break
-                if r_conv_times[key] > r_steps:
-                    r_steps = r_conv_times[key]
-        
-        if r_steps is None or n_steps is None:
-            print("Anchor %i is not converged." % anchor.index)
-        else:
-            print("Anchor %i converged after time %f ns" \
-                  % (anchor.index, timestep_in_ns * max(n_steps, r_steps)))
-    return

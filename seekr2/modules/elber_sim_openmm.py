@@ -271,32 +271,7 @@ def make_elber_umbrella_force(model, anchor):
     cv.add_groups_and_variables(umbrella_force, mygroup_list,
                                 cv.get_variable_values_list(milestone))
     return umbrella_force
-""" # TODO: remove
-def make_elber_rev_force(model, anchor, data_file_name):
-    
-    for milestone in anchor.milestones:
-        #if milestone.alias_index == 2:
-        if milestone.is_source_milestone:
-            cv = milestone.get_CV(model)
-            rev_force = cv.make_fwd_rev_force_object(anchor)
-    variable_names_list = cv.add_fwd_rev_parameters(rev_force, anchor, 
-                                            end_on_middle_crossing=True,
-                                            data_file_name=data_file_name)
-    return rev_force
 
-def make_elber_fwd_force(model, anchor, data_file_name):
-    
-    
-    for milestone in anchor.milestones:
-        #if milestone.alias_index == 2:
-        if milestone.is_source_milestone:
-            cv = milestone.get_CV(model)
-            fwd_force = cv.make_fwd_rev_force_object(anchor)
-    variable_names_list = cv.add_fwd_rev_parameters(fwd_force, anchor, 
-                                            end_on_middle_crossing=False,
-                                            data_file_name=data_file_name)
-    return fwd_force
-"""  
 def make_elber_boundary_definitions(cv, milestone):
     """
     Take a Collective_variable object and a particular milestone and

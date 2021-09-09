@@ -186,7 +186,7 @@ class Runner_namd():
         self.save_one_state_for_all_boundaries = False
         self.check_state_interval = 1000
     
-    def prepare(self, restart=False, save_state=False, 
+    def prepare(self, restart=False, save_state_file=False, 
                 save_state_boundaries=False, force_overwrite=False):
         """
         This function gets run before the sim_namd object is created
@@ -268,7 +268,7 @@ class Runner_namd():
             if not os.path.exists(state_dir):
                 os.mkdir(state_dir)
         self.state_prefix = os.path.join(state_dir, SAVE_STATE_PREFIX)
-        if save_state:
+        if save_state_file:
             state_prefix = self.state_prefix
             self.save_one_state_for_all_boundaries=False
             if not os.path.exists(state_dir):

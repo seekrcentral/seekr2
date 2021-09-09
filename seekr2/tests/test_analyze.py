@@ -200,14 +200,12 @@ def test_smoluchowski_k_off_from_mmvt_statistics(smoluchowski_mmvt_model):
     standard_time = make_smoluchowski_standard_for_k_off(
         smoluchowski_mmvt_model, potential_energy_function)
     assert np.isclose(mmvt_time, standard_time, rtol=1e-3)
-    
     return
 
-def test_smoluchowski_k_on_from_mmvt_statistics(smoluchowski_mmvt_model):
-    D = 1.0
-    outer_bd_radius = smoluchowski_mmvt_model.k_on_info.bd_milestones[0].outer_milestone.variables["radius"]
-    inner_bd_radius = smoluchowski_mmvt_model.k_on_info.bd_milestones[0].inner_milestone.variables["radius"]
-    inner_bd_index = smoluchowski_mmvt_model.k_on_info.bd_milestones[0].inner_milestone.index
+def make_bd_statistics_flat(smoluchowski_model, D):
+    outer_bd_radius = smoluchowski_model.k_on_info.bd_milestones[0].outer_milestone.variables["radius"]
+    inner_bd_radius = smoluchowski_model.k_on_info.bd_milestones[0].inner_milestone.variables["radius"]
+    inner_bd_index = smoluchowski_model.k_on_info.bd_milestones[0].inner_milestone.index
     k_on_src = 4.0 * np.pi * outer_bd_radius * D
     outward_current = 4.0 * np.pi * outer_bd_radius * D
     inward_current = 4.0 * np.pi * D / ((1.0/inner_bd_radius)-(1.0/outer_bd_radius))
@@ -216,21 +214,13 @@ def test_smoluchowski_k_on_from_mmvt_statistics(smoluchowski_mmvt_model):
     inner_milestone_prob = inward_current / total_bd_milestone_current
     transition_probs = {inner_bd_index: inner_milestone_prob,
                         "escaped": escape_probability}
-    potential_energy_function = smol.FlatPotentialEnergyFunction()
-    mmvt_time, k_on = make_smoluchowski_mmvt_analysis(
-        smoluchowski_mmvt_model, potential_energy_function, k_on_src, transition_probs)
-    bound_state_radius = smoluchowski_mmvt_model.anchors[0].milestones[0].variables["radius"]
-    standard_k_on = 4.0 * np.pi * bound_state_radius * D
-    assert np.isclose(k_on, standard_k_on, rtol=1e-3)
-    
-    q1q2=-8.0
-    beta = 1.0
-    D = 1.0
-    outer_bd_radius = smoluchowski_mmvt_model.k_on_info.bd_milestones[0].outer_milestone.variables["radius"]
-    inner_bd_radius = smoluchowski_mmvt_model.k_on_info.bd_milestones[0].inner_milestone.variables["radius"]
-    inner_bd_index = smoluchowski_mmvt_model.k_on_info.bd_milestones[0].inner_milestone.index
-    bound_state_radius = smoluchowski_mmvt_model.anchors[0].milestones[0].variables["radius"]
-    potential_energy_function = smol.CoulombicPotentialEnergyFunction(q1q2=q1q2, a=bound_state_radius)
+    return k_on_src, transition_probs
+
+def make_bd_statistics_coulomb(smoluchowski_model, D, q1q2, beta):
+    outer_bd_radius = smoluchowski_model.k_on_info.bd_milestones[0].outer_milestone.variables["radius"]
+    inner_bd_radius = smoluchowski_model.k_on_info.bd_milestones[0].inner_milestone.variables["radius"]
+    inner_bd_index = smoluchowski_model.k_on_info.bd_milestones[0].inner_milestone.index
+    bound_state_radius = smoluchowski_model.anchors[0].milestones[0].variables["radius"]
     k_on_src = -q1q2 * D / (1.0 - np.exp(q1q2/(4.0*np.pi*outer_bd_radius)))
     outward_current = -q1q2 * D * np.exp(q1q2/(4.0*np.pi*outer_bd_radius)) \
         / (1.0 - np.exp(q1q2/(4.0*np.pi*outer_bd_radius)))
@@ -242,11 +232,31 @@ def test_smoluchowski_k_on_from_mmvt_statistics(smoluchowski_mmvt_model):
     inner_milestone_prob = inward_current / total_bd_milestone_current
     transition_probs = {inner_bd_index: inner_milestone_prob,
                         "escaped": escape_probability}
+    return k_on_src, transition_probs
+
+def test_smoluchowski_k_on_from_mmvt_statistics(smoluchowski_mmvt_model):
+    D = 1.0
+    k_on_src, transition_probs = make_bd_statistics_flat(
+        smoluchowski_mmvt_model, D)
+    potential_energy_function = smol.FlatPotentialEnergyFunction()
+    mmvt_time, k_on = make_smoluchowski_mmvt_analysis(
+        smoluchowski_mmvt_model, potential_energy_function, k_on_src, transition_probs)
+    bound_state_radius = smoluchowski_mmvt_model.anchors[0].milestones[0].variables["radius"]
+    standard_k_on = 4.0 * np.pi * bound_state_radius * D
+    assert np.isclose(k_on, standard_k_on, rtol=1e-3)
+    
+    q1q2=-8.0
+    beta = 1.0
+    D = 1.0
+    potential_energy_function = smol.CoulombicPotentialEnergyFunction(q1q2=q1q2, a=bound_state_radius)
+    k_on_src, transition_probs = make_bd_statistics_coulomb(
+        smoluchowski_mmvt_model, D, q1q2, beta)
     mmvt_time, k_on = make_smoluchowski_mmvt_analysis(
         smoluchowski_mmvt_model, potential_energy_function, k_on_src, transition_probs)
     
     standard_k_on = -q1q2 * D / (1.0 - np.exp(q1q2/(4.0*np.pi*bound_state_radius)))
     assert np.isclose(k_on, standard_k_on, rtol=1e-3)
+    return
 
 def test_smoluchowski_k_off_from_elber_statistics(smoluchowski_elber_model):
     smoluchowski_elber_model.k_on_info = None
@@ -274,17 +284,8 @@ def test_smoluchowski_k_off_from_elber_statistics(smoluchowski_elber_model):
 
 def test_smoluchowski_k_on_from_elber_statistics(smoluchowski_elber_model):
     D = 1.0
-    outer_bd_radius = smoluchowski_elber_model.k_on_info.bd_milestones[0].outer_milestone.variables["radius"]
-    inner_bd_radius = smoluchowski_elber_model.k_on_info.bd_milestones[0].inner_milestone.variables["radius"]
-    inner_bd_index = smoluchowski_elber_model.k_on_info.bd_milestones[0].inner_milestone.index
-    k_on_src = 4.0 * np.pi * outer_bd_radius * D
-    outward_current = 4.0 * np.pi * outer_bd_radius * D
-    inward_current = 4.0 * np.pi * D / ((1.0/inner_bd_radius)-(1.0/outer_bd_radius))
-    total_bd_milestone_current = outward_current + inward_current
-    escape_probability = outward_current / total_bd_milestone_current
-    inner_milestone_prob = inward_current / total_bd_milestone_current
-    transition_probs = {inner_bd_index: inner_milestone_prob,
-                        "escaped": escape_probability}
+    k_on_src, transition_probs = make_bd_statistics_flat(
+        smoluchowski_elber_model, D)
     potential_energy_function = smol.FlatPotentialEnergyFunction()
     elber_time, k_on = make_smoluchowski_elber_analysis(
         smoluchowski_elber_model, potential_energy_function, k_on_src, transition_probs)
@@ -295,31 +296,19 @@ def test_smoluchowski_k_on_from_elber_statistics(smoluchowski_elber_model):
     q1q2=-8.0
     beta = 1.0
     D = 1.0
-    outer_bd_radius = smoluchowski_elber_model.k_on_info.bd_milestones[0].outer_milestone.variables["radius"]
-    inner_bd_radius = smoluchowski_elber_model.k_on_info.bd_milestones[0].inner_milestone.variables["radius"]
-    inner_bd_index = smoluchowski_elber_model.k_on_info.bd_milestones[0].inner_milestone.index
-    bound_state_radius = smoluchowski_elber_model.anchors[0].milestones[0].variables["radius"]
     potential_energy_function = smol.CoulombicPotentialEnergyFunction(q1q2=q1q2, a=bound_state_radius)
-    k_on_src = -q1q2 * D / (1.0 - np.exp(q1q2/(4.0*np.pi*outer_bd_radius)))
-    outward_current = -q1q2 * D * np.exp(q1q2/(4.0*np.pi*outer_bd_radius)) \
-        / (1.0 - np.exp(q1q2/(4.0*np.pi*outer_bd_radius)))
-    inward_current = q1q2 * D * np.exp(q1q2/(4.0*np.pi*outer_bd_radius)) \
-        / (np.exp(q1q2/(4.0*np.pi*inner_bd_radius)) \
-        - np.exp(q1q2/(4.0*np.pi*outer_bd_radius)))
-    total_bd_milestone_current = outward_current + inward_current
-    escape_probability = outward_current / total_bd_milestone_current
-    inner_milestone_prob = inward_current / total_bd_milestone_current
-    transition_probs = {inner_bd_index: inner_milestone_prob,
-                        "escaped": escape_probability}
+    k_on_src, transition_probs = make_bd_statistics_coulomb(
+        smoluchowski_elber_model, D, q1q2, beta)
     elber_time, k_on = make_smoluchowski_elber_analysis(
         smoluchowski_elber_model, potential_energy_function, k_on_src, transition_probs)
     
     standard_k_on = -q1q2 * D / (1.0 - np.exp(q1q2/(4.0*np.pi*bound_state_radius)))
     assert np.isclose(k_on, standard_k_on, rtol=1e-3)
+    return
 
 def make_mmvt_calculation_based_on_output_files(model, potential_energy_function,
                                                 k_on_src=None, transition_probs=None,
-                                                style="openmm"):
+                                                style="openmm", steps=100000):
     calc = smol.make_smoluchowski_calculation_from_model(
         model, potential_energy_function)
     
@@ -331,7 +320,7 @@ def make_mmvt_calculation_based_on_output_files(model, potential_energy_function
             model.anchors[i].production_directory, "mmvt1.out")
         integrator = toy_engine.SmoluchowskiSphericalMMVTIntegrator(
             calc, i, output_file_name, style=style)
-        integrator.step(100000)
+        integrator.step(steps)
     k_on = None
     if k_on_src is not None:
         highest_milestone_index = model.anchors[-1].milestones[0].index
@@ -369,21 +358,22 @@ def test_smoluchowski_k_off_from_mmvt_openmm_output_files(smoluchowski_mmvt_mode
         smoluchowski_mmvt_model, potential_energy_function)
     standard_time = make_smoluchowski_standard_for_k_off(
         smoluchowski_mmvt_model, potential_energy_function)
-    assert np.isclose(mmvt_time, standard_time, rtol=1e-1)
+    assert np.isclose(mmvt_time, standard_time, rtol=2e-1)
     
     potential_energy_function = smol.LinearPotentialEnergyFunction()
     mmvt_time, dummy = make_mmvt_calculation_based_on_output_files(
         smoluchowski_mmvt_model, potential_energy_function)
     standard_time = make_smoluchowski_standard_for_k_off(
         smoluchowski_mmvt_model, potential_energy_function)
-    assert np.isclose(mmvt_time, standard_time, rtol=1e-1)
+    assert np.isclose(mmvt_time, standard_time, rtol=2e-1)
     
     potential_energy_function = smol.QuadraticPotentialEnergyFunction(a=0.1)
     mmvt_time, dummy = make_mmvt_calculation_based_on_output_files(
         smoluchowski_mmvt_model, potential_energy_function)
     standard_time = make_smoluchowski_standard_for_k_off(
         smoluchowski_mmvt_model, potential_energy_function)
-    assert np.isclose(mmvt_time, standard_time, rtol=1e-1)
+    assert np.isclose(mmvt_time, standard_time, rtol=2e-1)
+    return
     
 def test_smoluchowski_k_off_from_mmvt_namd_output_files(smoluchowski_mmvt_model):
     smoluchowski_mmvt_model.namd_settings = base.Namd_settings()
@@ -410,6 +400,7 @@ def test_smoluchowski_k_off_from_mmvt_namd_output_files(smoluchowski_mmvt_model)
     standard_time = make_smoluchowski_standard_for_k_off(
         smoluchowski_mmvt_model, potential_energy_function)
     assert np.isclose(mmvt_time, standard_time, rtol=1e-1)
+    return
 
 def test_smoluchowski_k_on_from_mmvt_openmm_output_files(smoluchowski_mmvt_model):
     smoluchowski_mmvt_model.openmm_settings = base.Openmm_settings()
@@ -418,25 +409,9 @@ def test_smoluchowski_k_on_from_mmvt_openmm_output_files(smoluchowski_mmvt_model
     b_surface_dir_path = os.path.join(
         smoluchowski_mmvt_model.anchor_rootdir, 
         smoluchowski_mmvt_model.k_on_info.b_surface_directory)
-    smoluchowski_mmvt_model.k_on_info.bd_milestones[0].directory \
-        = "bd_milestone_{}".format(
-            smoluchowski_mmvt_model.k_on_info.bd_milestones[0].index)
-    bd_milestone_path = os.path.join(
-        smoluchowski_mmvt_model.anchor_rootdir, 
-        smoluchowski_mmvt_model.k_on_info.bd_milestones[0].directory)
     os.mkdir(b_surface_dir_path)
-    os.mkdir(bd_milestone_path)
-    outer_bd_radius = smoluchowski_mmvt_model.k_on_info.bd_milestones[0].outer_milestone.variables["radius"]
-    inner_bd_radius = smoluchowski_mmvt_model.k_on_info.bd_milestones[0].inner_milestone.variables["radius"]
-    inner_bd_index = smoluchowski_mmvt_model.k_on_info.bd_milestones[0].inner_milestone.index
-    k_on_src = 4.0 * np.pi * outer_bd_radius * D
-    outward_current = 4.0 * np.pi * outer_bd_radius * D
-    inward_current = 4.0 * np.pi * D / ((1.0/inner_bd_radius)-(1.0/outer_bd_radius))
-    total_bd_milestone_current = outward_current + inward_current
-    escape_probability = outward_current / total_bd_milestone_current
-    inner_milestone_prob = inward_current / total_bd_milestone_current
-    transition_probs = {inner_bd_index: inner_milestone_prob,
-                        "escaped": escape_probability}
+    k_on_src, transition_probs = make_bd_statistics_flat(
+        smoluchowski_mmvt_model, D)
     potential_energy_function = smol.FlatPotentialEnergyFunction()
     mmvt_time, k_on = make_mmvt_calculation_based_on_output_files(
         smoluchowski_mmvt_model, potential_energy_function, k_on_src, transition_probs)
@@ -449,25 +424,18 @@ def test_smoluchowski_k_on_from_mmvt_openmm_output_files(smoluchowski_mmvt_model
     D = 1.0
     
     potential_energy_function = smol.CoulombicPotentialEnergyFunction(q1q2=q1q2, a=bound_state_radius)
-    k_on_src = -q1q2 * D / (1.0 - np.exp(q1q2/(4.0*np.pi*outer_bd_radius)))
-    outward_current = -q1q2 * D * np.exp(q1q2/(4.0*np.pi*outer_bd_radius)) \
-        / (1.0 - np.exp(q1q2/(4.0*np.pi*outer_bd_radius)))
-    inward_current = q1q2 * D * np.exp(q1q2/(4.0*np.pi*outer_bd_radius)) \
-        / (np.exp(q1q2/(4.0*np.pi*inner_bd_radius)) \
-        - np.exp(q1q2/(4.0*np.pi*outer_bd_radius)))
-    total_bd_milestone_current = outward_current + inward_current
-    escape_probability = outward_current / total_bd_milestone_current
-    inner_milestone_prob = inward_current / total_bd_milestone_current
-    transition_probs = {inner_bd_index: inner_milestone_prob,
-                        "escaped": escape_probability}
+    k_on_src, transition_probs = make_bd_statistics_coulomb(
+        smoluchowski_mmvt_model, D, q1q2, beta)
     mmvt_time, k_on = make_mmvt_calculation_based_on_output_files(
         smoluchowski_mmvt_model, potential_energy_function, k_on_src, transition_probs)
     bound_state_radius = smoluchowski_mmvt_model.anchors[0].milestones[0].variables["radius"]
     standard_k_on = -q1q2 * D / (1.0 - np.exp(q1q2/(4.0*np.pi*bound_state_radius)))
     assert np.isclose(k_on, standard_k_on, rtol=3e-1)
+    return
 
 def make_elber_calculation_based_on_output_files(model, potential_energy_function,
-                                                k_on_src=None, transition_probs=None):
+                                                k_on_src=None, transition_probs=None,
+                                                steps=100000):
     calc = smol.make_smoluchowski_calculation_from_model(
         model, potential_energy_function)
     
@@ -480,7 +448,7 @@ def make_elber_calculation_based_on_output_files(model, potential_energy_functio
         
         integrator = toy_engine.SmoluchowskiSphericalElberIntegrator(
             calc, i, output_file_name)
-        integrator.step(100000)
+        integrator.step(steps)
     
     k_on = None
     if k_on_src is not None:
@@ -533,6 +501,7 @@ def test_smoluchowski_k_off_from_elber_openmm_output_files(smoluchowski_elber_mo
     standard_time = make_smoluchowski_standard_for_k_off(
         smoluchowski_elber_model, potential_energy_function)
     assert np.isclose(elber_time, standard_time, rtol=1e-1)
+    return
 
 def test_smoluchowski_k_on_from_elber_openmm_output_files(smoluchowski_elber_model):
     smoluchowski_elber_model.openmm_settings = base.Openmm_settings()
@@ -541,25 +510,9 @@ def test_smoluchowski_k_on_from_elber_openmm_output_files(smoluchowski_elber_mod
     b_surface_dir_path = os.path.join(
         smoluchowski_elber_model.anchor_rootdir, 
         smoluchowski_elber_model.k_on_info.b_surface_directory)
-    smoluchowski_elber_model.k_on_info.bd_milestones[0].directory \
-        = "bd_milestone_{}".format(
-            smoluchowski_elber_model.k_on_info.bd_milestones[0].index)
-    bd_milestone_path = os.path.join(
-        smoluchowski_elber_model.anchor_rootdir, 
-        smoluchowski_elber_model.k_on_info.bd_milestones[0].directory)
     os.mkdir(b_surface_dir_path)
-    os.mkdir(bd_milestone_path)
-    outer_bd_radius = smoluchowski_elber_model.k_on_info.bd_milestones[0].outer_milestone.variables["radius"]
-    inner_bd_radius = smoluchowski_elber_model.k_on_info.bd_milestones[0].inner_milestone.variables["radius"]
-    inner_bd_index = smoluchowski_elber_model.k_on_info.bd_milestones[0].inner_milestone.index
-    k_on_src = 4.0 * np.pi * outer_bd_radius * D
-    outward_current = 4.0 * np.pi * outer_bd_radius * D
-    inward_current = 4.0 * np.pi * D / ((1.0/inner_bd_radius)-(1.0/outer_bd_radius))
-    total_bd_milestone_current = outward_current + inward_current
-    escape_probability = outward_current / total_bd_milestone_current
-    inner_milestone_prob = inward_current / total_bd_milestone_current
-    transition_probs = {inner_bd_index: inner_milestone_prob,
-                        "escaped": escape_probability}
+    k_on_src, transition_probs = make_bd_statistics_flat(
+        smoluchowski_elber_model, D)
     potential_energy_function = smol.FlatPotentialEnergyFunction()
     mmvt_time, k_on = make_elber_calculation_based_on_output_files(
         smoluchowski_elber_model, potential_energy_function, k_on_src, transition_probs)
@@ -572,20 +525,11 @@ def test_smoluchowski_k_on_from_elber_openmm_output_files(smoluchowski_elber_mod
     D = 1.0
     
     potential_energy_function = smol.CoulombicPotentialEnergyFunction(q1q2=q1q2, a=bound_state_radius)
-    k_on_src = -q1q2 * D / (1.0 - np.exp(q1q2/(4.0*np.pi*outer_bd_radius)))
-    outward_current = -q1q2 * D * np.exp(q1q2/(4.0*np.pi*outer_bd_radius)) \
-        / (1.0 - np.exp(q1q2/(4.0*np.pi*outer_bd_radius)))
-    inward_current = q1q2 * D * np.exp(q1q2/(4.0*np.pi*outer_bd_radius)) \
-        / (np.exp(q1q2/(4.0*np.pi*inner_bd_radius)) \
-        - np.exp(q1q2/(4.0*np.pi*outer_bd_radius)))
-    total_bd_milestone_current = outward_current + inward_current
-    escape_probability = outward_current / total_bd_milestone_current
-    inner_milestone_prob = inward_current / total_bd_milestone_current
-    transition_probs = {inner_bd_index: inner_milestone_prob,
-                        "escaped": escape_probability}
+    k_on_src, transition_probs = make_bd_statistics_coulomb(
+        smoluchowski_elber_model, D, q1q2, beta)
     mmvt_time, k_on = make_elber_calculation_based_on_output_files(
         smoluchowski_elber_model, potential_energy_function, k_on_src, transition_probs)
     bound_state_radius = smoluchowski_elber_model.anchors[0].milestones[0].variables["radius"]
     standard_k_on = -q1q2 * D / (1.0 - np.exp(q1q2/(4.0*np.pi*bound_state_radius)))
     assert np.isclose(k_on, standard_k_on, rtol=3e-1)
-    
+    return

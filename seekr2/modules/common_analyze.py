@@ -24,6 +24,9 @@ MATRIX_EXPONENTIAL = 9999999
 GAS_CONSTANT = 0.0019872 # in kcal/mol*K
 DEFAULT_IMAGE_DIR = "images_and_plots/"
 
+N_IJ_DIR = "N_ij/"
+R_I_DIR = "R_i/"
+
 class MissingStatisticsError(Exception):
     """Catch a very specific type of error in analysis stage."""
     pass
@@ -163,6 +166,24 @@ def pretty_string_value_error(value, error, error_digits=2, use_unicode=True):
             new_string = "(%s +/- %s) * 10^%s" % (
                 new_value_mantissa, new_error_mantissa, value_exponent_str)
     return new_string
+
+def make_image_directory(model, image_directory):
+    """
+    Create the directory and sub-directories for images to be written.
+    """
+    if image_directory is None:
+        image_directory = os.path.join(model.anchor_rootdir, DEFAULT_IMAGE_DIR)
+    
+    if image_directory != "" and not os.path.exists(image_directory):
+        os.mkdir(image_directory)
+    
+    if not os.path.exists(os.path.join(image_directory, N_IJ_DIR)):
+        os.mkdir(os.path.join(image_directory, N_IJ_DIR))
+        
+    if not os.path.exists(os.path.join(image_directory, R_I_DIR)):
+        os.mkdir(os.path.join(image_directory, R_I_DIR))
+    
+    return image_directory
 
 def browndye_run_compute_rate_constant(compute_rate_constant_program,
                                        results_filename_list, 
@@ -625,12 +646,13 @@ class Data_sample():
         Q_hat = self.Q[:,:]
         p_i_hat = self.p_i[:]
         
-        n = len(self.Q)
+        
         for bulk_milestone in sorted(bulk_milestones, reverse=True):
             Q_hat = minor2d(Q_hat, bulk_milestone, bulk_milestone)
             p_i_hat = minor1d(p_i_hat, bulk_milestone)
         
         Q_hat = Q_hat.astype(dtype=np.longdouble)
+        n = len(Q_hat)
         if pre_equilibrium_approx:
             lowest_p_i = np.min(self.p_i)
             lowest_i = np.argmin(self.p_i)

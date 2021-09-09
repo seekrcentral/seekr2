@@ -12,9 +12,6 @@ import seekr2.modules.common_base as base
 import seekr2.modules.common_analyze as common_analyze
 import seekr2.modules.common_converge as common_converge
 
-N_IJ_DIR = "N_ij/"
-R_I_DIR = "R_i/"
-
 AVG_TRANSITION_TIME_MINIMUM = 0.1 # ps
 
 def converge(model, k_on_state=None, image_directory=None, 
@@ -52,11 +49,13 @@ def converge(model, k_on_state=None, image_directory=None,
     k_on_fig.savefig(os.path.join(image_directory, "k_on_convergence.png"))
     for i, (name, title) in enumerate(zip(N_ij_name_list, N_ij_title_list)):
         N_ij_fig = N_ij_fig_list[i]
-        N_ij_filename = os.path.join(image_directory, N_IJ_DIR, name+".png")
+        N_ij_filename = os.path.join(image_directory, common_analyze.N_IJ_DIR, 
+                                     name+".png")
         N_ij_fig.savefig(N_ij_filename)
     for i, (name, title) in enumerate(zip(R_i_name_list, R_i_title_list)):
         R_i_fig = R_i_fig_list[i]
-        R_i_filename = os.path.join(image_directory, R_I_DIR, name+".png")
+        R_i_filename = os.path.join(image_directory, common_analyze.R_I_DIR, 
+                                    name+".png")
         R_i_fig.savefig(R_i_filename)
     
     print("All plots have been saved to:", image_directory)
@@ -185,26 +184,10 @@ if __name__ == "__main__":
     minimum_anchor_transitions = args["minimum_anchor_transitions"]
     pre_equilibrium_approx = args["pre_equilibrium_approx"]
     
-    # TODO: remove
-    #model = base.Model()
-    #model.deserialize(model_file)
-    #if model.anchor_rootdir == ".":
-    #    model_dir = os.path.dirname(model_file)
-    #    model.anchor_rootdir = os.path.abspath(model_dir)
     model = base.load_model(model_file)
     
-    if image_directory is None:
-        image_directory = os.path.join(model.anchor_rootdir, 
-                                       common_analyze.DEFAULT_IMAGE_DIR)
-    
-    if image_directory != "" and not os.path.exists(image_directory):
-        os.mkdir(image_directory)
-    
-    if not os.path.exists(os.path.join(image_directory, N_IJ_DIR)):
-        os.mkdir(os.path.join(image_directory, N_IJ_DIR))
-        
-    if not os.path.exists(os.path.join(image_directory, R_I_DIR)):
-        os.mkdir(os.path.join(image_directory, R_I_DIR))
+    image_directory = common_analyze.make_image_directory(
+        model, image_directory)
     
     if model.k_on_info is None:
         assert k_on_state is None, "--k_on_state cannot be defined for "\

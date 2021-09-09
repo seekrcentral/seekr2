@@ -796,19 +796,10 @@ if __name__ == "__main__":
     image_directory = args["image_directory"]
     skip_checks = args["skip_checks"]
     
-    # TODO: remove
-    #model = base.Model()
-    #model.deserialize(xmlfile)
-    #if model.anchor_rootdir == ".":
-    #    model_dir = os.path.dirname(xmlfile)
-    #    model.anchor_rootdir = os.path.abspath(model_dir)
     model = base.load_model(model_file)
     
-    if image_directory is None:
-        image_directory = os.path.join(model.anchor_rootdir, 
-                                       common_analyze.DEFAULT_IMAGE_DIR)
-    if not os.path.exists(image_directory):
-        os.mkdir(image_directory)
+    image_directory = common_analyze.make_image_directory(
+        model, image_directory)
         
     if not skip_checks:
         check.check_post_simulation_all(model, long_check=True)

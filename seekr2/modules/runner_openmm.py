@@ -643,7 +643,8 @@ class Runner_openmm():
                     crossing_counter)
                 if rev_trajectory_reporter_interval is not None:
                     rev_traj_filename = os.path.join(
-                        self.output_directory, "reverse_%d.dcd" % counter_str)
+                        self.output_directory, 
+                        "reverse_%d.dcd" % crossing_counter)
                     print("rev_traj_filename", rev_traj_filename)
                     rev_simulation.reporters = [rev_traj_reporter(
                         rev_traj_filename, rev_trajectory_reporter_interval, 
@@ -692,7 +693,8 @@ class Runner_openmm():
                     fwd_data_file_length = get_data_file_length(fwd_data_file_name)
                     if fwd_trajectory_reporter_interval is not None:
                         fwd_traj_filename = os.path.join(
-                            self.output_directory, "forward_%d.dcd" % counter_str)
+                            self.output_directory, 
+                            "forward_%d.dcd" % crossing_counter)
                         fwd_simulation.reporters = [fwd_traj_reporter(
                             fwd_traj_filename, fwd_trajectory_reporter_interval)]
                     if fwd_energy_reporter_interval is not None:
