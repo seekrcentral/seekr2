@@ -654,11 +654,11 @@ class Data_sample():
         Q_hat = Q_hat.astype(dtype=np.longdouble)
         n = len(Q_hat)
         if pre_equilibrium_approx:
-            lowest_p_i = np.min(self.p_i)
-            lowest_i = np.argmin(self.p_i)
+            lowest_p_i = np.min(p_i_hat)
+            lowest_i = np.argmin(p_i_hat)
             assert lowest_p_i >= 0.0, \
                 "Negative stationary probability detected."
-            if lowest_i == n-1:
+            if lowest_i >= n-1:
                 k_off = lowest_p_i * Q_hat[lowest_i-1,lowest_i]
             else: 
                 k_off = lowest_p_i * Q_hat[lowest_i,lowest_i+1]

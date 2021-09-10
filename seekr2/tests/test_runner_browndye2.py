@@ -144,7 +144,7 @@ def test_modify_variables(tryp_ben_mmvt_model):
         n_trajectories_per_output=25)
     return
 
-# TODO: remove test: association with old BD milestone way
+# TODO: move to seekrtools tests
 @pytest.mark.skip()
 def test_make_proc_file_last_frame(tmp_path):
     """
@@ -157,7 +157,8 @@ def test_make_proc_file_last_frame(tmp_path):
         input_filename, output_filename, "dummy1", "dummy2")
     assert os.path.exists(output_filename)
     return
-
+# TODO: move to seekrtools tests
+@pytest.mark.skip()
 def test_make_big_fhpd_trajectory(tmp_path):
     """
     Test the function that combines all FHPD structures into a single
