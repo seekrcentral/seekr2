@@ -767,6 +767,7 @@ class MMVT_data_sample(common_analyze.Data_sample):
             "but is required."
         prob_equil = np.zeros((flux_matrix_dimension,1))
         prob_equil[bulk_index] = 1.0
+        
         self.pi_alpha = abs(la.solve(flux_matrix.T, prob_equil))
         return
     
@@ -805,12 +806,12 @@ class MMVT_data_sample(common_analyze.Data_sample):
             N_i_j_alpha = self.N_i_j_alpha[alpha]
             
             for key in N_i_j_alpha:
-                assert time_fraction >= 0.0, \
+                assert time_fraction > 0.0, \
                     "time_fraction should be positive: {}".format(time_fraction)
-                assert this_anchor_pi_alpha >= 0.0, \
+                assert this_anchor_pi_alpha > 0.0, \
                     "this_anchor_pi_alpha should be positive: {}".format(
                         this_anchor_pi_alpha)
-                assert N_i_j_alpha[key] >= 0.0, \
+                assert N_i_j_alpha[key] > 0.0, \
                     "N_i_j_alpha[key] should be positive: {}".format(
                         N_i_j_alpha[key])
                 self.N_ij[key] += time_fraction * \
@@ -819,12 +820,12 @@ class MMVT_data_sample(common_analyze.Data_sample):
             R_i_alpha = self.R_i_alpha[alpha]
             if len(R_i_alpha) > 0:
                 for key in R_i_alpha:
-                    assert time_fraction >= 0.0, \
+                    assert time_fraction > 0.0, \
                         "time_fraction should be positive: {}".format(time_fraction)
-                    assert this_anchor_pi_alpha >= 0.0, \
+                    assert this_anchor_pi_alpha > 0.0, \
                         "this_anchor_pi_alpha should be positive: {}".format(
                             this_anchor_pi_alpha)
-                    assert R_i_alpha[key] >= 0.0, \
+                    assert R_i_alpha[key] > 0.0, \
                         "R_i_alpha[key] should be positive: {}".format(
                             R_i_alpha[key])
                     self.R_i[key] += time_fraction * this_anchor_pi_alpha * \
@@ -833,4 +834,5 @@ class MMVT_data_sample(common_analyze.Data_sample):
             else:
                 raise Exception("R_i_alpha should always be set.")
                 
+        
         return

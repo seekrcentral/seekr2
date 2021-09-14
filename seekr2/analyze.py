@@ -11,6 +11,7 @@ import glob
 from collections import defaultdict
 import math
 import tempfile
+from copy import deepcopy
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -417,7 +418,10 @@ class Analysis:
         for i in range(self.num_error_samples):
             data_sample = self.data_sample_list[i]
             data_sample.calculate_pi_alpha()
-            data_sample.fill_out_data_quantities()
+            try:
+                data_sample.fill_out_data_quantities()
+            except AssertionError:
+                continue
             if self.model.k_on_info is not None:
                 data_sample.parse_browndye_results(bd_sample_from_normal=True)
             data_sample.compute_rate_matrix()
@@ -642,8 +646,8 @@ class Analysis:
                 key = (alpha, beta)
                 sampled_k_alpha_beta[key] = N_alpha_beta[key] / sampled_T_alpha_total[alpha]
             
-        sampled_N_alpha_beta = N_alpha_beta
-        sampled_N_i_j_alpha = N_i_j_alpha
+        sampled_N_alpha_beta = deepcopy(N_alpha_beta)
+        sampled_N_i_j_alpha = deepcopy(N_i_j_alpha)
         
         return sampled_k_alpha_beta, sampled_N_i_j_alpha, \
             sampled_R_i_alpha_total, sampled_T_alpha_total

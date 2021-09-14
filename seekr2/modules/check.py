@@ -390,9 +390,9 @@ def check_pre_sim_MD_and_BD_salt_concentration(model):
                         found_ion = True
                     
                 if not found_ion:
-                    print("check_pre_sim_MD_and_BD_salt_concentration - "\
-                          "Found unbonded atom with index: "\
-                          "{} and name: {}. ".format(index, atom.name)\
+                    print("check_pre_sim_MD_and_BD_salt_concentration - Found "\
+                          "unbonded atom with anchor {}, ".format(anchor.index)\
+                          +"index: {} and name: {}. ".format(index, atom.name)\
                           +"Charge is uncertain. Assuming its contribution to "\
                           "solvent ionic strength is zero.")
         if not np.isclose(md_ionic_strength, bd_ionic_strength, 
