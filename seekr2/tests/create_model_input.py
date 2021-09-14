@@ -29,6 +29,7 @@ def create_host_guest_mmvt_model_input(root_dir, bd=True, ff="amber"):
     """
     Create a generic host-guest model input object.
     """
+    os.chdir(TEST_DIRECTORY)
     model_input = common_prepare.Model_input()
     model_input.calculation_type = "mmvt"
     model_input.calculation_settings = common_prepare.MMVT_input_settings()
@@ -142,6 +143,7 @@ def create_tryp_ben_mmvt_model_input(root_dir, bd=False):
     """
     Create a trypsin-benzamidine model input object.
     """
+    os.chdir(TEST_DIRECTORY)
     model_input = common_prepare.Model_input()
     model_input.calculation_type = "mmvt"
     model_input.calculation_settings = common_prepare.MMVT_input_settings()
@@ -359,6 +361,7 @@ def create_tryp_ben_elber_model_input(root_dir, bd=False):
     """
     Create a trypsin-benzamidine Elber model input object.
     """
+    os.chdir(TEST_DIRECTORY)
     model_input = common_prepare.Model_input()
     model_input.calculation_type = "elber"
     model_input.calculation_settings = common_prepare.Elber_input_settings()
@@ -556,6 +559,7 @@ def create_smoluchowski_mmvt_model_input(root_dir):
     """
     Create a trypsin-benzamidine Elber model input object.
     """
+    os.chdir(TEST_DIRECTORY)
     model_input = common_prepare.Model_input()
     model_input.calculation_type = "mmvt"
     model_input.calculation_settings = common_prepare.MMVT_input_settings()
@@ -621,6 +625,7 @@ def create_smoluchowski_elber_model_input(root_dir):
     """
     Create a generic host-guest model input object.
     """
+    os.chdir(TEST_DIRECTORY)
     model_input = create_smoluchowski_mmvt_model_input(root_dir)
     model_input.calculation_type = "elber"
     model_input.calculation_settings = common_prepare.Elber_input_settings()
