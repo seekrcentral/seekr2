@@ -14,6 +14,7 @@ import os
 import numpy as np
 import pytest
 
+import seekr2.modules.common_analyze as common_analyze
 import seekr2.modules.mmvt_analyze as mmvt_analyze
 import seekr2.modules.elber_analyze as elber_analyze
 import seekr2.analyze as analyze
@@ -341,11 +342,14 @@ def make_mmvt_calculation_based_on_output_files(model, potential_energy_function
         #toy_engine.write_b_surface_output_file(
         #    bd_milestone_output_file_name, k_on_src, transition_probs)
     
-    my_analysis = analyze.analyze(model, num_error_samples=0)
+    my_analysis = analyze.analyze(model, num_error_samples=10)
     mmvt_time = my_analysis.main_data_sample.MFPTs[(0,"bulk")]
     if k_on_src is not None:
         k_on = my_analysis.main_data_sample.k_ons[0]
     
+    my_analysis.print_results()
+    image_directory = common_analyze.make_image_directory(model, None)
+    my_analysis.save_plots(os.path.join(model.anchor_rootdir, image_directory))
     return mmvt_time, k_on
 
 def test_smoluchowski_k_off_from_mmvt_openmm_output_files(smoluchowski_mmvt_model):
@@ -469,7 +473,7 @@ def make_elber_calculation_based_on_output_files(model, potential_energy_functio
             bd_milestone_output_file_name, k_on_src, transition_probs)
         """
     
-    my_analysis = analyze.analyze(model, num_error_samples=0)
+    my_analysis = analyze.analyze(model, num_error_samples=10)
     elber_time = my_analysis.main_data_sample.MFPTs[(0,"bulk")]
     if k_on_src is not None:
         k_on = my_analysis.main_data_sample.k_ons[0]

@@ -451,12 +451,13 @@ def resolve_connections(connection_flag_dict, model, associated_input_anchor,
     anchors = model.anchors
     anchor_indices_to_remove = []
     index_reference = {}
+    bulk_anchor = None
     for anchor in anchors:
         index_reference[anchor.index] = anchor.index
     
     for key in connection_flag_dict:
         anchor_connection_list = connection_flag_dict[key]
-        bulk_anchor = None
+        
         bulk_discarded_indices = []
         if key == "bulk":
             bulk_anchor = anchor_connection_list[0]
@@ -497,11 +498,12 @@ def resolve_connections(connection_flag_dict, model, associated_input_anchor,
             for lower_anchor in anchors[anchor_index_to_remove:]:
                 index_reference[lower_anchor.index] -= 1
     
-    # make sure the bulk anchor is the last anchor always
-    anchors.append(bulk_anchor)
-    index_reference[bulk_anchor.index] = len(anchors) - 1
-    for bulk_discarded in bulk_discarded_indices:
-        index_reference[bulk_discarded] = len(anchors) - 1
+    if bulk_anchor is not None:
+        # make sure the bulk anchor is the last anchor always
+        anchors.append(bulk_anchor)
+        index_reference[bulk_anchor.index] = len(anchors) - 1
+        for bulk_discarded in bulk_discarded_indices:
+            index_reference[bulk_discarded] = len(anchors) - 1
     
     xml_path = os.path.join(root_directory, "model.xml")
     if os.path.exists(xml_path):

@@ -815,7 +815,9 @@ def check_xml_boundary_states(model):
                 result = cv.check_mdtraj_close_to_boundary(
                     traj, milestone.variables, verbose=True)
                 save_pdb_filename = state_file+".pdb"
-                traj.save_pdb(save_pdb_filename)
+                # Do not save these PDBs
+                # This messes up the automatic state loader in the runners
+                #traj.save_pdb(save_pdb_filename)
                 if result == False:
                     save_pdb_filename = os.path.join(states_dir, "problem.pdb")
                     traj.save_pdb(save_pdb_filename)

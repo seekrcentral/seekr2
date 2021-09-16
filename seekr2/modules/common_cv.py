@@ -5,7 +5,7 @@ Define collective variable superclasses (also known as milestone
 shapes) that might be used in SEEKR2 calculations.
 """
 
-#import seekr2.libraries.serializer.serializer as serializer
+import numpy as np
 from abserdes import Serializer
 
 import seekr2.modules.mmvt_cv as mmvt_cv
@@ -262,18 +262,36 @@ class Tiwary_cv_distance_order_parameter(Serializer):
         return
     
     def get_openmm_expression(self, group_index):
+        """
+        
+        """
         return "distance(g{0}, g{1})".format(group_index, group_index+1)
     
     def get_num_groups(self):
+        """
+        
+        """
         return 2
     
     def get_group(self, index):
+        """
+        
+        """
         if index == 0:
             return self.group1
         elif index == 1:
             return self.group2
         else:
             raise Exception("Invalid index: {}".format(index))
+        return
+    
+    def get_value(self, coms):
+        """
+        
+        """
+        assert len(coms) == 2
+        distance = np.linalg.norm(coms[1]-coms[0])
+        return distance
     
 class Tiwary_cv_angle_order_parameter(Serializer):
     """
@@ -289,13 +307,22 @@ class Tiwary_cv_angle_order_parameter(Serializer):
         return
     
     def get_openmm_expression(self, group_index):
+        """
+        
+        """
         return "angle(g{0}, g{1}, g{2})".format(group_index, group_index+1,
                                                 group_index+2)
     
     def get_num_groups(self):
+        """
+        
+        """
         return 3
     
     def get_group(self, index):
+        """
+        
+        """
         if index == 0:
             return self.group1
         elif index == 1:
@@ -304,6 +331,17 @@ class Tiwary_cv_angle_order_parameter(Serializer):
             return self.group3
         else:
             raise Exception("Invalid index: {}".format(index))
+        
+    def get_value(self, coms):
+        """
+        
+        """
+        assert len(coms) == 3
+        vec1 = coms[0] - coms[1]
+        vec2 = coms[2] - coms[1]
+        angle = np.arccos(np.dot(vec1/np.linalg.norm(vec1), 
+                                 vec2/np.linalg.norm(vec2)))
+        return angle
     
 class Tiwary_cv_torsion_order_parameter(Serializer):
     """
@@ -320,7 +358,7 @@ class Tiwary_cv_torsion_order_parameter(Serializer):
         return
     
     def get_openmm_expression(self, group_index):
-        return "angle(g{0}, g{1}, g{2}, g{3})".format(
+        return "dihedral(g{0}, g{1}, g{2}, g{3})".format(
             group_index, group_index+1, group_index+2, group_index+3)
     
     def get_num_groups(self):
@@ -337,6 +375,27 @@ class Tiwary_cv_torsion_order_parameter(Serializer):
             return self.group4
         else:
             raise Exception("Invalid index: {}".format(index))
+        
+    def get_value(self, coms):
+        """
+        
+        """
+        assert len(coms) == 4
+        x1 = coms[0][0]; y1 = coms[0][1]; z1 = coms[0][2]
+        x2 = coms[1][0]; y2 = coms[1][1]; z2 = coms[1][2]
+        x3 = coms[2][0]; y3 = coms[2][1]; z3 = coms[2][2]
+        x4 = coms[3][0]; y4 = coms[3][1]; z4 = coms[3][2]
+        vec1 = np.array([x2-x1,y2-y1,z2-z1])
+        axis = np.array([x3-x2,y3-y2,z3-z2])
+        vec2 = np.array([x4-x3,y4-y3,z4-z3])
+        cross1 = np.cross(vec1,axis)
+        cross2 = np.cross(axis,vec2)
+        cross1 = cross1/np.linalg.norm(cross1)
+        cross2 = cross2/np.linalg.norm(cross2)
+        x = np.dot(cross1, cross2)
+        y = np.dot(np.cross(cross1, axis/np.linalg.norm(axis)), cross2)
+        phi = -np.arctan2(y,x) % (2.0*np.pi)
+        return phi
 
 class Tiwary_cv_input(Serializer):
     """

@@ -9,7 +9,6 @@ the entire filetree.
 import os
 import argparse
 
-import seekr2.modules.common_base as base
 import seekr2.modules.common_prepare as common_prepare
 import seekr2.modules.filetree as filetree
 import seekr2.modules.check as check

@@ -187,7 +187,8 @@ class MMVT_spherical_CV(MMVT_collective_variable):
     
     def make_restraining_force(self):
         """
-        
+        Create an OpenMM force object that will restrain the system to
+        a given value of this CV.
         """
         try:
             import openmm
@@ -354,7 +355,12 @@ boundary at {:.4f} nm.""".format(radius, milestone_radius)
         """
         return [self.group1, self.group2]
             
-        
+    def get_variable_values(self):
+        """
+        This type of CV has no extra variables, so an empty list is 
+        returned.
+        """
+        return []
 """
 class MMVT_planar_CV(MMVT_collective_variable):
     def __init__(self, index, groups):
@@ -449,6 +455,8 @@ class MMVT_tiwary_CV(MMVT_collective_variable):
         self.order_parameter_weights = order_parameter_weights
         self.name = "mmvt_tiwary"
         self.num_groups = 0
+        self.openmm_expression = None
+        self.restraining_expression = None
         self.assign_expressions_and_variables()
         self._mygroup_list = None
         self.variable_name = "v"
@@ -465,11 +473,14 @@ class MMVT_tiwary_CV(MMVT_collective_variable):
             weight_var = "c{}".format(i)
             this_expr = weight_var + "*" \
                 + order_parameter.get_openmm_expression(group_index=self.num_groups+1)
+            
             self.per_dof_variables.append(weight_var)
             openmm_expression_list.append(this_expr)
             self.num_groups += order_parameter.get_num_groups()
         self.openmm_expression = "step(k*("+" + ".join(openmm_expression_list)\
             + " - value))"
+        self.restraining_expression = "0.5*k*(" \
+            + " + ".join(openmm_expression_list) + " - value)^2"
         self.per_dof_variables.append("k")
         self.per_dof_variables.append("value")
         self.global_variables = []
@@ -504,9 +515,17 @@ class MMVT_tiwary_CV(MMVT_collective_variable):
     
     def make_restraining_force(self):
         """
-        
+        Create an OpenMM force object that will restrain the system to
+        a given value of this CV.
         """
-        raise Exception("Not yet implemented for Tiwary milestone.")
+        try:
+            import openmm
+        except ImportError:
+            import simtk.openmm as openmm
+        
+        assert self.num_groups > 1
+        return openmm.CustomCentroidBondForce(
+            self.num_groups, self.restraining_expression)
     
     def make_namd_colvar_string(self):
         """
@@ -591,7 +610,38 @@ class MMVT_tiwary_CV(MMVT_collective_variable):
         within the expected anchor. Return True if passed, return
         False if failed.
         """
-        print("check_mdtraj_within_boundary not yet implemented for Tiwary CVs")
+        TOL = 0.001
+        op_com_array_list = []
+        for order_parameter in self.order_parameters:
+            com_array_list = []
+            for j in range(order_parameter.get_num_groups()):
+                group = order_parameter.get_group(j)
+                traj_group = traj.atom_slice(group)
+                com_array = mdtraj.compute_center_of_mass(traj_group)
+                com_array_list.append(com_array)
+            op_com_array_list.append(com_array_list)
+                
+        for frame_index in range(traj.n_frames):
+            op_value = 0.0
+            for i, order_parameter in enumerate(self.order_parameters):
+                com_list = []
+                for j in range(order_parameter.get_num_groups()):
+                    com = op_com_array_list[i][j][frame_index,:]
+                    com_list.append(com)
+                op_term = order_parameter.get_value(com_list)
+                op_weight = self.order_parameter_weights[i]
+                op_value += op_weight * op_term
+                
+            milestone_k = milestone_variables["k"]
+            milestone_value = milestone_variables["value"]
+            if milestone_k*(op_value - milestone_value) > TOL:
+                if verbose:
+                    warnstr = """This system value for the Tiwary CV is {:.4f} 
+but the milestone's value for the same CV is {:.4f}. The system falls outside 
+the boundaries.""".format(op_value, milestone_value)
+                    print(warnstr)
+                return False
+            
         return True
     
     def check_mdtraj_close_to_boundary(self, traj, milestone_variables, 
@@ -615,6 +665,12 @@ class MMVT_tiwary_CV(MMVT_collective_variable):
                 group_list.append(group)
             
         return group_list
+    
+    def get_variable_values(self):
+        """
+        Return the order parameter weights as the extra CV variables.
+        """
+        return self.order_parameter_weights
             
 class MMVT_planar_CV(MMVT_collective_variable):
     """
@@ -672,7 +728,8 @@ class MMVT_planar_CV(MMVT_collective_variable):
     
     def make_restraining_force(self):
         """
-        
+        Create an OpenMM force object that will restrain the system to
+        a given value of this CV.
         """
         try:
             import openmm
@@ -834,7 +891,12 @@ boundary at {:.4f}.""".format(value, milestone_value)
         """
         return [self.start_group, self.end_group, self.mobile_group]
             
-        
+    def get_variable_values(self):
+        """
+        This type of CV has no extra variables, so an empty list is 
+        returned.
+        """
+        return []
 
 class MMVT_anchor(Serializer):
     """
