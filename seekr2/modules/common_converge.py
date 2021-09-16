@@ -152,7 +152,8 @@ def analyze_kinetics(model, analysis, max_step_list, k_on_state=None,
         k_off = analysis.k_off
         main_data_sample = analysis.main_data_sample
         return k_on, k_off, main_data_sample.N_ij, main_data_sample.R_i
-    except (common_analyze.MissingStatisticsError, np.linalg.LinAlgError) as e:
+    except (common_analyze.MissingStatisticsError, np.linalg.LinAlgError,
+            AssertionError) as e:
         if model.get_type() == "mmvt":
             #data_sample = common_analyze.Data_sample(model)
             #data_sample = mmvt_analyze.MMVT_data_sample(model)
