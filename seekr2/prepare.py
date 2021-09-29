@@ -19,7 +19,7 @@ from seekr2.modules.common_base import Ion, Amber_params, Forcefield_params, \
     Box_vectors
 from seekr2.modules.common_cv import Spherical_cv_anchor, Spherical_cv_input
 
-def generate_seekr2_model_and_filetree(model_input, force_overwrite):
+def prepare(model_input, force_overwrite):
     """
     Using the Model_input from the user, prepare the Model
     object and the filetree. Then prepare all building files
@@ -31,17 +31,8 @@ def generate_seekr2_model_and_filetree(model_input, force_overwrite):
     filetree.generate_filetree_root(model, root_directory)
     
     xml_path = os.path.join(root_directory, "model.xml")
-    #if os.path.exists(xml_path):
-    #    # then a model file already exists at this location: update
-    #    # the anchor directories.
-    #    old_model = base.Model()
-    #    old_model.deserialize(xml_path)
-    #    common_prepare.modify_model(old_model, model, root_directory,
-    #                                force_overwrite)
     common_prepare.prepare_model_cvs_and_anchors(model, model_input, 
                                                  force_overwrite)
-    #filetree.generate_filetree(model, root_directory)
-    #filetree.copy_building_files(model, model_input, root_directory)
     filetree.generate_filetree_bd(model, root_directory)
     filetree.copy_bd_files(model, model_input, root_directory)
     common_prepare.generate_bd_files(model, root_directory)
@@ -67,13 +58,7 @@ if __name__ == "__main__":
         "preparation is complete, and if the checks fail, the SEEKR2 "\
         "model will not be saved. This argument bypasses those "\
         "checks and allows the model to be generated anyways.", 
-        action="store_true")
-    #argparser.add_argument(
-    #    "-b", "--bd_files_only", dest="bd_files_only", default=False,
-    #    help="Write the model.xml file as normal, but only write BD-related "\
-    #    "files. No MD files will be written/updated, and no modules requiring"\
-    #    "OpenMM will be loaded.", action="store_true")
-        
+        action="store_true")    
     args = argparser.parse_args() # parse the args into a dictionary
     args = vars(args)
     model_input_filename = args["model_input_file"]
@@ -81,8 +66,7 @@ if __name__ == "__main__":
     skip_checks = args["skip_checks"]
     model_input = common_prepare.Model_input()
     model_input.deserialize(model_input_filename, user_input = True)
-    model, xml_path = generate_seekr2_model_and_filetree(
-        model_input, force_overwrite)
+    model, xml_path = prepare(model_input, force_overwrite)
     if model.anchor_rootdir == ".":
         model_dir = os.path.dirname(xml_path)
         model.anchor_rootdir = os.path.abspath(model_dir)

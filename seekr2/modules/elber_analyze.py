@@ -10,7 +10,7 @@ import numpy as np
 
 import seekr2.modules.common_analyze as common_analyze
 
-def openmm_read_output_file_list(output_file_list, max_time=None, 
+def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None, 
                                  existing_lines=[], skip_restart_check=False):
     """
     Read the output files produced by the plugin (backend) of 
@@ -52,6 +52,9 @@ def openmm_read_output_file_list(output_file_list, max_time=None,
         
         # TODO: fix this once the new Elber plugin is created.
         # Absolute time will need to be written by the plugin
+        #if min_time is not None:
+        #    if counter > min_time:
+        #        break
         #if max_time is not None:
         #    if counter > max_time:
         #        break
@@ -123,14 +126,14 @@ class Elber_anchor_statistics():
         self.existing_lines = []
         return
     
-    def read_output_file_list(self, engine, output_file_list, max_time, anchor, 
-                              timestep):
+    def read_output_file_list(self, engine, output_file_list, min_time, 
+                              max_time, anchor, timestep):
         """Parse the statistics from the plugin's output file."""
         if engine == "openmm":
             self.N_i_j, self.R_i_list, self.R_i_average, self.R_i_std_dev, \
             self.R_i_total, self.existing_lines \
                 = openmm_read_output_file_list(
-                    output_file_list, max_time, self.existing_lines)
+                    output_file_list, min_time, max_time, self.existing_lines)
         elif engine == "browndye2":
             pass
         else:

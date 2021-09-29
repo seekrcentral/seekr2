@@ -232,7 +232,8 @@ class Analysis:
         
         return True
     
-    def extract_data(self, max_step_list=None, silence_errors=True):
+    def extract_data(self, min_time=None, max_time=None, max_step_list=None, 
+                     silence_errors=True):
         """
         Extract the data from simulations used in this analysis.
         """
@@ -255,7 +256,8 @@ class Analysis:
             if max_step_list is not None:
                 max_time = max_step_list[alpha] * timestep
             else:
-                max_time = None
+                max_time = max_time
+                
             # These contain only alias_id keys, not the true id values
             if not files_already_read:
                 if self.model.get_type() == "mmvt":
@@ -278,10 +280,12 @@ class Analysis:
                         "Files not found: %s" % output_file_glob
                 if self.model.openmm_settings is not None:
                     anchor_stats.read_output_file_list(
-                        "openmm", output_file_list, max_time, anchor, timestep)
+                        "openmm", output_file_list, min_time, max_time, anchor,
+                        timestep)
                 elif self.model.namd_settings is not None:
                     anchor_stats.read_output_file_list(
-                        "namd", output_file_list, max_time, anchor, timestep)
+                        "namd", output_file_list, min_time, max_time, anchor, 
+                        timestep)
                 else:
                     raise Exception("Both OpenMM and NAMD settings missing. "\
                                     "One of these must be present in the "\
@@ -717,7 +721,7 @@ class Analysis:
         # save pi_alpha
         if self.model.get_type() == "mmvt":
             pi_fig, ax = plt.subplots()
-            plt.errorbar(anchor_indices, self.pi_alpha, yerr=self.pi_alpha_error, 
+            plt.errorbar(anchor_indices, self.pi_alpha.flatten(), yerr=self.pi_alpha_error, 
                          ecolor="k", capsize=2)
             #ax.plot(anchor_indices, self.pi_alpha, linestyle='-', 
             #        marker="o", markersize = 1)
@@ -742,10 +746,11 @@ class Analysis:
         return
 
 def analyze(model, force_warning=False, num_error_samples=1000, 
-            pre_equilibrium_approx=False, skip_checks=False):
+            pre_equilibrium_approx=False, skip_checks=False, min_time=0.0, 
+            max_time=None):
     """Perform all the analysis steps at once."""
     analysis = Analysis(model, force_warning, num_error_samples)
-    analysis.extract_data()
+    analysis.extract_data(min_time=min_time, max_time=max_time)
     if not skip_checks:
         analysis.check_extraction()
     analysis.fill_out_data_samples()
@@ -791,6 +796,17 @@ if __name__ == "__main__":
         "will not proceed. This argument bypasses those "\
         "checks and allows the analysis to proceed anyways.",
         action="store_true")
+    argparser.add_argument(
+        "-t", "--minimum_time", dest="minimum_time", default=0.0, type=float,
+        help="A user may wish to skip an amount of simulation time for each "\
+        "anchor before counting the transitions for milestoning analysis. "\
+        "Enter the time (in ps) to skip a portion of the production "\
+        "simulations when performing analysis.")
+    argparser.add_argument(
+        "-T", "--maximum_time", dest="maximum_time", default=None, type=float,
+        help="A user may wish to stop the analysis of simulation time for "\
+        "each anchor at a particular time. Enter the time (in ps) at which to "\
+        "end the analysis at a given anchor if the simulation time exceeds it.")
     
     args = argparser.parse_args() # parse the args into a dictionary
     args = vars(args)
@@ -800,6 +816,8 @@ if __name__ == "__main__":
     pre_equilibrium_approx = args["pre_equilibrium_approx"]
     image_directory = args["image_directory"]
     skip_checks = args["skip_checks"]
+    min_time = args["minimum_time"]
+    max_time = args["maximum_time"]
     
     model = base.load_model(model_file)
     
@@ -812,7 +830,7 @@ if __name__ == "__main__":
     analysis = analyze(model, force_warning=force_warning, 
             num_error_samples=num_error_samples, 
             pre_equilibrium_approx=pre_equilibrium_approx, 
-            skip_checks=skip_checks)
+            skip_checks=skip_checks, min_time=min_time, max_time=max_time)
     
     analysis.print_results()
     

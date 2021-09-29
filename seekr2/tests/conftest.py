@@ -47,8 +47,8 @@ def host_guest_mmvt_model_persistent(tmpdir_factory,
     """
     os.chdir(TEST_DIRECTORY)
     host_guest_mmvt_model_obj, model_xml_path \
-        = prepare.generate_seekr2_model_and_filetree(
-            host_guest_mmvt_model_input_persistent, force_overwrite=False)
+        = prepare.prepare(host_guest_mmvt_model_input_persistent, 
+                          force_overwrite=False)
     model_dir = os.path.dirname(model_xml_path)
     host_guest_mmvt_model_obj.anchor_rootdir = os.path.abspath(model_dir)
     return host_guest_mmvt_model_obj
@@ -92,8 +92,8 @@ def host_guest_elber_model_persistent(tmpdir_factory,
     """
     os.chdir(TEST_DIRECTORY)
     host_guest_elber_model_obj, model_xml_path \
-        = prepare.generate_seekr2_model_and_filetree(
-            host_guest_elber_model_input_persistent, force_overwrite=False)
+        = prepare.prepare(host_guest_elber_model_input_persistent, 
+                          force_overwrite=False)
     model_dir = os.path.dirname(model_xml_path)
     host_guest_elber_model_obj.anchor_rootdir = os.path.abspath(model_dir)
     return host_guest_elber_model_obj
@@ -140,8 +140,8 @@ def tryp_ben_mmvt_model_persistent(tmpdir_factory,
     os.chdir(TEST_DIRECTORY)
     #print("mmvt curdir:", os.getcwd())
     tryp_ben_mmvt_model_obj, model_xml_path \
-        = prepare.generate_seekr2_model_and_filetree(
-            tryp_ben_mmvt_model_input_persistent, force_overwrite=False)
+        = prepare.prepare(tryp_ben_mmvt_model_input_persistent, 
+                          force_overwrite=False)
     model_dir = os.path.dirname(model_xml_path)
     tryp_ben_mmvt_model_obj.anchor_rootdir = os.path.abspath(model_dir)
     return tryp_ben_mmvt_model_obj
@@ -175,8 +175,8 @@ def tryp_ben_elber_model_persistent(tmpdir_factory,
     os.chdir(TEST_DIRECTORY)
     #print("elber curdir:", os.getcwd())
     tryp_ben_elber_model_obj, model_xml_path \
-        = prepare.generate_seekr2_model_and_filetree(
-            tryp_ben_elber_model_input_persistent, force_overwrite=False)
+        = prepare.prepare(tryp_ben_elber_model_input_persistent, 
+                          force_overwrite=False)
     model_dir = os.path.dirname(model_xml_path)
     tryp_ben_elber_model_obj.anchor_rootdir = os.path.abspath(model_dir)
     return tryp_ben_elber_model_obj
@@ -220,8 +220,8 @@ def smoluchowski_mmvt_model_persistent(tmpdir_factory,
     """
     os.chdir(TEST_DIRECTORY)
     smoluchowski_mmvt_model_obj, model_xml_path \
-        = prepare.generate_seekr2_model_and_filetree(
-            smoluchowski_mmvt_model_input_persistent, force_overwrite=False)
+        = prepare.prepare(smoluchowski_mmvt_model_input_persistent, 
+                          force_overwrite=False)
     model_dir = os.path.dirname(model_xml_path)
     smoluchowski_mmvt_model_obj.anchor_rootdir = os.path.abspath(model_dir)
     # make BD milestones
@@ -264,8 +264,8 @@ def smoluchowski_elber_model_persistent(tmpdir_factory,
     os.chdir(TEST_DIRECTORY)
     #print("elber curdir:", os.getcwd())
     smoluchowski_elber_model_obj, model_xml_path \
-        = prepare.generate_seekr2_model_and_filetree(
-            smoluchowski_elber_model_input_persistent, force_overwrite=False)
+        = prepare.prepare(smoluchowski_elber_model_input_persistent, 
+                          force_overwrite=False)
     model_dir = os.path.dirname(model_xml_path)
     smoluchowski_elber_model_obj.anchor_rootdir = os.path.abspath(model_dir)
     smoluchowski_elber_model_obj.k_on_info = base.K_on_info()
@@ -315,8 +315,8 @@ def tiwary_mmvt_model_persistent(tmpdir_factory,
     """
     os.chdir(TEST_DIRECTORY)
     tiwary_mmvt_model_obj, model_xml_path \
-        = prepare.generate_seekr2_model_and_filetree(
-            tiwary_mmvt_model_input_persistent, force_overwrite=False)
+        = prepare.prepare(tiwary_mmvt_model_input_persistent, 
+                          force_overwrite=False)
     model_dir = os.path.dirname(model_xml_path)
     tiwary_mmvt_model_obj.anchor_rootdir = os.path.abspath(model_dir)
     return tiwary_mmvt_model_obj

@@ -17,8 +17,7 @@ the API::
   my_model_input.temperature = 293.15
   my_model_input.cv_inputs[0].input_anchors[2].radius = 0.275
   # ... more model input modifications here
-  model, xml_path = seekr2.prepare.generate_seekr2_model_and_filetree(
-      my_model_input)
+  model, xml_path = seekr2.prepare.prepare(my_model_input)
   model_directory = os.path.dirname(xml_path)
   model.anchor_rootdir = os.path.abspath(model_directory)
   seekr2.check.check_pre_simulation_all(model)

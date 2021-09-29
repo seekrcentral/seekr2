@@ -136,7 +136,7 @@ def analyze_kinetics(model, analysis, max_step_list, k_on_state=None,
     R_i : dict
         An n dict representing the incubation times at each milestone.
     """
-    analysis.extract_data(max_step_list, silence_errors=True)
+    analysis.extract_data(max_step_list=max_step_list, silence_errors=True)
     analysis.fill_out_data_samples()
     try:
         sufficient_statistics = analysis.check_extraction()
@@ -153,7 +153,7 @@ def analyze_kinetics(model, analysis, max_step_list, k_on_state=None,
         main_data_sample = analysis.main_data_sample
         return k_on, k_off, main_data_sample.N_ij, main_data_sample.R_i
     except (common_analyze.MissingStatisticsError, np.linalg.LinAlgError,
-            AssertionError) as e:
+            AssertionError, ValueError) as e:
         if model.get_type() == "mmvt":
             #data_sample = common_analyze.Data_sample(model)
             #data_sample = mmvt_analyze.MMVT_data_sample(model)

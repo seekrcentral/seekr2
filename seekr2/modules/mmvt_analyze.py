@@ -9,7 +9,7 @@ import scipy.linalg as la
 
 import seekr2.modules.common_analyze as common_analyze
 
-def openmm_read_output_file_list(output_file_list, max_time=None, 
+def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None, 
                                  existing_lines=[], skip_restart_check=False):
     """
     Read the output files produced by the plugin (backend) of 
@@ -82,15 +82,22 @@ def openmm_read_output_file_list(output_file_list, max_time=None,
         bounce_index = int(line[1])
         # TODO: change the following value to interval time
         dest_time = float(line[2]) 
+        # This is used to cut out early transitions for analysis
+        if min_time is not None:
+            if dest_time < min_time:
+                continue
+            
         # This is used in convergence
         if max_time is not None:
             if dest_time > max_time:
                 break
+            
         if src_boundary is None:
             src_boundary = dest_boundary
             src_time = dest_time
             last_bounce_time = dest_time
             continue
+        
         if src_boundary != dest_boundary:
             time_diff = dest_time - src_time
             """
@@ -213,7 +220,7 @@ def openmm_read_statistics_file(statistics_file_name):
     return N_i_j_alpha_dict, R_i_alpha_dict, N_alpha_beta_dict, T_alpha
 
 def namd_read_output_file_list(output_file_list, anchor, timestep, 
-                               max_time=None, existing_lines=[], 
+                               min_time=None, max_time=None, existing_lines=[], 
                                skip_restart_check=False):
     """
     Read the output files produced by the plugin (backend) of 
@@ -324,6 +331,10 @@ def namd_read_output_file_list(output_file_list, anchor, timestep,
             next_anchor = anchor.index + diff
             dest_boundary = None
             dest_time = current_stepnum * timestep
+            if min_time is not None:
+                if dest_time < min_time:
+                    continue
+                
             if max_time is not None:
                 if dest_time > max_time:
                     break
@@ -341,6 +352,10 @@ def namd_read_output_file_list(output_file_list, anchor, timestep,
             dest_boundary = int(line[8].strip(",")) # NOTE: make it alias_id, not id
             current_stepnum = int(line[10].strip(","))
             dest_time = current_stepnum * timestep
+            if min_time is not None:
+                if dest_time < min_time:
+                    continue
+                
             if max_time is not None:
                 if dest_time > max_time:
                     break
@@ -511,8 +526,8 @@ class MMVT_anchor_statistics():
         self.existing_lines = []
         return
     
-    def read_output_file_list(self, engine, output_file_list, max_time, anchor, 
-                              timestep):
+    def read_output_file_list(self, engine, output_file_list, min_time, 
+                              max_time, anchor, timestep):
         """
         Depending on the engine and other settings, read the SEEKR2 
         output files to fill out transition statistics.
@@ -523,14 +538,14 @@ class MMVT_anchor_statistics():
             self.T_alpha_list, self.T_alpha_average, self.T_alpha_std_dev, \
             self.T_alpha_total, self.existing_lines \
                 = openmm_read_output_file_list(
-                    output_file_list, max_time, self.existing_lines)
+                    output_file_list, min_time, max_time, self.existing_lines)
         elif engine == "namd":
             self.N_i_j_alpha, self.R_i_alpha_list, self.R_i_alpha_average, \
             self.R_i_alpha_std_dev, self.R_i_alpha_total, self.N_alpha_beta, \
             self.T_alpha_list, self.T_alpha_average, self.T_alpha_std_dev, \
             self.T_alpha_total, self.existing_lines \
                 = namd_read_output_file_list(
-                    output_file_list, anchor, timestep, max_time, 
+                    output_file_list, anchor, timestep, min_time, max_time, 
                     self.existing_lines)
         elif engine == "browndye2":
             pass

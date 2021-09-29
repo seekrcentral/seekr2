@@ -665,7 +665,7 @@ class Root():
         self.n_trajectories_per_output = 1000
         self.max_n_steps = 1000000
         self.trajectory_file = BROWNDYE_TRAJ_PREFIX
-        self.n_steps_per_output = 1000
+        self.n_steps_per_output = 100000
         self.min_rxn_dist_file = None
         self.system = System()
         return
