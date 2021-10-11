@@ -422,7 +422,7 @@ def check_systems_within_Voronoi_cells(model):
     suggest corrections if the check fails. Otherwise, the SEEKR2
     backend would fail with a non-helpful error message.
     """
-    result = True
+    returning_result = True
     if model.get_type() != "mmvt":
         # only apply to MMVT systems
         return True
@@ -458,9 +458,9 @@ def check_systems_within_Voronoi_cells(model):
                 if correct_anchor is not None:
                     print("It looks like the failed structure might belong in "\
                           "anchor {}.".format(correct_anchor.index))
-                result = False
+                returning_result = False
     
-    return result
+    return returning_result
 
 def recurse_atoms(atom, _visited_indices=set()):
     """
