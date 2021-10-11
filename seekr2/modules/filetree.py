@@ -197,7 +197,8 @@ def copy_building_files_by_anchor(anchor, input_anchor, rootdir):
                 assert pdb_structure.box_vectors is not None, "No box vectors "\
                 "found in {}. ".format(new_pdb_filename) \
                 + "Box vectors for an anchor must be defined with a CRYST "\
-                "line within the PDB file."
+                "line within the PDB file, or explicitly set in the model "\
+                "input XML file."
                 anchor.amber_params.box_vectors.from_quantity(
                     pdb_structure.box_vectors)
         

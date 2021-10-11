@@ -293,6 +293,8 @@ def check_pre_sim_bubbles(model):
     bool
         False if a bubble is detected and True otherwise.
     """
+    pass
+    """
     for anchor in model.anchors:
         building_directory = os.path.join(
             model.anchor_rootdir, 
@@ -347,6 +349,7 @@ def check_pre_sim_bubbles(model):
                         print(warnstr)
                         return False
     return True
+    """
 
 def check_pre_sim_MD_and_BD_salt_concentration(model):
     """
@@ -419,7 +422,7 @@ def check_systems_within_Voronoi_cells(model):
     suggest corrections if the check fails. Otherwise, the SEEKR2
     backend would fail with a non-helpful error message.
     """
-    
+    result = True
     if model.get_type() != "mmvt":
         # only apply to MMVT systems
         return True
@@ -455,9 +458,9 @@ def check_systems_within_Voronoi_cells(model):
                 if correct_anchor is not None:
                     print("It looks like the failed structure might belong in "\
                           "anchor {}.".format(correct_anchor.index))
-                return False
+                result = False
     
-    return True
+    return result
 
 def recurse_atoms(atom, _visited_indices=set()):
     """
