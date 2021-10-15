@@ -505,6 +505,25 @@ def resolve_connections(connection_flag_dict, model, associated_input_anchor,
         for bulk_discarded in bulk_discarded_indices:
             index_reference[bulk_discarded] = len(anchors) - 1
     
+    visited_new_indices = []
+    for old_index in index_reference:
+        new_index = index_reference[old_index]
+        if new_index < len(anchors):
+            anchors[new_index].index = new_index
+            anchors[new_index].name = "anchor_"+str(anchors[new_index].index)
+            anchors[new_index].directory = anchors[new_index].name
+            alias_index = 1
+            for milestone in anchors[new_index].milestones:
+                if (model.get_type == "mmvt") \
+                        and (new_index not in visited_new_indices):
+                    # don't renumber the same anchor twice
+                    neighbor_id = milestone.neighbor_anchor_index
+                    milestone.neighbor_anchor_index = index_reference[neighbor_id]
+                    milestone.alias_index = alias_index
+                    alias_index += 1
+            
+        visited_new_indices.append(new_index)
+    
     xml_path = os.path.join(root_directory, "model.xml")
     if os.path.exists(xml_path):
         # then a model file already exists at this location: update
@@ -514,22 +533,18 @@ def resolve_connections(connection_flag_dict, model, associated_input_anchor,
         modify_model(old_model, model, root_directory,
                                     force_overwrite)
     
+    visited_new_indices = []
     for old_index in index_reference:
         new_index = index_reference[old_index]
         if new_index < len(anchors):
-            anchors[new_index].index = new_index
-            anchors[new_index].name = "anchor_"+str(anchors[new_index].index)
-            anchors[new_index].directory = anchors[new_index].name
-            for milestone in anchors[new_index].milestones:
-                neighbor_id = milestone.neighbor_anchor_index
-                milestone.neighbor_anchor_index = index_reference[neighbor_id]
-            
             input_anchor = associated_input_anchor[old_index]
             filetree.generate_filetree_by_anchor(
                 anchors[new_index], root_directory)
             filetree.copy_building_files_by_anchor(
                 anchors[new_index], input_anchor, root_directory)
-    
+        
+        visited_new_indices.append(new_index)
+        
     return anchors
 
 def create_cvs_and_anchors(model, collective_variable_inputs, root_directory):
@@ -713,6 +728,20 @@ def prepare_model_cvs_and_anchors(model, model_input, force_overwrite):
     anchors = resolve_connections(connection_flag_dict, model, 
                                   associated_input_anchor, 
                                   model_input.root_directory, force_overwrite)
+    # check to make sure that anchors don't have repeated milestone aliases
+    # or have themselves as neighbors.
+    for anchor in anchors:
+        alias_indices = set()
+        for milestone in anchor.milestones:
+            assert milestone.alias_index not in alias_indices, \
+                "Repeated alias indices detected in anchor {}".format(
+                    anchor.index)
+            alias_indices.add(milestone.alias_index)
+            if model.get_type() == "mmvt":
+                assert milestone.neighbor_anchor_index is not anchor.index, \
+                    "Milestone neighbor_anchor_index cannot be its own anchor "\
+                    "in MMVT. Index: {}".format(anchor.index)
+        
     model.num_anchors = len(anchors)
     
     return

@@ -749,9 +749,12 @@ def check_pre_simulation_all(model):
         check_fail_str = "One or more fatal pre-simulation checks failed. It "\
         "is highly recommended that you address and correct each of these "\
         "problems. However, you can force SEEKR to skip these checks by using "\
-        "the --skip_checks (-s) argument on prepare.py."
+        "the --skip_checks (-s) argument on prepare.py. If these checks were "\
+        "performed using prepare.py, the model was saved, and though it is "\
+        "not recommended, you may choose to proceed with the calculation "\
+        "regardless of these failed checks."
         print(check_fail_str)
-        raise Exception("The SEEKR2 calculation can not proceed due "\
+        raise Exception("The SEEKR2 calculation should not proceed due "\
                         "to failed pre-simulation checks.")
     return
 
