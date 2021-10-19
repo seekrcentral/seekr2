@@ -792,17 +792,31 @@ def create_tiwary_mmvt_model_input(root_dir):
     order_parameter3.group3 = [147]
     order_parameter3.group4 = [161]
     order_parameters = [order_parameter1, order_parameter2, order_parameter3]
-    order_parameter_weights = [0.99, 0.005, 0.005]
+    order_parameter_weights1 = [0.99, 0.005, 0.005]
+    order_parameter_weights2 = [0.97, 0.015, 0.015]
+    
     cv_input1 = common_cv.Tiwary_cv_input()
     cv_input1.order_parameters = order_parameters
-    cv_input1.order_parameter_weights = order_parameter_weights
+    cv_input1.order_parameter_weights = order_parameter_weights1
     cv_input1.input_anchors = []
     
-    values_list = [0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 0.95,
-                   1.05, 1.15, 1.25, 1.35]
+    cv_input2 = common_cv.Tiwary_cv_input()
+    cv_input2.order_parameters = order_parameters
+    cv_input2.order_parameter_weights = order_parameter_weights2
+    cv_input2.input_anchors = []
+    
+    cv_input3 = common_cv.Spherical_cv_input()
+    cv_input3.group1 = list(range(147))
+    cv_input3.group2 = list(range(147, 162))
+    cv_input3.input_anchors = []
+    
+    values_list1 = [0.05, 0.15, 0.25, 0.35, 0.45, 0.55]
+    values_list2 = [0.55, 0.65, 0.75, 0.85, 0.95, 1.05, 1.15]
+    spherical_radii = [1.15, 1.25, 1.35]
+    
     amber_prmtop_filename = os.path.abspath(
         "../data/hostguest_files/hostguest.parm7")
-    pdb_filenames = [os.path.abspath(
+    pdb_filenames1 = [os.path.abspath(
         "../data/hostguest_files/hostguest_at0.5.pdb"),
                      os.path.abspath(
                          "../data/hostguest_files/hostguest_at1.5.pdb"),
@@ -813,8 +827,10 @@ def create_tiwary_mmvt_model_input(root_dir):
                      os.path.abspath(
                          "../data/hostguest_files/hostguest_at4.5.pdb"),
                      os.path.abspath(
-                         "../data/hostguest_files/hostguest_at5.5.pdb"),
-                     os.path.abspath(
+                         "../data/hostguest_files/hostguest_at5.5.pdb"),]
+                     
+    pdb_filenames2 = ["",
+                      os.path.abspath(
                          "../data/hostguest_files/hostguest_at6.5.pdb"),
                      os.path.abspath(
                          "../data/hostguest_files/hostguest_at7.5.pdb"),
@@ -825,11 +841,13 @@ def create_tiwary_mmvt_model_input(root_dir):
                      os.path.abspath(
                          "../data/hostguest_files/hostguest_at10.5.pdb"),
                      os.path.abspath(
-                         "../data/hostguest_files/hostguest_at11.5.pdb"),
-                     os.path.abspath(
+                         "../data/hostguest_files/hostguest_at11.5.pdb"),]
+
+    pdb_filenames3 = ["",
+                      os.path.abspath(
                          "../data/hostguest_files/hostguest_at12.5.pdb"),
                      ""]
-    for i, (value, pdb_filename) in enumerate(zip(values_list, pdb_filenames)):
+    for i, (value, pdb_filename) in enumerate(zip(values_list1, pdb_filenames1)):
         input_anchor = common_cv.Tiwary_cv_anchor()
         input_anchor.value = value
         assign_amber_params(input_anchor, amber_prmtop_filename, 
@@ -839,15 +857,43 @@ def create_tiwary_mmvt_model_input(root_dir):
         else:
             input_anchor.bound_state = False
             
-        if i == len(values_list)-1:
+        
+        input_anchor.bulk_anchor = False
+    
+        cv_input1.input_anchors.append(input_anchor)
+    
+    cv_input1.input_anchors[-1].connection_flags = [1]
+    
+    for i, (value, pdb_filename) in enumerate(zip(values_list2, pdb_filenames2)):
+        input_anchor = common_cv.Tiwary_cv_anchor()
+        input_anchor.value = value
+        assign_amber_params(input_anchor, amber_prmtop_filename, 
+                            pdb_filename)
+        input_anchor.bound_state = False
+        input_anchor.bulk_anchor = False
+        cv_input2.input_anchors.append(input_anchor)
+    
+    cv_input2.input_anchors[0].connection_flags = [1]
+    cv_input2.input_anchors[-1].connection_flags = [2]
+        
+    for i, (radius, pdb_filename) in enumerate(zip(spherical_radii, pdb_filenames3)):
+        input_anchor = common_cv.Spherical_cv_anchor()
+        input_anchor.radius = radius
+        assign_amber_params(input_anchor, amber_prmtop_filename, 
+                            pdb_filename)
+        input_anchor.bound_state = False
+            
+        if i == len(pdb_filenames3)-1:
             input_anchor.bulk_anchor = True
         else:
             input_anchor.bulk_anchor = False
     
-        cv_input1.input_anchors.append(input_anchor)
+        cv_input3.input_anchors.append(input_anchor)
     
-    model_input.cv_inputs = [cv_input1]
+    cv_input3.input_anchors[0].connection_flags = [2]
     
-    model_input.browndye_settings_input = None
+    model_input.cv_inputs = [cv_input1, cv_input2, cv_input3]
+    
+    #model_input.browndye_settings_input = None
     
     return model_input

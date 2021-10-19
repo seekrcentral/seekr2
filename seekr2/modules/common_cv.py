@@ -641,4 +641,14 @@ class Planar_cv_input(Serializer):
             self, milestone_alias, milestone_index, input_anchor_index,
             anchor_index, self.input_anchors)
         return milestones, milestone_alias, milestone_index
-    
+
+class Multidimensional_cv(Serializer):
+    """
+    An object for the input to define when input CVs should be combined to
+    make a multidimensional anchor - an anchor with more than one dimension
+    of milestones.
+    """
+    def __init__(self):
+        self.cv_inputs = []
+        
+        return

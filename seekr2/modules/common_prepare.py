@@ -454,7 +454,7 @@ def resolve_connections(connection_flag_dict, model, associated_input_anchor,
     bulk_anchor = None
     for anchor in anchors:
         index_reference[anchor.index] = anchor.index
-    
+        
     for key in connection_flag_dict:
         anchor_connection_list = connection_flag_dict[key]
         
@@ -493,10 +493,12 @@ def resolve_connections(connection_flag_dict, model, associated_input_anchor,
     anchor_indices_to_remove = sorted(set(anchor_indices_to_remove), 
                                       reverse=True)
     for anchor_index_to_remove in anchor_indices_to_remove:
-        anchors.pop(anchor_index_to_remove)
-        if len(anchors) > anchor_index_to_remove:
-            for lower_anchor in anchors[anchor_index_to_remove:]:
+        if len(anchors) > anchor_index_to_remove+1:
+            for lower_anchor in anchors[anchor_index_to_remove+1:]:
                 index_reference[lower_anchor.index] -= 1
+                
+    for anchor_index_to_remove in anchor_indices_to_remove:
+        anchors.pop(anchor_index_to_remove)
     
     if bulk_anchor is not None:
         # make sure the bulk anchor is the last anchor always
@@ -506,6 +508,7 @@ def resolve_connections(connection_flag_dict, model, associated_input_anchor,
             index_reference[bulk_discarded] = len(anchors) - 1
     
     visited_new_indices = []
+    
     for old_index in index_reference:
         new_index = index_reference[old_index]
         if new_index < len(anchors):
@@ -514,7 +517,7 @@ def resolve_connections(connection_flag_dict, model, associated_input_anchor,
             anchors[new_index].directory = anchors[new_index].name
             alias_index = 1
             for milestone in anchors[new_index].milestones:
-                if (model.get_type == "mmvt") \
+                if (model.get_type() == "mmvt") \
                         and (new_index not in visited_new_indices):
                     # don't renumber the same anchor twice
                     neighbor_id = milestone.neighbor_anchor_index
@@ -523,7 +526,7 @@ def resolve_connections(connection_flag_dict, model, associated_input_anchor,
                     alias_index += 1
             
         visited_new_indices.append(new_index)
-    
+            
     xml_path = os.path.join(root_directory, "model.xml")
     if os.path.exists(xml_path):
         # then a model file already exists at this location: update
@@ -533,7 +536,6 @@ def resolve_connections(connection_flag_dict, model, associated_input_anchor,
         modify_model(old_model, model, root_directory,
                                     force_overwrite)
     
-    visited_new_indices = []
     for old_index in index_reference:
         new_index = index_reference[old_index]
         if new_index < len(anchors):
@@ -542,14 +544,42 @@ def resolve_connections(connection_flag_dict, model, associated_input_anchor,
                 anchors[new_index], root_directory)
             filetree.copy_building_files_by_anchor(
                 anchors[new_index], input_anchor, root_directory)
-        
-        visited_new_indices.append(new_index)
-        
+                
     return anchors
 
 def create_cvs_and_anchors(model, collective_variable_inputs, root_directory):
     """
     Create the collective variable and Anchor objects for the Model.
+    
+    Parameters:
+    -----------
+    model : Model()
+        The model object representing the entire calculation.
+    
+    collective_variable_inputs : list
+        A list of cv input objects used to construct the anchors for
+        this model.
+        
+    root_directory : str
+        A path to the root directory of this model.
+    
+    Returns:
+    --------
+    cvs : list
+        A list of collective variable objects that will be placed into
+        the model.
+    anchors : list
+        A list of Anchor() objects. This list and its associated anchors
+        may be modified before being placed into the final model.
+    milestone_index : int
+        A running count of the number of milestones in this model.
+    connection_flag_dict : dict
+        A dictionary whose keys are integers representing a connection
+        index, and whose values are lists of anchors that have a connection
+        together, and therefore must be combined.
+    associated_input_anchor : dist
+        A dictionary whose keys are anchor indices, and whose values are
+        the Input_anchor() objects associated with that anchor.
     """
     
     milestone_index = 0
