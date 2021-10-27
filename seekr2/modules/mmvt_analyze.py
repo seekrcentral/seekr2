@@ -5,9 +5,28 @@ Routines for the analysis stage of an MMVT calculation
 from collections import defaultdict
 
 import numpy as np
+import scipy as sp
 import scipy.linalg as la
+import scipy.sparse.linalg as sp
+
+FLUX_MATRIX_K_EXPONENT = 1000
 
 import seekr2.modules.common_analyze as common_analyze
+
+def flux_matrix_to_K(M):
+    """Given a flux matrix M, compute probability transition matrix K."""
+    
+    K = np.zeros((M.shape[0]-1, M.shape[0]-1), dtype=np.longdouble)
+    for i in range(M.shape[0]-1):
+        for j in range(M.shape[0]-1):
+            if i == j:
+                K[i,j] = 0.0
+            else:
+                K[i,j] = -M[i,j] / M[i,i]
+                
+            assert K[i,j] >= 0.0, "Negative values for K matrix not allowed."
+    
+    return K
 
 def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None, 
                                  existing_lines=[], skip_restart_check=False):
@@ -554,6 +573,7 @@ class MMVT_anchor_statistics():
                             "'namd', or 'browndye'.")
         for key in self.N_alpha_beta:
             self.k_alpha_beta[key] = self.N_alpha_beta[key] / self.T_alpha_total
+            
         assert self.T_alpha_total >= 0.0
         #assert len(self.k_alpha_beta) > 0, \
         #    "Missing statistics for anchor %d" % anchor.index
@@ -728,9 +748,9 @@ class MMVT_data_sample(common_analyze.Data_sample):
                             "No statistics present in Data Sample.")
         
         flux_matrix_dimension = self.model.num_anchors
-        self.pi_alpha = np.zeros(flux_matrix_dimension)
-        flux_matrix = np.zeros((flux_matrix_dimension, flux_matrix_dimension))
-        column_sum = np.zeros(flux_matrix_dimension)
+        self.pi_alpha = np.zeros(flux_matrix_dimension, dtype=np.longdouble)
+        flux_matrix = np.zeros((flux_matrix_dimension, flux_matrix_dimension), dtype=np.longdouble)
+        column_sum = np.zeros(flux_matrix_dimension, dtype=np.longdouble)
         bulk_index = None
         for alpha in range(flux_matrix_dimension):
             anchor1 = self.model.anchors[alpha] # source anchor
@@ -753,7 +773,7 @@ class MMVT_data_sample(common_analyze.Data_sample):
                     if id_alias is None:
                         flux_matrix[beta, alpha] = 0.0
                     else:
-                        flux_matrix[beta, alpha] = 1.0
+                        flux_matrix[beta, alpha] = 1e15
                 else:
                     if alpha == beta:
                         pass 
@@ -780,10 +800,22 @@ class MMVT_data_sample(common_analyze.Data_sample):
             
         assert bulk_index is not None, "A bulk state has not been defined, "\
             "but is required."
-        prob_equil = np.zeros((flux_matrix_dimension,1))
+        prob_equil = np.zeros((flux_matrix_dimension,1), dtype=np.longdouble)
         prob_equil[bulk_index] = 1.0
-        
         self.pi_alpha = abs(la.solve(flux_matrix.T, prob_equil))
+        
+        # refine pi_alpha
+        self.pi_alpha = self.pi_alpha.astype(dtype=np.longdouble)
+        pi_alpha_slice = np.zeros((flux_matrix_dimension-1, 1), dtype=np.longdouble)
+        for i in range(flux_matrix_dimension-1):
+            pi_alpha_slice[i,0] = -self.pi_alpha[i,0] * flux_matrix[i,i]
+        K = flux_matrix_to_K(flux_matrix)
+        K_inf = np.linalg.matrix_power(K, FLUX_MATRIX_K_EXPONENT)
+        stationary_dist = K_inf.T @ pi_alpha_slice
+        for i in range(flux_matrix_dimension-1):
+            self.pi_alpha[i,0] = -stationary_dist[i,0] / flux_matrix[i,i]
+        self.pi_alpha[-1,0] = 0.0
+        self.pi_alpha = self.pi_alpha / np.sum(self.pi_alpha)
         return
     
     def fill_out_data_quantities(self):
@@ -797,24 +829,24 @@ class MMVT_data_sample(common_analyze.Data_sample):
             raise Exception("Unable to call fill_out_data_quantities(): "\
                             "No statistics present in Data Sample.")
             
-        self.N_ij = defaultdict(float)
-        self.R_i = defaultdict(float)
-        self.T = 0.0
-        sum_pi_alpha_over_T_alpha = 0.0
+        self.N_ij = defaultdict(np.longdouble)
+        self.R_i = defaultdict(np.longdouble)
+        self.T = np.longdouble(0.0)
+        sum_pi_alpha_over_T_alpha = np.longdouble(0.0)
         for alpha, anchor in enumerate(self.model.anchors):
             if anchor.bulkstate:
                 continue
-            this_anchor_pi_alpha = float(self.pi_alpha[alpha])
+            this_anchor_pi_alpha = np.longdouble(self.pi_alpha[alpha])
             sum_pi_alpha_over_T_alpha += this_anchor_pi_alpha \
-                / self.T_alpha[alpha]
+                / np.longdouble(self.T_alpha[alpha])
         
-        self.T = 1.0 / sum_pi_alpha_over_T_alpha
+        self.T = sum_pi_alpha_over_T_alpha ** -1
         assert self.T >= 0.0, "self.T should be positive: {}".format(self.T)
         for alpha, anchor in enumerate(self.model.anchors):
             if anchor.bulkstate:
                 continue
-            this_anchor_pi_alpha = float(self.pi_alpha[alpha])
-            T_alpha = self.T_alpha[alpha]
+            this_anchor_pi_alpha = np.longdouble(self.pi_alpha[alpha])
+            T_alpha = np.longdouble(self.T_alpha[alpha])
             assert T_alpha >= 0.0, \
                 "T_alpha should be positive: {}".format(T_alpha)
             time_fraction = self.T / T_alpha
@@ -823,28 +855,28 @@ class MMVT_data_sample(common_analyze.Data_sample):
             for key in N_i_j_alpha:
                 assert time_fraction > 0.0, \
                     "time_fraction should be positive: {}".format(time_fraction)
-                assert this_anchor_pi_alpha > 0.0, \
+                assert this_anchor_pi_alpha >= 0.0, \
                     "this_anchor_pi_alpha should be positive: {}".format(
                         this_anchor_pi_alpha)
                 assert N_i_j_alpha[key] > 0.0, \
                     "N_i_j_alpha[key] should be positive: {}".format(
                         N_i_j_alpha[key])
                 self.N_ij[key] += time_fraction * \
-                    this_anchor_pi_alpha * N_i_j_alpha[key]
+                    this_anchor_pi_alpha * np.float128(N_i_j_alpha[key])
             
             R_i_alpha = self.R_i_alpha[alpha]
             if len(R_i_alpha) > 0:
                 for key in R_i_alpha:
                     assert time_fraction > 0.0, \
                         "time_fraction should be positive: {}".format(time_fraction)
-                    assert this_anchor_pi_alpha > 0.0, \
+                    assert this_anchor_pi_alpha >= 0.0, \
                         "this_anchor_pi_alpha should be positive: {}".format(
                             this_anchor_pi_alpha)
                     assert R_i_alpha[key] > 0.0, \
                         "R_i_alpha[key] should be positive: {}".format(
                             R_i_alpha[key])
                     self.R_i[key] += time_fraction * this_anchor_pi_alpha * \
-                        R_i_alpha[key]
+                        np.longdouble(R_i_alpha[key])
                         
             else:
                 raise Exception("R_i_alpha should always be set.")

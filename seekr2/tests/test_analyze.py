@@ -53,7 +53,8 @@ def make_smoluchowski_standard_for_k_off(mymodel, potential_energy_function):
 
 def make_smoluchowski_mmvt_analysis(mymodel, potential_energy_function, 
                                     k_on_src=None, transition_probs=None,
-                                    diffusion=1.0, beta=1.0):
+                                    diffusion=1.0, beta=1.0, 
+                                    pre_equilibrium_approx=False):
     calc = smol.make_smoluchowski_calculation_from_model(
         mymodel, potential_energy_function, beta=beta, diffusion=diffusion)
     my_analysis = analyze.Analysis(mymodel)
@@ -110,12 +111,13 @@ def make_smoluchowski_mmvt_analysis(mymodel, potential_energy_function,
     
     my_analysis.main_data_sample.compute_rate_matrix()
     my_analysis.main_data_sample.calculate_thermodynamics()
-    my_analysis.main_data_sample.calculate_kinetics()
+    my_analysis.main_data_sample.calculate_kinetics(
+        pre_equilibrium_approx=pre_equilibrium_approx)
     mmvt_time = my_analysis.main_data_sample.MFPTs[(0,"bulk")]
     k_on = None
     if k_on_src is not None:
         k_on = my_analysis.main_data_sample.k_ons[0]
-    return mmvt_time, k_on
+    return mmvt_time, k_on, my_analysis
 
 def make_smoluchowski_elber_analysis(mymodel, potential_energy_function,
                                      k_on_src=None, transition_probs=None,
@@ -146,7 +148,7 @@ def make_smoluchowski_elber_analysis(mymodel, potential_energy_function,
         # transition info
         my_analysis.main_data_sample.bd_transition_probabilities[0] = transition_probs
         my_analysis.main_data_sample.bd_transition_counts[0] = transition_probs
-        
+    
     my_analysis.main_data_sample.compute_rate_matrix()
     #self.main_data_sample.Q = common_analyze.minor2d(
     #    self.main_data_sample.Q, bulkstate, bulkstate)
@@ -177,26 +179,26 @@ def make_smoluchowski_elber_analysis(mymodel, potential_energy_function,
     k_on = None
     if k_on_src is not None:
         k_on = my_analysis.main_data_sample.k_ons[0]
-    return elber_time, k_on
+    return elber_time, k_on, my_analysis
     
 def test_smoluchowski_k_off_from_mmvt_statistics(smoluchowski_mmvt_model):
     smoluchowski_mmvt_model.k_on_info = None
     potential_energy_function = smol.FlatPotentialEnergyFunction()
-    mmvt_time, dummy = make_smoluchowski_mmvt_analysis(
+    mmvt_time, dummy, dummy2 = make_smoluchowski_mmvt_analysis(
         smoluchowski_mmvt_model, potential_energy_function)
     standard_time = make_smoluchowski_standard_for_k_off(
         smoluchowski_mmvt_model, potential_energy_function)
     assert np.isclose(mmvt_time, standard_time, rtol=1e-3)
     
     potential_energy_function = smol.LinearPotentialEnergyFunction()
-    mmvt_time, dummy = make_smoluchowski_mmvt_analysis(
+    mmvt_time, dummy, dummy2 = make_smoluchowski_mmvt_analysis(
         smoluchowski_mmvt_model, potential_energy_function)
     standard_time = make_smoluchowski_standard_for_k_off(
         smoluchowski_mmvt_model, potential_energy_function)
     assert np.isclose(mmvt_time, standard_time, rtol=1e-3)
     
     potential_energy_function = smol.QuadraticPotentialEnergyFunction(a=0.2)
-    mmvt_time, dummy = make_smoluchowski_mmvt_analysis(
+    mmvt_time, dummy, dummy2 = make_smoluchowski_mmvt_analysis(
         smoluchowski_mmvt_model, potential_energy_function)
     standard_time = make_smoluchowski_standard_for_k_off(
         smoluchowski_mmvt_model, potential_energy_function)
@@ -240,7 +242,7 @@ def test_smoluchowski_k_on_from_mmvt_statistics(smoluchowski_mmvt_model):
     k_on_src, transition_probs = make_bd_statistics_flat(
         smoluchowski_mmvt_model, D)
     potential_energy_function = smol.FlatPotentialEnergyFunction()
-    mmvt_time, k_on = make_smoluchowski_mmvt_analysis(
+    mmvt_time, k_on, dummy = make_smoluchowski_mmvt_analysis(
         smoluchowski_mmvt_model, potential_energy_function, k_on_src, transition_probs)
     bound_state_radius = smoluchowski_mmvt_model.anchors[0].milestones[0].variables["radius"]
     standard_k_on = 4.0 * np.pi * bound_state_radius * D
@@ -252,7 +254,7 @@ def test_smoluchowski_k_on_from_mmvt_statistics(smoluchowski_mmvt_model):
     potential_energy_function = smol.CoulombicPotentialEnergyFunction(q1q2=q1q2, a=bound_state_radius)
     k_on_src, transition_probs = make_bd_statistics_coulomb(
         smoluchowski_mmvt_model, D, q1q2, beta)
-    mmvt_time, k_on = make_smoluchowski_mmvt_analysis(
+    mmvt_time, k_on, dummy = make_smoluchowski_mmvt_analysis(
         smoluchowski_mmvt_model, potential_energy_function, k_on_src, transition_probs)
     
     standard_k_on = -q1q2 * D / (1.0 - np.exp(q1q2/(4.0*np.pi*bound_state_radius)))
@@ -262,21 +264,21 @@ def test_smoluchowski_k_on_from_mmvt_statistics(smoluchowski_mmvt_model):
 def test_smoluchowski_k_off_from_elber_statistics(smoluchowski_elber_model):
     smoluchowski_elber_model.k_on_info = None
     potential_energy_function = smol.FlatPotentialEnergyFunction()
-    elber_time, dummy = make_smoluchowski_elber_analysis(
+    elber_time, dummy, dummy2 = make_smoluchowski_elber_analysis(
         smoluchowski_elber_model, potential_energy_function)
     standard_time = make_smoluchowski_standard_for_k_off(
         smoluchowski_elber_model, potential_energy_function)
     assert np.isclose(elber_time, standard_time, rtol=1e-3)
     
     potential_energy_function = smol.LinearPotentialEnergyFunction()
-    elber_time, dummy = make_smoluchowski_elber_analysis(
+    elber_time, dummy, dummy2 = make_smoluchowski_elber_analysis(
         smoluchowski_elber_model, potential_energy_function)
     standard_time = make_smoluchowski_standard_for_k_off(
         smoluchowski_elber_model, potential_energy_function)
     assert np.isclose(elber_time, standard_time, rtol=1e-3)
     
     potential_energy_function = smol.QuadraticPotentialEnergyFunction(a=0.2)
-    elber_time, dummy = make_smoluchowski_elber_analysis(
+    elber_time, dummy, dummy2 = make_smoluchowski_elber_analysis(
         smoluchowski_elber_model, potential_energy_function)
     standard_time = make_smoluchowski_standard_for_k_off(
         smoluchowski_elber_model, potential_energy_function)
@@ -288,7 +290,7 @@ def test_smoluchowski_k_on_from_elber_statistics(smoluchowski_elber_model):
     k_on_src, transition_probs = make_bd_statistics_flat(
         smoluchowski_elber_model, D)
     potential_energy_function = smol.FlatPotentialEnergyFunction()
-    elber_time, k_on = make_smoluchowski_elber_analysis(
+    elber_time, k_on, dummy = make_smoluchowski_elber_analysis(
         smoluchowski_elber_model, potential_energy_function, k_on_src, transition_probs)
     bound_state_radius = smoluchowski_elber_model.anchors[0].milestones[0].variables["radius"]
     standard_k_on = 4.0 * np.pi * bound_state_radius * D
@@ -300,7 +302,7 @@ def test_smoluchowski_k_on_from_elber_statistics(smoluchowski_elber_model):
     potential_energy_function = smol.CoulombicPotentialEnergyFunction(q1q2=q1q2, a=bound_state_radius)
     k_on_src, transition_probs = make_bd_statistics_coulomb(
         smoluchowski_elber_model, D, q1q2, beta)
-    elber_time, k_on = make_smoluchowski_elber_analysis(
+    elber_time, k_on, dummy = make_smoluchowski_elber_analysis(
         smoluchowski_elber_model, potential_energy_function, k_on_src, transition_probs)
     
     standard_k_on = -q1q2 * D / (1.0 - np.exp(q1q2/(4.0*np.pi*bound_state_radius)))

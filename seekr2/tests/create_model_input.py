@@ -608,7 +608,7 @@ def create_tryp_ben_elber_model_input(root_dir, bd=False):
     
     return model_input
 
-def create_smoluchowski_mmvt_model_input(root_dir):
+def create_smoluchowski_mmvt_model_input(root_dir, num_input_anchors=5):
     """
     Create a trypsin-benzamidine Elber model input object.
     """
@@ -633,6 +633,22 @@ def create_smoluchowski_mmvt_model_input(root_dir):
     cv_input1.group2 = []
     cv_input1.input_anchors = []
     
+    for i in range(num_input_anchors):
+        input_anchor = common_cv.Spherical_cv_anchor()
+        input_anchor.radius = i + 0.5
+        input_anchor.starting_amber_params = None
+        if i == 0:
+            input_anchor.bound_state = True
+        else:
+            input_anchor.bound_state = False
+        
+        if i == num_input_anchors-1:
+            input_anchor.bulk_anchor = True
+        else:
+            input_anchor.bulk_anchor = False
+        cv_input1.input_anchors.append(input_anchor)
+    
+    """ # TODO: remove
     input_anchor1 = common_cv.Spherical_cv_anchor()
     input_anchor1.radius = 0.5
     input_anchor1.starting_amber_params = None
@@ -667,6 +683,7 @@ def create_smoluchowski_mmvt_model_input(root_dir):
     input_anchor5.bound_state = False
     input_anchor5.bulk_anchor = True
     cv_input1.input_anchors.append(input_anchor5)
+    """
     
     model_input.cv_inputs = [cv_input1]
     
@@ -674,7 +691,7 @@ def create_smoluchowski_mmvt_model_input(root_dir):
     
     return model_input
 
-def create_smoluchowski_elber_model_input(root_dir):
+def create_smoluchowski_elber_model_input(root_dir, num_input_anchors=5):
     """
     Create a generic host-guest model input object.
     """
@@ -694,6 +711,22 @@ def create_smoluchowski_elber_model_input(root_dir):
     cv_input1.input_anchors = []
     cv_input1.input_anchors = []
     
+    for i in range(num_input_anchors):
+        input_anchor = common_cv.Spherical_cv_anchor()
+        input_anchor.radius = i + 1.0
+        input_anchor.starting_amber_params = None
+        if i == 0:
+            input_anchor.bound_state = True
+        else:
+            input_anchor.bound_state = False
+        
+        if i == num_input_anchors-1:
+            input_anchor.bulk_anchor = True
+        else:
+            input_anchor.bulk_anchor = False
+        cv_input1.input_anchors.append(input_anchor)
+    
+    """
     input_anchor1 = common_cv.Spherical_cv_anchor()
     input_anchor1.radius = 1.0
     input_anchor1.starting_amber_params = None
@@ -728,6 +761,7 @@ def create_smoluchowski_elber_model_input(root_dir):
     input_anchor5.bound_state = False
     input_anchor5.bulk_anchor = True
     cv_input1.input_anchors.append(input_anchor5)
+    """
     
     model_input.cv_inputs = [cv_input1]
     model_input.browndye_settings_input  = None

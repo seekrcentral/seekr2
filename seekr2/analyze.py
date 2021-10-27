@@ -194,6 +194,8 @@ class Analysis:
             existing_alias_transitions = []
             for key in anchor_stats.k_alpha_beta:
                 existing_alias_ids.append(key)
+                assert anchor_stats.k_alpha_beta[key] >= 0.0, \
+                    "negative k_alpha_beta values not allowed."
             for key in anchor_stats.N_i_j_alpha:
                 existing_alias_transitions.append(key)
             
@@ -671,8 +673,12 @@ class Analysis:
                 k_on_err = float(self.k_ons_error[key])
                 print("  k_on (1/s * 1/M) to state", key, ":", 
                       common_analyze.pretty_string_value_error(k_on, k_on_err))
-                diss_constant_err = diss_constant * common_analyze.quadriture(
-                    k_on_err/k_on, self.k_off_error/self.k_off)
+                if k_on > 0.0 and self.k_off > 0.0:
+                    diss_constant_err = diss_constant \
+                        * common_analyze.quadriture(
+                        k_on_err/k_on, self.k_off_error/self.k_off)
+                else:
+                    diss_constant_err = None
                 delta_G_err = diss_constant_err*common_analyze.GAS_CONSTANT\
                     *self.model.temperature/diss_constant
             else:

@@ -31,7 +31,7 @@ class MissingStatisticsError(Exception):
     """Catch a very specific type of error in analysis stage."""
     pass
 
-def solve_rate_matrix(Q_hat, max_iter=100, ETOL=1e-10):
+def solve_rate_matrix(Q_hat, max_iter=100, ETOL=1e-15):
     """
     Use an infinite series combined with a divide-and-conquer method
     to solve the Q-matrix since the numpy/scipy solver tends to have 
@@ -39,15 +39,35 @@ def solve_rate_matrix(Q_hat, max_iter=100, ETOL=1e-10):
     """
     
     K_hat = Q_to_K(Q_hat)
-    sum_of_series = np.identity(K_hat.shape[0], dtype=np.longdouble)
+    K_pow_n = np.linalg.matrix_power(K_hat, 0)
+    sum_of_series_tmp = np.identity(K_hat.shape[0], dtype=np.longdouble)
+    section = np.identity(K_hat.shape[0], dtype=np.longdouble)
+    
+    section_list = []
     for i in range(max_iter):
         n = 2**i
         K_pow_n = np.linalg.matrix_power(K_hat, n)
-        section = K_pow_n @ sum_of_series
-        sum_of_series += section
+        assert np.isfinite(K_pow_n).all()
+        section = np.dot(K_pow_n, sum_of_series_tmp)
+        assert np.isfinite(sum_of_series_tmp).all()
+        assert np.isfinite(section).all()
+        sum_of_series_tmp += section
+        section_list.append(section)
         error = np.linalg.norm(section)
+        if not np.isfinite(error):
+            break
+        if i == max_iter-1:
+            print("Warning: solve_rate_matrix reached max iterations. "\
+                  "Results may be incorrect.")
         if error < ETOL:
             break
+        
+    sum_of_series = np.zeros(K_hat.shape, dtype=np.longdouble)
+    section_list.reverse()
+    for section in section_list:
+        sum_of_series += section
+    sum_of_series += np.identity(K_hat.shape[0], dtype=np.longdouble)
+    
     T = np.zeros(Q_hat.shape, dtype=np.longdouble)
     t_vector = np.zeros((Q_hat.shape[0], 1), dtype=np.longdouble)
     for i in range(Q_hat.shape[0]):
@@ -67,6 +87,15 @@ def Q_to_K(Q):
                 K[i,j] = 0.0
             else:
                 K[i,j] = -Q[i,j] / Q[i,i]
+    
+    """            
+    for i in range(K.shape[0]):
+        for j in range(K.shape[0]):
+            if i == j:
+                K[i,j] = 0.0
+            else:
+                K[i,j] = -K[i,j] / np.sum(K[i,:])
+    """     
     return K
 
 def quadriture(err1, err2):
@@ -550,7 +579,7 @@ class Data_sample():
         for i in range(self.model.num_milestones):
             row_sum = np.sum(self.Q[i])
             if row_sum == 0:
-                new_row_sum = 0.0
+                new_row_sum = np.longdouble(0.0)
                 for j in range(self.model.num_milestones):
                     self.Q[i,j] = self.Q[j,i]
                     new_row_sum += self.Q[j,i]
@@ -694,11 +723,7 @@ class Data_sample():
         for end_milestone_dest in end_milestones:
             if end_milestone_dest in bulk_milestones:
                 continue
-            Q_hat = minor2d(self.Q[:], end_milestone_dest, end_milestone_dest)
-            #I = np.zeros((len(Q_hat)), dtype = float)    
-            #I[:] = 1.0
-            #end_state_times = la.solve(Q_hat, -I)
-            end_state_times = solve_rate_matrix(Q_hat)
+            
             for end_milestone_src in end_milestones:
                 if end_milestone_dest == end_milestone_src:
                     # don't get the MFPT from a milestone to itself
@@ -706,6 +731,14 @@ class Data_sample():
                 if end_milestone_src in bulk_milestones:
                     # a bulk milestone will never be a source
                     continue
+                # TODO: move above this loop? Can save time, but Elber
+                #  milestoning calls the bulk state an end state, which is
+                #  a problem
+                Q_hat_endstate = minor2d(self.Q[:], end_milestone_dest, end_milestone_dest)
+                #I = np.zeros((len(Q_hat_endstate)), dtype = float)    
+                #I[:] = 1.0
+                #end_state_times = la.solve(Q_hat_endstate, -I)
+                end_state_times = solve_rate_matrix(Q_hat_endstate)
                 mfpt = end_state_times[end_milestone_src]
                 MFPTs[(end_milestone_src, end_milestone_dest)] = mfpt
         

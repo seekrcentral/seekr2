@@ -139,7 +139,7 @@ class SmoluchowskiSphericalRegion():
         denominator = 4.0*np.pi*outer_integral
         self.outward_A1 = 1.0/denominator
         if np.isclose(denominator, 0.0):
-            print("denominator is nearly zero:", denominator)
+            print("smoluchowski.py: denominator is nearly zero:", denominator)
             
         # Compute numerator
         for i, r in enumerate(r_s_forward):
@@ -187,7 +187,7 @@ class SmoluchowskiSphericalRegion():
         denominator = 4.0*np.pi*simps(denominator_vals, dx=self.h)
         self.inward_A1 = 1.0/denominator
         if np.isclose(denominator, 0.0):
-            print("denominator is nearly zero:", denominator)
+            print("smoluchowski.py denominator is nearly zero:", denominator)
         
         for i, r in enumerate(r_s_forward):
             w = self.potential_energy_function.evaluate_energy(r)
@@ -401,7 +401,7 @@ class Simulation():
 class SmoluchowskiCalculation1d():
     def __init__(self, potential_energy_function, milestones, 
                  absorbing_boundary, reflecting_boundary=0.0, diffusion=1.0,
-                 beta=1.0):
+                 beta=1.0, n=101):
         self.potential_energy_function = potential_energy_function
         self.milestones = milestones
         self.absorbing_boundary = absorbing_boundary
@@ -409,30 +409,34 @@ class SmoluchowskiCalculation1d():
         self.regions = []
         self.diffusion = diffusion
         self.beta = beta
+        self.n = n
         self.partition_function = 0.0
         self.make_regions()
         self.make_elber_statistics()
         self.make_state_transition_rates()
+        
         return
     
     def make_regions(self):
         first_region = SmoluchowskiSphericalRegion(
             self.reflecting_boundary, self.milestones[0], 
-            self.potential_energy_function, self.diffusion, self.beta)
+            self.potential_energy_function, self.diffusion, self.beta, self.n)
+        
         self.regions.append(first_region)
         self.partition_function += first_region.partition_function
         
         for i, milestone in enumerate(self.milestones[:-1]):
             region = SmoluchowskiSphericalRegion(
                 self.milestones[i], self.milestones[i+1], 
-                self.potential_energy_function, self.diffusion, self.beta)
+                self.potential_energy_function, self.diffusion, self.beta, 
+                self.n)
             
             self.regions.append(region)
             self.partition_function += region.partition_function
             
         last_region = SmoluchowskiSphericalRegion(
             self.milestones[-1], self.absorbing_boundary,
-            self.potential_energy_function, self.diffusion, self.beta)
+            self.potential_energy_function, self.diffusion, self.beta, self.n)
         self.regions.append(last_region)
         self.partition_function += last_region.partition_function
         
@@ -452,12 +456,13 @@ class SmoluchowskiCalculation1d():
                 down_rate = N_MAGNITUDE*self.regions[i].N_alpha_down_up
             else:
                 down_rate = 10000.0
-            up_rate = (b*down_rate - prev_rate)/a
+            up_rate_for_prev = (b)*down_rate - prev_rate
+            up_rate = (b/a)*down_rate - prev_rate/a
             #self.downward_rates.append(down_rate)
             #self.upward_rates.append(up_rate)
             self.regions[i].N_alpha_up = up_rate
             self.regions[i+1].N_alpha_down = down_rate
-            prev_rate = -a*up_rate + b*down_rate
+            prev_rate = -up_rate_for_prev + b*down_rate
             
         #print("self.upward_rates:", self.upward_rates)
         #print("self.downward_rates:", self.downward_rates)

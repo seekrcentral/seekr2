@@ -5,7 +5,6 @@ configurations for all tests
 """
 
 import os
-import tempfile
 import pytest
 import copy
 
