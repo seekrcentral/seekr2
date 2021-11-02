@@ -11,6 +11,7 @@ import xml.etree.ElementTree as ET
 import subprocess
 import random
 from collections import defaultdict
+import PyGT
 
 import numpy as np
 from scipy import linalg as la
@@ -88,14 +89,6 @@ def Q_to_K(Q):
             else:
                 K[i,j] = -Q[i,j] / Q[i,i]
     
-    """            
-    for i in range(K.shape[0]):
-        for j in range(K.shape[0]):
-            if i == j:
-                K[i,j] = 0.0
-            else:
-                K[i,j] = -K[i,j] / np.sum(K[i,:])
-    """     
     return K
 
 def quadriture(err1, err2):
@@ -669,12 +662,17 @@ class Data_sample():
                     end_milestones.append(milestone_id)
             if anchor.bulkstate:
                 for milestone_id in anchor.get_ids():
+                    if self.model.get_type() == "elber":
+                        if anchor.alias_from_id(milestone_id) == 1: 
+                            # TODO: hacky
+                            continue
                     bulk_milestones.append(milestone_id)
 
         # first, make the bulk state the sink state to compute k_offs
         Q_hat = self.Q[:,:]
         p_i_hat = self.p_i[:]
-        
+        assert len(bulk_milestones) == 1, \
+            "There should only be one bulk milestone."
         
         for bulk_milestone in sorted(bulk_milestones, reverse=True):
             Q_hat = minor2d(Q_hat, bulk_milestone, bulk_milestone)
@@ -697,7 +695,14 @@ class Data_sample():
             #negative_unity = np.zeros((len(Q_hat)), dtype=np.longdouble)    
             #negative_unity[:] = -1.0
             #bulk_times = la.solve(Q_hat, negative_unity)
-            bulk_times = solve_rate_matrix(Q_hat)
+            
+            #bulk_times = solve_rate_matrix(Q_hat)
+            
+            B, tau = PyGT.tools.load_CTMC(self.Q.astype(np.double).T)
+            mfpt_matrix = PyGT.mfpt.full_MFPT_matrix(B, tau).T
+            bulk_times_full = mfpt_matrix[:, bulk_milestone]
+            bulk_times = minor1d(bulk_times_full, bulk_milestone)
+            
         
         for end_milestone in end_milestones:
             if end_milestone in bulk_milestones:
@@ -734,11 +739,19 @@ class Data_sample():
                 # TODO: move above this loop? Can save time, but Elber
                 #  milestoning calls the bulk state an end state, which is
                 #  a problem
-                Q_hat_endstate = minor2d(self.Q[:], end_milestone_dest, end_milestone_dest)
+                #Q_hat_endstate = minor2d(self.Q[:], end_milestone_dest, end_milestone_dest)
                 #I = np.zeros((len(Q_hat_endstate)), dtype = float)    
                 #I[:] = 1.0
                 #end_state_times = la.solve(Q_hat_endstate, -I)
-                end_state_times = solve_rate_matrix(Q_hat_endstate)
+                
+                # series solution
+                #end_state_times = solve_rate_matrix(Q_hat_endstate)
+                #mfpt = end_state_times[end_milestone_src]
+                #MFPTs[(end_milestone_src, end_milestone_dest)] = mfpt
+                
+                #PyGT solution
+                end_state_times_full = mfpt_matrix[:, end_milestone_dest]
+                end_state_times = minor1d(end_state_times_full, end_milestone_dest)
                 mfpt = end_state_times[end_milestone_src]
                 MFPTs[(end_milestone_src, end_milestone_dest)] = mfpt
         
@@ -823,10 +836,24 @@ class Data_sample():
             Whether to use the pre-equilibrium approximation for
             computing kinetics.
         """
-        N = self.N_ij
-        R = self.R_i
         Q = self.Q[:]
         m = Q.shape[0] #get size of count matrix
+        N = np.zeros((m, m))
+        R = np.zeros((m, m))
+        if self.model.get_type() == "elber":
+            for i in range(m):
+                for j in range(m):
+                    N[i,j] = self.N_ij[i,j]
+                    R[i,j] = self.R_i[i]
+            
+        elif self.model.get_type() == "mmvt":
+            for i in range(m):
+                for j in range(m):
+                    key = (i,j)
+                    N[i,j] = self.N_ij_mc[key]
+                    R[i,j] = self.T_ij_mc[key]
+            
+        
         Q_mats = []
         MFPTs_list = defaultdict(list)
         MFPTs_error = defaultdict(float)
@@ -847,16 +874,16 @@ class Data_sample():
                     if Qnew[i,j] == 0.0: continue
                     if Qnew[j,j] == 0.0: continue
                     if N[i,j] == 0: continue
-                    if R[i] == 0: continue
+                    if R[i,j] == 0: continue
                     Q_gamma = 0
                     delta = Qnew[i,j]
                     while ((delta) >= (Qnew[i,j])):
-                        Q_gamma = gamma.rvs(a=N[i,j], scale = 1/R[i],)
+                        Q_gamma = gamma.rvs(a=N[i,j], scale = 1/R[i,j],)
                         delta =  Qnew[i,j] - Q_gamma
         
-                    log_p_Q_old = N[i,j] * np.log(Qnew[i,j])  - Qnew[i,j] * R[i] 
+                    log_p_Q_old = N[i,j] * np.log(Qnew[i,j])  - Qnew[i,j] * R[i,j] 
                     log_p_Q_new = N[i,j] * np.log(Qnew[i,j] - delta) - \
-                        (Qnew[i,j] - delta) * R[i]     
+                        (Qnew[i,j] - delta) * R[i,j]     
                     if verbose: print("log P(Q_new)", log_p_Q_new)
                     if verbose: print("log P(Q_old)", log_p_Q_old)
     

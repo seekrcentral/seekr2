@@ -328,6 +328,9 @@ class Analysis:
         T_alpha_average = []
         T_alpha_std_dev = []
         T_alpha_count = []
+        T_ii_alpha = []
+        T_ij_alpha = []
+        
         for alpha, anchor1 in enumerate(self.model.anchors):
             if anchor1.bulkstate:
                 continue
@@ -380,11 +383,18 @@ class Analysis:
             T_alpha_total.append(anchor_T_alpha)
             T_alpha_std_dev.append(anchor_T_alpha_std)
             T_alpha_count.append(len(anchor_T_alpha_list))
+            anchor_T_ii_alpha = self.anchor_stats_list[alpha].T_ii_alpha
+            anchor_T_ij_alpha = self.anchor_stats_list[alpha].T_ij_alpha
+            T_ii_alpha.append(anchor_T_ii_alpha)
+            T_ij_alpha.append(anchor_T_ij_alpha)
             
         self.main_data_sample = mmvt_analyze.MMVT_data_sample(
             self.model, N_alpha_beta, k_alpha_beta, N_i_j_alpha, 
-            R_i_alpha_total, T_alpha_total)
+            R_i_alpha_total, T_alpha_total, T_ii_alpha, T_ij_alpha)
         
+        """ 
+        # TODO: skipping for now since new error method is available.
+        # TODO: remove
         for i in range(self.num_error_samples):
             sampled_k_alpha_beta, sampled_N_i_j_alpha, \
             sampled_R_i_alpha_total, sampled_T_alpha_total \
@@ -398,6 +408,7 @@ class Analysis:
                 sampled_N_i_j_alpha, sampled_R_i_alpha_total, 
                 sampled_T_alpha_total)
             self.data_sample_list.append(data_sample)
+        """
         return
 
     def process_data_samples_mmvt(self, pre_equilibrium_approx=False):
@@ -411,10 +422,12 @@ class Analysis:
         if self.model.k_on_info is not None:
             self.main_data_sample.parse_browndye_results()
         self.main_data_sample.compute_rate_matrix()
+        self.main_data_sample.fill_out_mcmc_quantities()
         self.main_data_sample.calculate_thermodynamics()
         self.main_data_sample.calculate_kinetics(pre_equilibrium_approx)
         # do data_sample_list here
         
+        """ # Not necessary once MCMC implemented for MMVT
         k_offs = []
         p_i_list = []
         pi_alpha_list = []
@@ -487,6 +500,7 @@ class Analysis:
         self.k_off_error = k_off_error
         self.k_ons = self.main_data_sample.k_ons
         self.k_ons_error = k_ons_error
+        """
         return
     
     def fill_out_data_samples_elber(self):

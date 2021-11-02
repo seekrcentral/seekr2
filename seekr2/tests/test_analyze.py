@@ -37,7 +37,7 @@ def make_smoluchowski_standard_for_k_off(mymodel, potential_energy_function):
     #    absorbing_boundary = mymodel.anchors[-1].milestones[0].variables["radius"]
     #elif mymodel.get_type() == "elber":
     #    absorbing_boundary = mymodel.anchors[-1].milestones[1].variables["radius"]
-    absorbing_boundary = mymodel.anchors[-1].milestones[0].variables["radius"]
+    absorbing_boundary = mymodel.anchors[-1].milestones[1].variables["radius"]
     calc = smol.SmoluchowskiCalculation1d(
         potential_energy_function, milestones=milestones, 
         absorbing_boundary=absorbing_boundary)
@@ -82,6 +82,7 @@ def make_smoluchowski_mmvt_analysis(mymodel, potential_energy_function,
         #    N_i_j_alpha_dict, R_i_alpha_dict, N_alpha_beta_dict, new_T_alpha, 
         #    alpha=i)
         # FIll out values here...
+        print("anchor_stats:", anchor_stats.print_stats())
         my_analysis.anchor_stats_list.append(anchor_stats)
     
     my_analysis.mmvt_check_anchor_stats()

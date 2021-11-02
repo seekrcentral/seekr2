@@ -91,6 +91,8 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
     R_i_alpha_list = defaultdict(list)
     N_alpha_beta = defaultdict(int)
     T_alpha_list = []
+    T_ii_alpha = defaultdict(float)
+    T_ij_alpha = defaultdict(float)
     
     last_bounce_time = -1.0
     src_boundary = None
@@ -137,6 +139,11 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
             R_i_alpha_list[src_boundary].append(time_diff)
             src_boundary = dest_boundary
             src_time = dest_time
+            T_ij_alpha[(src_boundary, dest_boundary)] \
+                += (last_bounce_time - dest_time)
+        else:
+            T_ii_alpha[src_boundary] += (last_bounce_time - dest_time)
+            
         # dest_boundary is beta
         N_alpha_beta[dest_boundary] += 1
         T_alpha_list.append(dest_time - last_bounce_time)
@@ -168,7 +175,8 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
         
     return N_i_j_alpha, R_i_alpha_list, R_i_alpha_average, \
         R_i_alpha_std_dev, R_i_alpha_total, N_alpha_beta, T_alpha_list, \
-        T_alpha_average, T_alpha_std_dev, T_alpha_total, lines
+        T_alpha_average, T_alpha_std_dev, T_alpha_total, T_ii_alpha, \
+        T_ij_alpha, lines
 
 def openmm_read_statistics_file(statistics_file_name):
     """
@@ -338,6 +346,8 @@ def namd_read_output_file_list(output_file_list, anchor, timestep,
     R_i_alpha_list = defaultdict(list)
     N_alpha_beta = defaultdict(int)
     T_alpha_list = []
+    T_ii_alpha = defaultdict(float)
+    T_ij_alpha = defaultdict(float)
     last_bounce_time = -1.0
     alias_src = None
         
@@ -363,7 +373,9 @@ def namd_read_output_file_list(output_file_list, anchor, timestep,
                     dest_boundary = milestone.index
                     alias_dest = milestone.alias_index
                     alias_src = alias_dest
-                    
+            
+            src_boundary = dest_boundary
+            T_ii_alpha[src_boundary] += (last_bounce_time - dest_time)
             assert dest_boundary is not None
             
         elif line[1].startswith("Milestone"):
@@ -418,6 +430,9 @@ def namd_read_output_file_list(output_file_list, anchor, timestep,
                 
                 N_i_j_alpha[(alias_src, alias_dest)] += 1
                 R_i_alpha_list[alias_src].append(incubation_time)
+            T_ij_alpha[(src_boundary, dest_boundary)] \
+                += (last_bounce_time - dest_time)
+        
             src_boundary = dest_boundary
             src_time = dest_time
             
@@ -455,7 +470,8 @@ def namd_read_output_file_list(output_file_list, anchor, timestep,
         
     return N_i_j_alpha, R_i_alpha_list, R_i_alpha_average, \
         R_i_alpha_std_dev, R_i_alpha_total, N_alpha_beta, T_alpha_list, \
-        T_alpha_average, T_alpha_std_dev, T_alpha_total, lines
+        T_alpha_average, T_alpha_std_dev, T_alpha_total, T_ii_alpha, \
+        T_ij_alpha, lines
 
 class MMVT_anchor_statistics():
     """
@@ -539,6 +555,8 @@ class MMVT_anchor_statistics():
         self.T_alpha_average = None
         self.T_alpha_std_dev = None
         self.T_alpha_total = None
+        self.T_ii_alpha = None
+        self.T_ij_alpha = None
         self.N_alpha_beta = None
         self.k_alpha_beta = {}
         self.alpha = alpha
@@ -555,14 +573,16 @@ class MMVT_anchor_statistics():
             self.N_i_j_alpha, self.R_i_alpha_list, self.R_i_alpha_average, \
             self.R_i_alpha_std_dev, self.R_i_alpha_total, self.N_alpha_beta, \
             self.T_alpha_list, self.T_alpha_average, self.T_alpha_std_dev, \
-            self.T_alpha_total, self.existing_lines \
+            self.T_alpha_total, self.T_ii_alpha, self.T_ij_alpha, \
+            self.existing_lines \
                 = openmm_read_output_file_list(
                     output_file_list, min_time, max_time, self.existing_lines)
         elif engine == "namd":
             self.N_i_j_alpha, self.R_i_alpha_list, self.R_i_alpha_average, \
             self.R_i_alpha_std_dev, self.R_i_alpha_total, self.N_alpha_beta, \
             self.T_alpha_list, self.T_alpha_average, self.T_alpha_std_dev, \
-            self.T_alpha_total, self.existing_lines \
+            self.T_alpha_total, self.T_ii_alpha, self.T_ij_alpha, \
+            self.existing_lines \
                 = namd_read_output_file_list(
                     output_file_list, anchor, timestep, min_time, max_time, 
                     self.existing_lines)
@@ -682,7 +702,8 @@ class MMVT_data_sample(common_analyze.Data_sample):
         those states.
     """
     def __init__(self, model, N_alpha_beta=None, k_alpha_beta=None, 
-                 N_i_j_alpha=None, R_i_alpha=None, T_alpha=None):
+                 N_i_j_alpha=None, R_i_alpha=None, T_alpha=None, 
+                 T_ii_alpha=None, T_ij_alpha=None):
         self.model = model
         self.N_alpha_beta = N_alpha_beta
         self.k_alpha_beta = k_alpha_beta
@@ -691,6 +712,8 @@ class MMVT_data_sample(common_analyze.Data_sample):
         self.N_alpha = []
         self.R_i_alpha = R_i_alpha
         self.T_alpha = T_alpha
+        self.T_ii_alpha = T_ii_alpha
+        self.T_ij_alpha = T_ij_alpha
         self.pi_alpha = None
         self.N_ij = None
         self.R_i = None
@@ -868,7 +891,8 @@ class MMVT_data_sample(common_analyze.Data_sample):
             if len(R_i_alpha) > 0:
                 for key in R_i_alpha:
                     assert time_fraction > 0.0, \
-                        "time_fraction should be positive: {}".format(time_fraction)
+                        "time_fraction should be positive: {}".format(
+                            time_fraction)
                     assert this_anchor_pi_alpha >= 0.0, \
                         "this_anchor_pi_alpha should be positive: {}".format(
                             this_anchor_pi_alpha)
@@ -881,5 +905,37 @@ class MMVT_data_sample(common_analyze.Data_sample):
             else:
                 raise Exception("R_i_alpha should always be set.")
                 
-        
         return
+
+    def fill_out_mcmc_quantities(self):
+        """
+        Compute quantities such as T_ij_mc and N_ij_mc for eventual use in
+        the MCMC Q matrix sampling algorithm for calculation of error bars.
+        """
+        if self.T_ii_alpha is None or self.T_ij_alpha is None :
+            raise Exception("Unable to call fill_out_mcmc_quantities(): "\
+                            "no statistics present in Data Sample.")
+        
+        self.T_ij_mc = defaultdict(float)
+        self.N_ij_mc = defaultdict(float)
+        T_ii_mc = defaultdict(float)
+        for alpha, anchor in enumerate(self.model.anchors):
+            if anchor.bulkstate:
+                continue
+            for key in self.N_i_j_alpha[alpha]:
+                self.N_ij_mc[key] += self.N_i_j_alpha[alpha][key]
+                
+            for key in self.T_ij_alpha[alpha]:
+                self.T_ij_mc[key] += self.T_ij_alpha[alpha][key]
+            
+            for key in self.T_ii_alpha[alpha]:
+                T_ii_mc[key] += self.T_ii_alpha[alpha][key]
+            
+        for i in range(self.K.shape[0]):
+            for j in range(self.K.shape[1]):
+                key = (i,j)
+                k_ij = self.K[i,j]
+                self.T_ij_mc[key] += T_ii_mc[i] * k_ij
+                
+        return
+                
