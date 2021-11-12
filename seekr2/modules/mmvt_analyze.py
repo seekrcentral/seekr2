@@ -3,15 +3,17 @@ Routines for the analysis stage of an MMVT calculation
 """
 
 from collections import defaultdict
+from copy import deepcopy
 
 import numpy as np
 import scipy as sp
 import scipy.linalg as la
 import scipy.sparse.linalg as sp
 
-FLUX_MATRIX_K_EXPONENT = 1000
-
 import seekr2.modules.common_analyze as common_analyze
+import seekr2.modules.markov_chain_monte_carlo as markov_chain_monte_carlo
+
+FLUX_MATRIX_K_EXPONENT = 1000
 
 def flux_matrix_to_K(M):
     """Given a flux matrix M, compute probability transition matrix K."""
@@ -27,6 +29,46 @@ def flux_matrix_to_K(M):
             assert K[i,j] >= 0.0, "Negative values for K matrix not allowed."
     
     return K
+
+def mmvt_Q_N_R(n_milestones, n_anchors, N_i_j_alpha, R_i_alpha_total, 
+               T_alpha_total, T, pi_alpha):
+    """
+    
+    """
+    mmvt_Nij = np.zeros((n_milestones, n_milestones))
+    mmvt_Ri = np.zeros((n_milestones, 1))
+    
+    for alpha in range(n_anchors):
+        for i in range(n_milestones):
+            for j in range(n_milestones):
+                mmvt_Nij[i,j] += T * pi_alpha[alpha] * N_i_j_alpha[alpha][i,j] / T_alpha_total[alpha]
+        
+            mmvt_Ri[i,0] += T * pi_alpha[alpha] * R_i_alpha_total[alpha][i,0] / T_alpha_total[alpha]
+    
+    mmvt_Q = np.zeros((n_milestones, n_milestones))
+    for i in range(n_milestones):
+        for j in range(n_milestones):
+            if i == j: continue
+            if mmvt_Ri[i,0] > 0.0:
+                mmvt_Q[i,j] = mmvt_Nij[i,j] / mmvt_Ri[i,0]
+                    
+    for i in range(n_milestones):
+        mmvt_Q[i,i] = -np.sum(mmvt_Q[i,:])
+        
+    return mmvt_Nij, mmvt_Ri, mmvt_Q
+
+def make_new_Nij_alpha(mmvt_Qij_alpha, mmvt_Ri_alpha):
+    """
+    
+    """
+    n_milestones = mmvt_Qij_alpha.shape[0]
+    new_mmvt_Nij_alpha = np.zeros((n_milestones, n_milestones))
+    for i in range(n_milestones):
+        for j in range(n_milestones):
+            if i == j: continue
+            new_mmvt_Nij_alpha[i,j] = mmvt_Qij_alpha[i,j] * mmvt_Ri_alpha[i,0]
+            
+    return new_mmvt_Nij_alpha
 
 def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None, 
                                  existing_lines=[], skip_restart_check=False):
@@ -91,8 +133,6 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
     R_i_alpha_list = defaultdict(list)
     N_alpha_beta = defaultdict(int)
     T_alpha_list = []
-    T_ii_alpha = defaultdict(float)
-    T_ij_alpha = defaultdict(float)
     
     last_bounce_time = -1.0
     src_boundary = None
@@ -139,10 +179,6 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
             R_i_alpha_list[src_boundary].append(time_diff)
             src_boundary = dest_boundary
             src_time = dest_time
-            T_ij_alpha[(src_boundary, dest_boundary)] \
-                += (last_bounce_time - dest_time)
-        else:
-            T_ii_alpha[src_boundary] += (last_bounce_time - dest_time)
             
         # dest_boundary is beta
         N_alpha_beta[dest_boundary] += 1
@@ -175,8 +211,7 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
         
     return N_i_j_alpha, R_i_alpha_list, R_i_alpha_average, \
         R_i_alpha_std_dev, R_i_alpha_total, N_alpha_beta, T_alpha_list, \
-        T_alpha_average, T_alpha_std_dev, T_alpha_total, T_ii_alpha, \
-        T_ij_alpha, lines
+        T_alpha_average, T_alpha_std_dev, T_alpha_total, lines
 
 def openmm_read_statistics_file(statistics_file_name):
     """
@@ -346,8 +381,6 @@ def namd_read_output_file_list(output_file_list, anchor, timestep,
     R_i_alpha_list = defaultdict(list)
     N_alpha_beta = defaultdict(int)
     T_alpha_list = []
-    T_ii_alpha = defaultdict(float)
-    T_ij_alpha = defaultdict(float)
     last_bounce_time = -1.0
     alias_src = None
         
@@ -375,7 +408,6 @@ def namd_read_output_file_list(output_file_list, anchor, timestep,
                     alias_src = alias_dest
             
             src_boundary = dest_boundary
-            T_ii_alpha[src_boundary] += (last_bounce_time - dest_time)
             assert dest_boundary is not None
             
         elif line[1].startswith("Milestone"):
@@ -430,9 +462,7 @@ def namd_read_output_file_list(output_file_list, anchor, timestep,
                 
                 N_i_j_alpha[(alias_src, alias_dest)] += 1
                 R_i_alpha_list[alias_src].append(incubation_time)
-            T_ij_alpha[(src_boundary, dest_boundary)] \
-                += (last_bounce_time - dest_time)
-        
+            
             src_boundary = dest_boundary
             src_time = dest_time
             
@@ -470,8 +500,7 @@ def namd_read_output_file_list(output_file_list, anchor, timestep,
         
     return N_i_j_alpha, R_i_alpha_list, R_i_alpha_average, \
         R_i_alpha_std_dev, R_i_alpha_total, N_alpha_beta, T_alpha_list, \
-        T_alpha_average, T_alpha_std_dev, T_alpha_total, T_ii_alpha, \
-        T_ij_alpha, lines
+        T_alpha_average, T_alpha_std_dev, T_alpha_total, lines
 
 class MMVT_anchor_statistics():
     """
@@ -555,8 +584,6 @@ class MMVT_anchor_statistics():
         self.T_alpha_average = None
         self.T_alpha_std_dev = None
         self.T_alpha_total = None
-        self.T_ii_alpha = None
-        self.T_ij_alpha = None
         self.N_alpha_beta = None
         self.k_alpha_beta = {}
         self.alpha = alpha
@@ -573,16 +600,14 @@ class MMVT_anchor_statistics():
             self.N_i_j_alpha, self.R_i_alpha_list, self.R_i_alpha_average, \
             self.R_i_alpha_std_dev, self.R_i_alpha_total, self.N_alpha_beta, \
             self.T_alpha_list, self.T_alpha_average, self.T_alpha_std_dev, \
-            self.T_alpha_total, self.T_ii_alpha, self.T_ij_alpha, \
-            self.existing_lines \
+            self.T_alpha_total, self.existing_lines \
                 = openmm_read_output_file_list(
                     output_file_list, min_time, max_time, self.existing_lines)
         elif engine == "namd":
             self.N_i_j_alpha, self.R_i_alpha_list, self.R_i_alpha_average, \
             self.R_i_alpha_std_dev, self.R_i_alpha_total, self.N_alpha_beta, \
             self.T_alpha_list, self.T_alpha_average, self.T_alpha_std_dev, \
-            self.T_alpha_total, self.T_ii_alpha, self.T_ij_alpha, \
-            self.existing_lines \
+            self.T_alpha_total, self.existing_lines \
                 = namd_read_output_file_list(
                     output_file_list, anchor, timestep, min_time, max_time, 
                     self.existing_lines)
@@ -702,18 +727,15 @@ class MMVT_data_sample(common_analyze.Data_sample):
         those states.
     """
     def __init__(self, model, N_alpha_beta=None, k_alpha_beta=None, 
-                 N_i_j_alpha=None, R_i_alpha=None, T_alpha=None, 
-                 T_ii_alpha=None, T_ij_alpha=None):
+                 N_i_j_alpha=None, R_i_alpha=None, T_alpha=None):
         self.model = model
         self.N_alpha_beta = N_alpha_beta
         self.k_alpha_beta = k_alpha_beta
-        self.k_alpha = []
+        self.k_alpha = [] # TODO: marked for removal?
         self.N_i_j_alpha = N_i_j_alpha
         self.N_alpha = []
         self.R_i_alpha = R_i_alpha
         self.T_alpha = T_alpha
-        self.T_ii_alpha = T_ii_alpha
-        self.T_ij_alpha = T_ij_alpha
         self.pi_alpha = None
         self.N_ij = None
         self.R_i = None
@@ -764,9 +786,7 @@ class MMVT_data_sample(common_analyze.Data_sample):
         in MMVT theory. The value self.pi_alpha gets set by this 
         function.
         """
-        if self.N_alpha_beta is None or self.k_alpha_beta is None \
-                or self.N_i_j_alpha is None or self.R_i_alpha is None \
-                or self.T_alpha is None:
+        if self.k_alpha_beta is None:
             raise Exception("Unable to call calculate_pi_alpha(): "\
                             "No statistics present in Data Sample.")
         
@@ -796,7 +816,7 @@ class MMVT_data_sample(common_analyze.Data_sample):
                     if id_alias is None:
                         flux_matrix[beta, alpha] = 0.0
                     else:
-                        flux_matrix[beta, alpha] = 1e15
+                        flux_matrix[beta, alpha] = 1e30
                 else:
                     if alpha == beta:
                         pass 
@@ -885,7 +905,7 @@ class MMVT_data_sample(common_analyze.Data_sample):
                     "N_i_j_alpha[key] should be positive: {}".format(
                         N_i_j_alpha[key])
                 self.N_ij[key] += time_fraction * \
-                    this_anchor_pi_alpha * np.float128(N_i_j_alpha[key])
+                    this_anchor_pi_alpha * np.longdouble(N_i_j_alpha[key])
             
             R_i_alpha = self.R_i_alpha[alpha]
             if len(R_i_alpha) > 0:
@@ -906,36 +926,229 @@ class MMVT_data_sample(common_analyze.Data_sample):
                 raise Exception("R_i_alpha should always be set.")
                 
         return
-
-    def fill_out_mcmc_quantities(self):
+    
+    def make_mcmc_quantities(self):
         """
-        Compute quantities such as T_ij_mc and N_ij_mc for eventual use in
-        the MCMC Q matrix sampling algorithm for calculation of error bars.
+        Finds k_alpha_beta_matrix, N_alpha_beta_matrix, T_alpha_matrix,
+        mmvt_Nij_alpha, mmvt_Ri_alpha, mmvt_Qij_alpha, T
         """
-        if self.T_ii_alpha is None or self.T_ij_alpha is None :
-            raise Exception("Unable to call fill_out_mcmc_quantities(): "\
-                            "no statistics present in Data Sample.")
-        
-        self.T_ij_mc = defaultdict(float)
-        self.N_ij_mc = defaultdict(float)
-        T_ii_mc = defaultdict(float)
-        for alpha, anchor in enumerate(self.model.anchors):
-            if anchor.bulkstate:
+        n_anchors = self.model.num_anchors
+        n_milestones = self.model.num_milestones
+        k_alpha_beta_matrix = np.zeros((n_anchors, n_anchors))
+        N_alpha_beta_matrix = np.zeros((n_anchors, n_anchors))
+        T_alpha_matrix = np.zeros((n_anchors, 1))
+        for alpha in range(n_anchors):
+            if self.model.anchors[alpha].bulkstate:
                 continue
-            for key in self.N_i_j_alpha[alpha]:
-                self.N_ij_mc[key] += self.N_i_j_alpha[alpha][key]
-                
-            for key in self.T_ij_alpha[alpha]:
-                self.T_ij_mc[key] += self.T_ij_alpha[alpha][key]
+            for beta in range(n_anchors):
+                if alpha == beta: continue
+                if (alpha,beta) in self.k_alpha_beta:
+                    k_alpha_beta_matrix[alpha,beta] \
+                        = self.k_alpha_beta[(alpha,beta)]
+                    k_alpha_beta_matrix[alpha,alpha] \
+                        -= self.k_alpha_beta[(alpha,beta)]
+                    N_alpha_beta_matrix[alpha,beta] \
+                        = self.N_alpha_beta[alpha,beta]
             
-            for key in self.T_ii_alpha[alpha]:
-                T_ii_mc[key] += self.T_ii_alpha[alpha][key]
-            
-        for i in range(self.K.shape[0]):
-            for j in range(self.K.shape[1]):
-                key = (i,j)
-                k_ij = self.K[i,j]
-                self.T_ij_mc[key] += T_ii_mc[i] * k_ij
+            T_alpha_matrix[alpha,0] = self.T_alpha[alpha]
+
+        invT = 0.0
+        mmvt_Nij_alpha = []
+        mmvt_Ri_alpha = []
+        mmvt_Qij_alpha = []
+        for alpha in range(n_anchors):
+            if self.model.anchors[alpha].bulkstate:
+                continue
+            invT += self.pi_alpha[alpha] / self.T_alpha[alpha]
+            this_mmvt_Nij_alpha = np.zeros((n_milestones, n_milestones))
+            this_mmvt_Ri_alpha = np.zeros((n_milestones, 1))
+            this_mmvt_Qij_alpha = np.zeros((n_milestones, n_milestones))
+            for i in range(n_milestones):
+                for j in range(n_milestones):
+                    key = (i,j)
+                    if key in self.N_i_j_alpha[alpha]:
+                        this_mmvt_Nij_alpha[i,j] = self.N_i_j_alpha[alpha][key]
                 
+                if i in self.R_i_alpha[alpha]:
+                    this_mmvt_Ri_alpha[i,0] = self.R_i_alpha[alpha][i]
+            
+            for i in range(n_milestones):
+                for j in range(n_milestones):
+                    if i == j: continue
+                    if this_mmvt_Ri_alpha[i,0] > 0.0:
+                        this_mmvt_Qij_alpha[i,j] = this_mmvt_Nij_alpha[i,j] \
+                            / this_mmvt_Ri_alpha[i,0]
+                        this_mmvt_Qij_alpha[i,i] -= this_mmvt_Nij_alpha[i,j] \
+                            / this_mmvt_Ri_alpha[i,0]
+                        
+            mmvt_Nij_alpha.append(this_mmvt_Nij_alpha)
+            mmvt_Ri_alpha.append(this_mmvt_Ri_alpha)
+            mmvt_Qij_alpha.append(this_mmvt_Qij_alpha)
+            
+        T = 1.0 / invT        
+        return k_alpha_beta_matrix, N_alpha_beta_matrix, T_alpha_matrix,\
+            mmvt_Nij_alpha, mmvt_Ri_alpha, mmvt_Qij_alpha, T
+            
+    def fill_k_from_matrices(self, k_alpha_beta_matrix):
+        """
+        
+        """
+        n_anchors = self.model.num_anchors
+        self.k_alpha_beta = defaultdict(float)
+        for alpha in range(n_anchors):
+            if self.model.anchors[alpha].bulkstate:
+                continue
+            for beta in range(n_anchors):
+                if alpha == beta: continue
+                if k_alpha_beta_matrix[alpha,beta] > 0.0:
+                    self.k_alpha_beta[(alpha,beta)] \
+                        = k_alpha_beta_matrix[alpha,beta]
         return
-                
+    
+def monte_carlo_milestoning_error(
+        main_data_sample, num=1000, skip=None, stride=None, verbose=False, 
+        pre_equilibrium_approx=False):
+    """
+    Calculates an error estimate by sampling a distribution of rate 
+    matrices assumming a Poisson (gamma) distribution with 
+    parameters Nij and Ri using Markov chain Monte Carlo.
+        
+    Enforces detailed Balance-- using a modified version of 
+    Algorithm 4 from Noe 2008 for rate matrices.-- 
+    Citation: Noe, F. "Probability Distributions of molecular observables
+    computed from Markov models." J. Chem. Phys. 2008, 128, No. 244103.
+    Distribution is:  p(Q|N) = p(Q)p(N|Q)/p(N) = 
+        p(Q) PI(q_ij**N_ij * exp(-q_ij * Ri))
+        
+    Parameters
+    ----------
+    
+    main_data_sample : MMVT_data_sample()
+        The data sample contains all data extracted from simulations as
+        well as model information.
+    
+    num : int, default 1000
+        number of rate matrix (Q) samples to be generated
+        
+    skip : int, default None
+        number of inital rate matrix samples to skip for "burn in". If
+        None, it will be assigned 10 * N**2, where N is the size of the
+        rate matrix Q
+        
+    stride : int, default None
+        frequency at which rate matrix samples are recorded- larger
+        frequency reduces correlation between samples. If None, it will
+        be assigned N**2, where N is the size of the rate matrix Q.
+        
+    verbose : bool, default False
+        allow additional verbosity/printing
+    
+    pre_equilibrium_approx : bool, default False
+        Whether to use the pre-equilibrium approximation for
+        computing kinetics.
+    """
+    model = main_data_sample.model
+    Q_ij = main_data_sample.Q
+    N_ij = main_data_sample.N_ij
+    R_i = main_data_sample.R_i
+    Q = deepcopy(Q_ij)
+    n_milestones = Q.shape[0] #get size of count matrix
+    n_anchors = model.num_anchors
+    if skip is None:
+        skip = 10 * n_milestones**2
+    if stride is None:
+        stride = n_milestones**2
+    
+    k_alpha_beta_matrix, N_alpha_beta_matrix, T_alpha_matrix, mmvt_Nij_alpha, \
+        mmvt_Ri_alpha, mmvt_Qij_alpha, T \
+        = main_data_sample.make_mcmc_quantities()
+        
+    MFPTs_list = defaultdict(list)
+    MFPTs_error = defaultdict(float)
+    k_off_list = []
+    k_ons_list = defaultdict(list)
+    k_ons_error = defaultdict(float)
+    p_i_list = []
+    free_energy_profile_list = []
+    data_sample_list = []
+    if verbose: print("collecting ", num, " MCMC samples from ", 
+                      num*(stride) + skip, " total moves")  
+    new_data_sample = None
+    for counter in range(num * (stride) + skip):
+        #if verbose: print("MCMC stepnum: ", counter)
+        new_data_sample = MMVT_data_sample(model)
+        new_data_sample.N_alpha_beta = main_data_sample.N_alpha_beta
+        new_data_sample.T_alpha = main_data_sample.T_alpha
+        k_alpha_beta_matrix_new = markov_chain_monte_carlo\
+            .irreversible_stochastic_matrix_algorithm_sample(
+                k_alpha_beta_matrix, N_alpha_beta_matrix, T_alpha_matrix)
+        new_data_sample.fill_k_from_matrices(k_alpha_beta_matrix_new)
+        new_data_sample.calculate_pi_alpha()
+        
+        mmvt_Qnew_list = []
+        mmvt_Nij_list = []
+        
+        for alpha in range(model.num_anchors-1):
+            mmvt_Qnew_alpha = markov_chain_monte_carlo\
+                .irreversible_stochastic_matrix_algorithm_sample(
+                    mmvt_Qij_alpha[alpha], mmvt_Nij_alpha[alpha], 
+                    mmvt_Ri_alpha[alpha])
+            new_mmvt_Nij_alpha = make_new_Nij_alpha(
+                mmvt_Qij_alpha[alpha], mmvt_Ri_alpha[alpha])
+            mmvt_Qnew_list.append(mmvt_Qnew_alpha)
+            mmvt_Nij_list.append(new_mmvt_Nij_alpha)
+            
+        if counter > skip and counter % stride == 0:
+            new_mmvt_Nij, new_mmvt_Ri, new_mmvt_Q = mmvt_Q_N_R(
+                n_milestones, n_anchors-1, mmvt_Nij_list, mmvt_Ri_alpha, 
+                main_data_sample.T_alpha, T, new_data_sample.pi_alpha)
+        
+        k_alpha_beta_matrix = k_alpha_beta_matrix_new
+        mmvt_Qij_alpha = mmvt_Qnew_list
+            
+        if counter > skip and counter % stride == 0:
+            new_data_sample.N_ij = main_data_sample.N_ij
+            new_data_sample.R_i = main_data_sample.R_i
+            new_data_sample.Q = new_mmvt_Q
+            new_data_sample.K = common_analyze.Q_to_K(new_mmvt_Q)
+            if model.k_on_info:
+                new_data_sample.parse_browndye_results(
+                    bd_sample_from_normal=True)
+            new_data_sample.calculate_thermodynamics()
+            new_data_sample.calculate_kinetics(pre_equilibrium_approx)
+            p_i_list.append(new_data_sample.p_i)
+            free_energy_profile_list.append(new_data_sample.free_energy_profile)
+            for key in new_data_sample.MFPTs:
+                MFPTs_list[key].append(new_data_sample.MFPTs[key])
+            k_off_list.append(new_data_sample.k_off)
+            if model.k_on_info:
+                for key in new_data_sample.k_ons:
+                    k_ons_list[key].append(new_data_sample.k_ons[key])  
+            data_sample_list.append(new_data_sample)
+    
+    assert new_data_sample is not None, "Nothing sampled in Monte Carlo "\
+        "milestoning procedure. Please choose different arrangement of num, "\
+        "skip, and stride."
+    p_i_error = np.zeros(main_data_sample.p_i.shape)
+    free_energy_profile_err = np.zeros(
+        main_data_sample.free_energy_profile.shape)
+    for i in range(p_i_error.shape[0]):
+        p_i_val_list = []
+        for j in range(len(p_i_list)):
+            p_i_val_list.append(p_i_list[j][i])
+        p_i_error[i] = np.std(p_i_val_list)
+    
+    for i in range(free_energy_profile_err.shape[0]):
+        free_energy_profile_val_list = []
+        for j in range(len(free_energy_profile_list)):
+            free_energy_profile_val_list.append(free_energy_profile_list[j][i])
+        free_energy_profile_err[i] = np.std(free_energy_profile_val_list)
+    for key in main_data_sample.MFPTs:
+        MFPTs_error[key] = np.std(MFPTs_list[key])
+    k_off_error = np.std(k_off_list)
+    if main_data_sample.model.k_on_info:
+        for key in main_data_sample.k_ons:
+            k_ons_error[key] = np.std(k_ons_list[key])
+    
+    return data_sample_list, p_i_error, free_energy_profile_err, MFPTs_error, \
+        k_off_error, k_ons_error

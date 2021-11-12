@@ -11,11 +11,11 @@ import xml.etree.ElementTree as ET
 import subprocess
 import random
 from collections import defaultdict
-import PyGT
 
 import numpy as np
 from scipy import linalg as la
 from scipy.stats import gamma
+import PyGT
 
 import seekr2.modules.common_base as base
 
@@ -672,7 +672,7 @@ class Data_sample():
         Q_hat = self.Q[:,:]
         p_i_hat = self.p_i[:]
         assert len(bulk_milestones) == 1, \
-            "There should only be one bulk milestone."
+            "There should be exactly one bulk milestone."
         
         for bulk_milestone in sorted(bulk_milestones, reverse=True):
             Q_hat = minor2d(Q_hat, bulk_milestone, bulk_milestone)
@@ -803,138 +803,3 @@ class Data_sample():
         self.k_off = k_off
         return
     
-    def monte_carlo_milestoning_error(self, num=1000, skip=100, stride=1, 
-                                      verbose=False, 
-                                      pre_equilibrium_approx=False):
-        """
-        Calculates an error estimate by sampling a distribution of rate 
-        matrices assumming a Poisson (gamma) distribution with 
-        parameters Nij and Ri using Markov chain Monte Carlo.
-            
-        Enforces detailed Balance-- using a modified version of 
-        Algorithm 4 from Noe 2008 for rate matrices.-- 
-        Distribution is:  p(Q|N) = p(Q)p(N|Q)/p(N) = 
-            p(Q) PI(q_ij**N_ij * exp(-q_ij * Ri))
-            
-        Parameters
-        ----------
-        
-        num : int, default 1000
-            number of rate matrix (Q) samples to be generated
-            
-        skip : int, default 100
-            number of inital rate matrix samples to skip for "burn in"
-            
-        stride : int, default 1
-            frequency at which rate matrix samples are recorded- larger
-            frequency reduces correlation between samples
-            
-        verbose : bool, default False
-            allow additional verbosity/printing
-        
-        pre_equilibrium_approx : bool, default False
-            Whether to use the pre-equilibrium approximation for
-            computing kinetics.
-        """
-        Q = self.Q[:]
-        m = Q.shape[0] #get size of count matrix
-        N = np.zeros((m, m))
-        R = np.zeros((m, m))
-        if self.model.get_type() == "elber":
-            for i in range(m):
-                for j in range(m):
-                    N[i,j] = self.N_ij[i,j]
-                    R[i,j] = self.R_i[i]
-            
-        elif self.model.get_type() == "mmvt":
-            for i in range(m):
-                for j in range(m):
-                    key = (i,j)
-                    N[i,j] = self.N_ij_mc[key]
-                    R[i,j] = self.T_ij_mc[key]
-            
-        
-        Q_mats = []
-        MFPTs_list = defaultdict(list)
-        MFPTs_error = defaultdict(float)
-        k_off_list = []
-        k_ons_list = defaultdict(list)
-        k_ons_error = defaultdict(float)
-        p_i_list = []
-        free_energy_profile_list = []
-        Qnew = Q[:,:]
-        if verbose: print("collecting ", num, " MCMC samples from ", 
-                          num*(stride) + skip, " total moves")  
-        for counter in range(num * (stride) + skip):
-            #if verbose: print("MCMC stepnum: ", counter)
-            Qnew = Q[:,:]
-            for i in range(m): # rows
-                for j in range(m): # columns
-                    if i == j: continue
-                    if Qnew[i,j] == 0.0: continue
-                    if Qnew[j,j] == 0.0: continue
-                    if N[i,j] == 0: continue
-                    if R[i,j] == 0: continue
-                    Q_gamma = 0
-                    delta = Qnew[i,j]
-                    while ((delta) >= (Qnew[i,j])):
-                        Q_gamma = gamma.rvs(a=N[i,j], scale = 1/R[i,j],)
-                        delta =  Qnew[i,j] - Q_gamma
-        
-                    log_p_Q_old = N[i,j] * np.log(Qnew[i,j])  - Qnew[i,j] * R[i,j] 
-                    log_p_Q_new = N[i,j] * np.log(Qnew[i,j] - delta) - \
-                        (Qnew[i,j] - delta) * R[i,j]     
-                    if verbose: print("log P(Q_new)", log_p_Q_new)
-                    if verbose: print("log P(Q_old)", log_p_Q_old)
-    
-                    r2 = random.random()  
-                    p_acc =  log_p_Q_new - log_p_Q_old
-                    if verbose: print("p_acc", p_acc, "r", np.log(r2))
-                        
-                    if np.log(r2) <= p_acc: 
-                        #log(r) can be directly compared to 
-                        # log-likelihood acceptance, p_acc
-                        if verbose: print("performing non-reversible element "\
-                                          "shift...")
-                        Qnew[i,i] = (Qnew[i,i]) + delta
-                        Qnew[i,j] = Qnew[i,j] - delta
-                        if verbose: print(Qnew)
-    
-            if counter > skip and counter % stride == 0:
-                self.Q = Qnew
-                self.K = Q_to_K(self.Q)
-                self.calculate_thermodynamics()
-                self.calculate_kinetics(pre_equilibrium_approx)
-                p_i_list.append(self.p_i)
-                free_energy_profile_list.append(self.free_energy_profile)
-                for key in self.MFPTs:
-                    MFPTs_list[key].append(self.MFPTs[key])
-                k_off_list.append(self.k_off)
-                if self.model.k_on_info:
-                    for key in self.k_ons:
-                        k_ons_list[key].append(self.k_ons[key])  
-     
-            Q = Qnew
-        if verbose: print("final MCMC matrix", Q)
-        p_i_error = np.zeros(self.p_i.shape)
-        free_energy_profile_err = np.zeros(self.free_energy_profile.shape)
-        for i in range(p_i_error.shape[0]):
-            p_i_val_list = []
-            for j in range(len(p_i_list)):
-                p_i_val_list.append(p_i_list[j][i])
-            p_i_error[i] = np.std(p_i_val_list)
-        
-        for i in range(free_energy_profile_err.shape[0]):
-            free_energy_profile_val_list = []
-            for j in range(len(free_energy_profile_list)):
-                free_energy_profile_val_list.append(free_energy_profile_list[j][i])
-            free_energy_profile_err[i] = np.std(free_energy_profile_val_list)
-        for key in self.MFPTs:
-            MFPTs_error[key] = np.std(MFPTs_list[key])
-        k_off_error = np.std(k_off_list)
-        if self.model.k_on_info:
-            for key in self.k_ons:
-                k_ons_error[key] = np.std(k_ons_list[key])
-        
-        return p_i_error, free_energy_profile_err, MFPTs_error, k_off_error, \
-            k_ons_error

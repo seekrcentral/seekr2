@@ -264,6 +264,7 @@ class Analysis:
             if not files_already_read:
                 if self.model.get_type() == "mmvt":
                     anchor_stats = mmvt_analyze.MMVT_anchor_statistics(alpha)
+                    
                 elif self.model.get_type() == "elber":
                     anchor_stats = elber_analyze.Elber_anchor_statistics(alpha)
             else:
@@ -292,12 +293,13 @@ class Analysis:
                     raise Exception("Both OpenMM and NAMD settings missing. "\
                                     "One of these must be present in the "\
                                     "model XML.")
+                    
             else:
                 pass    
             
             if not files_already_read:
-                self.anchor_stats_list.append(anchor_stats)
-        
+                self.anchor_stats_list.append(anchor_stats)        
+            
         return
         
     def check_extraction(self, silent=False):
@@ -328,8 +330,6 @@ class Analysis:
         T_alpha_average = []
         T_alpha_std_dev = []
         T_alpha_count = []
-        T_ii_alpha = []
-        T_ij_alpha = []
         
         for alpha, anchor1 in enumerate(self.model.anchors):
             if anchor1.bulkstate:
@@ -383,32 +383,11 @@ class Analysis:
             T_alpha_total.append(anchor_T_alpha)
             T_alpha_std_dev.append(anchor_T_alpha_std)
             T_alpha_count.append(len(anchor_T_alpha_list))
-            anchor_T_ii_alpha = self.anchor_stats_list[alpha].T_ii_alpha
-            anchor_T_ij_alpha = self.anchor_stats_list[alpha].T_ij_alpha
-            T_ii_alpha.append(anchor_T_ii_alpha)
-            T_ij_alpha.append(anchor_T_ij_alpha)
             
         self.main_data_sample = mmvt_analyze.MMVT_data_sample(
             self.model, N_alpha_beta, k_alpha_beta, N_i_j_alpha, 
-            R_i_alpha_total, T_alpha_total, T_ii_alpha, T_ij_alpha)
+            R_i_alpha_total, T_alpha_total)
         
-        """ 
-        # TODO: skipping for now since new error method is available.
-        # TODO: remove
-        for i in range(self.num_error_samples):
-            sampled_k_alpha_beta, sampled_N_i_j_alpha, \
-            sampled_R_i_alpha_total, sampled_T_alpha_total \
-                = self.resample_k_N_R_T(
-                    N_alpha_beta, N_i_j_alpha, R_i_alpha_total,
-                    R_i_alpha_average, R_i_alpha_std_dev, R_i_alpha_count,
-                    T_alpha_total, T_alpha_average, T_alpha_std_dev, 
-                    T_alpha_count)
-            data_sample = mmvt_analyze.MMVT_data_sample(
-                self.model, N_alpha_beta, sampled_k_alpha_beta, 
-                sampled_N_i_j_alpha, sampled_R_i_alpha_total, 
-                sampled_T_alpha_total)
-            self.data_sample_list.append(data_sample)
-        """
         return
 
     def process_data_samples_mmvt(self, pre_equilibrium_approx=False):
@@ -422,85 +401,29 @@ class Analysis:
         if self.model.k_on_info is not None:
             self.main_data_sample.parse_browndye_results()
         self.main_data_sample.compute_rate_matrix()
-        self.main_data_sample.fill_out_mcmc_quantities()
         self.main_data_sample.calculate_thermodynamics()
         self.main_data_sample.calculate_kinetics(pre_equilibrium_approx)
-        # do data_sample_list here
-        
-        """ # Not necessary once MCMC implemented for MMVT
-        k_offs = []
-        p_i_list = []
-        pi_alpha_list = []
-        free_energy_profile_list = []
-        MFPTs_list = defaultdict(list)
-        k_ons_list = defaultdict(list)
-        for i in range(self.num_error_samples):
-            data_sample = self.data_sample_list[i]
-            data_sample.calculate_pi_alpha()
-            try:
-                data_sample.fill_out_data_quantities()
-            except AssertionError:
-                continue
-            if self.model.k_on_info is not None:
-                data_sample.parse_browndye_results(bd_sample_from_normal=True)
-            data_sample.compute_rate_matrix()
-            data_sample.calculate_thermodynamics()
-            data_sample.calculate_kinetics(pre_equilibrium_approx)
-            k_offs.append(data_sample.k_off)
-            p_i_list.append(data_sample.p_i)
-            pi_alpha_list.append(data_sample.pi_alpha)
-            free_energy_profile_list.append(data_sample.free_energy_profile)
-            for key in data_sample.MFPTs:
-                MFPTs_list[key].append(data_sample.MFPTs[key])
-            for key in data_sample.k_ons:
-                k_ons_list[key].append(data_sample.k_ons[key])
-        
-        pi_alpha_error = np.zeros(self.main_data_sample.pi_alpha.shape[0])
-        p_i_error = np.zeros(self.main_data_sample.p_i.shape)
-        free_energy_profile_err = np.zeros(
-            self.main_data_sample.free_energy_profile.shape)
-        k_off_error = None
-        MFPTs_error = {}
-        k_ons_error = {}
-        if len(k_offs) > 0:
-            k_off_error = np.std(k_offs)
-            for i in range(pi_alpha_error.shape[0]):
-                pi_alpha_val_list = []
-                for j in range(len(pi_alpha_list)):
-                    pi_alpha_val_list.append(pi_alpha_list[j][i])
-                pi_alpha_error[i] = np.std(pi_alpha_val_list)
-            
-            for i in range(p_i_error.shape[0]):
-                p_i_val_list = []
-                for j in range(len(p_i_list)):
-                    p_i_val_list.append(p_i_list[j][i])
-                p_i_error[i] = np.std(p_i_val_list)
-            
-            for i in range(free_energy_profile_err.shape[0]):
-                free_energy_profile_val_list = []
-                for j in range(len(free_energy_profile_list)):
-                    free_energy_profile_val_list.append(free_energy_profile_list[j][i])
-                free_energy_profile_err[i] = np.std(free_energy_profile_val_list)
-        
-            for key in self.main_data_sample.MFPTs:
-                MFPTs_error[key] = np.std(MFPTs_list[key])
-            
-            for key in self.main_data_sample.k_ons:
-                k_ons_error[key] = np.std(k_ons_list[key])
         
         self.pi_alpha = self.main_data_sample.pi_alpha
-        self.pi_alpha_error = pi_alpha_error
         self.p_i = self.main_data_sample.p_i
-        self.p_i_error = p_i_error
         self.free_energy_profile = self.main_data_sample.free_energy_profile
-        self.free_energy_profile_err = free_energy_profile_err
         self.MFPTs = self.main_data_sample.MFPTs
-        self.MFPTs_error = MFPTs_error
         self.k_off = self.main_data_sample.k_off
-        self.k_off_error = k_off_error
         self.k_ons = self.main_data_sample.k_ons
-        self.k_ons_error = k_ons_error
-        """
+        if self.num_error_samples > 0:
+            data_sample_list, p_i_error, free_energy_profile_err, MFPTs_error, \
+                k_off_error, k_ons_error \
+                = mmvt_analyze.monte_carlo_milestoning_error(
+                    self.main_data_sample, num=self.num_error_samples, 
+                    pre_equilibrium_approx=pre_equilibrium_approx)
+            self.data_sample_list = data_sample_list
+            self.pi_alpha_error = None #pi_alpha_error
+            self.p_i_error = p_i_error
+            self.free_energy_profile_err = free_energy_profile_err
+            self.MFPTs_error = MFPTs_error
+            self.k_off_error = k_off_error
+            self.k_ons_error = k_ons_error
+            
         return
     
     def fill_out_data_samples_elber(self):
@@ -564,37 +487,20 @@ class Analysis:
         if self.model.k_on_info is not None:
             self.main_data_sample.parse_browndye_results()
         self.main_data_sample.compute_rate_matrix()
-        #self.main_data_sample.Q = common_analyze.minor2d(
-        #    self.main_data_sample.Q, bulkstate, bulkstate)
-        #self.main_data_sample.K = common_analyze.minor2d(
-        #    self.main_data_sample.K, bulkstate, bulkstate)
         self.main_data_sample.calculate_thermodynamics()
         self.main_data_sample.calculate_kinetics(pre_equilibrium_approx)
-        """
-        error_sample = self.data_sample_list[0]
-        error_sample.compute_rate_matrix()
-        #self.main_data_sample.Q = common_analyze.minor2d(
-        #    self.main_data_sample.Q, bulkstate, bulkstate)
-        #self.main_data_sample.K = common_analyze.minor2d(
-        #    self.main_data_sample.K, bulkstate, bulkstate)
-        error_sample.calculate_thermodynamics()
-        error_sample.calculate_kinetics(pre_equilibrium_approx)
-        if self.num_error_samples > 0:
-            p_i_error, free_energy_profile_err, MFPTs_error, k_off_error, \
-                k_ons_error = error_sample.monte_carlo_milestoning_error(
-                    num=self.num_error_samples,
-                    pre_equilibrium_approx=pre_equilibrium_approx)
-        """
         self.p_i = self.main_data_sample.p_i
         self.free_energy_profile = self.main_data_sample.free_energy_profile
         self.MFPTs = self.main_data_sample.MFPTs
         self.k_off = self.main_data_sample.k_off
         self.k_ons = self.main_data_sample.k_ons
         if self.num_error_samples > 0:
-            p_i_error, free_energy_profile_err, MFPTs_error, k_off_error, \
-                k_ons_error = self.main_data_sample.monte_carlo_milestoning_error(
-                    num=self.num_error_samples,
+            data_sample_list, p_i_error, free_energy_profile_err, MFPTs_error, \
+                k_off_error, k_ons_error \
+                = elber_analyze.monte_carlo_milestoning_error(
+                    self.main_data_sample, num=self.num_error_samples, 
                     pre_equilibrium_approx=pre_equilibrium_approx)
+            self.data_sample_list = data_sample_list
             self.p_i_error = p_i_error
             self.free_energy_profile_err = free_energy_profile_err
             self.MFPTs_error = MFPTs_error

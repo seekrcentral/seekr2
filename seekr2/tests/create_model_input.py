@@ -610,7 +610,7 @@ def create_tryp_ben_elber_model_input(root_dir, bd=False):
 
 def create_smoluchowski_mmvt_model_input(root_dir, num_input_anchors=5):
     """
-    Create a trypsin-benzamidine Elber model input object.
+    Create a Smoluchowski MMVT model input object.
     """
     os.chdir(TEST_DIRECTORY)
     model_input = common_prepare.Model_input()
@@ -693,7 +693,7 @@ def create_smoluchowski_mmvt_model_input(root_dir, num_input_anchors=5):
 
 def create_smoluchowski_elber_model_input(root_dir, num_input_anchors=5):
     """
-    Create a generic host-guest model input object.
+    Create a Smoluchowski Elber model input object.
     """
     os.chdir(TEST_DIRECTORY)
     model_input = create_smoluchowski_mmvt_model_input(root_dir)

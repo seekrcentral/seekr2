@@ -5,10 +5,12 @@ Routines for the analysis stage of an Elber milestoning calculation.
 """
 
 from collections import defaultdict
+from copy import deepcopy
 
 import numpy as np
 
 import seekr2.modules.common_analyze as common_analyze
+import seekr2.modules.markov_chain_monte_carlo as markov_chain_monte_carlo
 
 def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None, 
                                  existing_lines=[], skip_restart_check=False):
@@ -219,9 +221,6 @@ class Elber_data_sample(common_analyze.Data_sample):
         self.k_ons = {}
         self.b_surface_k_ons_src = None
         self.b_surface_k_on_errors_src = None
-        #self.b_surface_reaction_probabilities = None # REMOVE?
-        #self.b_surface_reaction_probability_errors = None # REMOVE?
-        #self.b_surface_transition_counts = None # REMOVE?
         self.bd_transition_counts = {}
         self.bd_transition_probabilities = {}
         return
@@ -251,3 +250,130 @@ class Elber_data_sample(common_analyze.Data_sample):
             
         return
         
+def monte_carlo_milestoning_error(
+        main_data_sample, num=1000, skip=None, stride=None, verbose=False, 
+        pre_equilibrium_approx=False):
+    """
+    Calculates an error estimate by sampling a distribution of rate 
+    matrices assumming a Poisson (gamma) distribution with 
+    parameters Nij and Ri using Markov chain Monte Carlo.
+        
+    Enforces detailed Balance-- using a modified version of 
+    Algorithm 4 from Noe 2008 for rate matrices.-- 
+    Citation: Noe, F. "Probability Distributions of molecular observables
+    computed from Markov models." J. Chem. Phys. 2008, 128, No. 244103.
+    Distribution is:  p(Q|N) = p(Q)p(N|Q)/p(N) = 
+        p(Q) PI(q_ij**N_ij * exp(-q_ij * Ri))
+        
+    Parameters
+    ----------
+    
+    main_data_sample : MMVT_data_sample()
+        The data sample contains all data extracted from simulations as
+        well as model information.
+    
+    num : int, default 1000
+        number of rate matrix (Q) samples to be generated
+        
+    skip : int, default None
+        number of inital rate matrix samples to skip for "burn in". If
+        None, it will be assigned 10 * N**2, where N is the size of the
+        rate matrix Q
+        
+    stride : int, default None
+        frequency at which rate matrix samples are recorded- larger
+        frequency reduces correlation between samples. If None, it will
+        be assigned N**2, where N is the size of the rate matrix Q.
+        
+    verbose : bool, default False
+        allow additional verbosity/printing
+    
+    pre_equilibrium_approx : bool, default False
+        Whether to use the pre-equilibrium approximation for
+        computing kinetics.
+    """
+    model = main_data_sample.model
+    Q_ij = main_data_sample.Q
+    N_ij = main_data_sample.N_ij
+    R_i = main_data_sample.R_i
+    Q = deepcopy(Q_ij)
+    m = Q.shape[0] #get size of count matrix
+    N = np.zeros((m, m))
+    R = np.zeros((m, 1))
+    if skip is None:
+        skip = 10 * Q.shape[0]**2
+    if stride is None:
+        stride = Q.shape[0]**2
+        
+    for i in range(m):
+        for j in range(m):
+            N[i,j] = N_ij[i,j]
+        
+        R[i,0] = R_i[i]
+        
+    MFPTs_list = defaultdict(list)
+    MFPTs_error = defaultdict(float)
+    k_off_list = []
+    k_ons_list = defaultdict(list)
+    k_ons_error = defaultdict(float)
+    p_i_list = []
+    free_energy_profile_list = []
+    data_sample_list = []
+    if verbose: print("collecting ", num, " MCMC samples from ", 
+                      num*(stride) + skip, " total moves")  
+    new_data_sample = None
+    for counter in range(num * (stride) + skip):
+        #if verbose: print("MCMC stepnum: ", counter)
+        Qnew = markov_chain_monte_carlo\
+            .irreversible_stochastic_matrix_algorithm_sample(Q, N, R)
+        
+        if counter > skip and counter % stride == 0:
+            new_data_sample = Elber_data_sample(model)
+            new_data_sample.N_ij = N_ij
+            new_data_sample.R_i = R_i
+            new_data_sample.Q = Qnew
+            new_data_sample.K = common_analyze.Q_to_K(Qnew)
+            if model.k_on_info:
+                new_data_sample.parse_browndye_results(
+                    bd_sample_from_normal=True)
+            new_data_sample.calculate_thermodynamics()
+            new_data_sample.calculate_kinetics(pre_equilibrium_approx)
+            p_i_list.append(new_data_sample.p_i)
+            free_energy_profile_list.append(new_data_sample.free_energy_profile)
+            for key in new_data_sample.MFPTs:
+                MFPTs_list[key].append(new_data_sample.MFPTs[key])
+            k_off_list.append(new_data_sample.k_off)
+            if model.k_on_info:
+                for key in new_data_sample.k_ons:
+                    k_ons_list[key].append(new_data_sample.k_ons[key])  
+            data_sample_list.append(new_data_sample)
+            
+        Q = Qnew
+    
+    assert new_data_sample is not None, "Nothing sampled in Monte Carlo "\
+        "milestoning procedure. Please choose different arrangement of num, "\
+        "skip, and stride."
+    if verbose: print("final MCMC matrix", Q)
+    p_i_error = np.zeros(new_data_sample.p_i.shape)
+    free_energy_profile_err = np.zeros(
+        new_data_sample.free_energy_profile.shape)
+    for i in range(p_i_error.shape[0]):
+        p_i_val_list = []
+        for j in range(len(p_i_list)):
+            p_i_val_list.append(p_i_list[j][i])
+        p_i_error[i] = np.std(p_i_val_list)
+    
+    for i in range(free_energy_profile_err.shape[0]):
+        free_energy_profile_val_list = []
+        for j in range(len(free_energy_profile_list)):
+            free_energy_profile_val_list.append(free_energy_profile_list[j][i])
+        free_energy_profile_err[i] = np.std(free_energy_profile_val_list)
+    for key in new_data_sample.MFPTs:
+        MFPTs_error[key] = np.std(MFPTs_list[key])
+    k_off_error = np.std(k_off_list)
+    if new_data_sample.model.k_on_info:
+        for key in new_data_sample.k_ons:
+            k_ons_error[key] = np.std(k_ons_list[key])
+    
+    return data_sample_list, p_i_error, free_energy_profile_err, MFPTs_error, \
+        k_off_error, k_ons_error

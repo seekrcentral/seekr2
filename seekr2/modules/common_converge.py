@@ -502,11 +502,19 @@ def calc_transition_steps(model, data_sample):
         if anchor.bulkstate:
             continue
         
-        if data_sample.T_alpha is None:
-            transition_minima.append(0)
-            transition_prob_details.append(transition_detail)
-            transition_time_details.append(transition_time_detail)
-            continue
+        if model.get_type() == "mmvt":
+            if data_sample.T_alpha is None:
+                transition_minima.append(0)
+                transition_prob_details.append(transition_detail)
+                transition_time_details.append(transition_time_detail)
+                continue
+        
+        elif model.get_type() == "elber":
+            if data_sample.R_i_list[alpha][alpha] == 0.0:
+                transition_minima.append(0)
+                transition_prob_details.append(transition_detail)
+                transition_time_details.append(transition_time_detail)
+                continue
         
         if len(anchor.milestones) == 1:
             # if this is a dead-end milestone
@@ -587,9 +595,15 @@ def calc_RMSD_conv_amount(model, data_sample_list, window_size=30,
             bound1 = len(data_sample_list) - window_size - backwards
             bound2 = len(data_sample_list) - backwards
             for data_sample in data_sample_list[bound1:bound2]:
-                if data_sample.T_alpha is None:
-                    RMSD_window_conv_list.append(1e99)
-                    break
+                if model.get_type() == "mmvt":
+                    if data_sample.T_alpha is None:
+                        RMSD_window_conv_list.append(1e99)
+                        break
+                elif model.get_type() == "elber":
+                    if data_sample.R_i_list[alpha][alpha] == 0.0:
+                        RMSD_window_conv_list.append(1e99)
+                        break
+                
                 if len(anchor.milestones) == 1:
                     # if this is a dead-end milestone
                     if model.get_type() == "mmvt":

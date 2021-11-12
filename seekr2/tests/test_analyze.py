@@ -37,7 +37,7 @@ def make_smoluchowski_standard_for_k_off(mymodel, potential_energy_function):
     #    absorbing_boundary = mymodel.anchors[-1].milestones[0].variables["radius"]
     #elif mymodel.get_type() == "elber":
     #    absorbing_boundary = mymodel.anchors[-1].milestones[1].variables["radius"]
-    absorbing_boundary = mymodel.anchors[-1].milestones[1].variables["radius"]
+    absorbing_boundary = mymodel.anchors[-1].milestones[-1].variables["radius"]
     calc = smol.SmoluchowskiCalculation1d(
         potential_energy_function, milestones=milestones, 
         absorbing_boundary=absorbing_boundary)
@@ -114,6 +114,12 @@ def make_smoluchowski_mmvt_analysis(mymodel, potential_energy_function,
     my_analysis.main_data_sample.calculate_thermodynamics()
     my_analysis.main_data_sample.calculate_kinetics(
         pre_equilibrium_approx=pre_equilibrium_approx)
+    
+    data_sample_list, p_i_error, free_energy_profile_err, MFPTs_error, \
+        k_off_error, k_ons_error = mmvt_analyze.monte_carlo_milestoning_error(
+            my_analysis.main_data_sample, num=100, skip=None, stride=None,
+            pre_equilibrium_approx=False)
+    
     mmvt_time = my_analysis.main_data_sample.MFPTs[(0,"bulk")]
     k_on = None
     if k_on_src is not None:
@@ -158,6 +164,7 @@ def make_smoluchowski_elber_analysis(mymodel, potential_energy_function,
     my_analysis.main_data_sample.calculate_thermodynamics()
     elberQ = np.zeros((mymodel.num_milestones, 
                        mymodel.num_milestones), dtype=np.longdouble)
+    """ # TODO: remove
     for i in range(mymodel.num_milestones):
         for j in range(mymodel.num_milestones):
             if my_analysis.main_data_sample.R_i[i] == 0.0:
@@ -168,14 +175,19 @@ def make_smoluchowski_elber_analysis(mymodel, potential_energy_function,
                     / my_analysis.main_data_sample.R_i[i]
                 if elberR_i[i] > 0.0:
                     elberQ[i,j] = elberN_ij[i,j] / elberR_i[i]
-                
+                    
     for i in range(mymodel.num_milestones):
         my_analysis.main_data_sample.Q[i][i] = \
             -np.sum(my_analysis.main_data_sample.Q[i])
         elberQ[i][i] = -np.sum(elberQ[i])
+    """
     #print("elber Q:", elberQ)
     #my_analysis.main_data_sample.Q = elberQ
     my_analysis.main_data_sample.calculate_kinetics()
+    data_sample_list, p_i_error, free_energy_profile_err, MFPTs_error, \
+        k_off_error, k_ons_error = elber_analyze.monte_carlo_milestoning_error(
+            my_analysis.main_data_sample, num=100, skip=None, stride=None,
+            pre_equilibrium_approx=False)
     elber_time = my_analysis.main_data_sample.MFPTs[(0,"bulk")]
     k_on = None
     if k_on_src is not None:
@@ -312,7 +324,7 @@ def test_smoluchowski_k_on_from_elber_statistics(smoluchowski_elber_model):
 
 def make_mmvt_calculation_based_on_output_files(model, potential_energy_function,
                                                 k_on_src=None, transition_probs=None,
-                                                style="openmm", steps=100000):
+                                                style="openmm", steps=1000000):
     calc = smol.make_smoluchowski_calculation_from_model(
         model, potential_energy_function)
     

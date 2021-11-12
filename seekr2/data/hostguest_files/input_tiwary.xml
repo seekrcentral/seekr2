@@ -1,55 +1,54 @@
 <?xml version="1.0" ?>
 <model_input class='Model_input'>
-    <calculation_type>elber</calculation_type>
-    <calculation_settings class="Elber_input_settings">
-        <temperature_equil_progression>[300., 310., 320., 330., 340., 350., 340., 330., 320., 310., 300.]</temperature_equil_progression>
-        <num_temperature_equil_steps>1000</num_temperature_equil_steps>
-        <num_umbrella_stage_steps>40000</num_umbrella_stage_steps>
-        <umbrella_force_constant>5000.0</umbrella_force_constant>
-        <fwd_rev_interval>200</fwd_rev_interval>
-        <rev_output_interval/>
-        <fwd_output_interval/>
+    <calculation_type>mmvt</calculation_type>
+    <calculation_settings class="MMVT_input_settings">
+        <md_output_interval>10000</md_output_interval>
+        <md_steps_per_anchor>100000</md_steps_per_anchor>
     </calculation_settings>
     <temperature>298.15</temperature>
     <pressure>1.0</pressure>
     <ensemble>nvt</ensemble>
-    <root_directory>~/test_elber_openmm/</root_directory>
-    <md_program>openmm</md_program>
+    <root_directory>~/test_tiwary/</root_directory>
+    <md_program>openmm</md_program> 
     <constraints>HBonds</constraints>
     <rigidWater>True</rigidWater>
     <hydrogenMass/>
     <timestep>0.002</timestep>
     <nonbonded_cutoff>0.9</nonbonded_cutoff>
     <cv_inputs>
-        <cv_input class="Spherical_cv_input">
-            <group1>[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 
-                    17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 
-                    31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 
-                    45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 
-                    59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 
-                    73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 
-                    87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 
-                    101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 
-                    112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 
-                    123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 
-                    134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 
-                    145, 146]</group1>
-            <group2>[147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 
-                    158, 159, 160, 161]</group2>
-            <bd_group1>[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 
-                    15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 
-                    31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 
-                    47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 
-                    63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 
-                    79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 
-                    95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 
-                    109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 
-                    122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 
-                    135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 
-                    146]</bd_group1>
-            <bd_group2>[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]</bd_group2>
+        <cv_input class="Tiwary_cv_input">
+            <order_parameters>
+                <order_parameter class="Tiwary_cv_distance_order_parameter">
+                    <group1>[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 
+                            17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 
+                            31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 
+                            45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 
+                            59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 
+                            73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 
+                            87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 
+                            101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 
+                            112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 
+                            123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 
+                            134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 
+                            145, 146]</group1>
+                    <group2>[147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 
+                            158, 159, 160, 161]</group2>
+                </order_parameter>
+                <order_parameter class="Tiwary_cv_angle_order_parameter">
+                    <group1>[0]</group1>
+                    <group2>[147]</group2>
+                    <group3>[161]</group3>
+                </order_parameter>
+                <order_parameter class="Tiwary_cv_dihedral_order_parameter">
+                    <group1>[0]</group1>
+                    <group1>[1]</group1>
+                    <group2>[147]</group2>
+                    <group3>[161]</group3>
+                </order_parameter>
+            </order_parameters>
+            <order_parameter_weights>[0.99, 0.005, 0.005]</order_parameter_weights>
             <input_anchors>
-                <input_anchor class="Spherical_cv_anchor">
+                <input_anchor class="Tiwary_cv_anchor">
                     <radius>0.05</radius>
                     <lower_milestone_radius/>
                     <upper_milestone_radius/>
@@ -61,7 +60,7 @@
                     <bound_state>True</bound_state>
                     <bulk_anchor>False</bulk_anchor>
                 </input_anchor>
-                <input_anchor class="Spherical_cv_anchor">
+                <input_anchor class="Tiwary_cv_anchor">
                     <radius>0.15</radius>
                     <lower_milestone_radius/>
                     <upper_milestone_radius/>
@@ -73,7 +72,7 @@
                     <bound_state>False</bound_state>
                     <bulk_anchor>False</bulk_anchor>
                 </input_anchor>
-                <input_anchor class="Spherical_cv_anchor">
+                <input_anchor class="Tiwary_cv_anchor">
                     <radius>0.25</radius>
                     <lower_milestone_radius/>
                     <upper_milestone_radius/>
@@ -85,7 +84,7 @@
                     <bound_state>False</bound_state>
                     <bulk_anchor>False</bulk_anchor>
                 </input_anchor>
-                <input_anchor class="Spherical_cv_anchor">
+                <input_anchor class="Tiwary_cv_anchor">
                     <radius>0.35</radius>
                     <lower_milestone_radius/>
                     <upper_milestone_radius/>
@@ -97,7 +96,7 @@
                     <bound_state>False</bound_state>
                     <bulk_anchor>False</bulk_anchor>
                 </input_anchor>
-                <input_anchor class="Spherical_cv_anchor">
+                <input_anchor class="Tiwary_cv_anchor">
                     <radius>0.45</radius>
                     <lower_milestone_radius/>
                     <upper_milestone_radius/>
@@ -109,7 +108,7 @@
                     <bound_state>False</bound_state>
                     <bulk_anchor>False</bulk_anchor>
                 </input_anchor>
-                <input_anchor class="Spherical_cv_anchor">
+                <input_anchor class="Tiwary_cv_anchor">
                     <radius>0.55</radius>
                     <lower_milestone_radius/>
                     <upper_milestone_radius/>
@@ -121,7 +120,7 @@
                     <bound_state>False</bound_state>
                     <bulk_anchor>False</bulk_anchor>
                 </input_anchor>
-                <input_anchor class="Spherical_cv_anchor">
+                <input_anchor class="Tiwary_cv_anchor">
                     <radius>0.65</radius>
                     <lower_milestone_radius/>
                     <upper_milestone_radius/>
@@ -133,7 +132,7 @@
                     <bound_state>False</bound_state>
                     <bulk_anchor>False</bulk_anchor>
                 </input_anchor>
-                <input_anchor class="Spherical_cv_anchor">
+                <input_anchor class="Tiwary_cv_anchor">
                     <radius>0.75</radius>
                     <lower_milestone_radius/>
                     <upper_milestone_radius/>
@@ -145,7 +144,7 @@
                     <bound_state>False</bound_state>
                     <bulk_anchor>False</bulk_anchor>
                 </input_anchor>
-                <input_anchor class="Spherical_cv_anchor">
+                <input_anchor class="Tiwary_cv_anchor">
                     <radius>0.85</radius>
                     <lower_milestone_radius/>
                     <upper_milestone_radius/>
@@ -157,7 +156,7 @@
                     <bound_state>False</bound_state>
                     <bulk_anchor>False</bulk_anchor>
                 </input_anchor>
-                <input_anchor class="Spherical_cv_anchor">
+                <input_anchor class="Tiwary_cv_anchor">
                     <radius>0.95</radius>
                     <lower_milestone_radius/>
                     <upper_milestone_radius/>
@@ -169,7 +168,7 @@
                     <bound_state>False</bound_state>
                     <bulk_anchor>False</bulk_anchor>
                 </input_anchor>
-                <input_anchor class="Spherical_cv_anchor">
+                <input_anchor class="Tiwary_cv_anchor">
                     <radius>1.05</radius>
                     <lower_milestone_radius/>
                     <upper_milestone_radius/>
@@ -181,7 +180,7 @@
                     <bound_state>False</bound_state>
                     <bulk_anchor>False</bulk_anchor>
                 </input_anchor>
-                <input_anchor class="Spherical_cv_anchor">
+                <input_anchor class="Tiwary_cv_anchor">
                     <radius>1.15</radius>
                     <lower_milestone_radius/>
                     <upper_milestone_radius/>
@@ -193,7 +192,7 @@
                     <bound_state>False</bound_state>
                     <bulk_anchor>False</bulk_anchor>
                 </input_anchor>
-                <input_anchor class="Spherical_cv_anchor">
+                <input_anchor class="Tiwary_cv_anchor">
                     <radius>1.25</radius>
                     <lower_milestone_radius/>
                     <upper_milestone_radius/>
@@ -205,7 +204,7 @@
                     <bound_state>False</bound_state>
                     <bulk_anchor>False</bulk_anchor>
                 </input_anchor>
-                <input_anchor class="Spherical_cv_anchor">
+                <input_anchor class="Tiwary_cv_anchor">
                     <radius>1.35</radius>
                     <lower_milestone_radius/>
                     <upper_milestone_radius/>
@@ -220,13 +219,5 @@
             </input_anchors>
         </cv_input>
     </cv_inputs>
-    <browndye_settings_input class="Browndye_settings_input">
-        <binary_directory></binary_directory>
-        <receptor_pqr_filename>data/hostguest_files/hostguest_receptor.pqr</receptor_pqr_filename>
-        <ligand_pqr_filename>data/hostguest_files/hostguest_ligand.pqr</ligand_pqr_filename>
-        <apbs_grid_spacing>0.5</apbs_grid_spacing>
-        <ions/>
-        <num_b_surface_trajectories>10000</num_b_surface_trajectories>
-        <n_threads>1</n_threads>
-    </browndye_settings_input>
+    <browndye_settings_input/>
 </model_input>
