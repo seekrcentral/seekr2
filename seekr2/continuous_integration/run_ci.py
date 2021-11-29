@@ -7,6 +7,7 @@ import sys
 import time
 import tempfile
 
+import seekr2
 import seekr2.tests.create_model_input as create_model_input
 import seekr2.prepare as prepare
 import seekr2.modules.check as check
@@ -87,6 +88,37 @@ def run_multisite_sod_ci(cuda_device_index):
         
     return
 
+def run_doc_api_examples_ci(cuda_device_index):
+    os.chdir("..")
+    with tempfile.TemporaryDirectory() as temp_dir:
+        model_input_filename = "data/sample_input_mmvt_openmm.xml"
+        model_input = seekr2.prepare.common_prepare.Model_input()
+        model_input.deserialize(model_input_filename, user_input=True)
+        # this line not part of API documentation
+        model_input.root_directory = os.path.join(temp_dir, "test_api_examples")
+        model, xml_path = seekr2.prepare.prepare(model_input)
+        model.anchor_rootdir = os.path.dirname(xml_path)
+        seekr2.modules.check.check_pre_simulation_all(model)
+        seekr2.run.run(model, "any")
+        analysis = seekr2.analyze.analyze(model)
+        analysis.print_results()
+        
+        # listing 2
+        from openmm import unit
+        new_input_anchor = seekr2.modules.common_cv.Spherical_cv_anchor()
+        new_input_anchor.radius = 0.1
+        model_input.cv_inputs[0].input_anchors.insert(1, new_input_anchor)
+        model, xml_path = seekr2.prepare.prepare(
+            model_input, force_overwrite=True)
+        model_input.cv_inputs[0].input_anchors[1].radius \
+            = 0.11
+        model, xml_path = seekr2.prepare.prepare(
+            model_input, force_overwrite=True)
+        
+        # listing 3
+        print(analysis.main_data_sample.Q)
+        print(analysis.free_energy_profile)
+
 if __name__ == "__main__":
     if len(sys.argv) <= 1:
         argument = "short"
@@ -112,6 +144,8 @@ if __name__ == "__main__":
         run_generic_namd_hostguest_ci(cuda_device_index)
         run_elber_hostguest_ci(cuda_device_index)
         run_multisite_sod_ci(cuda_device_index)
+    elif argument == "api_examples":
+        run_doc_api_examples_ci(cuda_device_index)
         
     print("Time elapsed: {:.3f}".format(time.time() - starttime))
     print("Continuous Integration Tests Passed Successfully.")

@@ -94,7 +94,8 @@ def add_forces(sim_openmm, model, anchor):
         forcenum = sim_openmm.system.addForce(myforce)
     return
 
-def add_simulation(sim_openmm, model, topology, positions, box_vectors):
+def add_simulation(sim_openmm, model, topology, positions, box_vectors, 
+                   frame=0):
     """
     Assign the OpenMM simulation object for MMVT.
     """
@@ -104,7 +105,11 @@ def add_simulation(sim_openmm, model, topology, positions, box_vectors):
         sim_openmm.properties)
     
     if positions is not None:
-        sim_openmm.simulation.context.setPositions(positions.positions)
+        assert frame >= 0, "Cannot have negative frame index"
+        assert frame < positions.getNumFrames(), \
+            "Frame index {} out of range.".format(frame)
+        sim_openmm.simulation.context.setPositions(
+            positions.getPositions(frame=frame))
         sim_openmm.simulation.context.setVelocitiesToTemperature(
             model.openmm_settings.initial_temperature * unit.kelvin)
         
@@ -124,7 +129,8 @@ def add_simulation(sim_openmm, model, topology, positions, box_vectors):
     assert sim_openmm.timestep is not None
     return
 
-def create_sim_openmm(model, anchor, output_filename, state_prefix=None):
+def create_sim_openmm(model, anchor, output_filename, state_prefix=None, 
+                      frame=0):
     """
     Take all relevant model and anchor information and generate
     the necessary OpenMM objects to run the simulation.
@@ -147,7 +153,10 @@ def create_sim_openmm(model, anchor, output_filename, state_prefix=None):
         bounce. These can be used to seed simulations in other
         cells. This argument provides the file prefix for these
         saved states. If None, then no states will be written.
-        
+    
+    frame : int
+        Which frame of the starting positions file to retrieve.
+    
     Returns
     -------
     sim_openmm : Sim_openmm()
@@ -165,7 +174,7 @@ def create_sim_openmm(model, anchor, output_filename, state_prefix=None):
     common_sim_openmm.add_barostat(sim_openmm, model)
     common_sim_openmm.add_platform(sim_openmm, model)
     add_forces(sim_openmm, model, anchor)
-    add_simulation(sim_openmm, model, topology, positions, box_vectors)
+    add_simulation(sim_openmm, model, topology, positions, box_vectors, frame)
     return sim_openmm
 
 def make_mmvt_boundary_definitions(cv, milestone):
@@ -203,3 +212,19 @@ def make_mmvt_boundary_definitions(cv, milestone):
     cv.add_groups_and_variables(myforce, cv.get_variable_values_list(
                                     milestone))
     return myforce
+
+def get_starting_structure_num_frames(model, anchor, dummy_outfile):
+    """
+    For an anchor's starting structure, find and return the number of frames.
+    """
+    sim_openmm = MMVT_sim_openmm()
+    common_sim_openmm.fill_generic_parameters(
+        sim_openmm, model, anchor, dummy_outfile)
+    dummy_system, dummy_topology, positions, dummy_box_vectors \
+        = common_sim_openmm.create_openmm_system(sim_openmm, model, anchor)
+    num_frames = 0
+    if positions is not None:
+        num_frames = positions.getNumFrames()
+        
+    return num_frames
+    

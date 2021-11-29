@@ -298,7 +298,8 @@ def choose_next_simulation_namd(
                         = (currentStep // CONVERGENCE_INTERVAL + 1) \
                         * CONVERGENCE_INTERVAL
                     anchor_info = [steps_to_go_to_minimum, num_transitions, 
-                                   alpha, restart, total_simulation_length]
+                                   alpha, restart, total_simulation_length,
+                                   None]
                     anchor_info_to_run_unsorted.append(anchor_info)
                     continue
                     
@@ -314,7 +315,8 @@ def choose_next_simulation_namd(
                         currentStep // CONVERGENCE_INTERVAL + 1) \
                         * (CONVERGENCE_INTERVAL)
                     anchor_info = [steps_to_go_to_minimum, num_transitions, 
-                                   alpha, restart, total_simulation_length]
+                                   alpha, restart, total_simulation_length,
+                                   None]
                     anchor_info_to_run_unsorted.append(anchor_info)
                     
         else:
@@ -323,7 +325,7 @@ def choose_next_simulation_namd(
             total_simulation_length = min_total_simulation_length
             num_transitions = 0
             anchor_info = [steps_to_go_to_minimum, num_transitions, 
-                           alpha, restart, total_simulation_length]
+                           alpha, restart, total_simulation_length, None]
             anchor_info_to_run_unsorted.append(anchor_info)
         
     # sort anchors first by how many steps still to run, then by how many
@@ -364,7 +366,8 @@ def run_browndye2(model, bd_milestone_index, restart, n_trajectories,
 def run_openmm(model, anchor_index, restart, total_simulation_length, 
                cuda_device_index=False, force_overwrite=False,
                save_state_file=False, save_state_boundaries=False,
-               num_rev_launches=1, umbrella_restart_mode=False):
+               num_rev_launches=1, umbrella_restart_mode=False,
+               swarm_index=None):
     """Run an OpenMM simulation."""
     import seekr2.modules.runner_openmm as runner_openmm
     import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
@@ -398,14 +401,19 @@ def run_openmm(model, anchor_index, restart, total_simulation_length,
     runner = runner_openmm.Runner_openmm(model, myanchor)
     default_output_file, state_file_prefix, restart_index = runner.prepare(
         restart, save_state_file, save_state_boundaries, force_overwrite, 
-        umbrella_restart_mode)
+        umbrella_restart_mode, swarm_index)
+    
+    if swarm_index is None:
+        frame = 0
+    else:
+        frame = swarm_index
     
     if model.get_type() == "mmvt":
         sim_openmm_obj = mmvt_sim_openmm.create_sim_openmm(
-            model, myanchor, default_output_file, state_file_prefix)
+            model, myanchor, default_output_file, state_file_prefix, frame)
     elif model.get_type() == "elber":
         sim_openmm_obj = elber_sim_openmm.create_sim_openmm(
-            model, myanchor, default_output_file, state_file_prefix)
+            model, myanchor, default_output_file, state_file_prefix, frame)
     
     runner.run(sim_openmm_obj, restart, None, restart_index)
     if model.get_type() == "mmvt":
@@ -473,6 +481,7 @@ def run(model, instruction, min_total_simulation_length=None,
     Run all simulations, both MD and BD, as specified by the user 
     inputs.
     """
+    curdir = os.getcwd()
     md_complete = False
     bd_complete = False
     
@@ -503,7 +512,7 @@ def run(model, instruction, min_total_simulation_length=None,
         
         for anchor_info in anchor_info_to_run:
             steps_to_go_to_minimum, num_transitions, anchor_index, \
-            restart, total_simulation_length = anchor_info
+            restart, total_simulation_length, swarm_index = anchor_info
             if (force_overwrite or umbrella_restart_mode) and restart:
                 restart = False
             print("running anchor_index:", anchor_index, "restart:", 
@@ -519,8 +528,11 @@ def run(model, instruction, min_total_simulation_length=None,
                            save_state_file=save_state_file,
                            save_state_boundaries=save_state_boundaries,
                            num_rev_launches=num_rev_launches,
-                           umbrella_restart_mode=umbrella_restart_mode)
+                           umbrella_restart_mode=umbrella_restart_mode,
+                           swarm_index=swarm_index)
             elif model.namd_settings is not None:
+                assert swarm_index is None, \
+                    "MMVT swarms not available for NAMD."
                 run_namd(model, anchor_index, restart, 
                          total_simulation_length, 
                          cuda_device_index=cuda_device_index, 
@@ -573,7 +585,8 @@ def run(model, instruction, min_total_simulation_length=None,
         counter += 1
         if counter > MAX_ITER:
             raise Exception("BD while loop appears to be stuck.")
-        
+    
+    os.chdir(curdir)
     return
 
 def catch_erroneous_instruction(instruction):

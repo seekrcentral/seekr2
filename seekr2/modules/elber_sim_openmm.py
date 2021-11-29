@@ -174,7 +174,8 @@ def add_simulations(sim_openmm, model, topology, positions, box_vectors):
         sim_openmm.fwd_integrator, sim_openmm.platform, 
         sim_openmm.properties)
     
-    sim_openmm.umbrella_simulation.context.setPositions(positions.positions)
+    sim_openmm.umbrella_simulation.context.setPositions(
+        positions.getPositions())
     if box_vectors is not None:
         sim_openmm.umbrella_simulation.context.setPeriodicBoxVectors(
             *box_vectors.to_quantity())

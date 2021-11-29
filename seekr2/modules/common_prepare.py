@@ -988,8 +988,8 @@ def modify_model(old_model, new_model, root_directory, force_overwrite=False):
             "existing BD simulation files in {}. Use the --force_overwrite "\
             "(-f) option if you wish to proceed anyway.".format(
                 old_model.anchor_rootdir)
-            print(warning_msg)
             if not force_overwrite:
+                print(warning_msg)
                 raise Exception("Cannot overwrite existing BD outputs.")
             
             print("Deleting folder:", b_surface_directory)
@@ -1003,8 +1003,8 @@ def modify_model(old_model, new_model, root_directory, force_overwrite=False):
                 "in this model's modifications. You should probably generate an"\
                 "entirely new model for this system. Use the --force_overwrite "\
                 "(-f) option if you wish to proceed anyway."
-            print(warning_msg)
             if not force_overwrite:
+                print(warning_msg)
                 raise Exception("Cannot define a new number of BD milestones.")
         
             for bd_milestone in old_model.k_on_info.bd_milestones:
@@ -1035,8 +1035,8 @@ def modify_model(old_model, new_model, root_directory, force_overwrite=False):
                 b_surface_directory, check_mode=True)
             
             if b_surface_files_present:
-                print(warnstr)
                 if not force_overwrite:
+                    print(warnstr)
                     raise Exception("Cannot overwrite existing BD milestones.")
             
             b_surface_directory = os.path.join(

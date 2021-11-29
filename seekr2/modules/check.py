@@ -727,7 +727,7 @@ def check_pre_simulation_all(model):
     Returns:
     None
     """
-    
+    curdir = os.getcwd()
     check_passed_list = []
     #check_passed_list.append(check_pre_sim_bubbles(model))
     check_passed_list.append(check_pre_sim_MD_and_BD_salt_concentration(model))
@@ -756,6 +756,7 @@ def check_pre_simulation_all(model):
         print(check_fail_str)
         raise Exception("The SEEKR2 calculation should not proceed due "\
                         "to failed pre-simulation checks.")
+    os.chdir(curdir)
     return
 
 def check_elber_umbrella_stage(model):
@@ -942,7 +943,7 @@ def check_post_simulation_all(model, long_check=False):
     Returns:
     None
     """
-    
+    curdir = os.getcwd()
     check_passed_list = []
     check_passed_list.append(check_elber_umbrella_stage(model))
     check_passed_list.append(check_mmvt_in_Voronoi_cell(model))
@@ -967,6 +968,7 @@ def check_post_simulation_all(model, long_check=False):
         print(check_fail_str)
         raise Exception("The SEEKR2 calculation can not proceed due "\
                         "to failed post-simulation checks.")
+    os.chdir(curdir)
     return
 
 if __name__ == "__main__":

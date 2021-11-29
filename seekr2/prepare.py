@@ -19,12 +19,13 @@ from seekr2.modules.common_base import Ion, Amber_params, Forcefield_params, \
     Box_vectors
 from seekr2.modules.common_cv import Spherical_cv_anchor, Spherical_cv_input
 
-def prepare(model_input, force_overwrite):
+def prepare(model_input, force_overwrite=False):
     """
     Using the Model_input from the user, prepare the Model
     object and the filetree. Then prepare all building files
     for each anchor and serialize the Model to XML.
     """
+    curdir = os.getcwd()
     model = common_prepare.model_factory(model_input)
     root_directory = os.path.expanduser(model_input.root_directory)
     model_input.root_directory = root_directory
@@ -37,6 +38,7 @@ def prepare(model_input, force_overwrite):
     filetree.copy_bd_files(model, model_input, root_directory)
     common_prepare.generate_bd_files(model, root_directory)
     model.serialize(xml_path)
+    os.chdir(curdir)
     return model, xml_path
 
 if __name__ == "__main__":

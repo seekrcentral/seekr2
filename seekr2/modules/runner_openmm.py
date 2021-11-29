@@ -846,7 +846,7 @@ if __name__ == "__main__":
     
     if model.get_type() == "mmvt":
         sim_openmm_obj = mmvt_sim_openmm.create_sim_openmm(
-            model, myanchor, output_file, state_file_prefix)
+            model, myanchor, output_file, state_file_prefix, frame=0)
     elif model.get_type() == "elber":
         sim_openmm_factory = elber_sim_openmm.create_sim_openmm(
             model, myanchor, output_file, state_file_prefix)

@@ -675,12 +675,14 @@ def analyze(model, force_warning=False, num_error_samples=1000,
             pre_equilibrium_approx=False, skip_checks=False, min_time=0.0, 
             max_time=None):
     """Perform all the analysis steps at once."""
+    curdir = os.getcwd()
     analysis = Analysis(model, force_warning, num_error_samples)
     analysis.extract_data(min_time=min_time, max_time=max_time)
     if not skip_checks:
         analysis.check_extraction()
     analysis.fill_out_data_samples()
     analysis.process_data_samples(pre_equilibrium_approx)
+    os.chdir(curdir)
     return analysis
 
 if __name__ == "__main__":

@@ -7,6 +7,7 @@ test runner_openmm.py script(s)
 import pytest
 import os
 import glob
+import shutil
 
 import seekr2.modules.common_base as base
 import seekr2.modules.mmvt_base as mmvt_base
@@ -15,6 +16,9 @@ import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
 import seekr2.modules.elber_sim_openmm as elber_sim_openmm
 import seekr2.modules.runner_openmm as runner_openmm
 import seekr2.tests.make_test_model as make_test_model
+
+TEST_DIRECTORY = os.path.dirname(__file__)
+TEST_DATA_DIRECTORY = os.path.join(TEST_DIRECTORY, "data")
 
 def test_Runner_openmm_default(host_guest_mmvt_model):
     host_guest_mmvt_model.calculation_settings.num_production_steps = 10
@@ -165,3 +169,40 @@ def test_runner_openmm_save_states_until_all_bounds(host_guest_mmvt_model):
     runner.run(my_sim_openmm, False)
     assert os.path.exists(mmvt_output_filename)
     return
+
+def test_mmvt_swarm(host_guest_mmvt_model):
+    """
+    If a multi-frame trajectory is provided as the input PDB, then an MMVT
+    swarm should be started.
+    """
+    swarm_file_name = "hostguest_at0.5_swarm.pdb"
+    host_guest_mmvt_model.anchors[0].amber_params.pdb_coordinates_filename \
+        = swarm_file_name
+    anchor_building_dir = os.path.join(
+        host_guest_mmvt_model.anchor_rootdir, 
+        host_guest_mmvt_model.anchors[0].directory, 
+        host_guest_mmvt_model.anchors[0].building_directory)
+    assert os.path.exists(anchor_building_dir)
+    src_filename = os.path.join(TEST_DATA_DIRECTORY, swarm_file_name)
+    dest_filename = os.path.join(anchor_building_dir, swarm_file_name)
+    shutil.copyfile(src_filename, dest_filename)
+    
+    
+    host_guest_mmvt_model.calculation_settings.num_production_steps = 10
+    host_guest_mmvt_model.openmm_settings.cuda_platform_settings = None
+    host_guest_mmvt_model.openmm_settings.reference_platform = True
+    myanchor = host_guest_mmvt_model.anchors[1]
+    mmvt_output_filename = os.path.join(
+        host_guest_mmvt_model.anchor_rootdir, myanchor.name, "prod", 
+        "%s%d.%s" % (mmvt_base.OPENMMVT_BASENAME, 1, 
+                             mmvt_base.OPENMMVT_EXTENSION))
+    runner = runner_openmm.Runner_openmm(host_guest_mmvt_model, myanchor)
+    default_output_file, state_file_prefix, restart_index = runner.prepare(
+        force_overwrite=True)
+    my_sim_openmm = mmvt_sim_openmm.create_sim_openmm(
+        host_guest_mmvt_model, myanchor, mmvt_output_filename)
+    runner.run(my_sim_openmm, False)
+    assert os.path.exists(mmvt_output_filename)
+    
+    return
+    

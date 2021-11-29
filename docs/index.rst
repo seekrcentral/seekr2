@@ -36,6 +36,7 @@ Two versions of milestoning theory are available to use in SEEKR2:
    model_input_files
    program_options
    api
+   faq
 
 Cite SEEKR2
 ===========

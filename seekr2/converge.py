@@ -20,7 +20,7 @@ def converge(model, k_on_state=None, image_directory=None,
     Perform all convergence steps: a generic analysis of convergence 
     of quantities such as N_ij, R_i, k_off, and k_on.
     """
-    
+    curdir = os.getcwd()
     k_on_conv, k_off_conv, N_ij_conv, R_i_conv, max_step_list, \
         timestep_in_ns, data_sample_list \
         = common_converge.check_milestone_convergence(
@@ -59,7 +59,7 @@ def converge(model, k_on_state=None, image_directory=None,
         R_i_fig.savefig(R_i_filename)
     
     print("All plots have been saved to:", image_directory)
-    
+    os.chdir(curdir)
     return data_sample_list
 
 def print_convergence_results(model, convergence_results, cutoff, 
