@@ -275,10 +275,11 @@ class Runner_openmm():
         self.start_bounce_counter = 0
         self.save_all_states = False
         self.umbrellas_already_exist_mode = False
+        self.swarm_string = ""
     
     def prepare(self, restart=False, save_state_file=False, 
                 save_state_boundaries=False, force_overwrite=False, 
-                umbrella_restart_mode=False):
+                umbrella_restart_mode=False, swarm_index=None):
         """
         This function gets run before the sim_openmm object is created
         so that the proper paths can be found, etc.
@@ -286,10 +287,18 @@ class Runner_openmm():
         settings = self.model.openmm_settings
         assert settings is not None, "This model was not prepared for OpenMM."
         restart_index = 1
+        if swarm_index is None:
+            self.swarm_string = ""
+        else:
+            self.swarm_string = ".swarm_{}".format(swarm_index)
+            self.glob = "%s%s*.%s" % (mmvt_base.OPENMMVT_BASENAME, 
+                                      self.swarm_string, 
+                                      mmvt_base.OPENMMVT_EXTENSION)
+        
+        output_files_glob = os.path.join(
+            self.output_directory, self.glob)
+        output_restarts_list = glob.glob(output_files_glob)
         if restart:
-            output_files_glob = os.path.join(
-                self.output_directory, self.glob)
-            output_restarts_list = glob.glob(output_files_glob)
             output_restarts_list = base.order_files_numerically(
                 output_restarts_list)
             assert len(output_restarts_list) > 0, \
@@ -302,10 +311,11 @@ class Runner_openmm():
             restart_index = len(output_restarts_list) + 1
             default_output_filename = os.path.join(
                 self.output_directory, 
-                "%s.restart%d.%s" % (self.basename, restart_index, 
-                                     self.extension))
+                "%s%s.restart%d.%s" % (self.basename, self.swarm_string, 
+                                       restart_index, self.extension))
         else:
-            if common_prepare.anchor_has_files(self.model, self.anchor):
+            #if common_prepare.anchor_has_files(self.model, self.anchor):
+            if len(output_restarts_list) > 0:
                 if not force_overwrite and not umbrella_restart_mode:
                     print("This anchor already has existing output files "\
                           "and the entered command would overwrite them. "\
@@ -338,7 +348,8 @@ class Runner_openmm():
                     
             default_output_filename = os.path.join(
                 self.output_directory, 
-                "%s%d.%s" % (self.basename, 1, self.extension))
+                "%s%s.restart%d.%s" % (self.basename, self.swarm_string, 1, 
+                               self.extension))
         
         state_dir = os.path.join(self.output_directory, 
                                  SAVE_STATE_DIRECTORY)
@@ -364,8 +375,10 @@ class Runner_openmm():
         self.sim_openmm = sim_openmm_obj
         settings = self.model.openmm_settings
         calc_settings = self.model.calculation_settings
+        restart_checkpoint_basename \
+            = RESTART_CHECKPOINT_FILENAME + self.swarm_string
         self.restart_checkpoint_filename = os.path.join(
-            self.output_directory, RESTART_CHECKPOINT_FILENAME)
+            self.output_directory, restart_checkpoint_basename)
         if self.model.get_type() == "mmvt":
             simulation = self.sim_openmm.simulation
             self.restart_checkpoint_interval = calc_settings.restart_checkpoint_interval
@@ -389,12 +402,13 @@ class Runner_openmm():
             
             traj_filename = os.path.join(
                 self.output_directory, 
-                "%s.restart%d.%s" % (self.basename, restart_index, "dcd"))
+                "%s.restart%d%s.%s" % (self.basename, restart_index, 
+                                       self.swarm_string, "dcd"))
         else:
             self.start_chunk = 0
             traj_filename = os.path.join(
                 self.output_directory, 
-                "%s%d.%s" % (self.basename, 1, "dcd"))
+                "%s%d%s.%s" % (self.basename, 1, self.swarm_string, "dcd"))
             
             if load_state_file is not None:
                 simulation.loadState(load_state_file)

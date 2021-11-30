@@ -1,7 +1,8 @@
 """
 Routines for the analysis stage of an MMVT calculation
 """
-
+import os
+import re
 from collections import defaultdict
 from copy import deepcopy
 
@@ -71,19 +72,29 @@ def make_new_Nij_alpha(mmvt_Qij_alpha, mmvt_Ri_alpha):
     return new_mmvt_Nij_alpha
 
 def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None, 
-                                 existing_lines=[], skip_restart_check=False):
+                                 existing_lines=None, skip_restart_check=False):
     """
     Read the output files produced by the plugin (backend) of 
     SEEKR2 and extract transition statistics and times
     """
     
     MAX_ITER = 1000000000
-    if len(existing_lines) == 0:
+    NEW_SWARM = "NEW_SWARM"
+    swarm_index = 0
+    if existing_lines is None:
+        existing_lines = []
         files_lines = []
         start_times = []
         for i, output_file_name in enumerate(output_file_list):
             start_time = None
             file_lines = []
+            outfile_basename = os.path.basename(output_file_name)
+            if re.search("swarm", outfile_basename):
+                old_swarm_index = swarm_index
+                swarm_index = int(outfile_basename.split(".")[1].split("_")[1])
+                if swarm_index != old_swarm_index:
+                    file_lines.append(NEW_SWARM)
+                
             with open(output_file_name, "r") as output_file:
                 for counter, line in enumerate(output_file):
                     if line.startswith("#") or len(line.strip()) == 0:
@@ -112,12 +123,18 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
             if not skip_restart_check and not len(file_lines) == 0:
                 # make sure that we delete lines that occurred after a restart 
                 # backup
+                
                 if i < len(files_lines)-1:
                     # then it's not the last file
-                    next_start_time = start_times[i+1]
+                    if files_lines[i+1][0] == NEW_SWARM:
+                        # If the current file is the beginning of a swarm
+                        next_start_time = 1e99
+                    else:
+                        next_start_time = start_times[i+1]
                 else:
                     next_start_time = 1e99
                 counter = 0
+                
                 while float(file_lines[-1][2]) > next_start_time:
                     file_lines.pop()
                     if counter > MAX_ITER or len(file_lines)==0:
@@ -138,6 +155,11 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
     src_boundary = None
     src_time = None
     for counter, line in enumerate(lines):
+        if line == NEW_SWARM:
+            last_bounce_time = -1.0
+            src_boundary = None
+            src_time = None
+            continue 
         
         dest_boundary = int(line[0])
         bounce_index = int(line[1])
@@ -161,15 +183,6 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
         
         if src_boundary != dest_boundary:
             time_diff = dest_time - src_time
-            """
-            Problem situation: If a simulation fails, but bounces
-            have occurred after the checkpoint, then when the 
-            restart is restored, then those bounces will be double-
-            counted in the restart as well.
-            Solution: look at all starting times in the files, and 
-            disregard all bounces that occur after the next files'
-            starting time.
-            """
             if not skip_restart_check:
                 assert time_diff >= 0.0, "incubation times cannot be "\
                     "negative. Has an output file been concatenated "\
@@ -282,7 +295,7 @@ def openmm_read_statistics_file(statistics_file_name):
     return N_i_j_alpha_dict, R_i_alpha_dict, N_alpha_beta_dict, T_alpha
 
 def namd_read_output_file_list(output_file_list, anchor, timestep, 
-                               min_time=None, max_time=None, existing_lines=[], 
+                               min_time=None, max_time=None, existing_lines=None, 
                                skip_restart_check=False):
     """
     Read the output files produced by the plugin (backend) of 
@@ -312,7 +325,8 @@ def namd_read_output_file_list(output_file_list, anchor, timestep,
         Total time spent within this cell.
     """
     MAX_ITER = 1000000000
-    if len(existing_lines) == 0:
+    if existing_lines is None:
+        existing_lines = []
         files_lines = []
         start_times = []
         for i, output_file_name in enumerate(output_file_list):
@@ -568,7 +582,7 @@ class MMVT_anchor_statistics():
         The index of the anchor whose transition statistics are 
         represented by this object.
     
-    existing_lines : list
+    existing_lines : list or None
         If the output files for this anchor has already been read, then
         those lines will be stored here to save on I/O.
     """
@@ -587,7 +601,7 @@ class MMVT_anchor_statistics():
         self.N_alpha_beta = None
         self.k_alpha_beta = {}
         self.alpha = alpha
-        self.existing_lines = []
+        self.existing_lines = None
         return
     
     def read_output_file_list(self, engine, output_file_list, min_time, 

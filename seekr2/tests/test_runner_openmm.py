@@ -186,23 +186,18 @@ def test_mmvt_swarm(host_guest_mmvt_model):
     src_filename = os.path.join(TEST_DATA_DIRECTORY, swarm_file_name)
     dest_filename = os.path.join(anchor_building_dir, swarm_file_name)
     shutil.copyfile(src_filename, dest_filename)
-    
-    
     host_guest_mmvt_model.calculation_settings.num_production_steps = 10
     host_guest_mmvt_model.openmm_settings.cuda_platform_settings = None
     host_guest_mmvt_model.openmm_settings.reference_platform = True
-    myanchor = host_guest_mmvt_model.anchors[1]
-    mmvt_output_filename = os.path.join(
-        host_guest_mmvt_model.anchor_rootdir, myanchor.name, "prod", 
-        "%s%d.%s" % (mmvt_base.OPENMMVT_BASENAME, 1, 
-                             mmvt_base.OPENMMVT_EXTENSION))
-    runner = runner_openmm.Runner_openmm(host_guest_mmvt_model, myanchor)
-    default_output_file, state_file_prefix, restart_index = runner.prepare(
-        force_overwrite=True)
-    my_sim_openmm = mmvt_sim_openmm.create_sim_openmm(
-        host_guest_mmvt_model, myanchor, mmvt_output_filename)
-    runner.run(my_sim_openmm, False)
-    assert os.path.exists(mmvt_output_filename)
+    myanchor = host_guest_mmvt_model.anchors[0]
+    for i in range(10):
+        runner = runner_openmm.Runner_openmm(host_guest_mmvt_model, myanchor)
+        default_output_file, state_file_prefix, restart_index = runner.prepare(
+            force_overwrite=True, swarm_index=i)
+        my_sim_openmm = mmvt_sim_openmm.create_sim_openmm(
+            host_guest_mmvt_model, myanchor, default_output_file)
+        runner.run(my_sim_openmm, False)
+        assert os.path.exists(default_output_file)
     
     return
     

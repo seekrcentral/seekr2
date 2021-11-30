@@ -104,6 +104,7 @@ def choose_next_simulation_openmm(
     import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
     import seekr2.modules.elber_sim_openmm as elber_sim_openmm
     anchor_info_to_run_unsorted = []
+    data_sample_list = converge.converge(model)
     for alpha, anchor in enumerate(model.anchors):
         if anchor.bulkstate:
             continue
@@ -126,88 +127,109 @@ def choose_next_simulation_openmm(
         output_directory = os.path.join(
             model.anchor_rootdir, anchor.directory, 
             anchor.production_directory)
-        restart_checkpoint_filename = os.path.join(
-            output_directory, runner_openmm.RESTART_CHECKPOINT_FILENAME)
-        if os.path.exists(restart_checkpoint_filename) and not force_overwrite\
-                and not umbrella_restart_mode:
-            dummy_file = tempfile.NamedTemporaryFile()
-            if model.get_type() == "mmvt":
-                sim_openmm_obj = mmvt_sim_openmm.create_sim_openmm(
-                    model, anchor, dummy_file.name)
-                simulation = sim_openmm_obj.simulation
-            elif model.get_type() == "elber":
-                sim_openmm_obj = elber_sim_openmm.create_sim_openmm(
-                    model, anchor, dummy_file.name)
-                simulation = sim_openmm_obj.umbrella_simulation
-            
-            simulation.loadCheckpoint(restart_checkpoint_filename)
-            currentStep = int(round(simulation.context.getState().getTime()\
-                              .value_in_unit(unit.picoseconds) \
-                              / sim_openmm_obj.timestep))
-            dummy_file.close()
-            restart = True
-        else:
-            currentStep = 0
-            restart = False
+        dummy_file = tempfile.NamedTemporaryFile()
+        num_swarm_frames = mmvt_sim_openmm.\
+                    get_starting_structure_num_frames(model, anchor, 
+                                                      dummy_file.name)
+        dummy_file.close()
         
-        if max_total_simulation_length is not None:
-            if currentStep > max_total_simulation_length:
-                # this simulation has run long enough
-                continue
+        for swarm_frame in range(num_swarm_frames):
+            if num_swarm_frames == 1:
+                restart_checkpoint_basename \
+                    = runner_openmm.RESTART_CHECKPOINT_FILENAME
+                swarm_frame = None
+            else:
+                restart_checkpoint_basename \
+                    = runner_openmm.RESTART_CHECKPOINT_FILENAME \
+                    + ".swarm_{}".format(swarm_frame)
         
-        # make sure that all simulations reach minimum number of steps
-        # before sorting by convergence
-        steps_to_go_to_minimum = min_total_simulation_length - currentStep
-        if steps_to_go_to_minimum <= 0:
-            data_sample_list = converge.converge(model)
-            steps_to_go_to_minimum = 0
-            transition_minima, dummy1, dummy2 \
-                = common_converge.calc_transition_steps(
-                model, data_sample_list[-1])
-            
-            num_transitions = transition_minima[alpha]
-            if convergence_cutoff is not None:
-                rmsd_convergence_results \
-                    = common_converge.calc_RMSD_conv_amount(
-                        model, data_sample_list)
-                convergence = rmsd_convergence_results[alpha]
-                if convergence < float(convergence_cutoff):
-                    continue
-                else:
-                    print("anchor", alpha, "has not reached the point of "\
-                          "convergence:", convergence, "of", convergence_cutoff)
-                    total_simulation_length \
-                        = (currentStep // CONVERGENCE_INTERVAL + 1) \
-                        * CONVERGENCE_INTERVAL
-                    anchor_info = [steps_to_go_to_minimum, num_transitions, 
-                                   alpha, restart, total_simulation_length]
-                    anchor_info_to_run_unsorted.append(anchor_info)
-                    continue
+            restart_checkpoint_filename = os.path.join(
+                output_directory, restart_checkpoint_basename)
+            if os.path.exists(restart_checkpoint_filename) \
+                    and not force_overwrite\
+                    and not umbrella_restart_mode:
+                dummy_file = tempfile.NamedTemporaryFile()
+                if model.get_type() == "mmvt":
                     
-            if minimum_anchor_transitions is not None:
-                minimum_anchor_transitions = int(minimum_anchor_transitions)
-                if num_transitions >= minimum_anchor_transitions:
-                    continue
-                else:
-                    print("anchor", alpha, "has not had the minimum number of "\
-                          "transitions:", num_transitions, "of", 
-                          minimum_anchor_transitions)
-                    total_simulation_length = (
-                        currentStep // CONVERGENCE_INTERVAL + 1) \
-                        * (CONVERGENCE_INTERVAL)
-                    anchor_info = [steps_to_go_to_minimum, num_transitions, 
-                                   alpha, restart, total_simulation_length]
-                    anchor_info_to_run_unsorted.append(anchor_info)
-                    
-        else:
-            print("anchor", alpha, "has not run the minimum number of steps",
-                  currentStep, "of", min_total_simulation_length)
-            total_simulation_length = min_total_simulation_length
-            num_transitions = 0
-            anchor_info = [steps_to_go_to_minimum, num_transitions, 
-                           alpha, restart, total_simulation_length]
-            anchor_info_to_run_unsorted.append(anchor_info)
+                    sim_openmm_obj = mmvt_sim_openmm.create_sim_openmm(
+                        model, anchor, dummy_file.name)
+                    simulation = sim_openmm_obj.simulation
+                elif model.get_type() == "elber":
+                    sim_openmm_obj = elber_sim_openmm.create_sim_openmm(
+                        model, anchor, dummy_file.name)
+                    simulation = sim_openmm_obj.umbrella_simulation
+                
+                simulation.loadCheckpoint(restart_checkpoint_filename)
+                currentStep = int(round(simulation.context.getState().getTime()\
+                                  .value_in_unit(unit.picoseconds) \
+                                  / sim_openmm_obj.timestep))
+                dummy_file.close()
+                restart = True
+            else:
+                currentStep = 0
+                restart = False
         
+            if max_total_simulation_length is not None:
+                if currentStep > max_total_simulation_length:
+                    # this simulation has run long enough
+                    continue
+            
+            # make sure that all simulations reach minimum number of steps
+            # before sorting by convergence
+            steps_to_go_to_minimum = min_total_simulation_length - currentStep
+            if steps_to_go_to_minimum <= 0:
+                steps_to_go_to_minimum = 0
+                transition_minima, dummy1, dummy2 \
+                    = common_converge.calc_transition_steps(
+                    model, data_sample_list[-1])
+                
+                num_transitions = transition_minima[alpha]
+                if convergence_cutoff is not None:
+                    rmsd_convergence_results \
+                        = common_converge.calc_RMSD_conv_amount(
+                            model, data_sample_list)
+                    convergence = rmsd_convergence_results[alpha]
+                    if convergence < float(convergence_cutoff):
+                        continue
+                    else:
+                        print("anchor", alpha, "has not reached the point of "\
+                              "convergence:", convergence, "of", convergence_cutoff)
+                        total_simulation_length \
+                            = (currentStep // CONVERGENCE_INTERVAL + 1) \
+                            * CONVERGENCE_INTERVAL
+                        anchor_info = [steps_to_go_to_minimum, num_transitions, 
+                                       alpha, restart, total_simulation_length,
+                                       swarm_frame]
+                        anchor_info_to_run_unsorted.append(anchor_info)
+                        continue
+                        
+                if minimum_anchor_transitions is not None:
+                    minimum_anchor_transitions = int(minimum_anchor_transitions)
+                    if num_transitions >= minimum_anchor_transitions:
+                        continue
+                    else:
+                        print("anchor", alpha, "has not had the minimum number of "\
+                              "transitions:", num_transitions, "of", 
+                              minimum_anchor_transitions)
+                        total_simulation_length = (
+                            currentStep // CONVERGENCE_INTERVAL + 1) \
+                            * (CONVERGENCE_INTERVAL)
+                        anchor_info = [steps_to_go_to_minimum, num_transitions, 
+                                       alpha, restart, total_simulation_length,
+                                       swarm_frame]
+                        anchor_info_to_run_unsorted.append(anchor_info)
+                        
+            else:
+                print("anchor", alpha, "has not run the minimum number of steps",
+                      currentStep, "of", min_total_simulation_length, 
+                      "in swarm index", swarm_frame)
+                total_simulation_length = min_total_simulation_length
+                num_transitions = 0
+                anchor_info = [steps_to_go_to_minimum, num_transitions, 
+                               alpha, restart, total_simulation_length,
+                               swarm_frame]
+                anchor_info_to_run_unsorted.append(anchor_info)
+            
     # sort anchors first by how many steps still to run, then by how many
     # transitions have been completed.    
     anchor_info_to_run = sorted(
@@ -518,7 +540,7 @@ def run(model, instruction, min_total_simulation_length=None,
             print("running anchor_index:", anchor_index, "restart:", 
                   restart, "total_simulation_length:", 
                   total_simulation_length, "num_transitions:", 
-                  num_transitions)
+                  num_transitions, "swarm index:", swarm_index)
             if model.openmm_settings is not None:
                 # import OpenMM libraries only if it will be used
                 run_openmm(model, anchor_index, restart, 
