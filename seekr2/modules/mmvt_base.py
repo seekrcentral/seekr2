@@ -12,6 +12,8 @@ import mdtraj
 #import seekr2.libraries.serializer.serializer as serializer
 from abserdes import Serializer
 
+import seekr2.modules.common_base as base
+
 OPENMMVT_BASENAME = "mmvt"
 OPENMMVT_EXTENSION = "out"
 OPENMMVT_GLOB = "%s*.%s" % (OPENMMVT_BASENAME, OPENMMVT_EXTENSION)
@@ -315,6 +317,35 @@ This distance falls outside of the milestone
 boundary at {:.4f} nm.""".format(radius, milestone_radius)
                     print(warnstr)
                 return False
+            
+        return True
+    
+    def check_openmm_context_within_boundary(
+            self, context, milestone_variables, verbose=False):
+        """
+        Check if an OpenMM context describes a system that remains
+        within the expected anchor. Return True if passed, return
+        False if failed.
+        """
+        TOL = 0.001
+        system = context.getSystem()
+        state = context.getState(getPositions=True)
+        positions = state.getPositions()
+        com1 = base.get_openmm_center_of_mass_com(
+            system, positions, self.group1)
+        com2 = base.get_openmm_center_of_mass_com(
+            system, positions, self.group2)
+        radius = np.linalg.norm(com2-com1)
+        milestone_k = milestone_variables["k"]
+        milestone_radius = milestone_variables["radius"]
+        if milestone_k*(radius - milestone_radius) > TOL:
+            if verbose:
+                warnstr = """The center of masses of atom group1 and atom
+group2 were found to be {:.4f} nm apart.
+This distance falls outside of the milestone
+boundary at {:.4f} nm.""".format(radius, milestone_radius)
+                print(warnstr)
+            return False
             
         return True
     
@@ -641,6 +672,50 @@ but the milestone's value for the same CV is {:.4f}. The system falls outside
 the boundaries.""".format(op_value, milestone_value)
                     print(warnstr)
                 return False
+            
+        return True
+    
+    def check_openmm_context_within_boundary(
+            self, context, milestone_variables, verbose=False):
+        """
+        Check if an mdtraj Trajectory describes a system that remains
+        within the expected anchor. Return True if passed, return
+        False if failed.
+        """
+        TOL = 0.001
+        
+        system = context.getSystem()
+        state = context.getState(getPositions=True)
+        positions = state.getPositions()
+        op_com_list = []
+        for order_parameter in self.order_parameters:
+            com_list = []
+            for j in range(order_parameter.get_num_groups()):
+                group = order_parameter.get_group(j)
+                com = base.get_openmm_center_of_mass_com(
+                    system, positions, group)
+                com_list.append(com)
+            op_com_list.append(com_list)
+                
+        op_value = 0.0
+        for i, order_parameter in enumerate(self.order_parameters):
+            com_list = []
+            for j in range(order_parameter.get_num_groups()):
+                com = op_com_list[i][j]
+                com_list.append(com)
+            op_term = order_parameter.get_value(com_list)
+            op_weight = self.order_parameter_weights[i]
+            op_value += op_weight * op_term
+            
+        milestone_k = milestone_variables["k"]
+        milestone_value = milestone_variables["value"]
+        if milestone_k*(op_value - milestone_value) > TOL:
+            if verbose:
+                warnstr = """This system value for the Tiwary CV is {:.4f} 
+but the milestone's value for the same CV is {:.4f}. The system falls outside 
+the boundaries.""".format(op_value, milestone_value)
+                print(warnstr)
+            return False
             
         return True
     

@@ -64,6 +64,41 @@ def order_files_numerically(file_list):
         
     return sorted_file_list
 
+def get_openmm_center_of_mass_com(system, positions, group1):
+    """
+    Compute the center of mass of a group of atoms given an OpenMM
+    system, the system's atomic positions, and the indices of the
+    atoms of interest.
+    
+    Parameters:
+    -----------
+    system : System()
+        The OpenMM System object which contains the atomic masses.
+        
+    positions : Quantity
+        A n-by-3 array of positions of all atoms in the system. Can
+        be the output of State.getPositions()
+        
+    group1 : list
+        A list of integers representing atom indices of the group
+        the center of mass is being computed for.
+        
+    Returns:
+    --------
+    com : Quantity
+        A 1x3 array representing the x,y,z coordinates of the center of
+        mass of the group of atoms.
+    """
+    total_mass = 0.0 * unit.daltons
+    com = np.array([0, 0, 0]) * unit.nanometers * unit.daltons
+    for index in group1:
+        atom_mass = system.getParticleMass(index)
+        total_mass += atom_mass
+        com += atom_mass * positions[index]
+        
+    com /= total_mass
+    return com
+
 class Box_vectors(Serializer):
     """
     A box vector object that contains the a, b, and c vectors in units
