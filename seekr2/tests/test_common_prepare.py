@@ -2,10 +2,6 @@
 test_common_prepare.py
 """
 
-"""
-test_prepare_1d_spherical.py
-"""
-
 import os
 import sys
 import glob

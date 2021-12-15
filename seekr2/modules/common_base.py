@@ -10,6 +10,7 @@ import re
 import math
 
 import numpy as np
+import parmed
 from parmed import unit
 
 #import seekr2.libraries.serializer.serializer as serializer
@@ -98,6 +99,18 @@ def get_openmm_center_of_mass_com(system, positions, group1):
         
     com /= total_mass
     return com
+
+def get_box_vectors_from_pdb(pdb_filename):
+    """
+    Extract the box_vectors from the CRYST line in a pdb file.
+    """
+    pdb_structure = parmed.load_file(pdb_filename)
+    assert pdb_structure.box_vectors is not None, "No box vectors "\
+    "found in {}. ".format(pdb_filename) \
+    + "Box vectors for an anchor must be defined with a CRYST "\
+    "line within the PDB file, or explicitly set in the model "\
+    "input XML file."
+    return pdb_structure.box_vectors
 
 class Box_vectors(Serializer):
     """

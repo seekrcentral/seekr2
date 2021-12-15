@@ -193,6 +193,8 @@ def copy_building_files_by_anchor(anchor, input_anchor, rootdir):
             anchor.amber_params.box_vectors = amber.box_vectors
             if anchor.amber_params.box_vectors is None:
                 anchor.amber_params.box_vectors = base.Box_vectors()
+                box_vectors = base.get_box_vectors_from_pdb(new_pdb_filename)
+                """ # TODO: remove
                 pdb_structure = parmed.load_file(new_pdb_filename)
                 assert pdb_structure.box_vectors is not None, "No box vectors "\
                 "found in {}. ".format(new_pdb_filename) \
@@ -201,6 +203,9 @@ def copy_building_files_by_anchor(anchor, input_anchor, rootdir):
                 "input XML file."
                 anchor.amber_params.box_vectors.from_quantity(
                     pdb_structure.box_vectors)
+                """
+                anchor.amber_params.box_vectors.from_quantity(
+                    box_vectors)
         
     forcefield = input_anchor.starting_forcefield_params
         

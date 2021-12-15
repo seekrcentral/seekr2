@@ -321,16 +321,17 @@ boundary at {:.4f} nm.""".format(radius, milestone_radius)
         return True
     
     def check_openmm_context_within_boundary(
-            self, context, milestone_variables, verbose=False):
+            self, context, milestone_variables, positions=None, verbose=False):
         """
         Check if an OpenMM context describes a system that remains
         within the expected anchor. Return True if passed, return
         False if failed.
         """
         TOL = 0.001
-        system = context.getSystem()
-        state = context.getState(getPositions=True)
-        positions = state.getPositions()
+        if positions is None:
+            system = context.getSystem()
+            state = context.getState(getPositions=True)
+            positions = state.getPositions()
         com1 = base.get_openmm_center_of_mass_com(
             system, positions, self.group1)
         com2 = base.get_openmm_center_of_mass_com(
