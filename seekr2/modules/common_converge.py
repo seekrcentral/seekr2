@@ -340,9 +340,9 @@ def check_milestone_convergence(model, k_on_state=None,
         k_on_conv[interval_index] = k_on
         k_off_conv[interval_index] = k_off
         for N_ij_key in N_ij:
-            N_ij_conv[N_ij_key][interval_index] = N_ij[N_ij_key]
+            N_ij_conv[N_ij_key][interval_index] = N_ij[N_ij_key] / interval_index
         for R_i_key in R_i:
-            R_i_conv[R_i_key][interval_index] = R_i[R_i_key]
+            R_i_conv[R_i_key][interval_index] = R_i[R_i_key] / interval_index
     
     return k_on_conv, k_off_conv, N_ij_conv, R_i_conv, max_step_list, \
         timestep_in_ns, data_sample_list

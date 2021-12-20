@@ -38,11 +38,11 @@ def converge(model, k_on_state=None, image_directory=None,
         label="k_{on} (s^{-1} M^{-1})", timestep_in_ns=timestep_in_ns)
     N_ij_fig_list, ax, N_ij_title_list, N_ij_name_list \
         = common_converge.plot_dict_conv(
-        N_ij_conv, max_step_list[0,:], label_base="N", 
+        N_ij_conv, max_step_list[0,:], label_base="avg. N", 
         timestep_in_ns=timestep_in_ns)
     R_i_fig_list, ax, R_i_title_list, R_i_name_list \
         = common_converge.plot_dict_conv(
-        R_i_conv, max_step_list[0,:], label_base="R", 
+        R_i_conv, max_step_list[0,:], label_base="avg. R", 
         timestep_in_ns=timestep_in_ns)
     
     k_off_fig.savefig(os.path.join(image_directory, "k_off_convergence.png"))
