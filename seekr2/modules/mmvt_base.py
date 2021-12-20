@@ -328,8 +328,8 @@ boundary at {:.4f} nm.""".format(radius, milestone_radius)
         False if failed.
         """
         TOL = 0.001
+        system = context.getSystem()
         if positions is None:
-            system = context.getSystem()
             state = context.getState(getPositions=True)
             positions = state.getPositions()
         com1 = base.get_openmm_center_of_mass_com(
