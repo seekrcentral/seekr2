@@ -327,7 +327,7 @@ boundary at {:.4f} nm.""".format(radius, milestone_radius)
         within the expected anchor. Return True if passed, return
         False if failed.
         """
-        TOL = 0.001
+        TOL = 0.0
         system = context.getSystem()
         if positions is None:
             state = context.getState(getPositions=True)

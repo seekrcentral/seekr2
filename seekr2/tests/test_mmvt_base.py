@@ -66,6 +66,8 @@ def test_check_openmm_context_within_boundary(tryp_ben_mmvt_model, tmp_path):
     # Test check success: system starting within Voronoi cells
     anchor = tryp_ben_mmvt_model.anchors[0]
     output_file = os.path.join(tmp_path, "output.txt")
+    tryp_ben_mmvt_model.openmm_settings.cuda_platform_settings = None
+    tryp_ben_mmvt_model.openmm_settings.reference_platform = True
     my_sim_openmm = mmvt_sim_openmm.create_sim_openmm(
         tryp_ben_mmvt_model, anchor, output_file)
     context = my_sim_openmm.simulation.context
