@@ -117,7 +117,7 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
                     start_times.append(start_time)
             
             files_lines.append(file_lines)
-                
+            
         lines = []
         for i, file_lines in enumerate(files_lines):
             if not skip_restart_check and not len(file_lines) == 0:
@@ -135,16 +135,30 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
                     next_start_time = 1e99
                 counter = 0
                 
+                if file_lines[-1]==NEW_SWARM:
+                    file_lines.pop()
+                
+                if len(file_lines) == 0:
+                    continue
+                
                 while float(file_lines[-1][2]) > next_start_time:
                     file_lines.pop()
+                    if file_lines[-1]==NEW_SWARM:
+                        file_lines.pop()
+                        
                     if counter > MAX_ITER or len(file_lines)==0:
                         break
+                    
                     counter += 1
                 
             lines += file_lines
         
     else:
         lines = existing_lines
+    
+    #print("lines:")
+    #for line in lines:
+    #    print(line)
     
     N_i_j_alpha = defaultdict(int)
     R_i_alpha_list = defaultdict(list)
@@ -866,6 +880,7 @@ class MMVT_data_sample(common_analyze.Data_sample):
         pi_alpha_slice = np.zeros((flux_matrix_dimension-1, 1), dtype=np.longdouble)
         for i in range(flux_matrix_dimension-1):
             pi_alpha_slice[i,0] = -self.pi_alpha[i,0] * flux_matrix[i,i]
+                    
         K = flux_matrix_to_K(flux_matrix)
         K_inf = np.linalg.matrix_power(K, FLUX_MATRIX_K_EXPONENT)
         stationary_dist = K_inf.T @ pi_alpha_slice
