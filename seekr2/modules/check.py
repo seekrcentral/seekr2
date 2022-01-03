@@ -221,16 +221,19 @@ def load_structure_with_mdtraj(model, anchor, mode="pdb", coords_filename=None):
         elif mode == "elber_umbrella":
             assert len(umbrella_traj_filenames) > 0, "Only empty umbrella " \
                 "trajectories were found. You can force SEEKR to skip these "\
-                "checks by using the --skip_checks (-s) argument"
+                "checks by using the --skip_checks (-s) argument. Anchor: {}"\
+                .format(anchor.index)
             traj = mdtraj.load(umbrella_traj_filenames, top=prmtop_filename)
         
         elif mode == "state_xml":
             traj = mdtraj.load_xml(coords_filename, top=prmtop_filename)
         
         elif mode == "mmvt_traj":
-            assert len(mmvt_traj_filenames) > 0, "Only empty mmvt " \
-                "trajectories were found. You can force SEEKR to skip these "\
-                "checks by using the --skip_checks (-s) argument"
+            if not len(mmvt_traj_filenames) > 0:
+                warnings.warn("Empty mmvt trajectories were found in "\
+                      "anchor: {}.".format(anchor.index))
+                return None
+                
             traj = mdtraj.load(mmvt_traj_filenames, top=prmtop_filename)
             
         return traj

@@ -20,6 +20,10 @@ CONVERGENCE_INTERVAL = 100000
 B_SURFACE_CONVERGENCE_INTERVAL = 10000
 #BD_MILESTONE_CONVERGENCE_INTERVAL = 100
 MAX_ITER = 999
+# Sometimes, OpenMM checkpoint files have indicated that the simulation ended
+# right before the ending time. Do not restart any simulation within this 
+# tolerance.
+STEP_TOLERANCE = 5
 
 def choose_next_simulation_browndye2(
         model, instruction, min_b_surface_simulation_length, 
@@ -104,7 +108,12 @@ def choose_next_simulation_openmm(
     import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
     import seekr2.modules.elber_sim_openmm as elber_sim_openmm
     anchor_info_to_run_unsorted = []
-    data_sample_list = converge.converge(model)
+    using_convergence = False
+    if convergence_cutoff is not None \
+            or minimum_anchor_transitions is not None:
+        using_convergence = True
+        data_sample_list = converge.converge(model)
+        
     for alpha, anchor in enumerate(model.anchors):
         if anchor.bulkstate:
             continue
@@ -168,7 +177,7 @@ def choose_next_simulation_openmm(
             else:
                 currentStep = 0
                 restart = False
-        
+            
             if max_total_simulation_length is not None:
                 if currentStep > max_total_simulation_length:
                     # this simulation has run long enough
@@ -177,47 +186,48 @@ def choose_next_simulation_openmm(
             # make sure that all simulations reach minimum number of steps
             # before sorting by convergence
             steps_to_go_to_minimum = min_total_simulation_length - currentStep
-            if steps_to_go_to_minimum <= 0:
-                steps_to_go_to_minimum = 0
-                transition_minima, dummy1, dummy2 \
-                    = common_converge.calc_transition_steps(
-                    model, data_sample_list[-1])
-                
-                num_transitions = transition_minima[alpha]
-                if convergence_cutoff is not None:
-                    rmsd_convergence_results \
-                        = common_converge.calc_RMSD_conv_amount(
-                            model, data_sample_list)
-                    convergence = rmsd_convergence_results[alpha]
-                    if convergence < float(convergence_cutoff):
-                        continue
-                    else:
-                        print("anchor", alpha, "has not reached the point of "\
-                              "convergence:", convergence, "of", convergence_cutoff)
-                        total_simulation_length \
-                            = (currentStep // CONVERGENCE_INTERVAL + 1) \
-                            * CONVERGENCE_INTERVAL
-                        anchor_info = [steps_to_go_to_minimum, num_transitions, 
-                                       alpha, restart, total_simulation_length,
-                                       swarm_frame]
-                        anchor_info_to_run_unsorted.append(anchor_info)
-                        continue
-                        
-                if minimum_anchor_transitions is not None:
-                    minimum_anchor_transitions = int(minimum_anchor_transitions)
-                    if num_transitions >= minimum_anchor_transitions:
-                        continue
-                    else:
-                        print("anchor", alpha, "has not had the minimum number of "\
-                              "transitions:", num_transitions, "of", 
-                              minimum_anchor_transitions)
-                        total_simulation_length = (
-                            currentStep // CONVERGENCE_INTERVAL + 1) \
-                            * (CONVERGENCE_INTERVAL)
-                        anchor_info = [steps_to_go_to_minimum, num_transitions, 
-                                       alpha, restart, total_simulation_length,
-                                       swarm_frame]
-                        anchor_info_to_run_unsorted.append(anchor_info)
+            if steps_to_go_to_minimum <= STEP_TOLERANCE:
+                if using_convergence:
+                    steps_to_go_to_minimum = 0
+                    transition_minima, dummy1, dummy2 \
+                        = common_converge.calc_transition_steps(
+                        model, data_sample_list[-1])
+                    
+                    num_transitions = transition_minima[alpha]
+                    if convergence_cutoff is not None:
+                        rmsd_convergence_results \
+                            = common_converge.calc_RMSD_conv_amount(
+                                model, data_sample_list)
+                        convergence = rmsd_convergence_results[alpha]
+                        if convergence < float(convergence_cutoff):
+                            continue
+                        else:
+                            print("anchor", alpha, "has not reached the point of "\
+                                  "convergence:", convergence, "of", convergence_cutoff)
+                            total_simulation_length \
+                                = (currentStep // CONVERGENCE_INTERVAL + 1) \
+                                * CONVERGENCE_INTERVAL
+                            anchor_info = [steps_to_go_to_minimum, num_transitions, 
+                                           alpha, restart, total_simulation_length,
+                                           swarm_frame]
+                            anchor_info_to_run_unsorted.append(anchor_info)
+                            continue
+                            
+                    if minimum_anchor_transitions is not None:
+                        minimum_anchor_transitions = int(minimum_anchor_transitions)
+                        if num_transitions >= minimum_anchor_transitions:
+                            continue
+                        else:
+                            print("anchor", alpha, "has not had the minimum number of "\
+                                  "transitions:", num_transitions, "of", 
+                                  minimum_anchor_transitions)
+                            total_simulation_length = (
+                                currentStep // CONVERGENCE_INTERVAL + 1) \
+                                * (CONVERGENCE_INTERVAL)
+                            anchor_info = [steps_to_go_to_minimum, num_transitions, 
+                                           alpha, restart, total_simulation_length,
+                                           swarm_frame]
+                            anchor_info_to_run_unsorted.append(anchor_info)
                         
             else:
                 print("anchor", alpha, "has not run the minimum number of steps",
@@ -295,51 +305,54 @@ def choose_next_simulation_namd(
         # make sure that all simulations reach minimum number of steps
         # before sorting by convergence
         steps_to_go_to_minimum = min_total_simulation_length - currentStep
+        
         if steps_to_go_to_minimum <= 0:
-            data_sample_list = converge.converge(model)
-            steps_to_go_to_minimum = 0
-            transition_results, dummy \
-                = common_converge.calc_transition_steps(
-                model, data_sample_list[-1])
-            
-            num_transitions = transition_results[alpha]
-            if convergence_cutoff is not None:
-                if model.get_type() == "mmvt":
-                    rmsd_convergence_results \
-                        = common_converge.calc_RMSD_conv_amount(
-                            model, data_sample_list)
-                elif model.get_type() == "elber":
-                    raise Exception("Elber auto-run not available.")
-                convergence = rmsd_convergence_results[alpha]
-                if convergence < float(convergence_cutoff):
-                    continue
-                else:
-                    print("anchor", alpha, "has not reached the point of "\
-                          "convergence:", convergence, "of", convergence_cutoff)
-                    total_simulation_length \
-                        = (currentStep // CONVERGENCE_INTERVAL + 1) \
-                        * CONVERGENCE_INTERVAL
-                    anchor_info = [steps_to_go_to_minimum, num_transitions, 
-                                   alpha, restart, total_simulation_length,
-                                   None]
-                    anchor_info_to_run_unsorted.append(anchor_info)
-                    continue
-                    
-            if minimum_anchor_transitions is not None:
-                minimum_anchor_transitions = int(minimum_anchor_transitions)
-                if num_transitions >= minimum_anchor_transitions:
-                    continue
-                else:
-                    print("anchor", alpha, "has not had the minimum number of "\
-                          "transitions:", num_transitions, "of", 
-                          minimum_anchor_transitions)
-                    total_simulation_length = (
-                        currentStep // CONVERGENCE_INTERVAL + 1) \
-                        * (CONVERGENCE_INTERVAL)
-                    anchor_info = [steps_to_go_to_minimum, num_transitions, 
-                                   alpha, restart, total_simulation_length,
-                                   None]
-                    anchor_info_to_run_unsorted.append(anchor_info)
+            if convergence_cutoff is not None \
+                    or minimum_anchor_transitions is not None:
+                data_sample_list = converge.converge(model)
+                steps_to_go_to_minimum = 0
+                transition_results, dummy \
+                    = common_converge.calc_transition_steps(
+                    model, data_sample_list[-1])
+                
+                num_transitions = transition_results[alpha]
+                if convergence_cutoff is not None:
+                    if model.get_type() == "mmvt":
+                        rmsd_convergence_results \
+                            = common_converge.calc_RMSD_conv_amount(
+                                model, data_sample_list)
+                    elif model.get_type() == "elber":
+                        raise Exception("Elber auto-run not available.")
+                    convergence = rmsd_convergence_results[alpha]
+                    if convergence < float(convergence_cutoff):
+                        continue
+                    else:
+                        print("anchor", alpha, "has not reached the point of "\
+                              "convergence:", convergence, "of", convergence_cutoff)
+                        total_simulation_length \
+                            = (currentStep // CONVERGENCE_INTERVAL + 1) \
+                            * CONVERGENCE_INTERVAL
+                        anchor_info = [steps_to_go_to_minimum, num_transitions, 
+                                       alpha, restart, total_simulation_length,
+                                       None]
+                        anchor_info_to_run_unsorted.append(anchor_info)
+                        continue
+                        
+                if minimum_anchor_transitions is not None:
+                    minimum_anchor_transitions = int(minimum_anchor_transitions)
+                    if num_transitions >= minimum_anchor_transitions:
+                        continue
+                    else:
+                        print("anchor", alpha, "has not had the minimum number of "\
+                              "transitions:", num_transitions, "of", 
+                              minimum_anchor_transitions)
+                        total_simulation_length = (
+                            currentStep // CONVERGENCE_INTERVAL + 1) \
+                            * (CONVERGENCE_INTERVAL)
+                        anchor_info = [steps_to_go_to_minimum, num_transitions, 
+                                       alpha, restart, total_simulation_length,
+                                       None]
+                        anchor_info_to_run_unsorted.append(anchor_info)
                     
         else:
             print("anchor", alpha, "has not run the minimum number of steps",
