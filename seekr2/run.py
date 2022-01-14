@@ -158,9 +158,12 @@ def choose_next_simulation_openmm(
                     and not umbrella_restart_mode:
                 dummy_file = tempfile.NamedTemporaryFile()
                 if model.get_type() == "mmvt":
-                    
+                    if swarm_index is None:
+                        frame = 0
+                    else:
+                        frame = swarm_index
                     sim_openmm_obj = mmvt_sim_openmm.create_sim_openmm(
-                        model, anchor, dummy_file.name, frame=swarm_frame)
+                        model, anchor, dummy_file.name, frame=frame)
                     simulation = sim_openmm_obj.simulation
                 elif model.get_type() == "elber":
                     sim_openmm_obj = elber_sim_openmm.create_sim_openmm(
