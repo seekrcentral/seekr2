@@ -447,8 +447,7 @@ class Tiwary_cv_input(Serializer):
         num_bulk_anchors = 0
         for i, input_anchor in enumerate(self.input_anchors):
             value = input_anchor.value
-            assert value >= 0.0, "A value must be greater than "\
-                "or equal to zero."
+            
             assert value > last_value, "Each subsequent value "\
                 "argument must be greater than the last (sorted)."
             
