@@ -170,6 +170,10 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
     src_time = None
     for counter, line in enumerate(lines):
         if line == NEW_SWARM:
+            print("new swarm")
+            print("N_i_j_alpha:", N_i_j_alpha)
+            print("N_alpha_beta:", N_alpha_beta)
+            print("len(T_alpha_list):", len(T_alpha_list))
             last_bounce_time = -1.0
             src_boundary = None
             src_time = None
@@ -209,6 +213,8 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
             
         # dest_boundary is beta
         N_alpha_beta[dest_boundary] += 1
+        assert dest_time - last_bounce_time >= 0.0, "times between bounces "\
+            "cannot be negative"
         T_alpha_list.append(dest_time - last_bounce_time)
         #R_i_alpha_dict[src_boundary] += dest_time - last_bounce_time
         #assert dest_time - last_bounce_time != 0, \
@@ -624,6 +630,7 @@ class MMVT_anchor_statistics():
         Depending on the engine and other settings, read the SEEKR2 
         output files to fill out transition statistics.
         """
+        print("anchor:", anchor.index)
         if engine == "openmm":
             self.N_i_j_alpha, self.R_i_alpha_list, self.R_i_alpha_average, \
             self.R_i_alpha_std_dev, self.R_i_alpha_total, self.N_alpha_beta, \

@@ -141,7 +141,6 @@ def choose_next_simulation_openmm(
                     get_starting_structure_num_frames(model, anchor, 
                                                       dummy_file.name)
         dummy_file.close()
-        
         for swarm_frame in range(num_swarm_frames):
             if num_swarm_frames == 1:
                 restart_checkpoint_basename \
@@ -161,7 +160,7 @@ def choose_next_simulation_openmm(
                 if model.get_type() == "mmvt":
                     
                     sim_openmm_obj = mmvt_sim_openmm.create_sim_openmm(
-                        model, anchor, dummy_file.name)
+                        model, anchor, dummy_file.name, frame=swarm_frame)
                     simulation = sim_openmm_obj.simulation
                 elif model.get_type() == "elber":
                     sim_openmm_obj = elber_sim_openmm.create_sim_openmm(
@@ -544,7 +543,7 @@ def run(model, instruction, min_total_simulation_length=None,
                 minimum_anchor_transitions, force_overwrite)
         else:
             raise Exception("No valid MD engine settings provided.")
-        
+                
         for anchor_info in anchor_info_to_run:
             steps_to_go_to_minimum, num_transitions, anchor_index, \
             restart, total_simulation_length, swarm_index = anchor_info
