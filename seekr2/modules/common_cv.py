@@ -118,6 +118,7 @@ class Spherical_cv_input(Serializer):
     def read_plain_input(self, inputs):
         """
         Read a plain input file (as opposed to an XML)
+        TODO: REMOVE?
         """
         
         raise Exception("Reading a plain text file is not yet implemented. "\
@@ -441,6 +442,7 @@ class Tiwary_cv_input(Serializer):
     def check(self):
         """
         Check user inputs to ensure they have been entered properly.
+        TODO: REMOVE?
         """
         
         last_value = -1e9
@@ -592,6 +594,7 @@ class Planar_cv_input(Serializer):
     def read_plain_input(self, inputs):
         """
         Read a plain input file (as opposed to an XML)
+        TODO: REMOVE?
         """
         
         raise Exception("Reading a plain text file is not yet implemented. "\
@@ -724,13 +727,9 @@ class RMSD_cv_input(Serializer):
     index : int
         The index of this CV input object in the Model_input object.
         
-    group1 : list
+    group : list
         A list of ints representing atom indices whose center of mass
         is one end of the CV distance vector.
-        
-    group2 : list
-        A list of ints representing atom indices whose center of mass
-        is the other end of the CV distance vector.
         
     input_anchors : list
         A list of Spherical_cv_anchor objects which specify inputs for
@@ -739,16 +738,14 @@ class RMSD_cv_input(Serializer):
     
     def __init__(self):
         self.index = 0
-        self.group1 = []
-        self.group2 = []
-        self.bd_group1 = []
-        self.bd_group2 = []
+        self.group = []
         self.input_anchors = []
         return
         
     def read_plain_input(self, inputs):
         """
         Read a plain input file (as opposed to an XML)
+        TODO: REMOVE?
         """
         
         raise Exception("Reading a plain text file is not yet implemented. "\
@@ -760,13 +757,13 @@ class RMSD_cv_input(Serializer):
         Check user inputs to ensure they have been entered properly.
         """
         
-        last_radius = -1e9
+        last_value = -1e9
         found_bulk_anchor = False
         for i, input_anchor in enumerate(self.input_anchors):
-            radius = input_anchor.radius
-            assert radius >= 0.0, "A radius must be greater than "\
+            value = input_anchor.value
+            assert value >= 0.0, "A value must be greater than "\
                 "or equal to zero."
-            assert radius > last_radius, "Each subsequent radius "\
+            assert value > last_value, "Each subsequent value "\
                 "argument must be greater than the last (sorted)."
             
             if input_anchor.bound_state is None:
@@ -781,17 +778,8 @@ class RMSD_cv_input(Serializer):
             assert input_anchor.bulk_anchor in [True, False], \
                 "bulk_anchor must be a boolean"
             
-            if input_anchor.bulk_anchor:
-                assert not found_bulk_anchor, "Only one bulk anchor allowed "\
-                    "per set of anchors in a CV."
-                found_bulk_anchor = False
-            else:
-                assert not found_bulk_anchor, "Only the outermost anchor "\
-                    "should be the bulk anchor."
-            
-            if i > 0:
-                assert not input_anchor.bound_state, "Only the lowest"\
-                    "anchor can be the bound state."
+            assert not input_anchor.bulk_anchor, "An RMSD CV must not have "\
+                "a bulk anchor."
                     
             assert len(self.input_anchors) > 1, "A CV must contain "\
                 "more than one anchor."
@@ -800,7 +788,7 @@ class RMSD_cv_input(Serializer):
     def make_mmvt_milestoning_objects(self, milestone_alias, milestone_index, 
                                       input_anchor_index, anchor_index):
         milestones, milestone_alias, milestone_index = \
-            mmvt_cv.make_mmvt_milestoning_objects_spherical(
+            mmvt_cv.make_mmvt_milestoning_objects_RMSD(
             self, milestone_alias, milestone_index, input_anchor_index, 
             anchor_index, self.input_anchors)
         return milestones, milestone_alias, milestone_index

@@ -185,3 +185,57 @@ def make_mmvt_milestoning_objects_planar(
         milestones.append(milestone2)
     
     return milestones, milestone_alias, milestone_index
+
+def make_mmvt_RMSD_cv_object(RMSD_cv_input, index):
+    """
+    Create a RMSD CV object to be placed into the Model.
+    """
+    
+    cv = mmvt_base.MMVT_spherical_CV(index, RMSD_cv_input.group)
+    return cv
+    
+def make_mmvt_milestoning_objects_RMSD(
+        RMSD_cv_input, milestone_alias, milestone_index, 
+        input_anchor_index, anchor_index, input_anchors):
+    """
+    Make a set of 1-dimensional RMSD Milestone objects to be put into
+    an Anchor, and eventually, the Model.
+    """
+    
+    milestones = []
+    num_anchors = len(input_anchors)
+    if input_anchor_index > 0:
+        neighbor_index = anchor_index - 1
+        neighbor_index_input = input_anchor_index - 1
+        milestone1 = base.Milestone()
+        milestone1.index = milestone_index
+        milestone1.neighbor_anchor_index = neighbor_index
+        milestone1.alias_index = milestone_alias
+        milestone1.cv_index = RMSD_cv_input.index
+        if input_anchors[input_anchor_index].lower_milestone_value is None:
+            value = 0.5 * (input_anchors[input_anchor_index].value \
+                           + input_anchors[neighbor_index_input].value)
+        else:
+            value = input_anchors[input_anchor_index].lower_milestone_value
+        milestone1.variables = {"k": -1.0, "value": value}
+        milestone_alias += 1
+        milestone_index += 1
+        milestones.append(milestone1)
+        
+    if input_anchor_index < num_anchors-1:
+        neighbor_index = anchor_index + 1
+        neighbor_index_input = input_anchor_index + 1
+        milestone2 = base.Milestone()
+        milestone2.index = milestone_index
+        milestone2.neighbor_anchor_index = neighbor_index
+        milestone2.alias_index = milestone_alias
+        milestone2.cv_index = RMSD_cv_input.index
+        if input_anchors[input_anchor_index].upper_milestone_value is None:
+            value = 0.5 * (input_anchors[input_anchor_index].value \
+                            + input_anchors[neighbor_index_input].value)
+        else:
+            value = input_anchors[input_anchor_index].upper_milestone_value
+        milestone2.variables = {"k": 1.0, "value": value}
+        milestones.append(milestone2)
+    
+    return milestones, milestone_alias, milestone_index

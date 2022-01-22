@@ -697,6 +697,11 @@ def create_bd_milestones(model, model_input):
                                 bd_milestone.outer_milestone.cv_index:
                             bd_milestone.inner_milestone = \
                                 neighbor_milestone
+                                
+                assert bd_milestone.inner_milestone is not None, "No suitable "\
+                    "spherical milestone found for inner BD reaction "\
+                    "criteria. Make sure that there are at least 3 spherical "\
+                    "input anchors for the outermost CV."
             
             elif model.get_type() == "elber":
                 bd_milestone.outer_milestone = anchor.milestones[1]

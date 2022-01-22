@@ -846,6 +846,9 @@ class Model(Serializer):
             raise Exception(error_msg)
         
 def load_model(model_file, directory=None):
+    """
+    
+    """
     assert os.path.exists(model_file), \
         "A nonexistent input file was provided: {}.".format(model_file)
     model = Model()
