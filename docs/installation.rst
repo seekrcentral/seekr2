@@ -70,6 +70,14 @@ python API::
   git clone https://github.com/seekrcentral/seekr2.git
   cd seekr2
   python setup.py install
+  
+  
+If you get an error stating "No module named 'Cython'", this can usually be
+remedied by installing/updating Cython with::
+
+  pip install --upgrade cython
+  
+Then re-run the "python setup.py install" command.
 
 Once OpenMM and the OpenMM SEEKR2 Plugin are installed, it is recommended that 
 you run tests of SEEKR2. From within the "seekr2/" directory, run:

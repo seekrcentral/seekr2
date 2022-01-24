@@ -720,6 +720,9 @@ def create_bd_milestones(model, model_input):
             
             model.k_on_info.bd_milestones.append(bd_milestone)
             bd_milestone_counter += 1
+            
+    assert len(model.k_on_info.bd_milestones) > 0, "No BD milestones created. "\
+        "Make sure there is at least one bulk state input anchor."
                 
     return
 
