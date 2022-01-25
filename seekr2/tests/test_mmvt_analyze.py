@@ -52,6 +52,7 @@ def test_read_output_file():
     
     assert np.isclose(T_alpha1, T_alpha2)
     
+    """ # No longer a valid test. Remove?
     N_i_j_alpha, R_i_alpha_list, R_i_alpha_average, \
         R_i_alpha_std_dev, R_i_alpha_total, N_alpha_beta, \
         T_alpha_list, T_alpha_average, T_alpha_std_dev, \
@@ -77,7 +78,7 @@ def test_read_output_file():
         assert key in N_alpha_beta_dict2
         assert np.isclose(N_alpha_beta_dict1[key], 2*N_alpha_beta_dict2[key], 
                           rtol=0.01)
-    
+    """
     return
 
 @pytest.mark.skip()

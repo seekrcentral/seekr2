@@ -165,6 +165,9 @@ class Spherical_cv_input(Serializer):
                     
             assert len(self.input_anchors) > 1, "A CV must contain "\
                 "more than one anchor."
+        
+        assert len(self.group1) > 0, "Any input CV groups must contain atoms."
+        assert len(self.group2) > 0, "Any input CV groups must contain atoms."
         return
     
     def make_mmvt_milestoning_objects(self, milestone_alias, milestone_index, 
@@ -633,7 +636,10 @@ class Planar_cv_input(Serializer):
                 "more than one anchor."
         assert num_bulk_anchors <= 1, "There cannot be more than one bulk "\
             "anchor."
-            
+        
+        assert len(self.start_group) > 0, "Any input CV groups must contain atoms."
+        assert len(self.end_group) > 0, "Any input CV groups must contain atoms."
+        assert len(self.mobile_group) > 0, "Any input CV groups must contain atoms."
         return
     
     def make_mmvt_milestoning_objects(self, milestone_alias, milestone_index, 
@@ -788,6 +794,8 @@ class RMSD_cv_input(Serializer):
                     
             assert len(self.input_anchors) > 1, "A CV must contain "\
                 "more than one anchor."
+        
+        assert len(self.group) > 0, "Any input CV groups must contain atoms."
         return
     
     def make_mmvt_milestoning_objects(self, milestone_alias, milestone_index, 
