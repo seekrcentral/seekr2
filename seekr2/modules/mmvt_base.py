@@ -6,10 +6,20 @@ MMVT calculations.
 """
 
 import numpy as np
+from scipy.spatial import transform
 from parmed import unit
 import mdtraj
 
-#import seekr2.libraries.serializer.serializer as serializer
+try:
+    import openmm
+except ImportError:
+    import simtk.openmm as openmm
+    
+try:
+    import openmm.app as openmm_app
+except ImportError:
+    import simtk.openmm.app as openmm_app
+
 from abserdes import Serializer
 
 import seekr2.modules.common_base as base
@@ -269,8 +279,8 @@ colvar {{
         assert milestone.cv_index == self.index
         values_list = []
         bitcode = 2**(milestone.alias_index-1)
-        k = milestone.variables['k'] * unit.kilojoules_per_mole/unit.angstrom**2
-        radius = milestone.variables['radius'] * unit.nanometers
+        k = milestone.variables["k"] * unit.kilojoules_per_mole/unit.angstrom**2
+        radius = milestone.variables["radius"] * unit.nanometers
         values_list.append(bitcode)
         values_list.append(k)
         values_list.append(radius)
@@ -284,8 +294,8 @@ colvar {{
         bounce will occur
         """
         assert milestone.cv_index == self.index
-        k = milestone.variables['k']
-        radius_in_nm = milestone.variables['radius'] * unit.nanometers
+        k = milestone.variables["k"]
+        radius_in_nm = milestone.variables["radius"] * unit.nanometers
         radius_in_A = radius_in_nm.value_in_unit(unit.angstroms)
         eval_string = "{0} * (${1}_{2} - {3}) > 0".format(
             k, cv_val_var, self.index, radius_in_A)
@@ -982,45 +992,22 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
     
     """+MMVT_collective_variable.__doc__
     
-    def __init__(self, index, group):
+    def __init__(self, index, group, ref_structure):
         self.index = index
         self.group = group
+        self.ref_structure = ref_structure
         self.name = "mmvt_rmsd"
-        self.openmm_expression = "step(k*(RMSD - value)^2)"
+        self.openmm_expression = "step(k*(RMSD - value))"
         self.restraining_expression = "0.5*k*(RMSD - value)^2"
         self.num_groups = 1
-        self.assign_expressions_and_variables()
+        self.per_dof_variables = []
+        self.global_variables = ["k", "value"]
         self._mygroup_list = None
         self.variable_name = "v"
         return
 
     def __name__(self):
         return "MMVT_RMSD_CV"
-    
-    """ #TODO: remove
-    def assign_expressions_and_variables(self):
-        openmm_expression_list = []
-        self.per_dof_variables = []
-        for i, (order_parameter, order_parameter_weight) in enumerate(zip(
-                self.order_parameters, self.order_parameter_weights)):
-            weight_var = "c{}".format(i)
-            this_expr = weight_var + "*" \
-                + order_parameter.get_openmm_expression(group_index=self.num_groups+1)
-            
-            self.per_dof_variables.append(weight_var)
-            openmm_expression_list.append(this_expr)
-            self.num_groups += order_parameter.get_num_groups()
-        self.openmm_expression = "step(k*("+" + ".join(openmm_expression_list)\
-            + " - value))"
-        self.restraining_expression = "0.5*k*(" \
-            + " + ".join(openmm_expression_list) + " - value)^2"
-        self.per_dof_variables.append("k")
-        self.per_dof_variables.append("value")
-        self.global_variables = []
-        #print("self.openmm_expression:", self.openmm_expression)
-        #print("self.per_dof_variables:", self.per_dof_variables)
-        return
-    """
     
     def make_force_object(self):
         """
@@ -1075,19 +1062,23 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
         will be provided at a later step.
         """
         
+        pdb_file = openmm_app.PDBFile(self.ref_structure)
+        rmsd_force = openmm.RMSDForce(pdb_file.positions, self.group)
+        force.addCollectiveVariable("RMSD", rmsd_force)
         
-        
-        
-        
-        self._mygroup_list = []
-        mygroup1 = force.addGroup(self.group1)
-        self._mygroup_list.append(mygroup1)
-        mygroup2 = force.addGroup(self.group2)
-        self._mygroup_list.append(mygroup2)
-        variable_names_list = []
-        
-        variable_names_list.append("bitcode")
-        force.addPerBondParameter("bitcode")
+        return
+    
+    def add_groups_and_variables(self, force, variables):
+        """
+        Provide the custom force with additional information it needs,
+        which includes a list of the groups of atoms involved with the
+        CV, as well as a list of the variables' *values*.
+        """
+        #assert len(self._mygroup_list) == self.num_groups
+        #force.addBond(self._mygroup_list, variables)
+        print("variables:", variables)
+        force.addGlobalParameter("bitcode", variables[0])
+        """
         if self.per_dof_variables is not None:
             for per_dof_variable in self.per_dof_variables:
                 force.addPerBondParameter(per_dof_variable)
@@ -1097,17 +1088,9 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
             for global_variable in self.global_variables:
                 force.addGlobalParameter(global_variable)
                 variable_names_list.append(global_variable)
-        
-        return variable_names_list
-    
-    def add_groups_and_variables(self, force, variables):
         """
-        Provide the custom force with additional information it needs,
-        which includes a list of the groups of atoms involved with the
-        CV, as well as a list of the variables' *values*.
-        """
-        assert len(self._mygroup_list) == self.num_groups
-        force.addBond(self._mygroup_list, variables)
+        force.addGlobalParameter("k", variables[1])
+        force.addGlobalParameter("value", variables[2])
         return
     
     def get_variable_values_list(self, milestone):
@@ -1118,15 +1101,11 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
         assert milestone.cv_index == self.index
         values_list = []
         bitcode = 2**(milestone.alias_index-1)
-        k = milestone.variables['k'] * unit.kilojoules_per_mole/unit.angstrom**2
-        radius = milestone.variables['value'] * unit.nanometers
+        k = milestone.variables["k"] * unit.kilojoules_per_mole/unit.angstrom**2
+        value = milestone.variables["value"] * unit.nanometers
         values_list.append(bitcode)
-        for i, order_parameter in enumerate(self.order_parameters):
-            key = "c{}".format(i)
-            c = milestone.variables[key]
-            values_list.append(c)
         values_list.append(k)
-        values_list.append(radius)
+        values_list.append(value)
         return values_list
     
     def get_namd_evaluation_string(self, milestone, cv_val_var="cv_val"):
@@ -1145,83 +1124,63 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
         within the expected anchor. Return True if passed, return
         False if failed.
         """
-        TOL = 0.001
-        op_com_array_list = []
-        for order_parameter in self.order_parameters:
-            com_array_list = []
-            for j in range(order_parameter.get_num_groups()):
-                group = order_parameter.get_group(j)
-                traj_group = traj.atom_slice(group)
-                com_array = mdtraj.compute_center_of_mass(traj_group)
-                com_array_list.append(com_array)
-            op_com_array_list.append(com_array_list)
-                
+        TOL = 0.0 #0.001
+        traj1 = traj.atom_slice(self.group)
+        ref_traj = mdtraj.load(self.ref_structure)
+        ref_traj1 = ref_traj.atom_slice(self.group)
+        traj1.superpose(ref_traj1)
         for frame_index in range(traj.n_frames):
-            op_value = 0.0
-            for i, order_parameter in enumerate(self.order_parameters):
-                com_list = []
-                for j in range(order_parameter.get_num_groups()):
-                    com = op_com_array_list[i][j][frame_index,:]
-                    com_list.append(com)
-                op_term = order_parameter.get_value(com_list)
-                op_weight = self.order_parameter_weights[i]
-                op_value += op_weight * op_term
-                
+            value = float(mdtraj.rmsd(traj1, ref_traj1, frame=frame_index))
             milestone_k = milestone_variables["k"]
             milestone_value = milestone_variables["value"]
-            if milestone_k*(op_value - milestone_value) > TOL:
+            if milestone_k*(value - milestone_value) > TOL:
                 if verbose:
-                    warnstr = """This system value for the Tiwary CV is {:.4f} 
-but the milestone's value for the same CV is {:.4f}. The system falls outside 
-the boundaries.""".format(op_value, milestone_value)
+                    warnstr = """The RMSD value of atom group 
+was found to be {:.4f} nm apart.
+This distance falls outside of the milestone
+boundary at {:.4f} nm.""".format(value, milestone_value)
                     print(warnstr)
                 return False
             
         return True
     
+    """ # TODO: implement if needed. Should be working, just needs tests
     def check_openmm_context_within_boundary(
-            self, context, milestone_variables, verbose=False):
-        """
-        Check if an mdtraj Trajectory describes a system that remains
+            self, context, milestone_variables, positions=None, 
+            ref_positions=None, verbose=False, tolerance=0.0):
+        ""
+        Check if an OpenMM context describes a system that remains
         within the expected anchor. Return True if passed, return
         False if failed.
-        """
-        TOL = 0.001
-        
+        ""
+
         system = context.getSystem()
-        state = context.getState(getPositions=True)
-        positions = state.getPositions()
-        op_com_list = []
-        for order_parameter in self.order_parameters:
-            com_list = []
-            for j in range(order_parameter.get_num_groups()):
-                group = order_parameter.get_group(j)
-                com = base.get_openmm_center_of_mass_com(
-                    system, positions, group)
-                com_list.append(com)
-            op_com_list.append(com_list)
-                
-        op_value = 0.0
-        for i, order_parameter in enumerate(self.order_parameters):
-            com_list = []
-            for j in range(order_parameter.get_num_groups()):
-                com = op_com_list[i][j]
-                com_list.append(com)
-            op_term = order_parameter.get_value(com_list)
-            op_weight = self.order_parameter_weights[i]
-            op_value += op_weight * op_term
+        if positions is None:
+            state = context.getState(getPositions=True)
+            positions = state.getPositions()
             
+        if ref_positions is None:
+            pdb_file = openmm_app.PDBFile(self.ref_structure)
+            ref_positions = pdb_file.positions
+            
+        rotation, value, sensitivity = transform.Rotation.align_vectors(
+            positions, ref_positions)
+        
+        #value = base.get_openmm_rmsd(
+        #    system, positions, ref_positions, self.group1)
         milestone_k = milestone_variables["k"]
         milestone_value = milestone_variables["value"]
-        if milestone_k*(op_value - milestone_value) > TOL:
+        if milestone_k*(value - milestone_value) > tolerance:
             if verbose:
-                warnstr = """This system value for the Tiwary CV is {:.4f} 
-but the milestone's value for the same CV is {:.4f}. The system falls outside 
-the boundaries.""".format(op_value, milestone_value)
+                warnstr = ""The RMSD value of atom group 
+was found to be {:.4f} nm apart.
+This distance falls outside of the milestone
+boundary at {:.4f} nm."".format(value, milestone_value)
                 print(warnstr)
             return False
             
         return True
+    """
     
     def check_mdtraj_close_to_boundary(self, traj, milestone_variables, 
                                      verbose=False, max_avg=0.03, max_std=0.05):
@@ -1230,26 +1189,21 @@ the boundaries.""".format(op_value, milestone_value)
         to the MMVT boundary. Return True if passed, return False if 
         failed.
         """
-        print("check_mdtraj_close_to_boundary not yet implemented for Tiwary CVs")
+        print("check_mdtraj_close_to_boundary not yet implemented for RMSD CVs")
         return True
     
     def get_atom_groups(self):
         """
-        Return a list of this CV's atomic groups.
+        Return a 1-list of this CV's atomic group.
         """
-        group_list = []
-        for order_parameter in self.order_parameters:
-            for i in range(order_parameter.get_num_groups()):
-                group = order_parameter.get_group(i)
-                group_list.append(group)
+        return [self.group]
             
-        return group_list
-    
     def get_variable_values(self):
         """
-        Return the order parameter weights as the extra CV variables.
+        This type of CV has no extra variables, so an empty list is 
+        returned.
         """
-        return self.order_parameter_weights
+        return []
 
 class MMVT_anchor(Serializer):
     """

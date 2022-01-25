@@ -378,7 +378,10 @@ def model_factory(model_input, use_absolute_directory=False):
             mm_settings.barostat.target_temperature = temperature
             mm_settings.barostat.target_pressure = pressure
         mm_settings.initial_temperature = temperature
-        mm_settings.nonbonded_cutoff = model_input.nonbonded_cutoff
+        if model_input.nonbonded_cutoff is None:
+            mm_settings.nonbonded_method = "nocutoff"
+        else:
+            mm_settings.nonbonded_cutoff = model_input.nonbonded_cutoff
         mm_settings.run_minimization = model_input.run_minimization
         mm_settings.hydrogenMass = model_input.hydrogenMass
         mm_settings.constraints = model_input.constraints
@@ -599,6 +602,9 @@ def create_cvs_and_anchors(model, collective_variable_inputs, root_directory):
                 cv = mmvt_cv.make_mmvt_tiwary_cv_object(cv_input, index=i)
             elif isinstance(cv_input, common_cv.Planar_cv_input):
                 cv = mmvt_cv.make_mmvt_planar_cv_object(cv_input, index=i)
+            elif isinstance(cv_input, common_cv.RMSD_cv_input):
+                cv = mmvt_cv.make_mmvt_RMSD_cv_object(
+                    cv_input, index=i, root_directory=root_directory)
             else:
                 raise Exception("CV type not implemented in MMVT: %s" \
                                 % type(cv_input))

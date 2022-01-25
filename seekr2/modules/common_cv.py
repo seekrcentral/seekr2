@@ -728,8 +728,12 @@ class RMSD_cv_input(Serializer):
         The index of this CV input object in the Model_input object.
         
     group : list
-        A list of ints representing atom indices whose center of mass
-        is one end of the CV distance vector.
+        A list of ints representing atom indices whose RMSD will be 
+        computed.
+        
+    ref_structure : str
+        A PDB file name for the structure that will be the reference 
+        for the RMSD calculation.
         
     input_anchors : list
         A list of Spherical_cv_anchor objects which specify inputs for
@@ -739,6 +743,7 @@ class RMSD_cv_input(Serializer):
     def __init__(self):
         self.index = 0
         self.group = []
+        self.ref_structure = ""
         self.input_anchors = []
         return
         
@@ -778,8 +783,8 @@ class RMSD_cv_input(Serializer):
             assert input_anchor.bulk_anchor in [True, False], \
                 "bulk_anchor must be a boolean"
             
-            assert not input_anchor.bulk_anchor, "An RMSD CV must not have "\
-                "a bulk anchor."
+            #assert not input_anchor.bulk_anchor, "An RMSD CV must not have "\
+            #    "a bulk anchor."
                     
             assert len(self.input_anchors) > 1, "A CV must contain "\
                 "more than one anchor."

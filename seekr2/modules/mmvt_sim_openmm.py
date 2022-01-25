@@ -5,7 +5,7 @@ Create the Sim_openmm object which contains the objects needed for an
 openmm simulation based on the settings provided by a user. These
 objects are specific to MMVT only.
 """
-
+import os
 try:
     import openmm.app as openmm_app
 except ImportError:
@@ -86,12 +86,16 @@ def add_forces(sim_openmm, model, anchor):
     """
     Add the proper forces for this MMVT simulation.
     """
+    curdir = os.getcwd()
+    os.chdir(model.anchor_rootdir)
     for milestone in anchor.milestones:
         cv = milestone.get_CV(model)
         myforce = make_mmvt_boundary_definitions(
             cv, milestone)
         sim_openmm.integrator.addMilestoneGroup(milestone.alias_index)
         forcenum = sim_openmm.system.addForce(myforce)
+        
+    os.chdir(curdir)
     return
 
 def add_simulation(sim_openmm, model, topology, positions, box_vectors, 

@@ -4,6 +4,9 @@ mmvt_cv.py
 Define any type of collective variable (or milestone shape) that might
 be used in an MMVT calculation.
 """
+import os
+import shutil
+
 import seekr2.modules.common_base as base
 import seekr2.modules.mmvt_base as mmvt_base
 
@@ -186,12 +189,14 @@ def make_mmvt_milestoning_objects_planar(
     
     return milestones, milestone_alias, milestone_index
 
-def make_mmvt_RMSD_cv_object(RMSD_cv_input, index):
+def make_mmvt_RMSD_cv_object(RMSD_cv_input, index, root_directory):
     """
     Create a RMSD CV object to be placed into the Model.
     """
-    
-    cv = mmvt_base.MMVT_spherical_CV(index, RMSD_cv_input.group)
+    RMSD_ref_pdb = "rmsd_reference_cv_{}.pdb".format(index)
+    absolute_RMSD_ref_pdb = os.path.join(root_directory, RMSD_ref_pdb)
+    shutil.copyfile(RMSD_cv_input.ref_structure, absolute_RMSD_ref_pdb)
+    cv = mmvt_base.MMVT_RMSD_CV(index, RMSD_cv_input.group, RMSD_ref_pdb)
     return cv
     
 def make_mmvt_milestoning_objects_RMSD(
