@@ -931,3 +931,65 @@ def create_tiwary_mmvt_model_input(root_dir):
     #model_input.browndye_settings_input = None
     
     return model_input
+
+def create_rmsd_mmvt_model_input(root_dir):
+    """
+    Create a RMSD TRP cage model input.
+    """
+    os.chdir(TEST_DIRECTORY)
+    model_input = common_prepare.Model_input()
+    model_input.calculation_type = "mmvt"
+    model_input.calculation_settings = common_prepare.MMVT_input_settings()
+    model_input.calculation_settings.md_output_interval = 10000
+    model_input.calculation_settings.md_steps_per_anchor = 100000 #1000000
+    model_input.temperature = 298.15
+    model_input.pressure = 1.0
+    model_input.ensemble = "nvt"
+    model_input.root_directory = root_dir
+    model_input.md_program = "openmm"
+    model_input.constraints = "HBonds"
+    model_input.rigidWater = True
+    model_input.hydrogenMass = None
+    model_input.timestep = 0.002
+    model_input.nonbonded_cutoff = None
+    
+    cv_input1 = common_cv.RMSD_cv_input()
+    cv_input1.group = [4, 16, 26, 47, 57, 74, 98, 117, 139, 151, 158, 173, 
+                       179, 190, 201, 208, 240, 254, 268, 274]
+    cv_input1.ref_structure = "/home/lvotapka/seekr2/seekr2/data/trp_cage_files/trp_cage.pdb"
+    cv_input1.input_anchors = []
+    
+    values_list = [0.2, 0.4, 0.6, 0.8, 1.0, 1.2]
+    amber_prmtop_filename = "/home/lvotapka/seekr2/seekr2/data/trp_cage_files/trp_cage.prmtop"
+    forcefield_built_in_ff_list = ["amber14/tip3pfb.xml"]
+    forcefield_custom_ff_list = ["../data/hostguest_files/hostguest.xml"]
+    
+    pdb_filenames = ["/home/lvotapka/seekr2/seekr2/data/trp_cage_files/trp_cage.pdb", 
+                     "/home/lvotapka/seekr2/seekr2/data/trp_cage_files/trp_cage_0.40.pdb", 
+                     "/home/lvotapka/seekr2/seekr2/data/trp_cage_files/trp_cage_0.60.pdb", 
+                     "/home/lvotapka/seekr2/seekr2/data/trp_cage_files/trp_cage_0.80.pdb", 
+                     "/home/lvotapka/seekr2/seekr2/data/trp_cage_files/trp_cage_1.00.pdb", 
+                     ""]
+    for i, (value, pdb_filename) in enumerate(zip(values_list, pdb_filenames)):
+        input_anchor = common_cv.Tiwary_cv_anchor()
+        input_anchor.value = value
+        assign_amber_params(input_anchor, amber_prmtop_filename, 
+                            pdb_filename)
+        
+        if i == 0:
+            input_anchor.bound_state = True
+        else:
+            input_anchor.bound_state = False
+            
+        if i == len(values_list)-1:
+            input_anchor.bulk_anchor = True
+        else:
+            input_anchor.bulk_anchor = False
+        #input_anchor.bulk_anchor = False
+    
+        cv_input1.input_anchors.append(input_anchor)
+    
+    model_input.cv_inputs = [cv_input1]
+    model_input.browndye_settings_input = None
+    
+    return model_input

@@ -429,12 +429,15 @@ def check_systems_within_Voronoi_cells(model):
     if model.get_type() != "mmvt":
         # only apply to MMVT systems
         return True
+    curdir = os.getcwd()
+    os.chdir(model.anchor_rootdir)
     for anchor in model.anchors:
         traj = load_structure_with_mdtraj(model, anchor)
         if traj is None:
             continue
         for milestone in anchor.milestones:
             cv = model.collective_variables[milestone.cv_index]
+            
             result = cv.check_mdtraj_within_boundary(traj, milestone.variables, 
                                                      verbose=True)
             if result == False:
@@ -463,6 +466,7 @@ def check_systems_within_Voronoi_cells(model):
                           "anchor {}.".format(correct_anchor.index))
                 returning_result = False
     
+    os.chdir(curdir)
     return returning_result
 
 def recurse_atoms(atom, _visited_indices=set()):
@@ -858,8 +862,11 @@ def check_mmvt_in_Voronoi_cell(model):
             continue
         for milestone in anchor.milestones:
             cv = model.collective_variables[milestone.cv_index]
+            curdir = os.getcwd()
+            os.chdir(model.anchor_rootdir)
             result = cv.check_mdtraj_within_boundary(traj, milestone.variables, 
                                                      verbose=True)
+            os.chdir(curdir)
             if result == False:
                 warnstr = """CHECK FAILURE: The MMVT trajectory(ies)
     for anchor {} do not lie within the 

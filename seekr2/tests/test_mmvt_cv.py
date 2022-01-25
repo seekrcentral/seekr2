@@ -53,3 +53,10 @@ def test_torsion_order_parameter_get_value():
     phi = op.get_value([com1, com2, com3, com4])
     assert np.isclose(phi, expected_phi)
     return
+
+def test_rmsd_input_and_model(rmsd_mmvt_model_input, rmsd_mmvt_model):
+    """
+    
+    """
+    check.check_pre_simulation_all(rmsd_mmvt_model)
+    return

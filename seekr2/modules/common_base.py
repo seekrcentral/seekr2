@@ -100,6 +100,41 @@ def get_openmm_center_of_mass_com(system, positions, group1):
     com /= total_mass
     return com
 
+def get_openmm_rmsd(system, positions, ref_positions, group1):
+    """
+    Compute the RMSD between two groups of atoms given an OpenMM
+    system, the system's atomic positions, a set of reference 
+    positions, and the indices of the atoms of interest.
+    
+    Parameters:
+    -----------
+    system : System()
+        The OpenMM System object which contains the atomic masses.
+        
+    positions : Quantity
+        A n-by-3 array of positions of all atoms in the system. Can
+        be the output of State.getPositions()
+        
+    ref_positions : Quantity
+        A n-by-3 array of reference positions of all atoms in the 
+        system.
+        
+    group1 : list
+        A list of integers representing atom indices of the group
+        the center of mass is being computed for.
+        
+    Returns:
+    --------
+    com : Quantity
+        A 1x3 array representing the x,y,z coordinates of the center of
+        mass of the group of atoms.
+    """
+    sq_dist_sum = np.array([0, 0, 0]) * unit.nanometers
+    for index in group1:
+        sq_dist_sum += np.linalg.norm(positions[index], ref_positions[index])**2
+    
+    return np.sqrt(sq_dist_sum / len(group1))
+
 def get_box_vectors_from_pdb(pdb_filename):
     """
     Extract the box_vectors from the CRYST line in a pdb file.
@@ -846,6 +881,9 @@ class Model(Serializer):
             raise Exception(error_msg)
         
 def load_model(model_file, directory=None):
+    """
+    
+    """
     assert os.path.exists(model_file), \
         "A nonexistent input file was provided: {}.".format(model_file)
     model = Model()
