@@ -61,7 +61,17 @@ def add_integrator(sim_openmm, model, state_prefix=None):
             
         sim_openmm.timestep = timestep
         
-        sim_openmm.integrator = seekr2plugin.MmvtLangevinIntegrator(
+        integrator_type = model.openmm_settings.langevin_integrator.type
+        
+        if integrator_type == "langevin":
+            integrator_object = seekr2plugin.MmvtLangevinIntegrator
+        elif integrator_type == "langevinMiddle":
+            integrator_object = seekr2plugin.MmvtLangevinMiddleIntegrator
+        else:
+            raise Exception("Settings not provided for available "\
+                        "integrator type(s).")
+        
+        sim_openmm.integrator = integrator_object(
             target_temperature*unit.kelvin, 
             friction_coefficient/unit.picoseconds, 
             timestep*unit.picoseconds, 

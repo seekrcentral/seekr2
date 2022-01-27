@@ -267,6 +267,10 @@ class Langevin_integrator_settings(Serializer):
     rigid_tolerance :  float, Default 1e-6
         The acceptable tolerance when placing atoms of a rigid bond
         length or angle.
+        
+    integrator_type : str, Default "langevin"
+        Which type of Langevin integrator to use. Options include "langevin",
+        "langevinMiddle", ...
     """
     
     def __init__(self):
@@ -275,6 +279,7 @@ class Langevin_integrator_settings(Serializer):
         self.random_seed = 0
         self.timestep = 0.002
         self.rigid_tolerance = 1e-6
+        self.integrator_type = "langevin"
         return
     
 class Barostat_settings_openmm(Serializer):

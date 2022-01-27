@@ -629,8 +629,8 @@ def create_smoluchowski_mmvt_model_input(root_dir, num_input_anchors=5):
     model_input.timestep = 0.002
     model_input.nonbonded_cutoff = 0.0
     cv_input1 = common_cv.Spherical_cv_input()
-    cv_input1.group1 = []
-    cv_input1.group2 = []
+    cv_input1.group1 = [0]
+    cv_input1.group2 = [1]
     cv_input1.input_anchors = []
     
     for i in range(num_input_anchors):
@@ -706,8 +706,8 @@ def create_smoluchowski_elber_model_input(root_dir, num_input_anchors=5):
     model_input.calculation_settings.fwd_output_interval = None
     
     cv_input1 = common_cv.Spherical_cv_input()
-    cv_input1.group1 = []
-    cv_input1.group2 = []
+    cv_input1.group1 = [0]
+    cv_input1.group2 = [1]
     cv_input1.input_anchors = []
     cv_input1.input_anchors = []
     

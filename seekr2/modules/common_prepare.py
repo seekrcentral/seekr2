@@ -262,6 +262,10 @@ class Model_input(Serializer):
     rigidWater : bool, Default True
         If True, then water bonds and angles will be made rigid.
     
+    integrator_type : str, Default "langevin"
+        Which type of integrator to use for simulation dynamics. 
+        Available options include "langevin", "langevinMiddle", ...
+    
     timestep : float, Default 0.002
         The length of time taken by a simulation step (in units of 
         picoseconds).
@@ -292,6 +296,7 @@ class Model_input(Serializer):
         self.hydrogenMass = None
         self.constraints = "hbonds"
         self.rigidWater = True
+        self.integrator_type = "langevin"
         self.timestep = 0.002
         self.nonbonded_cutoff = 0.9
         self.browndye_settings_input = None
@@ -386,6 +391,7 @@ def model_factory(model_input, use_absolute_directory=False):
         mm_settings.hydrogenMass = model_input.hydrogenMass
         mm_settings.constraints = model_input.constraints
         mm_settings.langevin_integrator.timestep = model_input.timestep
+        mm_settings.langevin_integrator.type = model_input.integrator_type
         mm_settings.rigidWater = model_input.rigidWater
     
         model.openmm_settings = mm_settings

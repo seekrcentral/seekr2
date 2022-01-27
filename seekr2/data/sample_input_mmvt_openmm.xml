@@ -2,8 +2,8 @@
 <model_input class='Model_input'>
     <calculation_type>mmvt</calculation_type>
     <calculation_settings class="MMVT_input_settings">
-        <md_output_interval>10000</md_output_interval>
-        <md_steps_per_anchor>100000</md_steps_per_anchor>
+        <md_output_interval>5000</md_output_interval>
+        <md_steps_per_anchor>50000</md_steps_per_anchor>
     </calculation_settings>
     <temperature>298.15</temperature>
     <pressure>1.0</pressure>
@@ -13,7 +13,8 @@
     <constraints>HBonds</constraints>
     <rigidWater>True</rigidWater>
     <hydrogenMass/>
-    <timestep>0.002</timestep>
+    <integrator_type>langevinMiddle</integrator_type>
+    <timestep>0.004</timestep>
     <nonbonded_cutoff>0.9</nonbonded_cutoff>
     <cv_inputs>
         <cv_input class="Spherical_cv_input">

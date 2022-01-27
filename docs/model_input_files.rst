@@ -115,6 +115,10 @@ to their own systems.
   this parameter to a new mass (in AMU) to move from a bonded heavy atom to the
   hydrogen atom.
   
+**integrator_type**
+  Which type of integrator to use for simulation dynamics. 
+  Available options include "langevin", "langevinMiddle", ...
+  
 **<timestep>**
   The MD timestep (in ps). (Will be automatically converted to fs for NAMD 
   runs).

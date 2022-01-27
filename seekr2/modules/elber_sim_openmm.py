@@ -75,7 +75,20 @@ def add_integrators(sim_openmm, model, state_prefix=None):
             
         sim_openmm.timestep = timestep
         
-        sim_openmm.umbrella_integrator = openmm.LangevinIntegrator(
+        integrator_type = model.openmm_settings.langevin_integrator.type
+        
+        if integrator_type == "langevin":
+            umbrella_integrator_object = openmm.LangevinIntegrator
+            fwd_rev_integrator_object = seekr2plugin.ElberLangevinIntegrator
+        elif integrator_type == "langevinMiddle":
+            umbrella_integrator_object = openmm.LangevinMiddleIntegrator
+            fwd_rev_integrator_object \
+                = seekr2plugin.ElberLangevinMiddleIntegrator
+        else:
+            raise Exception("Settings not provided for available "\
+                        "integrator type(s).")
+        
+        sim_openmm.umbrella_integrator = umbrella_integrator_object(
             target_temperature*unit.kelvin, 
             friction_coefficient/unit.picoseconds, 
             timestep*unit.picoseconds)
@@ -84,7 +97,7 @@ def add_integrators(sim_openmm, model, state_prefix=None):
             
         #sim_openmm.rev_integrator = openmm.VerletIntegrator(
         #    timestep*unit.picoseconds)
-        sim_openmm.rev_integrator = seekr2plugin.ElberLangevinIntegrator(
+        sim_openmm.rev_integrator = fwd_rev_integrator_object(
             target_temperature*unit.kelvin, 
             friction_coefficient/unit.picoseconds, 
             timestep*unit.picoseconds,
@@ -95,7 +108,7 @@ def add_integrators(sim_openmm, model, state_prefix=None):
         
         #sim_openmm.fwd_integrator = openmm.VerletIntegrator(
         #    timestep*unit.picoseconds)
-        sim_openmm.fwd_integrator = seekr2plugin.ElberLangevinIntegrator(
+        sim_openmm.fwd_integrator = fwd_rev_integrator_object(
             target_temperature*unit.kelvin, 
             friction_coefficient/unit.picoseconds, 
             timestep*unit.picoseconds,
