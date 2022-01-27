@@ -781,10 +781,6 @@ if __name__ == "__main__":
     
     model = base.load_model(model_file, directory)
     
-    print("model.openmm_settings.langevin_integrator.timestep", model.openmm_settings.langevin_integrator.timestep)
-    print("model.openmm_settings.langevin_integrator.type_", model.openmm_settings.langevin_integrator.type_)
-    exit()
-    
     run(model, instruction, min_total_simulation_length, 
         max_total_simulation_length, convergence_cutoff, 
         minimum_anchor_transitions, cuda_device_index, 
