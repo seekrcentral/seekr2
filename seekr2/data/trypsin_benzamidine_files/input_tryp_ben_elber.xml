@@ -19,8 +19,8 @@
     <constraints>HBonds</constraints>
     <rigidWater>True</rigidWater>
     <hydrogenMass/>
-    <integrator_type>langevinMiddle</integrator_type>
-    <timestep>0.004</timestep>
+    <integrator_type>langevin</integrator_type>
+    <timestep>0.002</timestep>
     <nonbonded_cutoff>0.9</nonbonded_cutoff>
     <cv_inputs>
         <cv_input class="Spherical_cv_input">

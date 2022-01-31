@@ -1205,6 +1205,170 @@ boundary at {:.4f} nm."".format(value, milestone_value)
         """
         return []
 
+class MMVT_external_CV(MMVT_collective_variable):
+    """
+    A collective variable that depends on external coordinates.
+    
+    """+MMVT_collective_variable.__doc__
+    
+    def __init__(self, index, groups):
+        self.index = index
+        self.groups = groups
+        self.name = "mmvt_external"
+        self.openmm_expression = None
+        self.restraining_expression = None
+        self.num_groups = len(groups)
+        self.per_dof_variables = []
+        self.global_variables = []
+        self._mygroup_list = None
+        self.variable_name = None
+        return
+
+    def __name__(self):
+        return "MMVT_external_CV"
+    
+    def make_force_object(self):
+        """
+        Create an OpenMM force object which will be used to compute
+        the value of the CV's mathematical expression as the simulation
+        propagates. Each *milestone* in a cell, not each CV, will have
+        a force object created.
+        
+        In this implementation of MMVT in OpenMM, CustomForce objects
+        are used to provide the boundary definitions of the MMVT cell.
+        These 'forces' are designed to never affect atomic motions,
+        but are merely monitored by the plugin for bouncing event.
+        So while they are technically OpenMM force objects, we don't
+        refer to them as forces outside of this layer of the code,
+        preferring instead the term: boundary definitions.
+        """
+        try:
+            import openmm
+        except ImportError:
+            import simtk.openmm as openmm
+            
+        expression_w_bitcode = "bitcode*"+self.openmm_expression
+        return openmm.CustomCentroidBondForce(
+            self.num_groups, expression_w_bitcode)
+    
+    def make_restraining_force(self):
+        """
+        Create an OpenMM force object that will restrain the system to
+        a given value of this CV.
+        """
+        try:
+            import openmm
+        except ImportError:
+            import simtk.openmm as openmm
+            
+        return openmm.CustomCentroidBondForce(
+            self.num_groups, self.restraining_expression)
+    
+    def make_namd_colvar_string(self):
+        """
+        This string will be put into a NAMD colvar file for tracking
+        MMVT bounces.
+        """
+        raise Exception("MMVT External CVs are not available in NAMD")
+        
+    def add_parameters(self, force):
+        """
+        An OpenMM custom force object needs a list of variables
+        provided to it that will occur within its expression. Both
+        the per-dof and global variables are combined within the
+        variable_names_list. The numerical values of these variables
+        will be provided at a later step.
+        """
+        self._mygroup_list = []
+        for group in self.groups:
+            mygroup = force.addGroup(group)
+            self._mygroup_list.append(mygroup)
+        
+        variable_names_list = []
+        
+        variable_names_list.append("bitcode")
+        force.addPerBondParameter("bitcode")
+        if self.per_dof_variables is not None:
+            for per_dof_variable in self.per_dof_variables:
+                force.addPerBondParameter(per_dof_variable)
+                variable_names_list.append(per_dof_variable)
+        
+        if self.global_variables is not None:
+            for global_variable in self.global_variables:
+                force.addGlobalParameter(global_variable)
+                variable_names_list.append(global_variable)
+        
+        return variable_names_list
+    
+    def add_groups_and_variables(self, force, variables):
+        """
+        Provide the custom force with additional information it needs,
+        which includes a list of the groups of atoms involved with the
+        CV, as well as a list of the variables' *values*.
+        """
+        assert len(self._mygroup_list) == self.num_groups
+        force.addBond(self._mygroup_list, variables)
+        return
+    
+    def get_variable_values_list(self, milestone):
+        """
+        Create the list of CV variables' values in the proper order
+        so they can be provided to the custom force object.
+        """
+        assert milestone.cv_index == self.index
+        values_list = []
+        bitcode = 2**(milestone.alias_index-1)
+        values_list.append(bitcode)
+        for variable in milestone.variables:
+            var_val = milestone.variables["k"]
+            values_list.append(var_val)
+        
+        return values_list
+    
+    def get_namd_evaluation_string(self, milestone, cv_val_var="cv_val"):
+        """
+        For a given milestone, return a string that can be evaluated
+        my NAMD to monitor for a crossing event. Essentially, if the 
+        function defined by the string ever returns True, then a
+        bounce will occur
+        """
+        raise Exception("MMVT External CVs are not available in NAMD")
+    
+    def check_mdtraj_within_boundary(self, traj, milestone_variables, 
+                                     verbose=False):
+        """
+        For now, this will just always return True.
+        """
+        return True
+    
+    def check_openmm_context_within_boundary(
+            self, context, milestone_variables, positions=None, verbose=False,
+            tolerance=0.0):
+        """
+        For now, this will just always return True.
+        """
+        return True
+    
+    def check_mdtraj_close_to_boundary(self, traj, milestone_variables, 
+                                     verbose=False, max_avg=0.03, max_std=0.05):
+        """
+        For now, this will just always return True.
+        """
+        return True
+    
+    def get_atom_groups(self):
+        """
+        Return a list of this CV's atomic groups.
+        """
+        return self.groups
+            
+    def get_variable_values(self):
+        """
+        This type of CV has no extra variables, so an empty list is 
+        returned.
+        """
+        return []
+
 class MMVT_anchor(Serializer):
     """
     An anchor object for representing a Voronoi cell in an MMVT 
@@ -1341,3 +1505,62 @@ class MMVT_anchor(Serializer):
             neighbor_id_key_alias_value_dict = self._make_milestone_collection()
         return list(id_key_alias_value_dict.keys())
     
+class MMVT_toy_anchor(MMVT_anchor):
+    """
+    An anchor object for representing a Voronoi cell in an MMVT 
+    calculation within a toy system.
+    
+    Attributes
+    ----------
+    index : int
+        The index of this anchor (cell) within the model.
+    
+    directory : str
+        The directory (within the model's root directory) that contains
+        the information and calculations for this Voronoi cell.
+        
+    starting_positions : list
+        A list of lists for each particle's starting positions
+    
+    production_directory : str
+        The directory within the MD or BD directory above in which the
+        simulations will be performed.
+        
+    md_output_glob : str
+        A glob to select all the MD output files within the production
+        directory above.
+        
+    name : str
+        A unique name for this anchor.
+        
+    md : bool
+        A boolean of whether MD is performed in this Voronoi cell.
+        
+    endstate : bool
+        A boolean of whether this is an end state or not - does it
+        act as the bulk or a bound state or another state of interest?
+        All end states will have kinetics calculated to all other
+        end states.
+        
+    bulkstate : bool
+        A boolean of whether this state acts as the bulk state (That
+        is, the state represents a large separation distance between
+        ligand and receptor.
+        
+    milestones : list
+        A list of Milestone() objects, which are the boundaries 
+        bordering this cell.
+    """
+    def __init__(self):
+        self.index = 0
+        self.directory = ""
+        self.starting_positions = []
+        self.building_directory = "building"
+        self.md_output_glob = OPENMMVT_GLOB
+        self.name = ""
+        self.md = False
+        self.endstate = False
+        self.bulkstate = False
+        self.milestones = []
+        self.variables = {}
+        return

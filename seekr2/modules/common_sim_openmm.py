@@ -66,6 +66,21 @@ def fill_generic_parameters(sim_openmm, model, anchor, output_filename):
     sim_openmm.output_filename = output_filename
     return
 
+def make_toy_system_object(model):
+    """
+    
+    """
+    system = openmm.System()
+    assert model.toy_settings.num_particles == len(model.toy_settings.masses)
+    force = openmm.CustomExternalForce(
+        model.toy_settings.potential_energy_expression)
+    for i in range(model.toy_settings.num_particles):
+        mass = model.toy_settings.masses[i] * openmm.unit.amu
+        system.addParticle(mass)
+        force.addParticle(0, [])
+        system.addForce
+    return
+
 def create_openmm_system(sim_openmm, model, anchor):
     """
     Create an openmm System() object.
@@ -73,49 +88,53 @@ def create_openmm_system(sim_openmm, model, anchor):
     building_directory = os.path.join(
         model.anchor_rootdir, anchor.directory, anchor.building_directory)
     box_vectors = None
-    if anchor.amber_params is not None:
-        prmtop_filename = os.path.join(
-            building_directory, anchor.amber_params.prmtop_filename)
-        prmtop = openmm_app.AmberPrmtopFile(prmtop_filename)
-        #assert anchor.amber_params.pdb_coordinates_filename is not None
-        if anchor.amber_params.pdb_coordinates_filename is None \
-                or anchor.amber_params.pdb_coordinates_filename == "":
-            positions = None
-            sim_openmm.try_to_load_state = True
-        else:
-            pdb_coordinates_filename = os.path.join(
-                building_directory, 
-                anchor.amber_params.pdb_coordinates_filename)
-            positions = openmm_app.PDBFile(pdb_coordinates_filename)
-            
-        #assert anchor.amber_params.box_vectors is not None
-        box_vectors = anchor.amber_params.box_vectors
-        topology = prmtop
     
-    elif anchor.forcefield_params is not None:
-        forcefield_filenames = []
-        for forcefield_filename in \
-                anchor.forcefield_params.built_in_forcefield_filenames:
-            forcefield_filenames.append(forcefield_filename)
-        for forcefield_filename in \
-                anchor.forcefield_params.custom_forcefield_filenames:
-            forcefield_filenames.append(os.path.join(
-                building_directory, forcefield_filename))
-        pdb_filename = os.path.join(building_directory, 
-                               anchor.forcefield_params.pdb_filename)
-        pdb = openmm_app.PDBFile(pdb_filename)
-        forcefield = openmm_app.ForceField(
-            *forcefield_filenames)
-        box_vectors = anchor.forcefield_params.box_vectors
-        
-        topology = pdb
-        positions = pdb
-    
-    elif anchor.charmm_params is not None:
-        raise Exception("Charmm systems not yet implemented")
-    
+    if anchor.__name__ == "MMVT_toy_anchor":
+        positions = anchor.starting_positions
     else:
-        raise Exception("No Amber or Charmm input settings detected.")
+        if anchor.amber_params is not None:
+            prmtop_filename = os.path.join(
+                building_directory, anchor.amber_params.prmtop_filename)
+            prmtop = openmm_app.AmberPrmtopFile(prmtop_filename)
+            #assert anchor.amber_params.pdb_coordinates_filename is not None
+            if anchor.amber_params.pdb_coordinates_filename is None \
+                    or anchor.amber_params.pdb_coordinates_filename == "":
+                positions = None
+                sim_openmm.try_to_load_state = True
+            else:
+                pdb_coordinates_filename = os.path.join(
+                    building_directory, 
+                    anchor.amber_params.pdb_coordinates_filename)
+                positions = openmm_app.PDBFile(pdb_coordinates_filename)
+                
+            #assert anchor.amber_params.box_vectors is not None
+            box_vectors = anchor.amber_params.box_vectors
+            topology = prmtop
+        
+        elif anchor.forcefield_params is not None:
+            forcefield_filenames = []
+            for forcefield_filename in \
+                    anchor.forcefield_params.built_in_forcefield_filenames:
+                forcefield_filenames.append(forcefield_filename)
+            for forcefield_filename in \
+                    anchor.forcefield_params.custom_forcefield_filenames:
+                forcefield_filenames.append(os.path.join(
+                    building_directory, forcefield_filename))
+            pdb_filename = os.path.join(building_directory, 
+                                   anchor.forcefield_params.pdb_filename)
+            pdb = openmm_app.PDBFile(pdb_filename)
+            forcefield = openmm_app.ForceField(
+                *forcefield_filenames)
+            box_vectors = anchor.forcefield_params.box_vectors
+            
+            topology = pdb
+            positions = pdb
+        
+        elif anchor.charmm_params is not None:
+            raise Exception("Charmm systems not yet implemented")
+        
+        else:
+            raise Exception("No Amber or Charmm input settings detected.")
     
     #assert box_vectors is not None, "No source of box vectors provided."
     nonbonded_method = model.openmm_settings.nonbonded_method.lower()
@@ -169,25 +188,29 @@ def create_openmm_system(sim_openmm, model, anchor):
         
     rigidWater = model.openmm_settings.rigidWater
     
-    if anchor.amber_params is not None:
-        system = prmtop.createSystem(
-            nonbondedMethod=nonbondedMethod, 
-            nonbondedCutoff=model.openmm_settings.nonbonded_cutoff, 
-            constraints=constraints, hydrogenMass=hydrogenMass, 
-            rigidWater=rigidWater)
-    
-    elif anchor.forcefield_params is not None:
-        system = forcefield.createSystem(
-            pdb.topology, nonbondedMethod=nonbondedMethod, 
-            nonbondedCutoff=model.openmm_settings.nonbonded_cutoff, 
-            constraints=constraints, hydrogenMass=hydrogenMass, 
-            rigidWater=rigidWater)
-    
-    elif anchor.charmm_params is not None:
-        raise Exception("Charmm input settings not yet implemented")
-        
+    if anchor.__name__ == "MMVT_toy_anchor":
+        system = make_toy_system_object(model)
+        topology = None
     else:
-        print("Settings for Amber or Charmm simulations not found")
+        if anchor.amber_params is not None:
+            system = prmtop.createSystem(
+                nonbondedMethod=nonbondedMethod, 
+                nonbondedCutoff=model.openmm_settings.nonbonded_cutoff, 
+                constraints=constraints, hydrogenMass=hydrogenMass, 
+                rigidWater=rigidWater)
+        
+        elif anchor.forcefield_params is not None:
+            system = forcefield.createSystem(
+                pdb.topology, nonbondedMethod=nonbondedMethod, 
+                nonbondedCutoff=model.openmm_settings.nonbonded_cutoff, 
+                constraints=constraints, hydrogenMass=hydrogenMass, 
+                rigidWater=rigidWater)
+        
+        elif anchor.charmm_params is not None:
+            raise Exception("Charmm input settings not yet implemented")
+            
+        else:
+            print("Settings for Amber or Charmm simulations not found")
     
     return system, topology, positions, box_vectors
 

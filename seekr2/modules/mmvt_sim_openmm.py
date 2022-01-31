@@ -6,6 +6,8 @@ openmm simulation based on the settings provided by a user. These
 objects are specific to MMVT only.
 """
 import os
+
+import numpy as np
 try:
     import openmm.app as openmm_app
 except ImportError:
@@ -113,19 +115,28 @@ def add_simulation(sim_openmm, model, topology, positions, box_vectors,
     """
     Assign the OpenMM simulation object for MMVT.
     """
-    sim_openmm.simulation = openmm_app.Simulation(
-        topology.topology, sim_openmm.system, 
-        sim_openmm.integrator, sim_openmm.platform, 
-        sim_openmm.properties)
+    if topology is None:
+        sim_openmm.simulation = openmm_app.Simulation(
+            None, sim_openmm.system, sim_openmm.integrator, sim_openmm.platform, 
+            sim_openmm.properties)
+        if positions is not None:
+            sim_openmm.simulation.context.setPositions(
+                np.array(positions) * unit.nanometers)
+    else:
+        sim_openmm.simulation = openmm_app.Simulation(
+            topology.topology, sim_openmm.system, 
+            sim_openmm.integrator, sim_openmm.platform, 
+            sim_openmm.properties)
     
-    if positions is not None:
-        assert frame >= 0, "Cannot have negative frame index"
-        assert frame < positions.getNumFrames(), \
-            "Frame index {} out of range.".format(frame)
-        sim_openmm.simulation.context.setPositions(
-            positions.getPositions(frame=frame))
-        sim_openmm.simulation.context.setVelocitiesToTemperature(
-            model.openmm_settings.initial_temperature * unit.kelvin)
+        if positions is not None:
+            sim_openmm.simulation.context.setPositions(
+                positions.getPositions(frame=frame))
+            assert frame >= 0, "Cannot have negative frame index"
+            assert frame < positions.getNumFrames(), \
+                "Frame index {} out of range.".format(frame)
+        
+    sim_openmm.simulation.context.setVelocitiesToTemperature(
+        model.openmm_settings.initial_temperature * unit.kelvin)
         
     if box_vectors is not None:
         sim_openmm.simulation.context.setPeriodicBoxVectors(

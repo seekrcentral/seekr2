@@ -143,12 +143,11 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
                 
                 while float(file_lines[-1][2]) > next_start_time:
                     file_lines.pop()
+                    if counter > MAX_ITER or len(file_lines)==0:
+                        break
                     if file_lines[-1]==NEW_SWARM:
                         file_lines.pop()
                         
-                    if counter > MAX_ITER or len(file_lines)==0:
-                        break
-                    
                     counter += 1
                 
             lines += file_lines
@@ -170,10 +169,6 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
     src_time = None
     for counter, line in enumerate(lines):
         if line == NEW_SWARM:
-            print("new swarm")
-            print("N_i_j_alpha:", N_i_j_alpha)
-            print("N_alpha_beta:", N_alpha_beta)
-            print("len(T_alpha_list):", len(T_alpha_list))
             last_bounce_time = -1.0
             src_boundary = None
             src_time = None
