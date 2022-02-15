@@ -806,6 +806,162 @@ class RMSD_cv_input(Serializer):
             anchor_index, self.input_anchors)
         return milestones, milestone_alias, milestone_index
     
+class Toy_cv_anchor(Serializer):
+    """
+    This object represents an anchor within a Toy
+    CV. Used for input purposes only.
+    
+    Attributes:
+    -----------
+    radius : float
+        The radius of this spherical anchor in units of nanometers.
+    
+    lower_milestone_radius : float
+        Optionally define the locations of the milestones for each
+        anchor. This is the radius of the lower milestone.
+        
+    upper_milestone_radius : float
+        Optionally define the locations of the milestones for each
+        anchor. This is the radius of the lower milestone.
+    
+    starting_amber_params : Amber_params or None
+        If Amber inputs are used for this anchor, this object contains
+        the necessary inputs to start a new simulation.
+        
+    starting_forcefield_params : Forcefield_params or None
+        If Forcefield XML inputs are used for this anchor, this object
+        contains the necessary inputs to start a new simulation.
+        
+    bound_state : bool
+        Whether this anchor represents the bound state of a ligand-
+        receptor system.
+        
+    bulk_anchor : bool
+        Whether this anchor acts as a bulk state of a ligand-receptor
+        system.
+    """
+    
+    def __init__(self):
+        self.value = 0.0
+        self.lower_milestone_value = None
+        self.upper_milestone_value = None
+        self.starting_positions = []
+        self.bound_state = False
+        self.bulk_anchor = False
+        self.connection_flags = []
+        
+    def check(self, j, cv_input):
+        if self.lower_milestone_value is not None:
+            assert j > 0, "lower_milestone_value must be None for lowest "\
+                "anchor in cv."
+            assert self.lower_milestone_value \
+                == cv_input.input_anchors[j-1].upper_milestone_value,\
+                "If lower_milestone_value is defined for anchor "\
+                "{}, the anchor below (number {}).".format(j, j-1)\
+                +" must have a corresponding upper_milestone_value."
+                
+        if self.upper_milestone_value is not None:
+            assert j < len(cv_input.input_anchors), \
+                "upper_milestone_value must be None for highest anchor "\
+                "in cv."
+            assert self.upper_milestone_value \
+                == cv_input.input_anchors[j+1].lower_milestone_value,\
+                "If upper_milestone_value is defined for anchor "\
+                "{} at value {:.3f}, the anchor above ".format(j, 
+                self.upper_milestone_value)\
+                +"(number {}).".format(j+1)\
+                +" must have a corresponding lower_milestone_value, "\
+                "current value: {:.3f}.".format(
+                    cv_input.input_anchors[j+1].lower_milestone_value)
+        return
+    
+    def get_variable_value(self):
+        return self.value
+        
+class Toy_cv_input(Serializer):
+    """
+    Inputs by the user resulting in concentric spherical anchors
+    with milestones and the collective variable (CV).
+    
+    Attributes:
+    -----------
+    index : int
+        The index of this CV input object in the Model_input object.
+        
+    group1 : list
+        A list of ints representing atom indices whose center of mass
+        is one end of the CV distance vector.
+        
+    group2 : list
+        A list of ints representing atom indices whose center of mass
+        is the other end of the CV distance vector.
+        
+    input_anchors : list
+        A list of Spherical_cv_anchor objects which specify inputs for
+        the spherical anchors.
+    """
+    
+    def __init__(self):
+        self.index = 0
+        self.groups = []
+        self.variable_name = "value"
+        self.openmm_expression = None
+        self.restraining_expression = None
+        self.input_anchors = []
+        return
+        
+    def check(self):
+        """
+        Check user inputs to ensure they have been entered properly.
+        """
+        
+        last_value = -1e9
+        found_bulk_anchor = False
+        for i, input_anchor in enumerate(self.input_anchors):
+            value = input_anchor.value
+            assert value > last_value, "Each subsequent value "\
+                "argument must be greater than the last (sorted)."
+            
+            if input_anchor.bound_state is None:
+                input_anchor.bound_state = False
+            
+            assert input_anchor.bound_state in [True, False], \
+                "bound_state must be a boolean"
+                
+            if input_anchor.bulk_anchor is None:
+                input_anchor.bulk_anchor = False
+                
+            assert input_anchor.bulk_anchor in [True, False], \
+                "bulk_anchor must be a boolean"
+            
+            if input_anchor.bulk_anchor:
+                assert not found_bulk_anchor, "Only one bulk anchor allowed "\
+                    "per set of anchors in a CV."
+                found_bulk_anchor = False
+            else:
+                assert not found_bulk_anchor, "Only the outermost anchor "\
+                    "should be the bulk anchor."
+            
+            if i > 0:
+                assert not input_anchor.bound_state, "Only the lowest"\
+                    "anchor can be the bound state."
+                    
+            assert len(self.input_anchors) > 1, "A CV must contain "\
+                "more than one anchor."
+        
+        for group in self.groups:
+            assert len(group) > 0, \
+                "Any input CV groups must contain atoms."
+        return
+    
+    def make_mmvt_milestoning_objects(self, milestone_alias, milestone_index, 
+                                      input_anchor_index, anchor_index):
+        milestones, milestone_alias, milestone_index = \
+            mmvt_cv.make_mmvt_milestoning_objects_external(
+            self, milestone_alias, milestone_index, input_anchor_index, 
+            anchor_index, self.input_anchors)
+        return milestones, milestone_alias, milestone_index
+
 
 class Multidimensional_cv(Serializer):
     """

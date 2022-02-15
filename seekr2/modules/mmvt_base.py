@@ -1218,7 +1218,7 @@ class MMVT_external_CV(MMVT_collective_variable):
         self.openmm_expression = None
         self.restraining_expression = None
         self.num_groups = len(groups)
-        self.per_dof_variables = []
+        self.per_dof_variables = ["k", "value"]
         self.global_variables = []
         self._mygroup_list = None
         self.variable_name = None
@@ -1319,10 +1319,10 @@ class MMVT_external_CV(MMVT_collective_variable):
         values_list = []
         bitcode = 2**(milestone.alias_index-1)
         values_list.append(bitcode)
-        for variable in milestone.variables:
-            var_val = milestone.variables["k"]
-            values_list.append(var_val)
-        
+        k_val = milestone.variables["k"]
+        values_list.append(k_val)
+        value_val = milestone.variables["value"]
+        values_list.append(value_val)
         return values_list
     
     def get_namd_evaluation_string(self, milestone, cv_val_var="cv_val"):
@@ -1398,6 +1398,10 @@ class MMVT_anchor(Serializer):
     production_directory : str
         The directory within the MD or BD directory above in which the
         simulations will be performed.
+        
+    building_directory : str
+        The directory in which the prepared parameter and starting 
+        structure files are stored.
         
     md_output_glob : str
         A glob to select all the MD output files within the production
@@ -1526,6 +1530,10 @@ class MMVT_toy_anchor(MMVT_anchor):
         The directory within the MD or BD directory above in which the
         simulations will be performed.
         
+    building_directory : str
+        The directory in which the prepared parameter and starting 
+        structure files are stored.
+        
     md_output_glob : str
         A glob to select all the MD output files within the production
         directory above.
@@ -1555,6 +1563,7 @@ class MMVT_toy_anchor(MMVT_anchor):
         self.index = 0
         self.directory = ""
         self.starting_positions = []
+        self.production_directory = "prod"
         self.building_directory = "building"
         self.md_output_glob = OPENMMVT_GLOB
         self.name = ""

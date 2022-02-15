@@ -169,7 +169,7 @@ def add_simulations(sim_openmm, model, topology, positions, box_vectors):
     
     """
     sim_openmm.umbrella_simulation = openmm_app.Simulation(
-        topology.topology, sim_openmm.umbrella_system, 
+        topology, sim_openmm.umbrella_system, 
         sim_openmm.umbrella_integrator, sim_openmm.platform, 
         sim_openmm.properties)
     
@@ -179,16 +179,15 @@ def add_simulations(sim_openmm, model, topology, positions, box_vectors):
     #          force.usesPeriodicBoundaryConditions())
     #exit()
     sim_openmm.rev_simulation = openmm_app.Simulation(
-        topology.topology, sim_openmm.rev_system, 
+        topology, sim_openmm.rev_system, 
         sim_openmm.rev_integrator, sim_openmm.platform, 
         sim_openmm.properties)
     sim_openmm.fwd_simulation = openmm_app.Simulation(
-        topology.topology, sim_openmm.fwd_system, 
+        topology, sim_openmm.fwd_system, 
         sim_openmm.fwd_integrator, sim_openmm.platform, 
         sim_openmm.properties)
     
-    sim_openmm.umbrella_simulation.context.setPositions(
-        positions.getPositions())
+    sim_openmm.umbrella_simulation.context.setPositions(positions)
     if box_vectors is not None:
         sim_openmm.umbrella_simulation.context.setPeriodicBoxVectors(
             *box_vectors.to_quantity())

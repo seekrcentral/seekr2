@@ -160,6 +160,12 @@ def copy_building_files_by_anchor(anchor, input_anchor, rootdir):
     """
     if not anchor.md:
         return
+    
+    
+    if anchor.__class__.__name__ in ["MMVT_toy_anchor"]:
+        anchor.starting_positions = input_anchor.starting_positions
+        return
+    
     anchor_building_dir = os.path.join(rootdir, anchor.directory, 
                                     anchor.building_directory)
     assert os.path.exists(anchor_building_dir)

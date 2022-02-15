@@ -373,6 +373,7 @@ def check_pre_sim_MD_and_BD_salt_concentration(model):
     else:
         # No BD to check
         return True
+    
     for anchor in model.anchors:
         md_ionic_strength = 0.0
         structure = load_structure_with_parmed(model, anchor)
@@ -737,11 +738,18 @@ def check_pre_simulation_all(model):
     curdir = os.getcwd()
     check_passed_list = []
     #check_passed_list.append(check_pre_sim_bubbles(model))
-    check_passed_list.append(check_pre_sim_MD_and_BD_salt_concentration(model))
-    check_passed_list.append(check_atom_selections_on_same_molecule(model))
-    check_passed_list.append(check_systems_within_Voronoi_cells(model))
-    check_passed_list.append(check_atom_selections_MD_BD(model))
-    check_passed_list.append(check_pqr_residues(model))
+    if model.toy_settings is None:
+        # Skipping MD/BD salt conc. check because the best results seem to 
+        # come from using no salt in BD.
+        #check_passed_list.append(check_pre_sim_MD_and_BD_salt_concentration(model))
+        check_passed_list.append(check_atom_selections_on_same_molecule(model))
+        check_passed_list.append(check_systems_within_Voronoi_cells(model))
+        check_passed_list.append(check_atom_selections_MD_BD(model))
+        check_passed_list.append(check_pqr_residues(model))
+    else:
+        # Checks for toy systems
+        pass
+    
     check_passed_list.append(check_for_one_bulk_anchor(model))
     
     no_failures = True
@@ -955,12 +963,15 @@ def check_post_simulation_all(model, long_check=False):
     """
     curdir = os.getcwd()
     check_passed_list = []
-    check_passed_list.append(check_elber_umbrella_stage(model))
-    check_passed_list.append(check_mmvt_in_Voronoi_cell(model))
-    # TODO: remove?
-    #check_passed_list.append(check_bd_simulation_end_state(model))
-    if long_check:
-        check_passed_list.append(check_xml_boundary_states(model))
+    if model.toy_settings is None:
+        check_passed_list.append(check_elber_umbrella_stage(model))
+        check_passed_list.append(check_mmvt_in_Voronoi_cell(model))
+        # TODO: remove?
+        #check_passed_list.append(check_bd_simulation_end_state(model))
+        if long_check:
+            check_passed_list.append(check_xml_boundary_states(model))
+    else:
+        pass
     
     no_failures = True
     for check_passed in check_passed_list:

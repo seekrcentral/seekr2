@@ -8,6 +8,7 @@ objects and routines are common to both Elber and MMVT milestoning.
 
 import os
 
+import numpy as np
 try:
     import openmm
 except ImportError:
@@ -66,22 +67,46 @@ def fill_generic_parameters(sim_openmm, model, anchor, output_filename):
     sim_openmm.output_filename = output_filename
     return
 
+def write_toy_pdb_file(topology, positions, out_file_name):
+    """
+    
+    """
+    out_file = open(out_file_name, "w")
+    openmm_app.PDBFile.writeHeader(topology, out_file)
+    openmm_app.PDBFile.writeModel(topology, positions, out_file)
+    openmm_app.PDBFile.writeFooter(topology, out_file)
+    return
+
 def make_toy_system_object(model):
     """
     
     """
     system = openmm.System()
+    topology = openmm_app.Topology()
+    num_particles = model.toy_settings.num_particles
     assert model.toy_settings.num_particles == len(model.toy_settings.masses)
-    force = openmm.CustomExternalForce(
-        model.toy_settings.potential_energy_expression)
-    for i in range(model.toy_settings.num_particles):
+    new_expression = "k*("+model.toy_settings.potential_energy_expression+")"
+    force = openmm.CustomCentroidBondForce(num_particles, new_expression)
+    force.addGlobalParameter("k", 1.0*openmm.unit.kilocalories_per_mole)
+    groups_list = []
+    for i in range(num_particles):
         mass = model.toy_settings.masses[i] * openmm.unit.amu
         system.addParticle(mass)
-        force.addParticle(0, [])
-        system.addForce
-    return
+        atom_name = "X{}".format(i)
+        if not atom_name in openmm_app.element.Element._elements_by_symbol:
+            element = openmm_app.element.Element(0, atom_name, atom_name, mass)
+        else:
+            element = openmm_app.element.Element._elements_by_symbol[atom_name]
+        chain = topology.addChain()
+        residue = topology.addResidue("UNK", chain)
+        topology.addAtom(atom_name, element, residue)
+        groups_list.append(force.addGroup([i]))
+    
+    force.addBond(groups_list, [])
+    system.addForce(force)
+    return system, topology
 
-def create_openmm_system(sim_openmm, model, anchor):
+def create_openmm_system(sim_openmm, model, anchor, frame=0):
     """
     Create an openmm System() object.
     """
@@ -89,8 +114,9 @@ def create_openmm_system(sim_openmm, model, anchor):
         model.anchor_rootdir, anchor.directory, anchor.building_directory)
     box_vectors = None
     
-    if anchor.__name__ == "MMVT_toy_anchor":
-        positions = anchor.starting_positions
+    positions_obj = None
+    if anchor.__class__.__name__ == "MMVT_toy_anchor":
+        positions = np.array(anchor.starting_positions) * openmm.unit.nanometers
     else:
         if anchor.amber_params is not None:
             prmtop_filename = os.path.join(
@@ -99,17 +125,18 @@ def create_openmm_system(sim_openmm, model, anchor):
             #assert anchor.amber_params.pdb_coordinates_filename is not None
             if anchor.amber_params.pdb_coordinates_filename is None \
                     or anchor.amber_params.pdb_coordinates_filename == "":
+                positions_obj = None
                 positions = None
                 sim_openmm.try_to_load_state = True
             else:
                 pdb_coordinates_filename = os.path.join(
                     building_directory, 
                     anchor.amber_params.pdb_coordinates_filename)
-                positions = openmm_app.PDBFile(pdb_coordinates_filename)
+                positions_obj = openmm_app.PDBFile(pdb_coordinates_filename)
                 
             #assert anchor.amber_params.box_vectors is not None
             box_vectors = anchor.amber_params.box_vectors
-            topology = prmtop
+            topology = prmtop.topology
         
         elif anchor.forcefield_params is not None:
             forcefield_filenames = []
@@ -127,8 +154,8 @@ def create_openmm_system(sim_openmm, model, anchor):
                 *forcefield_filenames)
             box_vectors = anchor.forcefield_params.box_vectors
             
-            topology = pdb
-            positions = pdb
+            topology = pdb.topology
+            positions_obj = pdb
         
         elif anchor.charmm_params is not None:
             raise Exception("Charmm systems not yet implemented")
@@ -188,9 +215,11 @@ def create_openmm_system(sim_openmm, model, anchor):
         
     rigidWater = model.openmm_settings.rigidWater
     
-    if anchor.__name__ == "MMVT_toy_anchor":
-        system = make_toy_system_object(model)
-        topology = None
+    if anchor.__class__.__name__ == "MMVT_toy_anchor":
+        system, topology = make_toy_system_object(model)
+        out_file_name = os.path.join(model.anchor_rootdir, anchor.directory, 
+                                     anchor.building_directory, "toy.pdb")
+        write_toy_pdb_file(topology, positions, out_file_name)
     else:
         if anchor.amber_params is not None:
             system = prmtop.createSystem(
@@ -212,6 +241,12 @@ def create_openmm_system(sim_openmm, model, anchor):
         else:
             print("Settings for Amber or Charmm simulations not found")
     
+    if positions_obj is not None:
+        positions = positions_obj.getPositions(frame=frame)
+        assert frame >= 0, "Cannot have negative frame index"
+        assert frame < positions_obj.getNumFrames(), \
+            "Frame index {} out of range.".format(frame)
+        
     return system, topology, positions, box_vectors
 
 def add_barostat(sim_openmm, model):

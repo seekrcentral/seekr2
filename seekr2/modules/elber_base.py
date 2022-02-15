@@ -495,4 +495,76 @@ class Elber_anchor(Serializer):
             neighbor_id_key_alias_value_dict = self._make_milestone_collection()
         return id_key_alias_value_dict.keys()
     
+class Elber_toy_anchor(Elber_anchor):
+    """
+    An anchor object for representing a Voronoi cell in an Elber 
+    milestoning within a toy system.
+    
+    Attributes
+    ----------
+    index : int
+        The index of this anchor (cell) within the model.
+    
+    directory : str
+        The directory (within the model's root directory) that contains
+        the information and calculations for this Voronoi cell.
         
+    
+    
+    md_directory : str or None
+        The directory within the 'directory' argument above which 
+        contains the MD simulation information. If None, then no MD
+        is performed for this anchor.
+        
+    bd_directory : str or None
+        The directory within the 'directory' argument above which
+        contains the BD simulation information. If None, then no BD
+        is performed for this anchor.
+        
+    production_directory : str
+        The directory within the MD or BD directory above in which the
+        simulations will be performed.
+        
+    md_output_glob : str
+        A glob to select all the MD output files within the production
+        directory above.
+        
+    name : str
+        A unique name for this anchor.
+        
+    md : bool
+        A boolean of whether MD is performed in this Voronoi cell.
+        
+    bd : bool
+        A boolean of whether BD is performed in this Voronoi cell.
+        
+    endstate : bool
+        A boolean of whether this is an end state or not - does it
+        act as the bulk or a bound state or another state of interest?
+        All end states will have kinetics calculated to all other
+        end states.
+        
+    bulkstate : bool
+        A boolean of whether this state acts as the bulk state (That
+        is, the state represents a large separation distance between
+        ligand and receptor.
+        
+    milestones : list
+        A list of Milestone() objects, which are the boundaries 
+        bordering this cell.
+    """
+    
+    def __init__(self):
+        self.index = 0
+        self.directory = ""
+        self.starting_positions = []
+        self.building_directory = "building"
+        self.production_directory = "prod"
+        self.md_output_glob = OPENMM_ELBER_GLOB
+        self.name = ""
+        self.md = False
+        self.endstate = False
+        self.bulkstate = False
+        self.milestones = []
+        self.variables = {}
+        return

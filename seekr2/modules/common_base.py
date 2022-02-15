@@ -487,58 +487,12 @@ class Namd_settings(Serializer):
         self.eval_stride = 10
         return
 
-class Toy_settings(Openmm_settings):
+class Toy_settings(Serializer):
     """
     Contains settings used by Toy simulation program.
     
     Attributes:
     -----------
-    nonbonded_method : str, Default "PME"
-        The method to use to account for long-range nonbonded forces.
-        This argument may be any of the options for the nonbondedMethod
-        argument in an OpenMM System() object.
-        
-    nonbonded_cutoff : float, Default 0.9
-        The distance after which VDW nonbonded forces are cut off in
-        units of nanometers. This argument is supplied to the 
-        nonbondedCutoff argument of an OpenMM System() object.
-        
-    constraints : str, Default "hbonds"
-        The constraints method to use for bonds and angles within the
-        system. This argument is supplied to the constraints argument
-        of the OpenMM System() object.
-        
-    hydrogenMass : float or None, Default None
-        This parameter may be used for hydrogen mass repartitioning.
-        If a float is provided, then mass will be shifted from every
-        hydrogen atom's bonded heavy atom to the hydrogen, such that
-        the hydrogen atoms will have this value (in AMU) for their
-        masses. If None, then the default hydrogen mass is used.
-        
-    rigidWater : bool, Default True
-        If True, then water bonds and angles will be made rigid.
-        
-    langevin_integrator : Langevin_integrator_settings
-        Contains settings for the Langevin integrator.
-        
-    barostat : Barostat_settings_openmm
-        Contains settings for the Barostat.
-        
-    cuda_platform_settings : Cuda_platform_settings or None
-        Contains settings for the Cuda platform. If None, then the
-        Reference platform is used instead.
-        
-    reference_platform : bool, Default False
-        If cuda_platform_settings is not None, then this should be set
-        to True to indicate that the reference platform must be used.
-        
-    run_minimization : bool, Default False
-        Whether to run minimizations before doing any MMVT
-        calculations.
-        
-    initial_temperature : float, Default 298.15
-        The temperature (in units of Kelvin) to use to initialize the 
-        atomic velocities randomly.
         
     potential_energy_expression : str
         The expression that can be used in OpenMM to direct particle 

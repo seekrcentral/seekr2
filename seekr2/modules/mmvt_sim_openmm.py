@@ -63,7 +63,8 @@ def add_integrator(sim_openmm, model, state_prefix=None):
             
         sim_openmm.timestep = timestep
         
-        integrator_type = model.openmm_settings.langevin_integrator.type
+        integrator_type = model.openmm_settings.langevin_integrator\
+            .integrator_type
         
         if integrator_type == "langevin":
             integrator_object = seekr2plugin.MmvtLangevinIntegrator
@@ -110,31 +111,20 @@ def add_forces(sim_openmm, model, anchor):
     os.chdir(curdir)
     return
 
-def add_simulation(sim_openmm, model, topology, positions, box_vectors, 
-                   frame=0):
+def add_simulation(sim_openmm, model, topology, positions, box_vectors):
     """
     Assign the OpenMM simulation object for MMVT.
     """
-    if topology is None:
-        sim_openmm.simulation = openmm_app.Simulation(
-            None, sim_openmm.system, sim_openmm.integrator, sim_openmm.platform, 
-            sim_openmm.properties)
-        if positions is not None:
-            sim_openmm.simulation.context.setPositions(
-                np.array(positions) * unit.nanometers)
-    else:
-        sim_openmm.simulation = openmm_app.Simulation(
-            topology.topology, sim_openmm.system, 
-            sim_openmm.integrator, sim_openmm.platform, 
-            sim_openmm.properties)
-    
-        if positions is not None:
-            sim_openmm.simulation.context.setPositions(
-                positions.getPositions(frame=frame))
-            assert frame >= 0, "Cannot have negative frame index"
-            assert frame < positions.getNumFrames(), \
-                "Frame index {} out of range.".format(frame)
         
+        
+    sim_openmm.simulation = openmm_app.Simulation(
+        topology, sim_openmm.system, 
+        sim_openmm.integrator, sim_openmm.platform, 
+        sim_openmm.properties)
+    
+    if positions is not None:
+        sim_openmm.simulation.context.setPositions(positions)
+    
     sim_openmm.simulation.context.setVelocitiesToTemperature(
         model.openmm_settings.initial_temperature * unit.kelvin)
         
@@ -193,13 +183,14 @@ def create_sim_openmm(model, anchor, output_filename, state_prefix=None,
     common_sim_openmm.fill_generic_parameters(
         sim_openmm, model, anchor, output_filename)
     system, topology, positions, box_vectors \
-        = common_sim_openmm.create_openmm_system(sim_openmm, model, anchor)
+        = common_sim_openmm.create_openmm_system(sim_openmm, model, anchor, 
+                                                 frame)
     sim_openmm.system = system
     add_integrator(sim_openmm, model, state_prefix=state_prefix)
     common_sim_openmm.add_barostat(sim_openmm, model)
     common_sim_openmm.add_platform(sim_openmm, model)
     add_forces(sim_openmm, model, anchor)
-    add_simulation(sim_openmm, model, topology, positions, box_vectors, frame)
+    add_simulation(sim_openmm, model, topology, positions, box_vectors)
     return sim_openmm
 
 def make_mmvt_boundary_definitions(cv, milestone):
@@ -249,7 +240,10 @@ def get_starting_structure_num_frames(model, anchor, dummy_outfile):
         = common_sim_openmm.create_openmm_system(sim_openmm, model, anchor)
     num_frames = 0
     if positions is not None:
-        num_frames = positions.getNumFrames()
+        if model.toy_settings is None:
+            num_frames = positions.getNumFrames()
+        else:
+            num_frames = 1
         
     return num_frames
     

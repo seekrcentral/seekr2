@@ -54,7 +54,7 @@ def cleanse_anchor_outputs(model, anchor):
 
 class Browndye_settings_input(Serializer):
     """
-    Read and parse the outputs from the BrownDye2 program, which runs
+    Read and parse the inputs for the BrownDye2 program, which runs
     the BD stage of the SEEKR2 calculation
     
     Attributes:
@@ -119,6 +119,28 @@ class Browndye_settings_input(Serializer):
         self.receptor_indices = []
         self.ligand_indices = []
         self.n_threads = 1
+
+class Toy_settings_input(Serializer):
+    """
+    Read and parse the inputs for a toy simulation.
+    
+    Attributes:
+    -----------
+    potential_energy_expression : str
+        The expression that can be used in OpenMM to direct particle 
+        motions.
+        
+    num_particles : int
+        The number of particles in the system.
+    
+    masses : list
+        A list of particle masses
+    """
+    def __init__(self):
+        self.potential_energy_expression = None
+        self.num_particles = -1
+        self.masses = []
+        return
 
 class MMVT_input_settings(Serializer):
     """
@@ -275,9 +297,14 @@ class Model_input(Serializer):
         units of nanometers. This argument is supplied to the 
         nonbondedCutoff argument of an OpenMM System() object.
     
-    browndye_settings_input : Browndye_settings_input
+    browndye_settings_input : Browndye_settings_input or None
         The Browndye_settings_input() object for this model. It 
         contains all the settings that could be used within a Browndye
+        simulation.
+        
+    toy_settings_input : Toy_settings_input or None
+        The Toy_settings_input() object for this model. It 
+        contains all the settings that could be used within a toy
         simulation.
     
     cv_inputs : list
@@ -300,11 +327,12 @@ class Model_input(Serializer):
         self.timestep = 0.002
         self.nonbonded_cutoff = 0.9
         self.browndye_settings_input = None
+        self.toy_settings_input = None
         self.cv_inputs = []
         self.connectors = []
         
     def read_plain_input_file(self, filename):
-        """
+        """ # TODO: remove
         Read a plain input file (as opposed to an XML)
         """
         
@@ -413,42 +441,45 @@ def model_factory(model_input, use_absolute_directory=False):
         namd_settings.rigidWater = model_input.rigidWater
         model.namd_settings = namd_settings
     
-    elif model_input.md_program.lower() == "toy":
-        toy_settings = base.Toy_settings()
-        model.toy_settings = toy_settings
+    elif model_input.md_program.lower() == "smoluchowski":
+        pass
         
     else:
         raise Exception("Invalid MD program entered:", 
                         model_input.md_program)
     
-    if model_input.browndye_settings_input is None:
-        # Running no BD
-        pass
-    
-    else:
+    if model_input.browndye_settings_input is not None:
         k_on_info = base.K_on_info()
         if model_input.browndye_settings_input.ions is None:
             model_input.browndye_settings_input.ions = []
         k_on_info.ions = model_input.browndye_settings_input.ions
-        k_on_info.b_surface_num_trajectories = \
-            model_input.browndye_settings_input.num_b_surface_trajectories
+        k_on_info.b_surface_num_trajectories \
+            = model_input.browndye_settings_input.num_b_surface_trajectories
         
         model.browndye_settings = base.Browndye_settings()
-        model.browndye_settings.browndye_bin_dir = \
-            model_input.browndye_settings_input.binary_directory
-        model.browndye_settings.receptor_pqr_filename = \
-            os.path.basename(
+        model.browndye_settings.browndye_bin_dir \
+            = model_input.browndye_settings_input.binary_directory
+        model.browndye_settings.receptor_pqr_filename \
+            = os.path.basename(
                 model_input.browndye_settings_input.receptor_pqr_filename)
-        model.browndye_settings.ligand_pqr_filename = \
-            os.path.basename(
+        model.browndye_settings.ligand_pqr_filename \
+            = os.path.basename(
                 model_input.browndye_settings_input.ligand_pqr_filename)
-        model.browndye_settings.apbs_grid_spacing = \
-            model_input.browndye_settings_input.apbs_grid_spacing
-        model.browndye_settings.n_threads = \
-            model_input.browndye_settings_input.n_threads
-        
+        model.browndye_settings.apbs_grid_spacing \
+            = model_input.browndye_settings_input.apbs_grid_spacing
+        model.browndye_settings.n_threads \
+            = model_input.browndye_settings_input.n_threads
         model.k_on_info = k_on_info
     
+    if model_input.toy_settings_input is not None:
+        toy_settings = base.Toy_settings()
+        toy_settings.potential_energy_expression \
+            = model_input.toy_settings_input.potential_energy_expression
+        toy_settings.num_particles \
+            = model_input.toy_settings_input.num_particles
+        toy_settings.masses = model_input.toy_settings_input.masses
+        model.toy_settings = toy_settings
+        
     return model
 
 def resolve_connections(connection_flag_dict, model, associated_input_anchor,
@@ -611,6 +642,8 @@ def create_cvs_and_anchors(model, collective_variable_inputs, root_directory):
             elif isinstance(cv_input, common_cv.RMSD_cv_input):
                 cv = mmvt_cv.make_mmvt_RMSD_cv_object(
                     cv_input, index=i, root_directory=root_directory)
+            elif isinstance(cv_input, common_cv.Toy_cv_input):
+                cv = mmvt_cv.make_mmvt_external_cv_object(cv_input, index=i)
             else:
                 raise Exception("CV type not implemented in MMVT: %s" \
                                 % type(cv_input))
@@ -627,9 +660,15 @@ def create_cvs_and_anchors(model, collective_variable_inputs, root_directory):
         input_anchor_index = 0
         for j, input_anchor in enumerate(cv_input.input_anchors):
             if model.get_type() == "mmvt":
-                anchor = mmvt_base.MMVT_anchor()
+                if model.toy_settings is None:
+                    anchor = mmvt_base.MMVT_anchor()
+                else:
+                    anchor = mmvt_base.MMVT_toy_anchor()
             elif model.get_type() == "elber":
-                anchor = elber_base.Elber_anchor()
+                if model.toy_settings is None:
+                    anchor = elber_base.Elber_anchor()
+                else:
+                    anchor = elber_base.Elber_toy_anchor()
             anchor.index = anchor_index
             anchor.name = "anchor_"+str(anchor_index)
             anchor.directory = anchor.name
