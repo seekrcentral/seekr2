@@ -182,7 +182,7 @@ def create_sim_openmm(model, anchor, output_filename, state_prefix=None,
     sim_openmm = MMVT_sim_openmm()
     common_sim_openmm.fill_generic_parameters(
         sim_openmm, model, anchor, output_filename)
-    system, topology, positions, box_vectors \
+    system, topology, positions, box_vectors, num_frames \
         = common_sim_openmm.create_openmm_system(sim_openmm, model, anchor, 
                                                  frame)
     sim_openmm.system = system
@@ -236,14 +236,8 @@ def get_starting_structure_num_frames(model, anchor, dummy_outfile):
     sim_openmm = MMVT_sim_openmm()
     common_sim_openmm.fill_generic_parameters(
         sim_openmm, model, anchor, dummy_outfile)
-    dummy_system, dummy_topology, positions, dummy_box_vectors \
+    dummy_system, dummy_topology, positions, dummy_box_vectors, num_frames \
         = common_sim_openmm.create_openmm_system(sim_openmm, model, anchor)
-    num_frames = 0
-    if positions is not None:
-        if model.toy_settings is None:
-            num_frames = positions.getNumFrames()
-        else:
-            num_frames = 1
-        
+    
     return num_frames
     

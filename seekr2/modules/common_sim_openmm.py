@@ -220,6 +220,7 @@ def create_openmm_system(sim_openmm, model, anchor, frame=0):
         out_file_name = os.path.join(model.anchor_rootdir, anchor.directory, 
                                      anchor.building_directory, "toy.pdb")
         write_toy_pdb_file(topology, positions, out_file_name)
+        num_frames = 1
     else:
         if anchor.amber_params is not None:
             system = prmtop.createSystem(
@@ -241,13 +242,15 @@ def create_openmm_system(sim_openmm, model, anchor, frame=0):
         else:
             print("Settings for Amber or Charmm simulations not found")
     
+    num_frames = 0
     if positions_obj is not None:
         positions = positions_obj.getPositions(frame=frame)
         assert frame >= 0, "Cannot have negative frame index"
         assert frame < positions_obj.getNumFrames(), \
             "Frame index {} out of range.".format(frame)
+        num_frames = positions_obj.getNumFrames()
         
-    return system, topology, positions, box_vectors
+    return system, topology, positions, box_vectors, num_frames
 
 def add_barostat(sim_openmm, model):
     """

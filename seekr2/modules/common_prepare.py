@@ -323,6 +323,7 @@ class Model_input(Serializer):
         self.hydrogenMass = None
         self.constraints = "hbonds"
         self.rigidWater = True
+        self.waterModel = None
         self.integrator_type = "langevin"
         self.timestep = 0.002
         self.nonbonded_cutoff = 0.9
@@ -439,6 +440,7 @@ def model_factory(model_input, use_absolute_directory=False):
         namd_settings.constraints = model_input.constraints
         namd_settings.langevin_integrator.timestep = model_input.timestep
         namd_settings.rigidWater = model_input.rigidWater
+        namd_settings.watermodel = model_input.waterModel
         model.namd_settings = namd_settings
     
     elif model_input.md_program.lower() == "smoluchowski":

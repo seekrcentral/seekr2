@@ -12,6 +12,7 @@
     <md_program>namd</md_program>
     <constraints>HBonds</constraints>
     <rigidWater>True</rigidWater>
+    <waterModel>tip4p</waterModel>
     <hydrogenMass/>
     <timestep>0.002</timestep>
     <nonbonded_cutoff>0.9</nonbonded_cutoff>

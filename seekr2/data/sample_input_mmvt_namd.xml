@@ -13,6 +13,7 @@
     <constraints>HBonds</constraints>
     <rigidWater>True</rigidWater>
     <hydrogenMass/>
+    <waterModel>tip3p</waterModel>
     <timestep>0.002</timestep>
     <nonbonded_cutoff>0.9</nonbonded_cutoff>
     <cv_inputs>

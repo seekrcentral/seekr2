@@ -242,11 +242,11 @@ def create_sim_openmm(model, anchor, output_filename, state_prefix=None):
     common_sim_openmm.fill_generic_parameters(
         sim_openmm, model, anchor, output_filename)
     umbrella_system, umbrella_topology, umbrella_positions, \
-        umbrella_box_vectors \
+        umbrella_box_vectors, umbrella_num_frames \
         = common_sim_openmm.create_openmm_system(sim_openmm, model, anchor)
-    rev_system, rev_topology, rev_positions, rev_box_vectors \
+    rev_system, rev_topology, rev_positions, rev_box_vectors, rev_num_frames \
         = common_sim_openmm.create_openmm_system(sim_openmm, model, anchor)
-    fwd_system, fwd_topology, fwd_positions, fwd_box_vectors \
+    fwd_system, fwd_topology, fwd_positions, fwd_box_vectors, fwd_num_frames \
         = common_sim_openmm.create_openmm_system(sim_openmm, model, anchor)
     sim_openmm.umbrella_system = umbrella_system
     sim_openmm.rev_system = rev_system

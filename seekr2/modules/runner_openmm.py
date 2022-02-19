@@ -388,9 +388,9 @@ class Runner_openmm():
 
         if restart:
             simulation.loadCheckpoint(self.restart_checkpoint_filename)
-            currentStep = int(simulation.context.getState().getTime()\
+            currentStep = int(round(simulation.context.getState().getTime()\
                               .value_in_unit(unit.picoseconds) \
-                              // self.sim_openmm.timestep)
+                              / self.sim_openmm.timestep))
             self.start_chunk = int(currentStep // self.restart_checkpoint_interval)
             simulation.currentStep = currentStep
             print("restarting from saved checkpoint:", 
