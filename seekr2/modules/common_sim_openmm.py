@@ -113,7 +113,7 @@ def create_openmm_system(sim_openmm, model, anchor, frame=0):
     building_directory = os.path.join(
         model.anchor_rootdir, anchor.directory, anchor.building_directory)
     box_vectors = None
-    
+    num_frames = 0
     positions_obj = None
     if anchor.__class__.__name__ == "MMVT_toy_anchor":
         positions = np.array(anchor.starting_positions) * openmm.unit.nanometers
@@ -242,7 +242,7 @@ def create_openmm_system(sim_openmm, model, anchor, frame=0):
         else:
             print("Settings for Amber or Charmm simulations not found")
     
-    num_frames = 0
+    
     if positions_obj is not None:
         positions = positions_obj.getPositions(frame=frame)
         assert frame >= 0, "Cannot have negative frame index"
