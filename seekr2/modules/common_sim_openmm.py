@@ -116,7 +116,9 @@ def create_openmm_system(sim_openmm, model, anchor, frame=0):
     num_frames = 0
     positions_obj = None
     if anchor.__class__.__name__ == "MMVT_toy_anchor":
-        positions = np.array(anchor.starting_positions) * openmm.unit.nanometers
+        positions_frames = np.array(anchor.starting_positions) * openmm.unit.nanometers
+        positions = positions_frames[frame]
+        num_frames = len(positions_frames)
     else:
         if anchor.amber_params is not None:
             prmtop_filename = os.path.join(
@@ -220,7 +222,6 @@ def create_openmm_system(sim_openmm, model, anchor, frame=0):
         out_file_name = os.path.join(model.anchor_rootdir, anchor.directory, 
                                      anchor.building_directory, "toy.pdb")
         write_toy_pdb_file(topology, positions, out_file_name)
-        num_frames = 1
     else:
         if anchor.amber_params is not None:
             system = prmtop.createSystem(
