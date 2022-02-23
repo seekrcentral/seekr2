@@ -291,7 +291,6 @@ def tiwary_mmvt_model_input_persistent(tmpdir_factory):
     Create a model object that is persistent across the tests in this file.
     """
     rootdir = tmpdir_factory.mktemp("tiwary_mmvt")
-    #rootdir = os.path.join("/home/lvotapka/tmp/tiwary_mmvt_test")
     host_guest_mmvt_model_input_persisent_obj \
         = create_model_input.create_tiwary_mmvt_model_input(rootdir)
     return host_guest_mmvt_model_input_persisent_obj

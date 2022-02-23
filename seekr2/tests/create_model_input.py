@@ -956,19 +956,26 @@ def create_rmsd_mmvt_model_input(root_dir):
     cv_input1 = common_cv.RMSD_cv_input()
     cv_input1.group = [4, 16, 26, 47, 57, 74, 98, 117, 139, 151, 158, 173, 
                        179, 190, 201, 208, 240, 254, 268, 274]
-    cv_input1.ref_structure = "/home/lvotapka/seekr2/seekr2/data/trp_cage_files/trp_cage.pdb"
+    cv_input1.ref_structure = os.path.abspath(
+        "../data/trp_cage_files/trp_cage.pdb")
     cv_input1.input_anchors = []
     
     values_list = [0.2, 0.4, 0.6, 0.8, 1.0, 1.2]
-    amber_prmtop_filename = "/home/lvotapka/seekr2/seekr2/data/trp_cage_files/trp_cage.prmtop"
+    amber_prmtop_filename = os.path.abspath(
+        "../data/trp_cage_files/trp_cage.prmtop")
     forcefield_built_in_ff_list = ["amber14/tip3pfb.xml"]
     forcefield_custom_ff_list = ["../data/hostguest_files/hostguest.xml"]
     
-    pdb_filenames = ["/home/lvotapka/seekr2/seekr2/data/trp_cage_files/trp_cage.pdb", 
-                     "/home/lvotapka/seekr2/seekr2/data/trp_cage_files/trp_cage_0.40.pdb", 
-                     "/home/lvotapka/seekr2/seekr2/data/trp_cage_files/trp_cage_0.60.pdb", 
-                     "/home/lvotapka/seekr2/seekr2/data/trp_cage_files/trp_cage_0.80.pdb", 
-                     "/home/lvotapka/seekr2/seekr2/data/trp_cage_files/trp_cage_1.00.pdb", 
+    pdb_filenames = [os.path.abspath(
+        "../data//trp_cage_files/trp_cage.pdb"), 
+                     os.path.abspath(
+        "../data//trp_cage_files/trp_cage_0.40.pdb"), 
+                     os.path.abspath(
+        "../data/trp_cage_files/trp_cage_0.60.pdb"), 
+                     os.path.abspath(
+        "../data/trp_cage_files/trp_cage_0.80.pdb"), 
+                     os.path.abspath(
+        "../data/trp_cage_files/trp_cage_1.00.pdb"), 
                      ""]
     for i, (value, pdb_filename) in enumerate(zip(values_list, pdb_filenames)):
         input_anchor = common_cv.Tiwary_cv_anchor()
