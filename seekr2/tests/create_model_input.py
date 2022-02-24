@@ -6,6 +6,8 @@ Create generic Model input objects
 
 import os
 
+import numpy as np
+
 import seekr2.modules.common_base as base
 import seekr2.modules.common_prepare as common_prepare
 import seekr2.modules.common_cv as common_cv
@@ -978,7 +980,7 @@ def create_rmsd_mmvt_model_input(root_dir):
         "../data/trp_cage_files/trp_cage_1.00.pdb"), 
                      ""]
     for i, (value, pdb_filename) in enumerate(zip(values_list, pdb_filenames)):
-        input_anchor = common_cv.Tiwary_cv_anchor()
+        input_anchor = common_cv.RMSD_cv_anchor()
         input_anchor.value = value
         assign_amber_params(input_anchor, amber_prmtop_filename, 
                             pdb_filename)
@@ -998,5 +1000,73 @@ def create_rmsd_mmvt_model_input(root_dir):
     
     model_input.cv_inputs = [cv_input1]
     model_input.browndye_settings_input = None
+    
+    return model_input
+
+def create_toy_mmvt_model_input(root_dir):
+    """
+    Create a toy mmvt model input.
+    """
+    os.chdir(TEST_DIRECTORY)
+    model_input = common_prepare.Model_input()
+    model_input.calculation_type = "mmvt"
+    model_input.calculation_settings = common_prepare.MMVT_input_settings()
+    model_input.calculation_settings.md_output_interval = 50
+    model_input.calculation_settings.md_steps_per_anchor = 5000
+    model_input.temperature = 300.0
+    model_input.pressure = 1.0
+    model_input.ensemble = "nvt"
+    model_input.root_directory = root_dir
+    model_input.md_program = "openmm"
+    model_input.constraints = "none"
+    model_input.rigidWater = True
+    model_input.hydrogenMass = None
+    model_input.integrator_type = "langevin"
+    model_input.timestep = 0.002
+    model_input.nonbonded_cutoff = None
+    
+    cv_input1 = common_cv.Toy_cv_input()
+    cv_input1.groups = [[0]]
+    cv_input1.variable_name = "value"
+    cv_input1.openmm_expression = "step(k*(y1-value))"
+    cv_input1.input_anchors = []
+    
+    values_list = [-0.7, -0.5, -0.3, -0.1, 0.1, 0.3, 0.5, 0.7]
+    positions_list = np.array([
+        [[[0.0, -0.7, 0.0]], [[0.2, -0.7, 0.0]]],
+        [[[0.0, -0.5, 0.0]]],
+        [[[0.0, -0.3, 0.0]]],
+        [[[0.0, -0.1, 0.0]]],
+        [[[0.0, 0.1, 0.0]]],
+        [[[0.0, 0.3, 0.0]]],
+        [[[0.0, 0.5, 0.0]]],
+        [[[0.0, 0.7, 0.0]]]])
+        
+    
+    for i, (value, position) in enumerate(zip(values_list, positions_list)):
+        input_anchor = common_cv.Toy_cv_anchor()
+        input_anchor.value = value
+        input_anchor.starting_positions = position
+        
+        if i == 0:
+            input_anchor.bound_state = True
+        else:
+            input_anchor.bound_state = False
+            
+        if i == len(values_list)-1:
+            input_anchor.bulk_anchor = True
+        else:
+            input_anchor.bulk_anchor = False
+        #input_anchor.bulk_anchor = False
+    
+        cv_input1.input_anchors.append(input_anchor)
+    
+    model_input.cv_inputs = [cv_input1]
+    model_input.browndye_settings_input = None
+    model_input.toy_settings_input = common_prepare.Toy_settings_input()
+    model_input.toy_settings_input.potential_energy_expression \
+        = "5*(x1^6+y1^6+exp(-(10*y1)^2)*(1-exp(-(10*x1)^2)))"
+    model_input.toy_settings_input.num_particles = 1
+    model_input.toy_settings_input.masses = np.array([10.0])
     
     return model_input

@@ -496,10 +496,9 @@ def resolve_connections(connection_flag_dict, model, associated_input_anchor,
     bulk_anchor = None
     for anchor in anchors:
         index_reference[anchor.index] = anchor.index
-        
+    
     for key in connection_flag_dict:
         anchor_connection_list = connection_flag_dict[key]
-        
         bulk_discarded_indices = []
         if key == "bulk":
             bulk_anchor = anchor_connection_list[0]
@@ -513,6 +512,10 @@ def resolve_connections(connection_flag_dict, model, associated_input_anchor,
                 +"in at least two anchors."
         anchor_kept = anchor_connection_list[0]
         for anchor_discarded in anchor_connection_list[1:]:
+            input_anchor_kept = associated_input_anchor[anchor_kept.index]
+            input_anchor_discarded = associated_input_anchor[anchor_discarded.index]
+            
+            
             assert anchor_kept.endstate == anchor_discarded.endstate, \
                 "The anchors connected by connection flag {} ".format(key) \
                 +"must have the same value for 'bound_state'."
@@ -521,11 +524,50 @@ def resolve_connections(connection_flag_dict, model, associated_input_anchor,
                 +"must have the same value for 'bulk_anchor'."   
             # Ensure that both anchors don't have starting structures 
             # defined
-            assert anchor_kept.amber_params is None or \
-                    anchor_kept.amber_params is None, \
-                "The anchors connected by connection flag {} ".format(key) \
-                +"may not both have starting structures defined. One or both" \
-                "must be left blank."
+            if anchor.__class__.__name__ == "MMVT_toy_anchor":
+                """ # TODO: marked for removal
+                assert len(anchor_kept.starting_positions) == 0 or \
+                        len(anchor_discarded.starting_positions) == 0, \
+                    "The anchors connected by connection flag {} ".format(key) \
+                    +"may not both have starting positions defined. One or both " \
+                    "must be left blank."
+                """
+                if input_anchor_kept.starting_positions is None:
+                    input_anchor_kept.starting_positions \
+                        = input_anchor_discarded.starting_positions
+                
+                if input_anchor_discarded.starting_positions is None:
+                    input_anchor_discarded.starting_positions \
+                        = input_anchor_kept.starting_positions
+                assert (input_anchor_kept.starting_positions \
+                        == input_anchor_discarded.starting_positions).all(), \
+                    "The anchors connected by connection flag {} ".format(key) \
+                    +"have inconsistent starting positions defined."
+            else:
+                # TODO: this will need to be handled for charmm and other inputs
+                """ # TODO: marked for removal
+                assert anchor_kept.amber_params is None or \
+                        anchor_discarded.amber_params is None, \
+                    "The anchors connected by connection flag {} ".format(key) \
+                    +"may not both have starting structures defined. One or both " \
+                    "must be left blank."
+                """
+                if input_anchor_kept.starting_amber_params is None \
+                        or input_anchor_kept.starting_amber_params\
+                        .pdb_coordinates_filename == "":
+                    input_anchor_kept.starting_amber_params \
+                        = input_anchor_discarded.starting_amber_params
+                
+                if input_anchor_discarded.starting_amber_params is None\
+                        or input_anchor_discarded.starting_amber_params\
+                        .pdb_coordinates_filename == "":
+                    input_anchor_discarded.starting_amber_params \
+                        = input_anchor_kept.starting_amber_params
+                assert base.same_amber_params(
+                    input_anchor_kept.starting_amber_params, 
+                    input_anchor_discarded.starting_amber_params), \
+                    "The anchors connected by connection flag {} ".format(key) \
+                    +"have inconsistent starting positions defined."
             anchor_indices_to_remove.append(anchor_discarded.index)
             anchor_kept.milestones += anchor_discarded.milestones
             anchor_kept.variables.update(anchor_discarded.variables)

@@ -147,6 +147,14 @@ def get_box_vectors_from_pdb(pdb_filename):
     "input XML file."
     return pdb_structure.box_vectors
 
+def convert_openmm_to_python_expr(old_function_str):
+    """
+    Convert the expression from a form used by OpenMM
+    to a form used by Python.
+    """
+    new_function_str = re.sub("\^", "**", old_function_str)
+    return new_function_str
+
 class Box_vectors(Serializer):
     """
     A box vector object that contains the a, b, and c vectors in units
@@ -593,7 +601,20 @@ class Amber_params(Serializer):
         self.box_vectors = None
         self.pdb_coordinates_filename = ""
         return
-    
+
+def same_amber_params(amber_params1, amber_params2):
+    """
+    Returns True if both amber_params objects are the same
+    """
+    if amber_params1.prmtop_filename != amber_params2.prmtop_filename:
+        return False
+    if amber_params1.box_vectors != amber_params2.box_vectors:
+        return False
+    if amber_params1.pdb_coordinates_filename \
+            != amber_params2.pdb_coordinates_filename:
+        return False
+    return True
+
 class Forcefield_params(Serializer):
     """
     Contains parameters for an OpenMM simulation starting from a set

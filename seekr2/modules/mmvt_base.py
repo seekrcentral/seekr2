@@ -4,6 +4,7 @@ mmvt_base.py
 Base classes, objects, and constants used in multiple stages of the
 MMVT calculations.
 """
+import math
 
 import numpy as np
 from scipy.spatial import transform
@@ -1347,7 +1348,49 @@ class MMVT_external_CV(MMVT_collective_variable):
         """
         For now, this will just always return True.
         """
-        return True
+        sqrt = math.sqrt
+        exp = math.exp
+        log = math.log
+        sin = math.sin
+        cos = math.cos
+        tan = math.tan
+        asin = math.asin
+        acos = math.acos
+        atan = math.atan
+        sinh = math.sinh
+        cosh = math.cosh
+        tanh = math.tanh
+        erf = math.erf
+        erfc = math.erfc
+        floor = math.floor
+        ceil = math.ceil
+        step = lambda x : 0 if x < 0 else 1
+        delta = lambda x : 1 if x == 0 else 0
+        select = lambda x, y, z : z if x == 0 else y
+        system = context.getSystem()
+        if positions is None:
+            state = context.getState(getPositions=True)
+            positions = state.getPositions()
+        
+        expr = ""
+        for i, position in enumerate(positions):
+            expr_x = "x{} = {};".format(i+1, position[0].value_in_unit(openmm.unit.nanometer))
+            expr_y = "y{} = {};".format(i+1, position[1].value_in_unit(openmm.unit.nanometer))
+            expr_z = "z{} = {};".format(i+1, position[2].value_in_unit(openmm.unit.nanometer))
+            expr += expr_x + expr_y + expr_z
+            
+        for variable in milestone_variables:
+            expr_var = "{}={};".format(variable, milestone_variables[variable])
+            expr += expr_var
+            
+        expr += base.convert_openmm_to_python_expr("result="+self.openmm_expression)
+        mylocals = locals()
+        exec(expr, globals(), mylocals)
+        result = mylocals["result"]
+        if result <= 0:
+            return True
+        else:
+            return False
     
     def check_mdtraj_close_to_boundary(self, traj, milestone_variables, 
                                      verbose=False, max_avg=0.03, max_std=0.05):

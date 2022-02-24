@@ -5,6 +5,8 @@ test_mmvt_base.py
 import os
 import shutil
 
+import numpy as np
+
 from seekr2.modules import mmvt_sim_openmm
 
 def test_MMVT_anchor_id_from_alias(tryp_ben_mmvt_model):
@@ -72,11 +74,14 @@ def test_check_openmm_context_within_boundary(tryp_ben_mmvt_model, tmp_path):
         tryp_ben_mmvt_model, anchor, output_file)
     context = my_sim_openmm.simulation.context
     
+    final_result = True
     for milestone in anchor.milestones:
         cv = tryp_ben_mmvt_model.collective_variables[milestone.cv_index]
         result = cv.check_openmm_context_within_boundary(
             context, milestone.variables, verbose=True)
-        assert result
+        final_result = final_result and result
+        
+    assert final_result
     
     # Test check failure(s): system outside Voronoi cells
     anchor_pdb1 \
@@ -114,11 +119,70 @@ def test_check_openmm_context_within_boundary(tryp_ben_mmvt_model, tmp_path):
         tryp_ben_mmvt_model, anchor, output_file)
     context = my_sim_openmm.simulation.context
     
+    final_result = True
     for milestone in anchor.milestones:
         cv = tryp_ben_mmvt_model.collective_variables[milestone.cv_index]
         result = cv.check_openmm_context_within_boundary(
             context, milestone.variables, verbose=True)
-        assert not result
+        final_result = final_result and result
+        
+    assert not final_result
     
+    return
+
+def test_check_toy_openmm_context_within_boundary(toy_mmvt_model, tmp_path):
+    """
+    Test whether the check can find systems that exist outside the proper
+    Voronoi cells.
+    """
+    # Test check success: system starting within Voronoi cells
+    anchor = toy_mmvt_model.anchors[0]
+    output_file = os.path.join(tmp_path, "output.txt")
+    toy_mmvt_model.openmm_settings.cuda_platform_settings = None
+    toy_mmvt_model.openmm_settings.reference_platform = True
+    my_sim_openmm = mmvt_sim_openmm.create_sim_openmm(
+        toy_mmvt_model, anchor, output_file)
+    context = my_sim_openmm.simulation.context
+    
+    final_result = True
+    for milestone in anchor.milestones:
+        cv = toy_mmvt_model.collective_variables[milestone.cv_index]
+        result = cv.check_openmm_context_within_boundary(
+            context, milestone.variables, verbose=True)
+        final_result = final_result and result
+        
+    assert final_result
+    
+    # Test check failure(s): system outside Voronoi cells
+    toy_mmvt_model.anchors[0].starting_positions = np.array([[[0.0, -0.7, 0.0]], [[0.2, -0.5, 0.0]]])
+    toy_mmvt_model.anchors[1].starting_positions = np.array([[[0.0, -0.3, 0.0]]])
+    
+    anchor = toy_mmvt_model.anchors[0]
+    my_sim_openmm = mmvt_sim_openmm.create_sim_openmm(
+        toy_mmvt_model, anchor, output_file, frame=1)
+    context = my_sim_openmm.simulation.context
+    
+    final_result = True
+    for milestone in anchor.milestones:
+        cv = toy_mmvt_model.collective_variables[milestone.cv_index]
+        result = cv.check_openmm_context_within_boundary(
+            context, milestone.variables, verbose=True)
+        final_result = final_result and result
+        
+    assert not final_result
+    
+    anchor = toy_mmvt_model.anchors[1]
+    my_sim_openmm = mmvt_sim_openmm.create_sim_openmm(
+        toy_mmvt_model, anchor, output_file)
+    context = my_sim_openmm.simulation.context
+    
+    final_result = True
+    for milestone in anchor.milestones:
+        cv = toy_mmvt_model.collective_variables[milestone.cv_index]
+        result = cv.check_openmm_context_within_boundary(
+            context, milestone.variables, verbose=True)
+        final_result = final_result and result
+        
+    assert not final_result
     
     return

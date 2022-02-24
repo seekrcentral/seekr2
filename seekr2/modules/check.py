@@ -45,6 +45,7 @@ import collections
 import glob
 import warnings
 warnings.filterwarnings("ignore")
+import tempfile
 #import bubblebuster
 
 import numpy as np
@@ -54,6 +55,7 @@ import mdtraj
 import seekr2.modules.common_base as base
 import seekr2.modules.elber_base as elber_base
 import seekr2.modules.mmvt_base as mmvt_base
+import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
 
 # The charges of common ions
 ION_CHARGE_DICT = {"li":1.0, "na":1.0, "k":1.0, "rb":1.0, "cs":1.0, "fr":1.0,
@@ -430,24 +432,49 @@ def check_systems_within_Voronoi_cells(model):
     if model.get_type() != "mmvt":
         # only apply to MMVT systems
         return True
+    
     curdir = os.getcwd()
     os.chdir(model.anchor_rootdir)
+    
     for anchor in model.anchors:
-        traj = load_structure_with_mdtraj(model, anchor)
-        if traj is None:
-            continue
+        if anchor.__class__.__name__ == "MMVT_toy_anchor":
+            if anchor.starting_positions is None: continue
+            if len(anchor.starting_positions) == 0: continue
+            tmp_path = tempfile.NamedTemporaryFile()
+            output_file = tmp_path.name
+            model.openmm_settings.cuda_platform_settings = None
+            model.openmm_settings.reference_platform = True
+            my_sim_openmm = mmvt_sim_openmm.create_sim_openmm(
+                model, anchor, output_file)
+            context = my_sim_openmm.simulation.context
+            
+        else:
+            traj = load_structure_with_mdtraj(model, anchor)
+            if traj is None:
+                continue
+            
         for milestone in anchor.milestones:
             cv = model.collective_variables[milestone.cv_index]
-            
-            result = cv.check_mdtraj_within_boundary(traj, milestone.variables, 
-                                                     verbose=True)
+            if anchor.__class__.__name__ == "MMVT_toy_anchor":
+                result = cv.check_openmm_context_within_boundary(
+                    context, milestone.variables, verbose=True)
+                
+            else:
+                result = cv.check_mdtraj_within_boundary(
+                    traj, milestone.variables, verbose=True)
+                
             if result == False:
                 correct_anchor = None
                 for anchor2 in model.anchors:
                     within_milestones = True
                     for milestone in anchor2.milestones:
-                        result2 = cv.check_mdtraj_within_boundary(
-                            traj, milestone.variables)
+                        if anchor.__class__.__name__ == "MMVT_toy_anchor":
+                            result2 = cv.check_openmm_context_within_boundary(
+                                context, milestone.variables, verbose=True)
+                            
+                        else:
+                            result2 = cv.check_mdtraj_within_boundary(
+                                traj, milestone.variables)
                         if not result2:
                             within_milestones = False
                             break
@@ -743,13 +770,13 @@ def check_pre_simulation_all(model):
         # come from using no salt in BD.
         #check_passed_list.append(check_pre_sim_MD_and_BD_salt_concentration(model))
         check_passed_list.append(check_atom_selections_on_same_molecule(model))
-        check_passed_list.append(check_systems_within_Voronoi_cells(model))
         check_passed_list.append(check_atom_selections_MD_BD(model))
         check_passed_list.append(check_pqr_residues(model))
     else:
         # Checks for toy systems
         pass
     
+    check_passed_list.append(check_systems_within_Voronoi_cells(model))
     check_passed_list.append(check_for_one_bulk_anchor(model))
     
     no_failures = True

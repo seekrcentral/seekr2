@@ -340,7 +340,7 @@ def rmsd_mmvt_model_input_persistent(tmpdir_factory):
     return rmsd_mmvt_model_input_persisent_obj
 
 @pytest.fixture()
-def rmsd_mmvt_model_input(tiwary_mmvt_model_input_persistent):
+def rmsd_mmvt_model_input(rmsd_mmvt_model_input_persistent):
     """
     Create a copy of the model input that is not persistent. But this 
     at least doesn't require us to generate an entirely new model 
@@ -372,6 +372,50 @@ def rmsd_mmvt_model(tmpdir_factory, rmsd_mmvt_model_persistent):
     """
     rmsd_mmvt_model = copy.deepcopy(rmsd_mmvt_model_persistent)
     return rmsd_mmvt_model
+
+@pytest.fixture(scope="session")
+def toy_mmvt_model_input_persistent(tmpdir_factory):
+    """
+    Create a model object that is persistent across the tests in this file.
+    """
+    rootdir = tmpdir_factory.mktemp("toy_mmvt")
+    toy_mmvt_model_input_persisent_obj \
+        = create_model_input.create_toy_mmvt_model_input(rootdir)
+    return toy_mmvt_model_input_persisent_obj
+
+@pytest.fixture()
+def toy_mmvt_model_input(toy_mmvt_model_input_persistent):
+    """
+    Create a copy of the model input that is not persistent. But this 
+    at least doesn't require us to generate an entirely new model 
+    input.
+    """
+    toy_mmvt_model_input_obj = copy.deepcopy(
+        toy_mmvt_model_input_persistent)
+    return toy_mmvt_model_input_obj
+
+@pytest.fixture(scope="session")
+def toy_mmvt_model_persistent(tmpdir_factory, 
+                               toy_mmvt_model_input_persistent):
+    """
+    Create a model object that is persistent across the tests in this file.
+    """
+    os.chdir(TEST_DIRECTORY)
+    toy_mmvt_model_obj, model_xml_path \
+        = prepare.prepare(toy_mmvt_model_input_persistent, 
+                          force_overwrite=False)
+    model_dir = os.path.dirname(model_xml_path)
+    toy_mmvt_model_obj.anchor_rootdir = os.path.abspath(model_dir)
+    return toy_mmvt_model_obj
+
+@pytest.fixture
+def toy_mmvt_model(tmpdir_factory, toy_mmvt_model_persistent):
+    """
+    Create a copy of the model that is not persistent. But this at least
+    doesn't require us to generate an entirely new model
+    """
+    toy_mmvt_model = copy.deepcopy(toy_mmvt_model_persistent)
+    return toy_mmvt_model
 
 def compare_dicts(dict1, dict2):
     """

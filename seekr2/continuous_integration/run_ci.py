@@ -56,8 +56,8 @@ def run_generic_hostguest_ci(cuda_device_index):
         host_guest_model_input.integrator_type = "langevinMiddle"
         host_guest_model_input.timestep = 0.005
         host_guest_model_input.hydrogenMass = 3.0
-        host_guest_model_input.calculation_settings.md_output_interval = 5000
-        host_guest_model_input.calculation_settings.md_steps_per_anchor = 500000
+        host_guest_model_input.calculation_settings.md_output_interval = 2000
+        host_guest_model_input.calculation_settings.md_steps_per_anchor = 20000
         run_short_ci(host_guest_model_input, cuda_device_index)
         
     return
