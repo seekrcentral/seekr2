@@ -40,6 +40,7 @@ $ python check.py /path/to/model.xml
 """
 
 import os
+import sys
 import argparse
 import collections
 import glob
@@ -66,6 +67,7 @@ ION_CHARGE_DICT = {"li":1.0, "na":1.0, "k":1.0, "rb":1.0, "cs":1.0, "fr":1.0,
 AVOGADROS_NUMBER = 6.022e23
 SAVE_STATE_DIRECTORY = "states/"
 MAX_STRUCTURES_TO_CHECK = 100
+RECURSION_LIMIT = 100000
 
 def load_structure_with_parmed(model, anchor):
     """
@@ -518,7 +520,7 @@ def check_atom_selections_on_same_molecule(model):
     in the system and ensure that atom selections only exist on one
     molecule.
     """
-    
+    sys.setrecursionlimit(RECURSION_LIMIT)
     warnstr1 = """CHECK FAILURE: the atom selection for collective variable 
     (CV) number {} is split over multiple molecules. Atom index {}, 
     which has the name {} and serial id {}, was the first atom to 

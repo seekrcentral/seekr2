@@ -67,7 +67,7 @@ def test_converge_no_bd(smoluchowski_mmvt_model):
     return
 
 def test_converge_missing_bd(smoluchowski_mmvt_model):
-    steps = 1000
+    steps = 2000
     cutoff = 0.1
     minimum_anchor_transitions = 100
     k_on_state = 0
