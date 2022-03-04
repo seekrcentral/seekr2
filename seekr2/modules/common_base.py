@@ -919,7 +919,9 @@ class Model(Serializer):
                 + "{}. Available types are 'elber' and 'mmvt'.".format(
                     self.calculation_type)
             raise Exception(error_msg)
-        
+    
+    # TODO: create method to return the timestep
+    
 def load_model(model_file, directory=None):
     """
     

@@ -420,7 +420,7 @@ def model_factory(model_input, use_absolute_directory=False):
         mm_settings.hydrogenMass = model_input.hydrogenMass
         mm_settings.constraints = model_input.constraints
         mm_settings.langevin_integrator.timestep = model_input.timestep
-        mm_settings.langevin_integrator.type = model_input.integrator_type
+        mm_settings.langevin_integrator.integrator_type = model_input.integrator_type
         mm_settings.rigidWater = model_input.rigidWater
     
         model.openmm_settings = mm_settings

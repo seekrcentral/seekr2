@@ -75,7 +75,7 @@ def add_integrators(sim_openmm, model, state_prefix=None):
             
         sim_openmm.timestep = timestep
         
-        integrator_type = model.openmm_settings.langevin_integrator.type
+        integrator_type = model.openmm_settings.langevin_integrator.integrator_type
         
         if integrator_type == "langevin":
             umbrella_integrator_object = openmm.LangevinIntegrator
