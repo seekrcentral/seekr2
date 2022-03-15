@@ -1222,7 +1222,7 @@ class MMVT_external_CV(MMVT_collective_variable):
         self.per_dof_variables = ["k", "value"]
         self.global_variables = []
         self._mygroup_list = None
-        self.variable_name = None
+        self.variable_name = "v"
         return
 
     def __name__(self):
@@ -1261,7 +1261,6 @@ class MMVT_external_CV(MMVT_collective_variable):
             import openmm
         except ImportError:
             import simtk.openmm as openmm
-            
         return openmm.CustomCentroidBondForce(
             self.num_groups, self.restraining_expression)
     
