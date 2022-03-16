@@ -209,21 +209,6 @@ class Elber_input_settings(Serializer):
         self.rev_output_interval = 500
         self.fwd_output_interval = 500
 
-class Connector(Serializer):
-    """
-    A Connector defines a connection between two input anchors of different
-    (or possibly the same) CVs. A connection between two input anchors will
-    results in a single anchor in the final model.
-    """
-    
-    def __init__(self):
-        self.index = -1
-        self.flag = -1
-        self.starting_amber_params = None
-        self.starting_forcefield_params = None
-        self.bound_state = False
-        self.bulk_anchor = False
-
 class Model_input(Serializer):
     """
     The serializable object representing parameters that would be
@@ -330,7 +315,7 @@ class Model_input(Serializer):
         self.browndye_settings_input = None
         self.toy_settings_input = None
         self.cv_inputs = []
-        self.connectors = []
+        self.cv_combos = []
         
     def read_plain_input_file(self, filename):
         """ # TODO: remove

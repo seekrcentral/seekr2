@@ -963,7 +963,7 @@ class Toy_cv_input(Serializer):
         return milestones, milestone_alias, milestone_index
 
 
-class Multidimensional_cv(Serializer):
+class Grid_combo(Serializer):
     """
     An object for the input to define when input CVs should be combined to
     make a multidimensional anchor - an anchor with more than one dimension
@@ -971,5 +971,4 @@ class Multidimensional_cv(Serializer):
     """
     def __init__(self):
         self.cv_inputs = []
-        
         return
