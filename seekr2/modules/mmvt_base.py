@@ -318,18 +318,25 @@ colvar {{
             com1 = com1_array[frame_index,:]
             com2 = com2_array[frame_index,:]
             radius = np.linalg.norm(com2-com1)
+            result = self.check_value_within_boundary(
+                radius, milestone_variables, verbose)
+            if not result:
+                return False
+            """ # TODO: remove
             milestone_k = milestone_variables["k"]
             milestone_radius = milestone_variables["radius"]
             if milestone_k*(radius - milestone_radius) > TOL:
                 if verbose:
-                    warnstr = """The center of masses of atom group1 and atom
+                    warnstr = ""The center of masses of atom group1 and atom
 group2 were found to be {:.4f} nm apart.
 This distance falls outside of the milestone
-boundary at {:.4f} nm.""".format(radius, milestone_radius)
+boundary at {:.4f} nm."".format(radius, milestone_radius)
                     print(warnstr)
                 return False
+            """
             
         return True
+        
     
     def check_openmm_context_within_boundary(
             self, context, milestone_variables, positions=None, verbose=False,
@@ -349,6 +356,29 @@ boundary at {:.4f} nm.""".format(radius, milestone_radius)
         com2 = base.get_openmm_center_of_mass_com(
             system, positions, self.group2)
         radius = np.linalg.norm(com2-com1)
+        result = self.check_value_within_boundary(
+            radius, milestone_variables, verbose, tolerance)
+        return result
+        """ # TODO: remove
+        milestone_k = milestone_variables["k"]
+        milestone_radius = milestone_variables["radius"]
+        if milestone_k*(radius - milestone_radius) > tolerance:
+            if verbose:
+                warnstr = ""The center of masses of atom group1 and atom
+group2 were found to be {:.4f} nm apart.
+This distance falls outside of the milestone
+boundary at {:.4f} nm."".format(radius, milestone_radius)
+                print(warnstr)
+            return False
+            
+        return True
+        """
+    
+    def check_value_within_boundary(self, radius, milestone_variables, 
+                                    verbose=False, tolerance=0.0):
+        """
+        Check if the given CV value is within the milestone's boundaries.
+        """
         milestone_k = milestone_variables["k"]
         milestone_radius = milestone_variables["radius"]
         if milestone_k*(radius - milestone_radius) > tolerance:
@@ -359,7 +389,6 @@ This distance falls outside of the milestone
 boundary at {:.4f} nm.""".format(radius, milestone_radius)
                 print(warnstr)
             return False
-            
         return True
     
     def check_mdtraj_close_to_boundary(self, traj, milestone_variables, 
@@ -405,86 +434,6 @@ boundary at {:.4f} nm.""".format(radius, milestone_radius)
         returned.
         """
         return []
-"""
-class MMVT_planar_CV(MMVT_collective_variable):
-    def __init__(self, index, groups):
-        super(PlanarCV, self).__init__(groups)
-        self.name = "mmvt_planar"
-        self.expression = "step(k*((z2-z1) - height))"
-        self.num_groups = 2
-        self.per_dof_variables = ["height"]
-        self.global_variables = []
-
-    def __name__(self):
-        return "MMVT_planar_CV"
-    
-    def make_force_object(self):
-        assert self.num_groups == 2
-        return openmm.CustomCentroidBondForce(
-            self.num_groups, self.expression)
-        
-    def add_parameters(self, force):
-        for per_dof_variable in cv.per_dof_variables:
-            force.addPerBondParameter(per_dof_variable)
-            
-        for global_variable in cv.global_variables:
-            force.addGlobalParameter(global_variable)
-        return
-    
-    def add_groups_and_variables(self, force, group_list, variables):
-        assert len(group_list) == self.num_groups
-        force.addBond(group_list, variables)
-        return
-    
-    def get_variable_values_list(self, milestone):
-        values_list = []
-        height = milestone.variables['height'] * unit.nanometers
-        values_list.append(height)
-        
-        return values_list
-
-class MMVT_angular_CV(MMVT_collective_variable):
-
-    def __init__(self, groups):
-        super(PlanarCV, self).__init__(index, groups)
-        self.name = "mmvt_angular"
-        self.expression = "step(k*(angular(g1, g2, g3) - ref_angle))"
-        self.num_groups = 3
-        self.per_dof_variables = ["ref_angle"]
-        self.global_variables = []
-        
-    def __name__(self):
-        return "MMVT_angular_CV"
-    
-    def make_force_object(self):
-        assert self.num_groups == 3
-        return openmm.CustomCentroidBondForce(
-            self.num_groups, self.expression)
-        
-    def add_parameters(self, force):
-        variable_names_list = []
-        for per_dof_variable in self.per_dof_variables:
-            force.addPerBondParameter(per_dof_variable)
-            variable_names_list.append(per_dof_variable)
-            
-        for global_variable in self.global_variables:
-            force.addGlobalParameter(global_variable)
-            variable_names_list.append(global_variable)
-            
-        return variable_names_list
-    
-    def add_groups_and_variables(self, force, group_list, variables):
-        assert len(group_list) == self.num_groups
-        force.addBond(group_list, variables)
-        return
-    
-    def get_variable_values_list(self, milestone):
-        values_list = []
-        ref_angle = milestone.variables['ref_angle'] * unit.radians
-        values_list.append(ref_angle)
-        
-        return values_list
-"""
 
 class MMVT_tiwary_CV(MMVT_collective_variable):
     """
@@ -675,15 +624,22 @@ class MMVT_tiwary_CV(MMVT_collective_variable):
                 op_term = order_parameter.get_value(com_list)
                 op_weight = self.order_parameter_weights[i]
                 op_value += op_weight * op_term
-                
+            
+            """ # TODO: remove
             milestone_k = milestone_variables["k"]
             milestone_value = milestone_variables["value"]
             if milestone_k*(op_value - milestone_value) > TOL:
                 if verbose:
-                    warnstr = """This system value for the Tiwary CV is {:.4f} 
+                    warnstr = ""This system value for the Tiwary CV is {:.4f} 
 but the milestone's value for the same CV is {:.4f}. The system falls outside 
-the boundaries.""".format(op_value, milestone_value)
+the boundaries."".format(op_value, milestone_value)
                     print(warnstr)
+                return False
+                
+            """
+            result = self.check_value_within_boundary(
+                op_value, milestone_variables, verbose=verbose, tolerance=TOL)
+            if not result:
                 return False
             
         return True
@@ -720,9 +676,18 @@ the boundaries.""".format(op_value, milestone_value)
             op_weight = self.order_parameter_weights[i]
             op_value += op_weight * op_term
             
+        result = self.check_value_within_boundary(op_value, milestone_variables, 
+                                    verbose=verbose, tolerance=TOL)
+        return result
+    
+    def check_value_within_boundary(self, op_value, milestone_variables, 
+                                    verbose=False, tolerance=0.0):
+        """
+        
+        """
         milestone_k = milestone_variables["k"]
         milestone_value = milestone_variables["value"]
-        if milestone_k*(op_value - milestone_value) > TOL:
+        if milestone_k*(op_value - milestone_value) > tolerance:
             if verbose:
                 warnstr = """This system value for the Tiwary CV is {:.4f} 
 but the milestone's value for the same CV is {:.4f}. The system falls outside 
@@ -923,16 +888,35 @@ class MMVT_planar_CV(MMVT_collective_variable):
             value = ((com2[0]-com1[0])*(com3[0]-com1[0]) \
                    + (com2[1]-com1[1])*(com3[1]-com1[1]) \
                    + (com2[2]-com1[2])*(com3[2]-com1[2]))/(dist1_2*dist1_3)
+            """ # TODO: remove
             milestone_k = milestone_variables["k"]
             milestone_value = milestone_variables["value"]
             if milestone_k*(value - milestone_value) > TOL:
                 if verbose:
-                    warnstr = """The value of planar milestone was found to be {:.4f}.
+                    warnstr = ""The value of planar milestone was found to be {:.4f}.
 This distance falls outside of the milestone
-boundary at {:.4f}.""".format(value, milestone_value)
+boundary at {:.4f}."".format(value, milestone_value)
                     print(warnstr)
                 return False
+            """
+            result = self.check_value_within_boundary(
+                value, milestone_variables, verbose=verbose, tolerance=TOL)
+            if not result:
+                return False
             
+        return True
+    
+    def check_value_within_boundary(self, value, milestone_variables, 
+                                    verbose=False, tolerance=0.0):
+        milestone_k = milestone_variables["k"]
+        milestone_value = milestone_variables["value"]
+        if milestone_k*(value - milestone_value) > tolerance:
+            if verbose:
+                warnstr = """The value of planar milestone was found to be 
+{:.4f}. This distance falls outside of the milestoneboundary at {:.4f}.
+""".format(value, milestone_value)
+                print(warnstr)
+            return False
         return True
     
     def check_mdtraj_close_to_boundary(self, traj, milestone_variables, 
@@ -1132,15 +1116,21 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
         traj1.superpose(ref_traj1)
         for frame_index in range(traj.n_frames):
             value = float(mdtraj.rmsd(traj1, ref_traj1, frame=frame_index))
+            """
             milestone_k = milestone_variables["k"]
             milestone_value = milestone_variables["value"]
             if milestone_k*(value - milestone_value) > TOL:
                 if verbose:
-                    warnstr = """The RMSD value of atom group 
+                    warnstr = ""The RMSD value of atom group 
 was found to be {:.4f} nm apart.
 This distance falls outside of the milestone
-boundary at {:.4f} nm.""".format(value, milestone_value)
+boundary at {:.4f} nm."".format(value, milestone_value)
                     print(warnstr)
+                return False
+            """
+            result = self.check_value_within_boundary(
+                value, milestone_variables, verbose=verbose, tolerance=TOL)
+            if not result:
                 return False
             
         return True
@@ -1169,19 +1159,24 @@ boundary at {:.4f} nm.""".format(value, milestone_value)
         
         #value = base.get_openmm_rmsd(
         #    system, positions, ref_positions, self.group1)
+        result = self.check_value_within_boundary(
+            value, milestone_variables, verbose=verbose, tolerance=tolerance)
+        return result
+    """
+    
+    def check_value_within_boundary(self, value, milestone_variables, 
+                                    verbose=False, tolerance=0.0):
         milestone_k = milestone_variables["k"]
         milestone_value = milestone_variables["value"]
         if milestone_k*(value - milestone_value) > tolerance:
             if verbose:
-                warnstr = ""The RMSD value of atom group 
+                warnstr = """The RMSD value of atom group 
 was found to be {:.4f} nm apart.
 This distance falls outside of the milestone
-boundary at {:.4f} nm."".format(value, milestone_value)
+boundary at {:.4f} nm.""".format(value, milestone_value)
                 print(warnstr)
             return False
-            
         return True
-    """
     
     def check_mdtraj_close_to_boundary(self, traj, milestone_variables, 
                                      verbose=False, max_avg=0.03, max_std=0.05):
@@ -1342,11 +1337,21 @@ class MMVT_external_CV(MMVT_collective_variable):
         return True
     
     def check_openmm_context_within_boundary(
-            self, context, milestone_variables, positions=None, verbose=False,
-            tolerance=0.0):
+            self, context, milestone_variables, positions=None, verbose=False):
         """
         For now, this will just always return True.
         """
+        
+        system = context.getSystem()
+        if positions is None:
+            state = context.getState(getPositions=True)
+            positions = state.getPositions()
+        
+        return self.check_positions_within_boundary(
+            positions, milestone_variables)
+    
+    def check_positions_within_boundary(
+            self, positions, milestone_variables):
         sqrt = math.sqrt
         exp = math.exp
         log = math.log
@@ -1366,16 +1371,14 @@ class MMVT_external_CV(MMVT_collective_variable):
         step = lambda x : 0 if x < 0 else 1
         delta = lambda x : 1 if x == 0 else 0
         select = lambda x, y, z : z if x == 0 else y
-        system = context.getSystem()
-        if positions is None:
-            state = context.getState(getPositions=True)
-            positions = state.getPositions()
-        
         expr = ""
         for i, position in enumerate(positions):
-            expr_x = "x{} = {};".format(i+1, position[0].value_in_unit(openmm.unit.nanometer))
-            expr_y = "y{} = {};".format(i+1, position[1].value_in_unit(openmm.unit.nanometer))
-            expr_z = "z{} = {};".format(i+1, position[2].value_in_unit(openmm.unit.nanometer))
+            expr_x = "x{} = {};".format(i+1, position[0].value_in_unit(
+                openmm.unit.nanometer))
+            expr_y = "y{} = {};".format(i+1, position[1].value_in_unit(
+                openmm.unit.nanometer))
+            expr_z = "z{} = {};".format(i+1, position[2].value_in_unit(
+                openmm.unit.nanometer))
             expr += expr_x + expr_y + expr_z
             
         for variable in milestone_variables:
@@ -1390,6 +1393,15 @@ class MMVT_external_CV(MMVT_collective_variable):
             return True
         else:
             return False
+    
+    def check_value_within_boundary(self, positions, milestone_variables, 
+                                    verbose=False, tolerance=0.0):
+        """
+        
+        """
+        result = self.check_positions_within_boundary(
+            positions*openmm.unit.nanometer, milestone_variables)
+        return result
     
     def check_mdtraj_close_to_boundary(self, traj, milestone_variables, 
                                      verbose=False, max_avg=0.03, max_std=0.05):

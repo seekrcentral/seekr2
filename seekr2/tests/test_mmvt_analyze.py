@@ -118,3 +118,22 @@ def test_init_objects():
     stats = mmvt_analyze.MMVT_anchor_statistics(0)
     stats.print_stats()
     return
+
+def test_find_nonzero_matrix_entries():
+    """
+    
+    """
+    M0 = np.zeros((3,3))
+    result0 = mmvt_analyze.find_nonzero_matrix_entries(M0)
+    assert len(result0) == 0
+    
+    M1 = np.zeros((3,3))
+    M1[0,0] = 2.0
+    M1[0,1] = 1.0
+    M1[2,1] = 3.0
+    result1 = mmvt_analyze.find_nonzero_matrix_entries(M1)
+    assert len(result1) == 3
+    assert (0,0) in result1
+    assert (0,1) in result1
+    assert (2,1) in result1
+    return

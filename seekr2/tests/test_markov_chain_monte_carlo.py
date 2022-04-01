@@ -221,9 +221,10 @@ def pi_alpha_from_K_alpha_beta(k_alpha_beta, n_anchors):
     pi_alpha = abs(la.solve(flux_matrix.T, prob_equil))
     return pi_alpha
 
+@pytest.mark.skip()
 def test_mcmc_3x3_mmvt(tmpdir_factory):
     """
-    
+    Skip this test for now...
     """
     num = 10000 #100000
     stride = 4

@@ -10,7 +10,6 @@ import warnings
 import glob
 from collections import defaultdict
 import math
-import tempfile
 from copy import deepcopy
 
 import numpy as np
@@ -22,7 +21,37 @@ import seekr2.modules.mmvt_analyze as mmvt_analyze
 import seekr2.modules.elber_analyze as elber_analyze
 import seekr2.modules.check as check
 
-MAX_SINGULAR_MATRIX_ERRORS = 10
+LOW_FLUX = 1e-10
+FAST_FLUX = 1e3
+
+def check_graph_connected(graph, state_index1, state_index2):
+    """
+    A graph is made of anchor indices that have recorded bounces against
+    neighboring anchors. If pathways can be found, then sufficient statistics
+    likely exist to compute kinetics from the resulting bounces.
+    
+    TODO: more documentation here.
+    """
+    max_iter = len(graph) + 5
+    if state_index1 == state_index2:
+        return True
+    explored_nodes = [state_index1]
+    edge_nodes = graph[state_index1]
+    counter = 0
+    while len(edge_nodes) > 0:
+        edge_node = edge_nodes.pop()
+        if state_index2 == edge_node:
+            return True
+        explored_nodes.append(edge_node)
+        for possible_edge_node in graph[edge_node]:
+            if possible_edge_node not in edge_nodes \
+                    and possible_edge_node not in explored_nodes:
+                edge_nodes.append(possible_edge_node)
+        
+        counter += 1
+        assert counter < max_iter, "Maximum iterations exceeded."
+        
+    return False
 
 class Analysis:
     """
@@ -106,7 +135,8 @@ class Analysis:
         values.
     """
     
-    def __init__(self, model, force_warning=False, num_error_samples=0):
+    def __init__(self, model, force_warning=False, num_error_samples=0,
+                 stride_error_samples=None, skip_error_samples=None):
         """
         Creates the Analyze() object, which applies transition 
         statistics and times, as well as MMVT theory, to compute 
@@ -131,6 +161,8 @@ class Analysis:
         self.k_ons_error = {}
         self.force_warning = force_warning
         self.num_error_samples = num_error_samples
+        self.stride_error_samples = stride_error_samples
+        self.skip_error_samples = skip_error_samples
         return
     
     def elber_check_anchor_stats(self, silent=False):
@@ -184,11 +216,30 @@ class Analysis:
         Check the anchor statistics to make sure that enough transitions
         have been observed to perform the analysis
         """
-        
-        anchors_missing_statistics = []
+        error_warning_base = "Anchor(s) {0} are missing some "\
+            "statistics. Consider running simulations of anchor(s) {0} "\
+            "for longer time scales or readjust anchor locations to "\
+            "make transitions more frequent. You may skip this check "\
+            "with the --skip_checks (-s) option."
+        path_not_connected_string = "Insufficient statistics were found "\
+            "to create a path between end states \"{0}\" and \"{1}\"."
+        error_warning_string = ""
+        anchors_missing_alpha_beta_statistics = []
+        anchors_missing_i_j_statistics = []
+        connection_graph = defaultdict(list)
+        endstate_list = []
+        bulk_anchor_index = None
         for i, anchor in enumerate(self.model.anchors):
             if anchor.bulkstate:
+                # we want the bulk state to indicate all connections because
+                # they will be handled by BD.
+                for milestone in anchor.milestones:
+                    connection_graph[anchor.index].append(
+                        milestone.neighbor_anchor_index)
+                bulk_anchor_index = anchor.index
                 continue
+            if anchor.endstate:
+                endstate_list.append(anchor.index)
             anchor_stats = self.anchor_stats_list[i]
             existing_alias_ids = []
             existing_alias_transitions = []
@@ -200,58 +251,73 @@ class Analysis:
                 existing_alias_transitions.append(key)
             
             for milestone in anchor.milestones:
-                found_problem = False
-                if milestone.alias_index not in existing_alias_ids:
-                    anchors_missing_statistics.append(anchor.index)
-                    break
+                if milestone.alias_index in existing_alias_ids:
+                    connection_graph[anchor.index].append(
+                        milestone.neighbor_anchor_index)
+                else:
+                    if anchor.index not in anchors_missing_alpha_beta_statistics:
+                        anchors_missing_alpha_beta_statistics.append(anchor.index)
                 
                 for milestone2 in anchor.milestones:
                     if milestone.alias_index == milestone2.alias_index:
                         continue
                     if (milestone.alias_index, milestone2.alias_index) \
                             not in existing_alias_transitions:
-                        anchors_missing_statistics.append(anchor.index)
-                        found_problem = True
+                        if anchor.index not in anchors_missing_i_j_statistics:
+                            anchors_missing_i_j_statistics.append(anchor.index)
                         break
-                if found_problem:
-                    break
+        #TODO: something with anchors_missing_alpha_beta_statistics or
+        #   anchors_missing_i_j_statistics?
+        # Check a graph connectivity
+        missing_path = False
+        for endstate_index in endstate_list:
+            if bulk_anchor_index is not None:
+                states_connected = check_graph_connected(connection_graph, endstate_index, bulk_anchor_index)
+                if not states_connected:
+                    if not silent:
+                        print(path_not_connected_string.format(self.model.anchors[endstate_index].name, "Bulk"))
+                    missing_path = True
+                
+                states_connected = check_graph_connected(connection_graph, bulk_anchor_index, endstate_index)
+                if not states_connected:
+                    if not silent:
+                        print(path_not_connected_string.format("Bulk", self.model.anchors[endstate_index].name))
+                    missing_path = True
+            
+            for endstate_index2 in endstate_list:
+                if endstate_index == endstate_index2:
+                    continue
+                states_connected = check_graph_connected(connection_graph, endstate_index, endstate_index2)
+                if not states_connected:
+                    if not silent:
+                        print(path_not_connected_string.format(self.model.anchors[endstate_index].name, self.model.anchors[endstate_index2].name))
+                    missing_path = True
+            
+        if missing_path:
+            error_warning_string = error_warning_base.format(
+                anchors_missing_alpha_beta_statistics)
         
-        if len(anchors_missing_statistics) > 0:
+        if error_warning_string != "":
             if silent:
                 return False
             else:
-                error_warning_string = "Anchor(s) {0} are missing sufficient "\
-                    "statistics. Consider running simulations of anchor(s) {0} "\
-                    "for longer time scales or readjust anchor locations to "\
-                    "make transitions more frequent. You may skip this check "\
-                    "with the --skip_checks (-s) option.".format(
-                        anchors_missing_statistics)
                 if self.force_warning:
                     warnings.warn(error_warning_string)
                 else:
                     raise common_analyze.MissingStatisticsError(
                         error_warning_string)
-        
         return True
     
-    def extract_data(self, min_time=None, max_time=None, max_step_list=None, 
-                     silence_errors=True):
+    def extract_data(self, min_time=None, max_time=None, max_step_list=None):
         """
         Extract the data from simulations used in this analysis.
         """
-        
         # If possible, avoid expensive I/O
         files_already_read = False
         if len(self.anchor_stats_list) > 0:
             files_already_read = True
             
-        if self.model.openmm_settings is not None:
-            timestep = self.model.openmm_settings.langevin_integrator.timestep
-        elif self.model.namd_settings is not None:
-            timestep = self.model.namd_settings.langevin_integrator.timestep
-        else:
-            raise Exception("No OpenMM or NAMD simulation settings in model.")
-        
+        timestep = self.model.get_timestep()
         for alpha, anchor in enumerate(self.model.anchors):
             if anchor.bulkstate:
                 continue
@@ -274,13 +340,9 @@ class Analysis:
                 output_file_glob = os.path.join(
                     self.model.anchor_rootdir, anchor.directory, 
                     anchor.production_directory, anchor.md_output_glob)
-                
                 output_file_list = glob.glob(output_file_glob)
                 output_file_list = base.order_files_numerically(
                     output_file_list)
-                if not silence_errors:
-                    assert len(output_file_list) > 0, \
-                        "Files not found: %s" % output_file_glob
                 if self.model.openmm_settings is not None:
                     anchor_stats.read_output_file_list(
                         "openmm", output_file_list, min_time, max_time, anchor,
@@ -293,13 +355,11 @@ class Analysis:
                     raise Exception("Both OpenMM and NAMD settings missing. "\
                                     "One of these must be present in the "\
                                     "model XML.")
-                    
             else:
                 pass    
             
             if not files_already_read:
                 self.anchor_stats_list.append(anchor_stats)        
-            
         return
         
     def check_extraction(self, silent=False):
@@ -319,6 +379,7 @@ class Analysis:
         from the output files, construct the global transition
         statistics objects. Applies to systems using MMVT milestoning.
         """
+        # TODO: get rid of all this STD, avg, and stuff - not needed
         N_alpha_beta = defaultdict(int)
         k_alpha_beta = defaultdict(float)
         N_i_j_alpha = []
@@ -344,15 +405,36 @@ class Analysis:
                 id_alias = anchor1.alias_from_neighbor_id(anchor2.index)
                 if id_alias is None:
                     continue
+                if len(anchor_N_alpha_beta) == 0:
+                    # Then no transitions were observed in this anchor
+                    default_flux = FAST_FLUX
+                else:
+                    default_flux = LOW_FLUX
+                
                 if id_alias in anchor_N_alpha_beta:
                     N_alpha_beta[(alpha, beta)] = anchor_N_alpha_beta[id_alias]
                     k_alpha_beta[(alpha, beta)] = anchor_k_alpha_beta[id_alias]
                 else:
                     N_alpha_beta[(alpha, beta)] = 0
-                    k_alpha_beta[(alpha, beta)] = 0.0
+                    k_alpha_beta[(alpha, beta)] = default_flux #0.0
                 
             anchor_N_i_j_alpha = self.anchor_stats_list[alpha].N_i_j_alpha
             N_i_j_alpha_element = defaultdict(int)
+            R_i_alpha_element = defaultdict(float)
+            R_i_alpha_count_element = defaultdict(int)
+            R_i_alpha_std_element = defaultdict(float)
+            
+            # Fill out empty milestone statistics
+            for milestone1 in anchor1.milestones:
+                R_i_alpha_element[milestone1.index] = 0.0
+                R_i_alpha_count_element[milestone1.index] = 0
+                R_i_alpha_std_element[milestone1.index] = 0.0
+                for milestone2 in anchor1.milestones:
+                    if milestone1.index == milestone2.index:
+                        continue
+                    new_key = (milestone1.index, milestone2.index)
+                    N_i_j_alpha_element[new_key] = 0
+            
             for key in anchor_N_i_j_alpha:
                 (alias_id_i, alias_id_j) = key
                 id_i = anchor1.id_from_alias(alias_id_i)
@@ -364,16 +446,17 @@ class Analysis:
             anchor_R_i_alpha = self.anchor_stats_list[alpha].R_i_alpha_total
             anchor_R_i_alpha_std = self.anchor_stats_list[alpha].R_i_alpha_std_dev
             anchor_R_i_alpha_list = self.anchor_stats_list[alpha].R_i_alpha_list
-            R_i_alpha_element = defaultdict(float)
-            R_i_alpha_count_element = defaultdict(int)
-            R_i_alpha_std_element = defaultdict(float)
+            
             for key in anchor_R_i_alpha:
                 alias_id_i = key
                 id_i = anchor1.id_from_alias(alias_id_i)
+                assert id_i is not None, \
+                    "Anchor {} missing alias {}.".format(anchor1.index, 
+                                                         alias_id_i)
                 R_i_alpha_element[id_i] = anchor_R_i_alpha[key]
                 R_i_alpha_std_element[id_i] = anchor_R_i_alpha_std[key]
                 R_i_alpha_count_element[id_i] = len(anchor_R_i_alpha_list[key])
-                
+            
             R_i_alpha_total.append(R_i_alpha_element)
             R_i_alpha_std_dev.append(R_i_alpha_std_element)
             R_i_alpha_count.append(R_i_alpha_count_element)            
@@ -390,7 +473,7 @@ class Analysis:
         
         return
 
-    def process_data_samples_mmvt(self, pre_equilibrium_approx=False):
+    def process_data_samples_mmvt(self):
         """
         Since the global, system-side statistics have been gathered, 
         compute the thermodynamic and kinetic quantities and their
@@ -398,11 +481,11 @@ class Analysis:
         """
         self.main_data_sample.calculate_pi_alpha()
         self.main_data_sample.fill_out_data_quantities()
-        if self.model.k_on_info is not None:
+        if self.model.using_bd():
             self.main_data_sample.parse_browndye_results()
         self.main_data_sample.compute_rate_matrix()
         self.main_data_sample.calculate_thermodynamics()
-        self.main_data_sample.calculate_kinetics(pre_equilibrium_approx)
+        self.main_data_sample.calculate_kinetics()
         
         self.pi_alpha = self.main_data_sample.pi_alpha
         self.p_i = self.main_data_sample.p_i
@@ -415,7 +498,8 @@ class Analysis:
                 k_off_error, k_ons_error \
                 = mmvt_analyze.monte_carlo_milestoning_error(
                     self.main_data_sample, num=self.num_error_samples, 
-                    pre_equilibrium_approx=pre_equilibrium_approx)
+                    stride=self.stride_error_samples,
+                    skip=self.skip_error_samples)
             self.data_sample_list = data_sample_list
             self.pi_alpha_error = None #pi_alpha_error
             self.p_i_error = p_i_error
@@ -478,17 +562,17 @@ class Analysis:
         return
         
         
-    def process_data_samples_elber(self, pre_equilibrium_approx=False):
+    def process_data_samples_elber(self):
         """
         Since the global, system-side statistics have been gathered, 
         compute the thermodynamic and kinetic quantities and their
         uncertainties. Applies to systems using Elber milestoning.
         """
-        if self.model.k_on_info is not None:
+        if self.model.using_bd():
             self.main_data_sample.parse_browndye_results()
         self.main_data_sample.compute_rate_matrix()
         self.main_data_sample.calculate_thermodynamics()
-        self.main_data_sample.calculate_kinetics(pre_equilibrium_approx)
+        self.main_data_sample.calculate_kinetics()
         self.p_i = self.main_data_sample.p_i
         self.free_energy_profile = self.main_data_sample.free_energy_profile
         self.MFPTs = self.main_data_sample.MFPTs
@@ -498,8 +582,9 @@ class Analysis:
             data_sample_list, p_i_error, free_energy_profile_err, MFPTs_error, \
                 k_off_error, k_ons_error \
                 = elber_analyze.monte_carlo_milestoning_error(
-                    self.main_data_sample, num=self.num_error_samples, 
-                    pre_equilibrium_approx=pre_equilibrium_approx)
+                    self.main_data_sample, num=self.num_error_samples,
+                    stride=self.stride_error_samples,
+                    skip=self.skip_error_samples)
             self.data_sample_list = data_sample_list
             self.p_i_error = p_i_error
             self.free_energy_profile_err = free_energy_profile_err
@@ -520,15 +605,15 @@ class Analysis:
             self.fill_out_data_samples_elber()
         return
     
-    def process_data_samples(self, pre_equilibrium_approx=False):
+    def process_data_samples(self):
         """
         Based on the type of milestoning, use the data samples to 
         compute thermo and kinetics quantities and their uncertainties.
         """
         if self.model.get_type() == "mmvt":
-            self.process_data_samples_mmvt(pre_equilibrium_approx)
+            self.process_data_samples_mmvt()
         elif self.model.get_type() == "elber":
-            self.process_data_samples_elber(pre_equilibrium_approx)
+            self.process_data_samples_elber()
         return
     
     def resample_k_N_R_T(self, N_alpha_beta, N_i_j_alpha, R_i_alpha_total,
@@ -581,9 +666,11 @@ class Analysis:
     def print_results(self):
         """Print all results of the analysis calculation."""
         print("Printing results from MMVT SEEKR calculation")
-        print("k_off (1/s):", common_analyze.pretty_string_value_error(
-            self.k_off, self.k_off_error))
-        print("k_ons :")
+        if self.k_off is not None:
+            print("k_off (1/s):", common_analyze.pretty_string_value_error(
+                self.k_off, self.k_off_error))
+        if len(self.k_ons) > 0:
+            print("k_ons :")
         for key in self.k_ons:
             k_on = float(self.k_ons[key])
             diss_constant = self.k_off / k_on
@@ -619,23 +706,19 @@ class Analysis:
             state1 = key[0]
             state2 = key[1]
             if key in self.MFPTs_error:
-                print("  MFPT from state", state1, "to state", state2, ":",
+                print("  MFPT from", state1, "to", state2, ":",
                       common_analyze.pretty_string_value_error(
                           float(self.MFPTs[key]*1.0e-12), 
                           float(self.MFPTs_error[key]*1.0e-12)))
             else:
-                print("  MFPT from state", state1, "to state", state2, ":",
+                print("  MFPT from", state1, "to", state2, ":",
                       common_analyze.pretty_string_value_error(
                           float(self.MFPTs[key]*1.0e-12), None))
         return
-                
-    def save_plots(self, image_directory):
+    
+    def save_cv_plots(self, cv_index):
         """
-        Save a potentially useful series of plots of some quantities
-        obtained during the analysis.
-        
-        TODO: interact with model, because the way these plots are saved
-        depends on the structure of the CVs.
+        Save plots associated with a given CV.
         """
         
         anchor_indices = np.zeros(len(self.model.anchors), dtype=np.int8)
@@ -647,8 +730,9 @@ class Analysis:
         # save pi_alpha
         if self.model.get_type() == "mmvt":
             pi_fig, ax = plt.subplots()
-            plt.errorbar(anchor_indices, self.pi_alpha.flatten(), yerr=self.pi_alpha_error, 
-                         ecolor="k", capsize=2)
+            plt.errorbar(
+                anchor_indices, self.pi_alpha.flatten()[0:len(anchor_indices)],
+                yerr=self.pi_alpha_error, ecolor="k", capsize=2)
             #ax.plot(anchor_indices, self.pi_alpha, linestyle='-', 
             #        marker="o", markersize = 1)
             plt.ylabel("\u03C0_\u03B1")
@@ -670,18 +754,29 @@ class Analysis:
         plt.xlabel("milestones")
         pi_fig.savefig(os.path.join(image_directory, "free_energy_profile.png"))
         return
+    def save_plots(self, image_directory):
+        """
+        Save a potentially useful series of plots of some quantities
+        obtained during the analysis.
+        
+        TODO: interact with model, because the way these plots are saved
+        depends on the structure of the CVs.
+        """
+        
+        
 
 def analyze(model, force_warning=False, num_error_samples=1000, 
-            pre_equilibrium_approx=False, skip_checks=False, min_time=0.0, 
-            max_time=None):
+            stride_error_samples=None, skip_error_samples=None,
+            skip_checks=False, min_time=0.0, max_time=None):
     """Perform all the analysis steps at once."""
     curdir = os.getcwd()
-    analysis = Analysis(model, force_warning, num_error_samples)
+    analysis = Analysis(model, force_warning, num_error_samples, 
+                        stride_error_samples, skip_error_samples)
     analysis.extract_data(min_time=min_time, max_time=max_time)
     if not skip_checks:
         analysis.check_extraction()
     analysis.fill_out_data_samples()
-    analysis.process_data_samples(pre_equilibrium_approx)
+    analysis.process_data_samples()
     os.chdir(curdir)
     return analysis
 
@@ -703,13 +798,16 @@ if __name__ == "__main__":
         " to generate for estimating error/uncertainty of computed "\
         "values. Default: 1000")
     argparser.add_argument(
-        "-p", "--pre_equilibrium_approx", dest="pre_equilibrium_approx", 
-        default=False, help="This option uses the pre-equilibrium "\
-        "approximation when computing system kinetics. This setting may "\
-        "be desirable for very long-timescale kinetic processes, which might "\
-        "cause the poor matrix conditioning in the milestoning rate matrix, "\
-        "causing the typical SEEKR2 analysis approach to fail.", 
-        action="store_true")
+        "-S", "--stride_error_samples", dest="stride_error_samples", 
+        default=None, type=int, help="Specify the number of strides between" \
+        "saved error samples. An argument of None automatically assigns the "\
+        "quantity at the number of milestones in the model squared. Default: "\
+        "None")
+    argparser.add_argument(
+        "-K", "--skip_error_samples", dest="skip_error_samples", 
+        default=None, type=int, help="Specify the number of error samples. "\
+        "An argument of None automatically assigns the quantity at ten times "\
+        "the number of milestones in the model squared. Default: None.")
     argparser.add_argument(
         "-d", "--image_directory", dest="image_directory", 
         default=None, type=str,
@@ -741,7 +839,8 @@ if __name__ == "__main__":
     model_file = args["model_file"]
     force_warning = args["force_warning"]
     num_error_samples = args["num_error_samples"]
-    pre_equilibrium_approx = args["pre_equilibrium_approx"]
+    stride_error_samples = args["stride_error_samples"]
+    skip_error_samples = args["skip_error_samples"]
     image_directory = args["image_directory"]
     skip_checks = args["skip_checks"]
     min_time = args["minimum_time"]
@@ -757,7 +856,8 @@ if __name__ == "__main__":
     
     analysis = analyze(model, force_warning=force_warning, 
             num_error_samples=num_error_samples, 
-            pre_equilibrium_approx=pre_equilibrium_approx, 
+            stride_error_samples=stride_error_samples,
+            skip_error_samples=skip_error_samples, 
             skip_checks=skip_checks, min_time=min_time, max_time=max_time)
     
     analysis.print_results()

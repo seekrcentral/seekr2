@@ -5,12 +5,138 @@ Define collective variable superclasses (also known as milestone
 shapes) that might be used in SEEKR2 calculations.
 """
 
+from abc import abstractmethod
+
 import numpy as np
 from abserdes import Serializer
 
+import seekr2.modules.common_base as base
+import seekr2.modules.mmvt_base as mmvt_base
+import seekr2.modules.elber_base as elber_base
 import seekr2.modules.mmvt_cv as mmvt_cv
 
-class Spherical_cv_anchor(Serializer):
+def create_anchor(model, anchor_index):
+    """
+    Make the anchor object and fill out its generic attributes.
+    """
+    if model.get_type() == "mmvt":
+        if not model.using_toy():
+            anchor = mmvt_base.MMVT_anchor()
+        else:
+            anchor = mmvt_base.MMVT_toy_anchor()
+    elif model.get_type() == "elber":
+        if not model.using_toy():
+            anchor = elber_base.Elber_anchor()
+        else:
+            anchor = elber_base.Elber_toy_anchor()
+    
+    anchor.index = anchor_index
+    anchor.name = "anchor_"+str(anchor_index)
+    anchor.directory = anchor.name
+    return anchor
+
+def assign_state_point(state_point, model):
+    """
+    Given a State_point object, find which anchor it belongs in, and
+    assign that anchor's name and end_state accordingly.
+    """
+    already_found_anchor = False
+    for anchor in model.anchors:
+        in_all_milestones = True
+        for milestone in anchor.milestones:
+            cv = model.collective_variables[milestone.cv_index]
+            result = cv.check_value_within_boundary(
+                state_point.location[cv.index], milestone.variables)
+            if not result:
+                in_all_milestones = False
+                break
+        
+        if in_all_milestones:
+            assert not already_found_anchor, \
+                "State point named {} found in multiple anchors.".format(
+                    state_point.name)
+            
+            anchor.name = state_point.name
+            if state_point.name.lower() == "bulk":
+                anchor.bulkstate = True
+            else:
+                anchor.endstate = True
+                
+            already_found_anchor = True
+    
+    if not already_found_anchor:
+        raise Exception(
+            "Cannot assign state point named {}: no suitable anchors found.".format(
+                state_point.name))
+    return
+
+def assign_state_points(model_input, model):
+    """
+    
+    """
+    for cv_input in model_input.cv_inputs:
+        for state_point in cv_input.state_points:
+            assign_state_point(state_point, model)
+    return
+
+class State_point(Serializer):
+    """
+    An object that can be put into the input file to indicate the location
+    of a state within a CV or Combo. The name of the anchor containing this
+    point will be changed, and end_state will be set to True.
+    """
+    def __init__(self):
+        self.name = ""
+        self.location = []
+
+class CV_input(Serializer):
+    """
+    A base class for CV_inputs.
+    """
+    def make_mmvt_milestone_between_two_anchors(
+            self, anchor1, anchor2, input_anchor1, input_anchor2, 
+            milestone_index):
+        neighbor_index1 = anchor2.index
+        neighbor_index2 = anchor1.index
+        assert anchor1.index != anchor2.index
+        milestone1 = base.Milestone()
+        milestone1.index = milestone_index
+        milestone1.neighbor_anchor_index = neighbor_index1
+        milestone1.alias_index = len(anchor1.milestones)+1
+        milestone1.cv_index = self.index
+        if input_anchor1.upper_milestone_value is None:
+            value = 0.5 * (input_anchor1.value + input_anchor2.value)
+        else:
+            value = input_anchor2.upper_milestone_value
+        milestone2 = base.Milestone()
+        milestone2.index = milestone_index
+        milestone2.neighbor_anchor_index = neighbor_index2
+        milestone2.alias_index = len(anchor2.milestones)+1
+        milestone2.cv_index = self.index
+        if input_anchor2.lower_milestone_value is None:
+            value = 0.5 * (input_anchor1.value + input_anchor2.value)
+        else:
+            value = input_anchor2.lower_milestone_value
+        # assign k
+        milestone1.variables = {"k": 1.0, "value": value}
+        milestone2.variables = {"k": -1.0, "value": value}
+        for milestone in anchor1.milestones:
+            if milestone.neighbor_anchor_index == neighbor_index1:
+                # Then anchor1 already has this milestone added to it
+                return milestone_index
+            
+        anchor1.milestones.append(milestone1)
+        anchor2.milestones.append(milestone2)
+        milestone_index += 1
+        return milestone_index
+    
+class CV_anchor(Serializer):
+    """
+    A base class for CV anchors.
+    """
+    pass
+
+class Spherical_cv_anchor(CV_anchor):
     """
     This object represents an anchor within the concentric spherical
     CV. Used for input purposes only.
@@ -46,6 +172,7 @@ class Spherical_cv_anchor(Serializer):
     """
     
     def __init__(self):
+        self.name = None
         self.radius = 0.0
         self.lower_milestone_radius = None
         self.upper_milestone_radius = None
@@ -54,6 +181,8 @@ class Spherical_cv_anchor(Serializer):
         self.bound_state = False
         self.bulk_anchor = False
         self.connection_flags = []
+        self.state_points = []
+        return
         
     def check(self, j, cv_input):
         if self.lower_milestone_radius is not None:
@@ -83,7 +212,7 @@ class Spherical_cv_anchor(Serializer):
     def get_variable_value(self):
         return self.radius
         
-class Spherical_cv_input(Serializer):
+class Spherical_cv_input(CV_input):
     """
     Inputs by the user resulting in concentric spherical anchors
     with milestones and the collective variable (CV).
@@ -113,6 +242,8 @@ class Spherical_cv_input(Serializer):
         self.bd_group1 = []
         self.bd_group2 = []
         self.input_anchors = []
+        self.variable_name = "r"
+        self.state_points = []
         return
         
     def read_plain_input(self, inputs):
@@ -170,6 +301,43 @@ class Spherical_cv_input(Serializer):
         assert len(self.group2) > 0, "Any input CV groups must contain atoms."
         return
     
+    def make_mmvt_milestone_between_two_anchors(
+            self, anchor1, anchor2, input_anchor1, input_anchor2, 
+            milestone_index):
+        neighbor_index1 = anchor2.index
+        neighbor_index2 = anchor1.index        
+        milestone1 = base.Milestone()
+        milestone1.index = milestone_index
+        milestone1.neighbor_anchor_index = neighbor_index1
+        milestone1.alias_index = len(anchor1.milestones)+1
+        milestone1.cv_index = self.index
+        if input_anchor1.upper_milestone_radius is None:
+            value = 0.5 * (input_anchor1.radius + input_anchor2.radius)
+        else:
+            value = input_anchor2.upper_milestone_radius
+        milestone2 = base.Milestone()
+        milestone2.index = milestone_index
+        milestone2.neighbor_anchor_index = neighbor_index2
+        milestone2.alias_index = len(anchor2.milestones)+1
+        milestone2.cv_index = self.index
+        if input_anchor2.lower_milestone_radius is None:
+            value = 0.5 * (input_anchor1.radius + input_anchor2.radius)
+        else:
+            value = input_anchor2.lower_milestone_radius
+        # assign k
+        milestone1.variables = {"k": 1.0, "radius": value}
+        milestone2.variables = {"k": -1.0, "radius": value}
+        for milestone in anchor1.milestones:
+            if milestone.neighbor_anchor_index == neighbor_index1:
+                # Then anchor1 already has this milestone added to it
+                return milestone_index
+        anchor1.milestones.append(milestone1)
+        anchor2.milestones.append(milestone2)
+        milestone_index += 1
+        return milestone_index
+    
+    # TODO: marked for removal
+    """
     def make_mmvt_milestoning_objects(self, milestone_alias, milestone_index, 
                                       input_anchor_index, anchor_index):
         milestones, milestone_alias, milestone_index = \
@@ -177,8 +345,9 @@ class Spherical_cv_input(Serializer):
             self, milestone_alias, milestone_index, input_anchor_index, 
             anchor_index, self.input_anchors)
         return milestones, milestone_alias, milestone_index
+    """
     
-class Tiwary_cv_anchor(Serializer):
+class Tiwary_cv_anchor(CV_anchor):
     """
     This object represents an anchor within a Tiwary-style CV,
     which is composed of a linear sum of order parameters. Used 
@@ -215,6 +384,7 @@ class Tiwary_cv_anchor(Serializer):
     """
     
     def __init__(self):
+        self.name = None
         self.value = 0.0
         self.lower_milestone_value = None
         self.upper_milestone_value = None
@@ -223,6 +393,7 @@ class Tiwary_cv_anchor(Serializer):
         self.bound_state = False
         self.bulk_anchor = False
         self.connection_flags = []
+        self.state_points = []
         return
         
     def check(self, j, cv_input):
@@ -401,7 +572,7 @@ class Tiwary_cv_torsion_order_parameter(Serializer):
         phi = -np.arctan2(y,x) % (2.0*np.pi)
         return phi
 
-class Tiwary_cv_input(Serializer):
+class Tiwary_cv_input(CV_input):
     """
     Inputs by the user resulting in Tiwary-style anchors
     with milestones and the collective variable (CV).
@@ -431,6 +602,8 @@ class Tiwary_cv_input(Serializer):
         self.order_parameters = []
         self.order_parameter_weights = []
         self.input_anchors = []
+        self.variable_name = "v"
+        self.state_points = []
         return
         
     def read_plain_input(self, inputs):
@@ -479,6 +652,16 @@ class Tiwary_cv_input(Serializer):
             "anchor."
         return
     
+    def make_mmvt_milestone_between_two_anchors(
+            self, anchor1, anchor2, input_anchor1, input_anchor2, 
+            milestone_index):
+        milestone_index = super(Tiwary_cv_input, self)\
+            .make_mmvt_milestone_between_two_anchors(
+                anchor1, anchor2, input_anchor1, input_anchor2, milestone_index)
+        return milestone_index
+    
+    # TODO: marked for removal
+    """
     def make_mmvt_milestoning_objects(self, milestone_alias, milestone_index, 
                                       input_anchor_index, anchor_index):
         milestones, milestone_alias, milestone_index = \
@@ -486,8 +669,9 @@ class Tiwary_cv_input(Serializer):
             self, milestone_alias, milestone_index, input_anchor_index, 
             anchor_index, self.input_anchors)
         return milestones, milestone_alias, milestone_index
+    """
     
-class Planar_cv_anchor(Serializer):
+class Planar_cv_anchor(CV_anchor):
     """
     This object represents an anchor within the planar incremental
     CV. Used for input purposes only.
@@ -525,6 +709,7 @@ class Planar_cv_anchor(Serializer):
     """
     
     def __init__(self):
+        self.name = None
         self.value = 0.0
         self.lower_milestone_value = None
         self.upper_milestone_value = None
@@ -533,6 +718,7 @@ class Planar_cv_anchor(Serializer):
         self.bound_state = False
         self.bulk_anchor = False
         self.connection_flags = []
+        self.state_points = []
         return
         
     def check(self, j, cv_input):
@@ -563,7 +749,7 @@ class Planar_cv_anchor(Serializer):
     def get_variable_value(self):
         return self.value
         
-class Planar_cv_input(Serializer):
+class Planar_cv_input(CV_input):
     """
     Inputs by the user resulting in planar incremental anchors
     with milestones and the collective variable (CV).
@@ -592,6 +778,8 @@ class Planar_cv_input(Serializer):
         self.end_group = []
         self.mobile_group = []
         self.input_anchors = []
+        self.variable_name = "v"
+        self.state_points = []
         return
         
     def read_plain_input(self, inputs):
@@ -642,6 +830,16 @@ class Planar_cv_input(Serializer):
         assert len(self.mobile_group) > 0, "Any input CV groups must contain atoms."
         return
     
+    def make_mmvt_milestone_between_two_anchors(
+            self, anchor1, anchor2, input_anchor1, input_anchor2, 
+            milestone_index):
+        milestone_index = super(Planar_cv_input, self)\
+            .make_mmvt_milestone_between_two_anchors(
+                anchor1, anchor2, input_anchor1, input_anchor2, milestone_index)
+        return milestone_index
+    
+    #TODO: marked for removal
+    """
     def make_mmvt_milestoning_objects(self, milestone_alias, milestone_index, 
                                       input_anchor_index, anchor_index):
         milestones, milestone_alias, milestone_index = \
@@ -649,8 +847,9 @@ class Planar_cv_input(Serializer):
             self, milestone_alias, milestone_index, input_anchor_index,
             anchor_index, self.input_anchors)
         return milestones, milestone_alias, milestone_index
+    """
 
-class RMSD_cv_anchor(Serializer):
+class RMSD_cv_anchor(CV_anchor):
     """
     This object represents an anchor within an RMSD CV. Used for input 
     purposes only.
@@ -686,6 +885,7 @@ class RMSD_cv_anchor(Serializer):
     """
     
     def __init__(self):
+        self.name = None
         self.value = 0.0
         self.lower_milestone_value = None
         self.upper_milestone_value = None
@@ -694,6 +894,8 @@ class RMSD_cv_anchor(Serializer):
         self.bound_state = False
         self.bulk_anchor = False
         self.connection_flags = []
+        self.state_points = []
+        return
         
     def check(self, j, cv_input):
         if self.lower_milestone_value is not None:
@@ -723,7 +925,7 @@ class RMSD_cv_anchor(Serializer):
     def get_variable_value(self):
         return self.value
         
-class RMSD_cv_input(Serializer):
+class RMSD_cv_input(CV_input):
     """
     Inputs by the user resulting in RMSD anchors with milestones and the 
     collective variable (CV).
@@ -751,6 +953,8 @@ class RMSD_cv_input(Serializer):
         self.group = []
         self.ref_structure = ""
         self.input_anchors = []
+        self.variable_name = "v"
+        self.state_points = []
         return
         
     def read_plain_input(self, inputs):
@@ -798,6 +1002,16 @@ class RMSD_cv_input(Serializer):
         assert len(self.group) > 0, "Any input CV groups must contain atoms."
         return
     
+    def make_mmvt_milestone_between_two_anchors(
+            self, anchor1, anchor2, input_anchor1, input_anchor2, 
+            milestone_index):
+        milestone_index = super(RMSD_cv_input, self)\
+            .make_mmvt_milestone_between_two_anchors(
+                anchor1, anchor2, input_anchor1, input_anchor2, milestone_index)
+        return milestone_index
+    
+    # TODO: marked for removal
+    """
     def make_mmvt_milestoning_objects(self, milestone_alias, milestone_index, 
                                       input_anchor_index, anchor_index):
         milestones, milestone_alias, milestone_index = \
@@ -805,8 +1019,9 @@ class RMSD_cv_input(Serializer):
             self, milestone_alias, milestone_index, input_anchor_index, 
             anchor_index, self.input_anchors)
         return milestones, milestone_alias, milestone_index
+    """
     
-class Toy_cv_anchor(Serializer):
+class Toy_cv_anchor(CV_anchor):
     """
     This object represents an anchor within a Toy
     CV. Used for input purposes only.
@@ -842,6 +1057,7 @@ class Toy_cv_anchor(Serializer):
     """
     
     def __init__(self):
+        self.name = None
         self.value = 0.0
         self.lower_milestone_value = None
         self.upper_milestone_value = None
@@ -849,6 +1065,8 @@ class Toy_cv_anchor(Serializer):
         self.bound_state = False
         self.bulk_anchor = False
         self.connection_flags = []
+        self.state_points = []
+        return
         
     def check(self, j, cv_input):
         if self.lower_milestone_value is not None:
@@ -878,7 +1096,7 @@ class Toy_cv_anchor(Serializer):
     def get_variable_value(self):
         return self.value
         
-class Toy_cv_input(Serializer):
+class Toy_cv_input(CV_input):
     """
     Inputs by the user resulting in concentric spherical anchors
     with milestones and the collective variable (CV).
@@ -904,10 +1122,11 @@ class Toy_cv_input(Serializer):
     def __init__(self):
         self.index = 0
         self.groups = []
-        self.variable_name = "value"
         self.openmm_expression = None
         self.restraining_expression = None
         self.input_anchors = []
+        self.variable_name = "v"
+        self.state_points = []
         return
         
     def check(self):
@@ -954,6 +1173,16 @@ class Toy_cv_input(Serializer):
                 "Any input CV groups must contain atoms."
         return
     
+    def make_mmvt_milestone_between_two_anchors(
+            self, anchor1, anchor2, input_anchor1, input_anchor2, 
+            milestone_index):
+        milestone_index = super(Toy_cv_input, self)\
+            .make_mmvt_milestone_between_two_anchors(
+                anchor1, anchor2, input_anchor1, input_anchor2, milestone_index)
+        return milestone_index
+    
+    # TODO: marked for removal
+    """
     def make_mmvt_milestoning_objects(self, milestone_alias, milestone_index, 
                                       input_anchor_index, anchor_index):
         milestones, milestone_alias, milestone_index = \
@@ -961,14 +1190,134 @@ class Toy_cv_input(Serializer):
             self, milestone_alias, milestone_index, input_anchor_index, 
             anchor_index, self.input_anchors)
         return milestones, milestone_alias, milestone_index
+    """
 
+class Combo(Serializer):
+    """
+    A combo superclass - a way to combine CVs in a multidimensional
+    arrangement
+    """
+    def __init__(self):
+        self.cv_inputs = []
+        self.state_points = []
+        return
+    
+    @abstractmethod
+    def make_anchors(self):
+        raise NotImplementedError(
+            "Combo superclass does not define make_anchors().")
 
-class Grid_combo(Serializer):
+class Grid_combo(Combo):
     """
     An object for the input to define when input CVs should be combined to
     make a multidimensional anchor - an anchor with more than one dimension
     of milestones.
     """
     def __init__(self):
-        self.cv_inputs = []
+        super(Grid_combo, self).__init__()
         return
+    
+    def make_anchors(self, model, anchor_index, milestone_index, 
+                     connection_flag_dict, associated_input_anchor):
+        assert model.get_type() == "mmvt", \
+            "Only MMVT models may use combos."
+        anchors = []
+        num_anchors = 1
+        cv_widths = []
+        for cv_input in self.cv_inputs:
+            cv_width = len(cv_input.input_anchors)
+            cv_widths.append(cv_width)
+            num_anchors *= cv_width
+            for j, input_anchor in enumerate(cv_input.input_anchors):
+                input_anchor.check(j, cv_input)
+        
+        for i in range(num_anchors):
+            anchor = create_anchor(model, anchor_index)
+            input_anchor_index_list = []
+            input_anchor_list = []
+            
+            divider = 1
+            bulkstate = False
+            endstate = False
+            for j, cv_input in enumerate(self.cv_inputs):
+                input_anchor_index = (i // divider) % cv_widths[j]
+                input_anchor_index_list.append(input_anchor_index)
+                divider *= cv_widths[j]
+                input_anchor = cv_input.input_anchors[input_anchor_index]
+                input_anchor_list.append(input_anchor)
+                if input_anchor.bulk_anchor:
+                    bulkstate = True
+                if input_anchor.bound_state:
+                    endstate = True                
+                # TODO: is there a better way to assign the 
+                #  associated_input_anchor object? For now, we are assuming
+                #  that the assignment is arbitrary
+                associated_input_anchor[anchor.index] = input_anchor
+                # Grid objects with assigned starting positions are meaningless
+                if anchor.__class__.__name__ == "MMVT_toy_anchor":
+                    starting_positions = input_anchor.starting_positions
+                else:
+                    starting_positions = input_anchor.starting_amber_params
+                assert starting_positions is None, \
+                        "Grid combo cv's with anchors cannot have starting "\
+                        "positions. Use HIDR to assign starting positions."
+                variable_name = "{}_{}".format(cv_input.variable_name, 
+                                           cv_input.index)
+                variable_value = input_anchor.get_variable_value()
+                anchor.variables[variable_name] = variable_value
+                
+            # Assign md, bulkstate, and endstate
+            if not bulkstate:
+                anchor.md = True
+            else:
+                anchor.md = False
+                anchor.bulkstate = True
+                
+            if endstate:
+                anchor.endstate = True
+            # Make the variable names
+            
+            # Handle the connection flags
+            assert len(input_anchor.connection_flags) == 0, \
+                "Connection flags within combos not currently supported."
+            if input_anchor.bulk_anchor:
+                connection_flag_dict["bulk"].append(anchor)
+            anchors.append(anchor)
+            anchor_index += 1
+        
+        for i, anchor in enumerate(anchors):
+            input_anchor_index_list = []
+            input_anchor_list = []
+            divider = 1
+            for j, cv_input in enumerate(self.cv_inputs):
+                input_anchor_index = (i // divider) % cv_widths[j]
+                input_anchor_index_list.append(input_anchor_index)
+                input_anchor = cv_input.input_anchors[input_anchor_index]
+                this_input_anchor = cv_input.input_anchors[input_anchor_index]
+                
+                if input_anchor_index < len(cv_input.input_anchors)-1:
+                    upper_anchor_index = i + divider
+                    upper_anchor = anchors[upper_anchor_index]
+                    upper_input_anchor = cv_input.input_anchors[
+                        input_anchor_index+1]
+                    milestone_index \
+                        = cv_input.make_mmvt_milestone_between_two_anchors(
+                            anchor, upper_anchor, this_input_anchor, 
+                            upper_input_anchor, milestone_index)
+                        
+                if input_anchor_index > 0:
+                    lower_anchor_index = i - divider
+                    lower_anchor = anchors[lower_anchor_index]
+                    lower_input_anchor = cv_input.input_anchors[
+                        input_anchor_index-1]
+                    milestone_index \
+                        = cv_input.make_mmvt_milestone_between_two_anchors(
+                            lower_anchor, anchor, lower_input_anchor, 
+                            this_input_anchor, milestone_index)
+                
+                divider *= cv_widths[j]
+            
+        return anchors, anchor_index, milestone_index, connection_flag_dict,\
+            associated_input_anchor
+        
+        

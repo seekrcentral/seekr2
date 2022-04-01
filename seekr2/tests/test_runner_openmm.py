@@ -27,7 +27,7 @@ def test_Runner_openmm_default(host_guest_mmvt_model):
     host_guest_mmvt_model.openmm_settings.reference_platform = True
     myanchor = host_guest_mmvt_model.anchors[1]
     mmvt_output_filename = os.path.join(
-        host_guest_mmvt_model.anchor_rootdir, myanchor.name, "prod", 
+        host_guest_mmvt_model.anchor_rootdir, myanchor.directory, "prod", 
         "%s%d.%s" % (mmvt_base.OPENMMVT_BASENAME, 1, 
                              mmvt_base.OPENMMVT_EXTENSION))
     runner = runner_openmm.Runner_openmm(host_guest_mmvt_model, myanchor)
@@ -41,7 +41,7 @@ def test_Runner_openmm_default(host_guest_mmvt_model):
     # restart
     host_guest_mmvt_model.calculation_settings.num_production_steps = 20
     mmvt_output_filename = os.path.join(
-        host_guest_mmvt_model.anchor_rootdir, myanchor.name, "prod", 
+        host_guest_mmvt_model.anchor_rootdir, myanchor.directory, "prod", 
         "%s%d.%s" % (mmvt_base.OPENMMVT_BASENAME, 2, 
                              mmvt_base.OPENMMVT_EXTENSION))
     runner = runner_openmm.Runner_openmm(host_guest_mmvt_model, myanchor)
@@ -57,7 +57,7 @@ def test_Runner_openmm_default_cuda(host_guest_mmvt_model):
     host_guest_mmvt_model.calculation_settings.num_production_steps = 1000
     myanchor = host_guest_mmvt_model.anchors[1]
     mmvt_output_filename = os.path.join(
-        host_guest_mmvt_model.anchor_rootdir, myanchor.name, "prod", 
+        host_guest_mmvt_model.anchor_rootdir, myanchor.directory, "prod", 
         "%s%d.%s" % (mmvt_base.OPENMMVT_BASENAME, 1, 
                              mmvt_base.OPENMMVT_EXTENSION))
     runner = runner_openmm.Runner_openmm(host_guest_mmvt_model, myanchor)
@@ -75,7 +75,7 @@ def test_Runner_openmm_load_state(host_guest_mmvt_model):
     host_guest_mmvt_model.openmm_settings.reference_platform = True
     myanchor = host_guest_mmvt_model.anchors[1]
     mmvt_output_filename = os.path.join(
-        host_guest_mmvt_model.anchor_rootdir, myanchor.name, "prod", 
+        host_guest_mmvt_model.anchor_rootdir, myanchor.directory, "prod", 
         "%s%d.%s" % (mmvt_base.OPENMMVT_BASENAME, 1, 
                              mmvt_base.OPENMMVT_EXTENSION))
     loading_state_filename = os.path.join(host_guest_mmvt_model.anchor_rootdir, 
@@ -97,7 +97,7 @@ def test_Runner_openmm_forcefield(tmp_path):
     #sim_openmm_factory = sim_openmm.Sim_openmm_factory()
     myanchor = mymodel.anchors[1]
     mmvt_output_filename = os.path.join(
-                    tmp_path, myanchor.name, "prod", 
+                    tmp_path, myanchor.directory, "prod", 
                     "%s%d.%s" % (mmvt_base.OPENMMVT_BASENAME, 1, 
                                          mmvt_base.OPENMMVT_EXTENSION))
     runner = runner_openmm.Runner_openmm(mymodel, myanchor)
@@ -128,7 +128,7 @@ def test_runner_openmm_elber(host_guest_elber_model):
     default_output_file, state_file_prefix, restart_index = runner.prepare(
         force_overwrite=True)
     elber_output_filename = os.path.join(
-        host_guest_elber_model.anchor_rootdir, myanchor.name, "prod", 
+        host_guest_elber_model.anchor_rootdir, myanchor.directory, "prod", 
         "elber1.out")
     my_sim_openmm = elber_sim_openmm.create_sim_openmm(
         host_guest_elber_model, myanchor, elber_output_filename)
@@ -141,7 +141,7 @@ def test_runner_openmm_save_states(host_guest_mmvt_model):
     host_guest_mmvt_model.openmm_settings.reference_platform = True
     myanchor = host_guest_mmvt_model.anchors[1]
     mmvt_output_filename = os.path.join(
-        host_guest_mmvt_model.anchor_rootdir, myanchor.name, "prod", 
+        host_guest_mmvt_model.anchor_rootdir, myanchor.directory, "prod", 
         "%s%d.%s" % (mmvt_base.OPENMMVT_BASENAME, 1, 
                              mmvt_base.OPENMMVT_EXTENSION))
     runner = runner_openmm.Runner_openmm(host_guest_mmvt_model, myanchor)
@@ -159,7 +159,7 @@ def test_runner_openmm_save_states_until_all_bounds(host_guest_mmvt_model):
     host_guest_mmvt_model.openmm_settings.reference_platform = True
     myanchor = host_guest_mmvt_model.anchors[1]
     mmvt_output_filename = os.path.join(
-        host_guest_mmvt_model.anchor_rootdir, myanchor.name, "prod", 
+        host_guest_mmvt_model.anchor_rootdir, myanchor.directory, "prod", 
         "%s%d.%s" % (mmvt_base.OPENMMVT_BASENAME, 1, 
                              mmvt_base.OPENMMVT_EXTENSION))
     runner = runner_openmm.Runner_openmm(host_guest_mmvt_model, myanchor)

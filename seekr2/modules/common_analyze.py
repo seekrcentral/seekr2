@@ -11,6 +11,7 @@ import xml.etree.ElementTree as ET
 import subprocess
 import random
 from collections import defaultdict
+import time
 
 import numpy as np
 from scipy import linalg as la
@@ -87,6 +88,9 @@ def Q_to_K(Q):
             if i == j:
                 K[i,j] = 0.0
             else:
+                #if Q[i,i] == 0.0:
+                #    K[i,j] = 0.0
+                #else:
                 K[i,j] = -Q[i,j] / Q[i,i]
     
     return K
@@ -631,23 +635,14 @@ class Data_sample():
         
         return
         
-    def calculate_kinetics(self, pre_equilibrium_approx=False):
+    def calculate_kinetics(self):
         """
         Once the rate matrix Q is computed, determine the timescales 
         and probabilities of transfers between different states. Fill
         out all kinetics quantities.
-        
-        Parameters:
-        -----------
-        
-        pre_equilibrium_approx : bool, default False
-            Whether to use the pre-equilibrium approximation for
-            computing kinetics.
-            
-        
         """
         
-        end_milestones = []
+        end_milestones = {}
         bulk_milestones = []
         MFPTs = {}
         k_off = 0.0
@@ -659,7 +654,7 @@ class Data_sample():
                         if anchor.alias_from_id(milestone_id) == 3: 
                             # TODO: hacky
                             continue
-                    end_milestones.append(milestone_id)
+                    end_milestones[milestone_id] = anchor.name
             if anchor.bulkstate:
                 for milestone_id in anchor.get_ids():
                     if self.model.get_type() == "elber":
@@ -668,69 +663,73 @@ class Data_sample():
                             continue
                     bulk_milestones.append(milestone_id)
 
-        # first, make the bulk state the sink state to compute k_offs
+        # first, if there is one, make the bulk state the sink state to 
+        #  compute k_offs
         Q_hat = self.Q[:,:]
         p_i_hat = self.p_i[:]
-        assert len(bulk_milestones) == 1, \
-            "There should be exactly one bulk milestone."
+        B, tau = PyGT.tools.load_CTMC(self.Q.T)
+        #mfpt_matrix = PyGT.mfpt.full_MFPT_matrix(B, tau).T
+        assert len(bulk_milestones) <= 1, \
+            "There cannot be more than one bulk milestone."
         
-        for bulk_milestone in sorted(bulk_milestones, reverse=True):
-            Q_hat = minor2d(Q_hat, bulk_milestone, bulk_milestone)
-            p_i_hat = minor1d(p_i_hat, bulk_milestone)
-        
-        Q_hat = Q_hat.astype(dtype=np.longdouble)
-        n = len(Q_hat)
-        if pre_equilibrium_approx:
-            lowest_p_i = np.min(p_i_hat)
-            lowest_i = np.argmin(p_i_hat)
-            assert lowest_p_i >= 0.0, \
-                "Negative stationary probability detected."
-            if lowest_i >= n-1:
-                k_off = lowest_p_i * Q_hat[lowest_i-1,lowest_i]
-            else: 
-                k_off = lowest_p_i * Q_hat[lowest_i,lowest_i+1]
-            bulk_times = np.ones(p_i_hat.shape) / k_off
+        if len(bulk_milestones) == 1:
+            for bulk_milestone in sorted(bulk_milestones, reverse=True):
+                pass
+                # TODO: remove
+                #Q_hat = minor2d(Q_hat, bulk_milestone, bulk_milestone)
+                #p_i_hat = minor1d(p_i_hat, bulk_milestone)
             
-        else:
-            #negative_unity = np.zeros((len(Q_hat)), dtype=np.longdouble)    
-            #negative_unity[:] = -1.0
-            #bulk_times = la.solve(Q_hat, negative_unity)
+            Q_hat = Q_hat.astype(dtype=np.longdouble)
+            n = len(Q_hat)
             
-            #bulk_times = solve_rate_matrix(Q_hat)
-            
-            B, tau = PyGT.tools.load_CTMC(self.Q.astype(np.double).T)
-            mfpt_matrix = PyGT.mfpt.full_MFPT_matrix(B, tau).T
-            bulk_times_full = mfpt_matrix[:, bulk_milestone]
-            bulk_times = minor1d(bulk_times_full, bulk_milestone)
-            
-        
-        for end_milestone in end_milestones:
-            if end_milestone in bulk_milestones:
-                continue
-            # must account for the removal of bulk state to matrix indices
-            no_bulk_index = end_milestone
-            for bulk_milestone in bulk_milestones:
-                if end_milestone > bulk_milestone: 
-                    no_bulk_index -= 1
+            for end_milestone in end_milestones:
+                if end_milestone in bulk_milestones:
+                    continue
+                # must account for the removal of bulk state to matrix indices
+                #no_bulk_index = end_milestone
+                #for bulk_milestone in bulk_milestones:
+                #    if end_milestone > bulk_milestone: 
+                #        no_bulk_index -= 1
+                    
+                #mfpt = bulk_times[no_bulk_index]
                 
-            mfpt = bulk_times[no_bulk_index]    
-            MFPTs[(end_milestone, "bulk")] = mfpt
+                mfpt_ij, mfpt_ji = PyGT.mfpt.compute_MFPT(
+                    end_milestone, bulk_milestone, B, tau)
+                mfpt = mfpt_ji
+                MFPTs[(end_milestones[end_milestone], "bulk")] = mfpt
+            
+            MFPT_to_bulk = 0
+            for i in range(self.model.num_milestones):
+                mfpt_ij, mfpt_ji = PyGT.mfpt.compute_MFPT(i, bulk_milestone, B, tau)
+                mfpt = mfpt_ji
+                MFPT_to_bulk += mfpt * p_i_hat[i]
+            
+            # convert to 1/s
+            k_off = 1.0e12 / MFPT_to_bulk
+            self.k_off = k_off
         
-        MFPT_to_bulk = 0
-        assert bulk_times.shape == p_i_hat.shape
-        for i, bulk_time in enumerate(bulk_times):
-            MFPT_to_bulk += bulk_time * p_i_hat[i]
-        
-        # convert to 1/s
-        k_off = 1.0e12 / MFPT_to_bulk
+        p_i_hat_normalize = defaultdict(float)
+        for end_milestone_dest in end_milestones:
+            if end_milestone_dest in bulk_milestones:
+                continue
+            for end_milestone_src in end_milestones:
+                if end_milestones[end_milestone_dest] \
+                        == end_milestones[end_milestone_src]:
+                    continue
+                if end_milestone_src in bulk_milestones:
+                    continue
+                p_i_hat_normalize[end_milestone_src] \
+                    += p_i_hat[end_milestone_src]
         
         # Next, compute the MFPTs between different states
+        possible_MFPTs = defaultdict(float)
         for end_milestone_dest in end_milestones:
             if end_milestone_dest in bulk_milestones:
                 continue
             
             for end_milestone_src in end_milestones:
-                if end_milestone_dest == end_milestone_src:
+                if end_milestones[end_milestone_dest] \
+                        == end_milestones[end_milestone_src]:
                     # don't get the MFPT from a milestone to itself
                     continue
                 if end_milestone_src in bulk_milestones:
@@ -750,12 +749,34 @@ class Data_sample():
                 #MFPTs[(end_milestone_src, end_milestone_dest)] = mfpt
                 
                 #PyGT solution
-                end_state_times_full = mfpt_matrix[:, end_milestone_dest]
-                end_state_times = minor1d(end_state_times_full, end_milestone_dest)
-                mfpt = end_state_times[end_milestone_src]
-                MFPTs[(end_milestone_src, end_milestone_dest)] = mfpt
+                #end_state_times_full = mfpt_matrix[:, end_milestone_dest]
+                #end_state_times = minor1d(end_state_times_full, end_milestone_dest)
+                #mfpt = end_state_times[end_milestone_src]
+                
+                mfpt_ij, mfpt_ji = PyGT.mfpt.compute_MFPT(end_milestone_src, end_milestone_dest, B, tau)
+                mfpt = mfpt_ji
+                possible_MFPTs[(end_milestones[end_milestone_src], 
+                       end_milestone_dest)] += mfpt \
+                       * p_i_hat[end_milestone_src] \
+                       / p_i_hat_normalize[end_milestone_src]
         
-        if self.model.k_on_info:
+        # TODO: verify if correct: this finds the destination with the 
+        # fastest MFPT and just uses that, although the sources are
+        # statistically weighed.
+        for end_milestone_src in end_milestones:
+            for end_milestone_dest in end_milestones:
+                key = (end_milestones[end_milestone_src], end_milestone_dest)
+                full_key = (end_milestones[end_milestone_src], 
+                            end_milestones[end_milestone_dest])
+                if key in possible_MFPTs:
+                    if full_key in MFPTs:
+                        # Get the minimum MFPT
+                        if possible_MFPTs[key] < MFPTs[full_key]:
+                            MFPTs[full_key] = possible_MFPTs[key]
+                    else:
+                        MFPTs[full_key] = possible_MFPTs[key]
+        
+        if self.model.using_bd():
             K_hat = self.K[:,:]
             for end_milestone in end_milestones:
                 K_hat[end_milestone, :] = 0.0
@@ -800,6 +821,5 @@ class Data_sample():
         
         self.Q_hat = Q_hat
         self.MFPTs = MFPTs
-        self.k_off = k_off
         return
     

@@ -51,7 +51,7 @@ def analyze_bd_only(model, data_sample):
     output_file_list = glob.glob(output_file_glob)
     output_file_list = base.order_files_numerically(output_file_list)
     if len(output_file_list) > 0:
-        if model.browndye_settings is not None:
+        if model.using_bd():
             k_ons_src, k_on_errors_src, reaction_probabilities, \
                 reaction_probability_errors, transition_counts = \
                 common_analyze.browndye_run_compute_rate_constant(os.path.join(
@@ -90,8 +90,7 @@ def analyze_bd_only(model, data_sample):
                     
     return
 
-def analyze_kinetics(model, analysis, max_step_list, k_on_state=None, 
-                     pre_equilibrium_approx=False):
+def analyze_kinetics(model, analysis, max_step_list, k_on_state=None):
     """
     Extract relevant analysis quantities from sub-sections of the 
     data, which will later be processed for plotting.
@@ -114,10 +113,6 @@ def analyze_kinetics(model, analysis, max_step_list, k_on_state=None,
         If not None, then assume then this is the bound state to 
         assume for k-on calculations. A value of None will skip the
         k-on convergence..
-        
-    pre_equilibrium_approx : bool
-        Whether to use the pre-equilibrium approximation for kinetics
-        calculations.
     
     Returns
     -------
@@ -136,14 +131,14 @@ def analyze_kinetics(model, analysis, max_step_list, k_on_state=None,
     R_i : dict
         An n dict representing the incubation times at each milestone.
     """
-    analysis.extract_data(max_step_list=max_step_list, silence_errors=True)
+    analysis.extract_data(max_step_list=max_step_list)
     analysis.fill_out_data_samples()
     try:
-        sufficient_statistics = analysis.check_extraction()
+        sufficient_statistics = analysis.check_extraction(silent=True)
         if sufficient_statistics:
-            analysis.process_data_samples(pre_equilibrium_approx)
+            analysis.process_data_samples()
         else:
-            analyze_bd_only(model, analysis)
+            analyze_bd_only(model, analysis.main_data_sample)
             
         if (k_on_state is not None) and (k_on_state in analysis.k_ons):
             k_on = analysis.k_ons[k_on_state]
@@ -162,7 +157,7 @@ def analyze_kinetics(model, analysis, max_step_list, k_on_state=None,
             #data_sample = elber_analyze.Elber_data_sample(model)
             pass
             
-        if model.k_on_info is not None:
+        if model.using_bd():
             #data_sample.parse_browndye_results()
             analysis.main_data_sample.parse_browndye_results()
             
@@ -256,8 +251,7 @@ def get_elber_max_steps(model, dt):
         
     return max_step_list
     
-def check_milestone_convergence(model, k_on_state=None, 
-                                pre_equilibrium_approx=False, verbose=False):
+def check_milestone_convergence(model, k_on_state=None, verbose=False):
     """
     Calculates the key MMVT quantities N, R, and Q as a function of 
     simulation time to estimate which milestones have been 
@@ -277,10 +271,6 @@ def check_milestone_convergence(model, k_on_state=None,
         If not None, then assume then this is the bound state to 
         assume for k-on calculations. A value of None will skip the
         k-on convergence.
-        
-    pre_equilibrium_approx : bool
-        Whether to use the pre-equilibrium approximation for kinetics
-        calculations.
         
     verbose : bool, Default False
         Whether to provide more verbose output information.
@@ -311,12 +301,7 @@ def check_milestone_convergence(model, k_on_state=None,
     """
     
     data_sample_list = []
-    if model.openmm_settings is not None:
-        dt = model.openmm_settings.langevin_integrator.timestep
-    elif model.namd_settings is not None:
-        dt = model.namd_settings.langevin_integrator.timestep
-    else:
-        raise Exception("No OpenMM or NAMD simulation settings in model.")
+    dt = model.get_timestep()
     timestep_in_ns = unit.Quantity(dt, unit.picosecond).value_in_unit(
         unit.nanoseconds)
     if model.get_type() == "mmvt":
@@ -334,15 +319,19 @@ def check_milestone_convergence(model, k_on_state=None,
             print("Processing interval {} of {}".format(interval_index, 
                                                         DEFAULT_NUM_POINTS))
         k_on, k_off, N_ij, R_i = analyze_kinetics(
-            model, analysis, max_step_list[:, interval_index], k_on_state, 
-            pre_equilibrium_approx)
+            model, analysis, max_step_list[:, interval_index], k_on_state)
         data_sample_list.append(analysis.main_data_sample)
         k_on_conv[interval_index] = k_on
         k_off_conv[interval_index] = k_off
+        if interval_index == 0:
+            divisor = 1
+        else:
+            divisor = interval_index
+        
         for N_ij_key in N_ij:
-            N_ij_conv[N_ij_key][interval_index] = N_ij[N_ij_key] / interval_index
+            N_ij_conv[N_ij_key][interval_index] = N_ij[N_ij_key] / divisor
         for R_i_key in R_i:
-            R_i_conv[R_i_key][interval_index] = R_i[R_i_key] / interval_index
+            R_i_conv[R_i_key][interval_index] = R_i[R_i_key] / divisor
     
     return k_on_conv, k_off_conv, N_ij_conv, R_i_conv, max_step_list, \
         timestep_in_ns, data_sample_list
@@ -571,7 +560,11 @@ def calc_transition_steps(model, data_sample):
                 transition_quantity = lowest_value
                 
                 for key in time_dict:
-                    transition_time_detail[key] = time_dict[key] / highest_value
+                    if highest_value == 0:
+                        transition_time_detail[key] = 0.0
+                    else:
+                        transition_time_detail[key] = time_dict[key] \
+                            / highest_value
                 
         transition_minima.append(transition_quantity)
         transition_prob_details.append(transition_detail)

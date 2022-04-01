@@ -94,7 +94,8 @@ def choose_next_simulation_browndye2(
 def choose_next_simulation_openmm(
         model, instruction, min_total_simulation_length, 
         max_total_simulation_length, convergence_cutoff, 
-        minimum_anchor_transitions, force_overwrite, umbrella_restart_mode):
+        minimum_anchor_transitions, force_overwrite, umbrella_restart_mode,
+        load_state_file):
     """
     Examine the model and all MD simulations that have run so far.
     Using this information, as well as the specified criteria (minimum
@@ -137,12 +138,16 @@ def choose_next_simulation_openmm(
             model.anchor_rootdir, anchor.directory, 
             anchor.production_directory)
         dummy_file = tempfile.NamedTemporaryFile()
-        num_swarm_frames = mmvt_sim_openmm.\
-                    get_starting_structure_num_frames(model, anchor, 
-                                                      dummy_file.name)
+        if load_state_file is None:
+            num_swarm_frames = mmvt_sim_openmm.\
+                        get_starting_structure_num_frames(model, anchor, 
+                                                          dummy_file.name)
+        else:
+            num_swarm_frames = 1
+            
         dummy_file.close()
         for swarm_frame in range(num_swarm_frames):
-            if num_swarm_frames == 1:
+            if num_swarm_frames <= 1:
                 restart_checkpoint_basename \
                     = runner_openmm.RESTART_CHECKPOINT_FILENAME
                 swarm_frame = None
@@ -163,7 +168,8 @@ def choose_next_simulation_openmm(
                     else:
                         frame = swarm_frame
                     sim_openmm_obj = mmvt_sim_openmm.create_sim_openmm(
-                        model, anchor, dummy_file.name, frame=frame)
+                        model, anchor, dummy_file.name, frame=frame, 
+                        load_state_file=load_state_file)
                     simulation = sim_openmm_obj.simulation
                 elif model.get_type() == "elber":
                     sim_openmm_obj = elber_sim_openmm.create_sim_openmm(
@@ -171,9 +177,11 @@ def choose_next_simulation_openmm(
                     simulation = sim_openmm_obj.umbrella_simulation
                 
                 simulation.loadCheckpoint(restart_checkpoint_filename)
-                currentStep = int(round(simulation.context.getState().getTime()\
-                                  .value_in_unit(unit.picoseconds) \
-                                  / sim_openmm_obj.timestep))
+                # TODO: remove
+                #currentStep = int(round(simulation.context.getState().getTime()\
+                #                  .value_in_unit(unit.picoseconds) \
+                #                  / sim_openmm_obj.timestep))
+                currentStep = simulation.context.getState().getStepCount()
                 dummy_file.close()
                 restart = True
             else:
@@ -404,7 +412,7 @@ def run_openmm(model, anchor_index, restart, total_simulation_length,
                cuda_device_index=False, force_overwrite=False,
                save_state_file=False, save_state_boundaries=False,
                num_rev_launches=1, umbrella_restart_mode=False,
-               swarm_index=None):
+               swarm_index=None, load_state_file=None):
     """Run an OpenMM simulation."""
     import seekr2.modules.runner_openmm as runner_openmm
     import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
@@ -447,12 +455,13 @@ def run_openmm(model, anchor_index, restart, total_simulation_length,
     
     if model.get_type() == "mmvt":
         sim_openmm_obj = mmvt_sim_openmm.create_sim_openmm(
-            model, myanchor, default_output_file, state_file_prefix, frame)
+            model, myanchor, default_output_file, state_file_prefix, frame, 
+            load_state_file)
     elif model.get_type() == "elber":
         sim_openmm_obj = elber_sim_openmm.create_sim_openmm(
             model, myanchor, default_output_file, state_file_prefix, frame)
     
-    runner.run(sim_openmm_obj, restart, None, restart_index)
+    runner.run(sim_openmm_obj, restart, load_state_file, restart_index)
     if model.get_type() == "mmvt":
         model.calculation_settings.num_production_steps \
             = old_num_production_steps
@@ -463,7 +472,8 @@ def run_openmm(model, anchor_index, restart, total_simulation_length,
 def run_namd(model, anchor_index, restart, total_simulation_length, 
                     cuda_device_index=False, force_overwrite=False,
                     save_state_file=False, save_state_boundaries=False,
-                    namd_command="namd2", namd_arguments=""):
+                    namd_command="namd2", namd_arguments="", 
+                    load_state_file=None):
     """Run a NAMD simulation."""
     import seekr2.modules.runner_namd as runner_namd
     import seekr2.modules.mmvt_sim_namd as mmvt_sim_namd
@@ -504,7 +514,8 @@ def run_namd(model, anchor_index, restart, total_simulation_length,
     sim_namd_obj.seekr_namd_settings.check_state_interval\
          = runner.check_state_interval
     
-    runner.run(sim_namd_obj, default_output_file, restart, None, restart_index)
+    runner.run(sim_namd_obj, default_output_file, restart, load_state_file,
+               restart_index)
     model.calculation_settings.num_production_steps = old_num_production_steps
 
 def run(model, instruction, min_total_simulation_length=None, 
@@ -513,7 +524,7 @@ def run(model, instruction, min_total_simulation_length=None,
         cuda_device_index=None, force_overwrite=False, save_state_file=False,
         save_state_boundaries=False, namd_command="namd2", namd_arguments="", 
         min_b_surface_simulation_length=None, min_b_surface_encounters=None, 
-        num_rev_launches=1, umbrella_restart_mode=False):
+        num_rev_launches=1, umbrella_restart_mode=False, load_state_file=None):
     """
     Run all simulations, both MD and BD, as specified by the user 
     inputs.
@@ -538,7 +549,7 @@ def run(model, instruction, min_total_simulation_length=None,
                 model, instruction, min_total_simulation_length, 
                 max_total_simulation_length, convergence_cutoff, 
                 minimum_anchor_transitions, force_overwrite, 
-                umbrella_restart_mode)
+                umbrella_restart_mode, load_state_file)
         elif model.namd_settings is not None:
             anchor_info_to_run = choose_next_simulation_namd(
                 model, instruction, min_total_simulation_length, 
@@ -566,7 +577,8 @@ def run(model, instruction, min_total_simulation_length=None,
                            save_state_boundaries=save_state_boundaries,
                            num_rev_launches=num_rev_launches,
                            umbrella_restart_mode=umbrella_restart_mode,
-                           swarm_index=swarm_index)
+                           swarm_index=swarm_index, 
+                           load_state_file=load_state_file)
             elif model.namd_settings is not None:
                 assert swarm_index is None, \
                     "MMVT swarms not available for NAMD."
@@ -577,7 +589,8 @@ def run(model, instruction, min_total_simulation_length=None,
                          save_state_file=save_state_file, 
                          save_state_boundaries=save_state_boundaries,
                          namd_command=namd_command,
-                         namd_arguments=namd_arguments)
+                         namd_arguments=namd_arguments, 
+                         load_state_file=load_state_file)
             else:
                 raise Exception("No OpenMM or NAMD simulation settings in "\
                                 "model.")
@@ -596,7 +609,7 @@ def run(model, instruction, min_total_simulation_length=None,
     
     counter = 0
     while not bd_complete:
-        if model.k_on_info is None:
+        if not model.using_bd():
             break
         
         bd_milestone_info_to_run = choose_next_simulation_browndye2(
@@ -714,6 +727,11 @@ if __name__ == "__main__":
                            "state file every time a bounce occurs. Warning: "\
                            "can generate very large numbers of files.", 
                            action="store_true")
+    argparser.add_argument("-l", "--load_state_file", dest="load_state_file",
+                           default=None, help="Load a state file from a "\
+                           "provided file path, presumably from another "\
+                           "anchor as initial conditions for this calculation.",
+                           type=str)
     argparser.add_argument("-n", "--namd_command", dest="namd_command",
                            default="namd2", help="Define a different NAMD "\
                            "command. This allows users to define a path to "\
@@ -742,7 +760,7 @@ if __name__ == "__main__":
                            "must be observed for the b-surface "\
                            "as a criteria to finish running simulations.",
                            type=int)
-    argparser.add_argument("-l", "--num_rev_launches", dest="num_rev_launches",
+    argparser.add_argument("-L", "--num_rev_launches", dest="num_rev_launches",
                           default=1, help="In Elber milestoning, this "\
                           "parameter defines how many reversals to launch "\
                           "for each equilibrium configuration generated by "\
@@ -770,6 +788,7 @@ if __name__ == "__main__":
     force_overwrite = args["force_overwrite"]
     save_state_for_all_boundaries = args["save_state_for_all_boundaries"]
     save_state_file = args["save_state_file"]
+    load_state_file = args["load_state_file"]
     namd_command = args["namd_command"]
     namd_arguments = args["namd_arguments"]
     minimum_b_surface_trajectories = args["minimum_b_surface_trajectories"]
@@ -786,5 +805,6 @@ if __name__ == "__main__":
         minimum_anchor_transitions, cuda_device_index, 
         force_overwrite, save_state_file, save_state_for_all_boundaries,
         namd_command, namd_arguments,minimum_b_surface_trajectories, 
-        min_b_surface_encounters, num_rev_launches, umbrella_restart_mode)
+        min_b_surface_encounters, num_rev_launches, umbrella_restart_mode,
+        load_state_file)
         

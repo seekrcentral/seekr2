@@ -106,7 +106,8 @@ def make_toy_system_object(model):
     system.addForce(force)
     return system, topology
 
-def create_openmm_system(sim_openmm, model, anchor, frame=0):
+def create_openmm_system(sim_openmm, model, anchor, frame=0, 
+                         load_state_file=None):
     """
     Create an openmm System() object.
     """
@@ -116,9 +117,17 @@ def create_openmm_system(sim_openmm, model, anchor, frame=0):
     num_frames = 0
     positions_obj = None
     if anchor.__class__.__name__ == "MMVT_toy_anchor":
-        positions_frames = np.array(anchor.starting_positions) * openmm.unit.nanometers
-        positions = positions_frames[frame]
-        num_frames = len(positions_frames)
+        if load_state_file is not None:
+            positions = None
+            num_frames = 1
+        elif anchor.starting_positions is not None:
+            positions_frames = np.array(anchor.starting_positions) \
+                * openmm.unit.nanometers
+            positions = positions_frames[frame]
+            num_frames = len(positions_frames)
+        else:
+            raise Exception("No starting state or starting positions provided.")
+        
     else:
         if anchor.amber_params is not None:
             prmtop_filename = os.path.join(
@@ -158,6 +167,7 @@ def create_openmm_system(sim_openmm, model, anchor, frame=0):
             
             topology = pdb.topology
             positions_obj = pdb
+            positions = None
         
         elif anchor.charmm_params is not None:
             raise Exception("Charmm systems not yet implemented")
@@ -219,9 +229,6 @@ def create_openmm_system(sim_openmm, model, anchor, frame=0):
     
     if anchor.__class__.__name__ == "MMVT_toy_anchor":
         system, topology = make_toy_system_object(model)
-        out_file_name = os.path.join(model.anchor_rootdir, anchor.directory, 
-                                     anchor.building_directory, "toy.pdb")
-        write_toy_pdb_file(topology, positions, out_file_name)
     else:
         if anchor.amber_params is not None:
             system = prmtop.createSystem(

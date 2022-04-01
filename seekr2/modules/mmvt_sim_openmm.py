@@ -6,6 +6,7 @@ openmm simulation based on the settings provided by a user. These
 objects are specific to MMVT only.
 """
 import os
+import tempfile
 
 import numpy as np
 try:
@@ -55,8 +56,7 @@ def add_integrator(sim_openmm, model, state_prefix=None):
             model.openmm_settings.langevin_integrator.friction_coefficient
         random_seed = \
             model.openmm_settings.langevin_integrator.random_seed
-        timestep = \
-            model.openmm_settings.langevin_integrator.timestep
+        timestep = model.get_timestep()
         rigid_constraint_tolerance = \
             model.openmm_settings.langevin_integrator\
             .rigid_tolerance
@@ -111,12 +111,11 @@ def add_forces(sim_openmm, model, anchor):
     os.chdir(curdir)
     return
 
-def add_simulation(sim_openmm, model, topology, positions, box_vectors):
+def add_simulation(sim_openmm, model, topology, positions, box_vectors,
+                   load_state_file=None):
     """
     Assign the OpenMM simulation object for MMVT.
     """
-        
-        
     sim_openmm.simulation = openmm_app.Simulation(
         topology, sim_openmm.system, 
         sim_openmm.integrator, sim_openmm.platform, 
@@ -125,8 +124,14 @@ def add_simulation(sim_openmm, model, topology, positions, box_vectors):
     if positions is not None:
         sim_openmm.simulation.context.setPositions(positions)
     
-    sim_openmm.simulation.context.setVelocitiesToTemperature(
-        model.openmm_settings.initial_temperature * unit.kelvin)
+    if load_state_file is not None:
+        print("loading state file")
+        sim_openmm.simulation.loadState(load_state_file)
+        state = sim_openmm.simulation.context.getState(getPositions=True)
+        positions = state.getPositions(positions)
+    else:
+        sim_openmm.simulation.context.setVelocitiesToTemperature(
+            model.openmm_settings.initial_temperature * unit.kelvin)
         
     if box_vectors is not None:
         sim_openmm.simulation.context.setPeriodicBoxVectors(
@@ -140,12 +145,11 @@ def add_simulation(sim_openmm, model, topology, positions, box_vectors):
               "to drift out of the MMVT cell.")
         sim_openmm.simulation.minimizeEnergy()
     
-    
     assert sim_openmm.timestep is not None
-    return
+    return positions
 
 def create_sim_openmm(model, anchor, output_filename, state_prefix=None, 
-                      frame=0):
+                      frame=0, load_state_file=None):
     """
     Take all relevant model and anchor information and generate
     the necessary OpenMM objects to run the simulation.
@@ -183,14 +187,20 @@ def create_sim_openmm(model, anchor, output_filename, state_prefix=None,
     common_sim_openmm.fill_generic_parameters(
         sim_openmm, model, anchor, output_filename)
     system, topology, positions, box_vectors, num_frames \
-        = common_sim_openmm.create_openmm_system(sim_openmm, model, anchor, 
-                                                 frame)
+        = common_sim_openmm.create_openmm_system(
+            sim_openmm, model, anchor, frame, load_state_file=load_state_file)
     sim_openmm.system = system
     add_integrator(sim_openmm, model, state_prefix=state_prefix)
     common_sim_openmm.add_barostat(sim_openmm, model)
     common_sim_openmm.add_platform(sim_openmm, model)
     add_forces(sim_openmm, model, anchor)
-    add_simulation(sim_openmm, model, topology, positions, box_vectors)
+    positions = add_simulation(
+        sim_openmm, model, topology, positions, box_vectors, load_state_file)
+    if anchor.__class__.__name__ == "MMVT_toy_anchor":
+        out_file_name = os.path.join(model.anchor_rootdir, anchor.directory, 
+                                     anchor.building_directory, "toy.pdb")
+        common_sim_openmm.write_toy_pdb_file(topology, positions, out_file_name)
+        
     return sim_openmm
 
 def make_mmvt_boundary_definitions(cv, milestone):
@@ -229,15 +239,37 @@ def make_mmvt_boundary_definitions(cv, milestone):
                                     milestone))
     return myforce
 
-def get_starting_structure_num_frames(model, anchor, dummy_outfile):
+def get_starting_structure_num_frames(model, anchor, dummy_outfile, 
+                                      load_state_file=None):
     """
     For an anchor's starting structure, find and return the number of frames.
     """
-    sim_openmm = MMVT_sim_openmm()
-    common_sim_openmm.fill_generic_parameters(
-        sim_openmm, model, anchor, dummy_outfile)
-    dummy_system, dummy_topology, positions, dummy_box_vectors, num_frames \
-        = common_sim_openmm.create_openmm_system(sim_openmm, model, anchor)
+    if load_state_file is None:
+        sim_openmm = MMVT_sim_openmm()
+        common_sim_openmm.fill_generic_parameters(
+            sim_openmm, model, anchor, dummy_outfile)
+        dummy_system, dummy_topology, positions, dummy_box_vectors, num_frames \
+            = common_sim_openmm.create_openmm_system(sim_openmm, model, anchor)
+    else:
+        num_frames = 1
     
     return num_frames
+
+def check_if_state_in_anchor(model, anchor, state_file):
+    """
+    Given a state file, make sure that it is in the assigned anchor.
+    """
+    tmp_path = tempfile.NamedTemporaryFile()
+    output_filename = tmp_path.name
+    sim_openmm = create_sim_openmm(
+        model, anchor, output_filename, state_prefix=None, frame=0, 
+        load_state_file=state_file)
     
+    for milestone in anchor.milestones:
+        cv = model.collective_variables[milestone.cv_index]
+        result = cv.check_openmm_context_within_boundary(
+            sim_openmm.simulation.context, milestone.variables, 
+            verbose=True)
+        if not result:
+            return False
+    return True

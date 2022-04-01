@@ -97,23 +97,9 @@ def test_check_milestone_convergence(smoluchowski_mmvt_model):
     k_on_conv, k_off_conv, N_ij_conv, R_i_conv, max_step_list, \
         timestep_in_ns, data_sample_list \
         = common_converge.check_milestone_convergence(
-            smoluchowski_mmvt_model, k_on_state=k_on_state, 
-            pre_equilibrium_approx=False, verbose=True)
+            smoluchowski_mmvt_model, k_on_state=k_on_state, verbose=True)
     return
     
-def test_check_milestone_convergence_pre_equilibrium_approx(
-        smoluchowski_mmvt_model):
-    steps = 10000
-    k_on_state = 0
-    smoluchowski_mmvt_model, standard_time, standard_k_on\
-        = make_model_completed(smoluchowski_mmvt_model, steps)
-    k_on_conv, k_off_conv, N_ij_conv, R_i_conv, max_step_list, \
-        timestep_in_ns, data_sample_list \
-        = common_converge.check_milestone_convergence(
-            smoluchowski_mmvt_model, k_on_state=k_on_state, 
-            pre_equilibrium_approx=True, verbose=True)
-    return
-
 def test_plot_scalar_conv(smoluchowski_mmvt_model):
     steps = 10000
     k_on_state = 0
@@ -122,8 +108,7 @@ def test_plot_scalar_conv(smoluchowski_mmvt_model):
     k_on_conv, k_off_conv, N_ij_conv, R_i_conv, max_step_list, \
         timestep_in_ns, data_sample_list \
         = common_converge.check_milestone_convergence(
-            smoluchowski_mmvt_model, k_on_state=k_on_state, 
-            pre_equilibrium_approx=False, verbose=True)
+            smoluchowski_mmvt_model, k_on_state=k_on_state, verbose=True)
     
     k_off_fig, ax = common_converge.plot_scalar_conv(
         k_off_conv, max_step_list[0,:], title="$k_{off}$ Convergence", 
@@ -138,8 +123,7 @@ def test_plot_dict_conv(smoluchowski_mmvt_model):
     k_on_conv, k_off_conv, N_ij_conv, R_i_conv, max_step_list, \
         timestep_in_ns, data_sample_list \
         = common_converge.check_milestone_convergence(
-            smoluchowski_mmvt_model, k_on_state=k_on_state, 
-            pre_equilibrium_approx=False, verbose=True)
+            smoluchowski_mmvt_model, k_on_state=k_on_state, verbose=True)
     
     N_ij_fig_list, ax, N_ij_title_list, N_ij_name_list \
         = common_converge.plot_dict_conv(

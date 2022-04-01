@@ -67,8 +67,7 @@ def add_integrators(sim_openmm, model, state_prefix=None):
             model.openmm_settings.langevin_integrator.friction_coefficient
         random_seed = \
             model.openmm_settings.langevin_integrator.random_seed
-        timestep = \
-            model.openmm_settings.langevin_integrator.timestep
+        timestep = model.get_timestep()
         rigid_constraint_tolerance = \
             model.openmm_settings.langevin_integrator\
             .rigid_tolerance

@@ -315,15 +315,32 @@ class Model_input(Serializer):
         self.browndye_settings_input = None
         self.toy_settings_input = None
         self.cv_inputs = []
-        self.cv_combos = []
         
-    def read_plain_input_file(self, filename):
-        """ # TODO: remove
-        Read a plain input file (as opposed to an XML)
+    def get_cv_inputs(self):
         """
-        
-        raise Exception("Reading a plain text file is not yet implemented. "\
-                        "Only an XML model input may be read at this time.")
+        The model_input object contains a list of CV_inputs as well as
+        Combos. Flatten the CV_inputs within the model_input as well as the
+        Combos, so that the model has a complete, flattened list of CVs.
+        Also check for strange inputs.
+        """
+        flat_cv_inputs = []
+        for cv_input in self.cv_inputs:
+            if isinstance(cv_input, common_cv.Combo):
+                for cv_input2 in cv_input.cv_inputs:
+                    assert isinstance(cv_input2, common_cv.CV_input), \
+                        "Combos can only contain CV_inputs in the cv_input "\
+                        "field."
+                    assert len(cv_input2.state_points) == 0, \
+                        "The CV_inputs within a combo may not have "\
+                        "state_points."
+                    flat_cv_inputs.append(cv_input2)
+            elif isinstance(cv_input, common_cv.CV_input):
+                flat_cv_inputs.append(cv_input)
+            else:
+                raise Exception("Improper object detected in model_input "\
+                                "cv_input field.")
+                
+        return flat_cv_inputs
         
 def model_factory(model_input, use_absolute_directory=False):
     """
@@ -459,6 +476,8 @@ def model_factory(model_input, use_absolute_directory=False):
         model.k_on_info = k_on_info
     
     if model_input.toy_settings_input is not None:
+        assert model_input.md_program.lower() == "openmm", \
+            "Only OpenMM can run toy systems."
         toy_settings = base.Toy_settings()
         toy_settings.potential_energy_expression \
             = model_input.toy_settings_input.potential_energy_expression
@@ -466,6 +485,8 @@ def model_factory(model_input, use_absolute_directory=False):
             = model_input.toy_settings_input.num_particles
         toy_settings.masses = model_input.toy_settings_input.masses
         model.toy_settings = toy_settings
+        mm_settings.cuda_platform_settings = None
+        mm_settings.reference_platform = True
         
     return model
 
@@ -616,9 +637,9 @@ def resolve_connections(connection_flag_dict, model, associated_input_anchor,
                 
     return anchors
 
-def create_cvs_and_anchors(model, collective_variable_inputs, root_directory):
+def create_cvs(model, collective_variable_inputs, root_directory):
     """
-    Create the collective variable and Anchor objects for the Model.
+    Create the collective variable objects for the model.
     
     Parameters:
     -----------
@@ -630,34 +651,17 @@ def create_cvs_and_anchors(model, collective_variable_inputs, root_directory):
         this model.
         
     root_directory : str
-        A path to the root directory of this model.
+        A path to the root directory of this model. Used to copy over
+        RMSD CV reference structure.
     
     Returns:
     --------
     cvs : list
         A list of collective variable objects that will be placed into
         the model.
-    anchors : list
-        A list of Anchor() objects. This list and its associated anchors
-        may be modified before being placed into the final model.
-    milestone_index : int
-        A running count of the number of milestones in this model.
-    connection_flag_dict : dict
-        A dictionary whose keys are integers representing a connection
-        index, and whose values are lists of anchors that have a connection
-        together, and therefore must be combined.
-    associated_input_anchor : dist
-        A dictionary whose keys are anchor indices, and whose values are
-        the Input_anchor() objects associated with that anchor.
-    """
     
-    milestone_index = 0
-    anchor_index = 0
-    cv_indices = []
+    """
     cvs = []
-    anchors = []
-    connection_flag_dict = defaultdict(list)
-    associated_input_anchor = {}
     for i, cv_input in enumerate(collective_variable_inputs):
         cv_input.index = i
         cv_input.check()
@@ -685,68 +689,98 @@ def create_cvs_and_anchors(model, collective_variable_inputs, root_directory):
                                 % type(cv_input))
         
         cvs.append(cv)
-        cv_indices.append(i)
-        input_anchor_index = 0
-        for j, input_anchor in enumerate(cv_input.input_anchors):
-            if model.get_type() == "mmvt":
-                if model.toy_settings is None:
-                    anchor = mmvt_base.MMVT_anchor()
+    return cvs
+
+def create_anchors(model, model_input):
+    """
+    Create the Anchor objects for the Model from the input CVs, 
+    input anchors, and Combos.
+    
+    Parameters:
+    -----------
+    model : Model()
+        The model object representing the entire calculation.
+    
+    """
+    milestone_index = 0
+    anchor_index = 0
+    anchors = []
+    connection_flag_dict = defaultdict(list)
+    associated_input_anchor = {}
+    
+    for cv_input in model_input.cv_inputs:
+        if isinstance(cv_input, common_cv.Combo):
+            this_anchors, anchor_index, milestone_index, connection_flag_dict,\
+                associated_input_anchor = cv_input.make_anchors(
+                model, anchor_index, milestone_index, connection_flag_dict,
+                associated_input_anchor)
+            anchors += this_anchors
+        else: 
+            # It's a cv_input
+            this_cvs_anchors = []
+            for j, input_anchor in enumerate(cv_input.input_anchors):
+                input_anchor.check(j, cv_input)
+                anchor = common_cv.create_anchor(model, anchor_index)
+                if not input_anchor.bulk_anchor:
+                    anchor.md = True
                 else:
-                    anchor = mmvt_base.MMVT_toy_anchor()
-            elif model.get_type() == "elber":
-                if model.toy_settings is None:
-                    anchor = elber_base.Elber_anchor()
-                else:
-                    anchor = elber_base.Elber_toy_anchor()
-            anchor.index = anchor_index
-            anchor.name = "anchor_"+str(anchor_index)
-            anchor.directory = anchor.name
-            
-            if not input_anchor.bulk_anchor:
-                anchor.md = True
-            else:
-                anchor.md = False
-                anchor.bulkstate = True
+                    anchor.md = False
+                    anchor.bulkstate = True
+                    anchor.name = "bulk"
+                    
+                if input_anchor.bound_state:
+                    anchor.name = "bound"
+                    anchor.endstate = True
+                # Make the milestone objects assuming that this is a 1D CV
+                variable_name = "{}_{}".format(cv_input.variable_name, 
+                                               cv_input.index)
+                variable_value = input_anchor.get_variable_value()
+                anchor.variables[variable_name] = variable_value
+                for connection_flag in input_anchor.connection_flags:
+                    connection_flag_dict[connection_flag].append(anchor)
+                if input_anchor.bulk_anchor:
+                    connection_flag_dict["bulk"].append(anchor)
+                associated_input_anchor[anchor.index] = input_anchor
+                anchors.append(anchor)
+                anchor_index += 1
+                this_cvs_anchors.append(anchor)
                 
-            if input_anchor.bound_state:
-                anchor.endstate = True
-            
-            input_anchor.check(j, cv_input)
-            
-            milestone_alias = 1
-            if model.get_type() == "mmvt":
-                milestones, milestone_alias, milestone_index = \
-                    cv_input.make_mmvt_milestoning_objects(
-                    milestone_alias, milestone_index, input_anchor_index,
-                    anchor_index)
+            input_anchor_index = 0
+            for i, anchor in enumerate(this_cvs_anchors):
+                if model.get_type() == "mmvt":
+                    this_input_anchor = cv_input.input_anchors[i]
+                    if input_anchor_index < len(cv_input.input_anchors)-1:
+                        upper_anchor = this_cvs_anchors[i+1]
+                        upper_input_anchor = cv_input.input_anchors[i+1]
+                        milestone_index \
+                            = cv_input.make_mmvt_milestone_between_two_anchors(
+                                anchor, upper_anchor, this_input_anchor, 
+                                upper_input_anchor, milestone_index)
+                    if input_anchor_index > 0:
+                        lower_anchor = this_cvs_anchors[i-1]
+                        lower_input_anchor = cv_input.input_anchors[i-1]
+                        milestone_index \
+                            = cv_input.make_mmvt_milestone_between_two_anchors(
+                                lower_anchor, anchor, lower_input_anchor, 
+                                this_input_anchor, milestone_index)
+                        
+                elif model.get_type() == "elber":
+                    milestone_alias = 1
+                    milestones, milestone_alias, milestone_index = \
+                        elber_cv.make_elber_milestoning_objects_spherical(
+                        cv_input, milestone_alias, milestone_index, 
+                        input_anchor_index, anchor.index, cv_input.input_anchors, 
+                        model.calculation_settings.umbrella_force_constant)
                 
-            elif model.get_type() == "elber":
-                milestones, milestone_alias, milestone_index = \
-                    elber_cv.make_elber_milestoning_objects_spherical(
-                    cv_input, milestone_alias, milestone_index, 
-                    input_anchor_index, anchor_index, cv_input.input_anchors, 
-                    model.calculation_settings.umbrella_force_constant)
+                    anchor.milestones += milestones
+                input_anchor_index += 1
                 
-            anchor.milestones += milestones
-            variable_name = "{}_{}".format(cv.variable_name, i)
-            variable_value = input_anchor.get_variable_value()
-            anchor.variables[variable_name] = variable_value
-            for connection_flag in input_anchor.connection_flags:
-                connection_flag_dict[connection_flag].append(anchor)
-            if input_anchor.bulk_anchor:
-                connection_flag_dict["bulk"].append(anchor)
-            #filetree.generate_filetree_by_anchor(anchor, root_directory)
-            #filetree.copy_building_files_by_anchor(anchor, input_anchor, 
-            #                                       root_directory)
-            associated_input_anchor[anchor.index] = input_anchor
-            anchors.append(anchor)
-            anchor_index += 1
-            input_anchor_index += 1
     
     if model.get_type() == "elber":
         milestone_index += 1
-    
-    return cvs, anchors, milestone_index, connection_flag_dict, \
+        
+        
+    return anchors, milestone_index, connection_flag_dict, \
         associated_input_anchor
 
 def create_bd_milestones(model, model_input):
@@ -816,12 +850,13 @@ def prepare_model_cvs_and_anchors(model, model_input, force_overwrite):
     Fill out the CV and anchor items within the model based on the 
     input objects.
     """
-    
-    cvs, anchors, num_milestones, connection_flag_dict, associated_input_anchor\
-        = create_cvs_and_anchors(
-            model, model_input.cv_inputs, model_input.root_directory)
+    flat_cv_inputs = model_input.get_cv_inputs()
+    cvs = create_cvs(model, flat_cv_inputs, model_input.root_directory)
     model.collective_variables = cvs
+    anchors, num_milestones, connection_flag_dict, associated_input_anchor\
+        = create_anchors(model, model_input)
     model.anchors = anchors
+    
     if model.get_type() == "mmvt":
         if model_input.md_program.lower() == "openmm":
             for anchor in model.anchors:
@@ -861,6 +896,7 @@ def prepare_model_cvs_and_anchors(model, model_input, force_overwrite):
                     "in MMVT. Index: {}".format(anchor.index)
         
     model.num_anchors = len(anchors)
+    common_cv.assign_state_points(model_input, model)
     
     return
     
@@ -870,7 +906,7 @@ def generate_bd_files(model, rootdir):
     make the input.xml file, as well as the reaction criteria.
     """
     
-    if model.k_on_info is not None and model.browndye_settings is not None:
+    if model.using_bd():
         b_surface_dir = os.path.join(
             rootdir, model.k_on_info.b_surface_directory)
         receptor_pqr_filename = os.path.join(
@@ -1064,13 +1100,13 @@ def modify_model(old_model, new_model, root_directory, force_overwrite=False):
     #    copy_building_files_by_anchor(anchor, input_anchor, rootdir)
     
     # TODO: check for BD milestone changes
-    if old_model.k_on_info is not None:
+    if old_model.using_bd():
         bd_milestones_to_check = []
         bd_milestones_to_cleanse = []
         b_surface_directory = os.path.join(
             old_model.anchor_rootdir, 
             old_model.k_on_info.b_surface_directory)
-        if new_model.k_on_info is None:
+        if not new_model.using_bd():
             warning_msg = "The new model does not have any BD settings "\
             "provided, while the old model does. This would delete all "\
             "existing BD simulation files in {}. Use the --force_overwrite "\

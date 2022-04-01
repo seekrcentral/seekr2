@@ -177,9 +177,8 @@ def load_structure_with_mdtraj(model, anchor, mode="pdb", coords_filename=None):
         assert coords_filename is not None
         
     elif mode == "mmvt_traj":
-        mmvt_traj_dcd_path = os.path.join(prod_directory)
         mmvt_traj_basename = mmvt_base.OPENMMVT_BASENAME+"*.dcd"
-        mmvt_traj_glob = os.path.join(mmvt_traj_dcd_path, mmvt_traj_basename)
+        mmvt_traj_glob = os.path.join(prod_directory, mmvt_traj_basename)
         mmvt_traj_filenames = glob.glob(mmvt_traj_glob)
         if len(mmvt_traj_filenames) == 0:
             return None
@@ -370,7 +369,7 @@ def check_pre_sim_MD_and_BD_salt_concentration(model):
     
     RELATIVE_TOLERANCE = 0.1
     ABSOLUTE_TOLERANCE = 0.01
-    if model.k_on_info:
+    if model.using_bd():
         bd_ionic_strength = 0.0
         for ion in model.k_on_info.ions:
             bd_ionic_strength += 0.5 * ion.conc * ion.charge**2
@@ -439,7 +438,7 @@ def check_systems_within_Voronoi_cells(model):
     os.chdir(model.anchor_rootdir)
     
     for anchor in model.anchors:
-        if anchor.__class__.__name__ == "MMVT_toy_anchor":
+        if model.using_toy():
             if anchor.starting_positions is None: continue
             if len(anchor.starting_positions) == 0: continue
             tmp_path = tempfile.NamedTemporaryFile()
@@ -457,7 +456,7 @@ def check_systems_within_Voronoi_cells(model):
             
         for milestone in anchor.milestones:
             cv = model.collective_variables[milestone.cv_index]
-            if anchor.__class__.__name__ == "MMVT_toy_anchor":
+            if model.using_toy():
                 result = cv.check_openmm_context_within_boundary(
                     context, milestone.variables, verbose=True)
                 
@@ -596,7 +595,7 @@ def check_atom_selections_MD_BD(model):
     mind that SEEKR2 requires atom indexing to start from 0 in 
     each molecular structure input file, but PDB and PQR files
     might start their numbering at 1 or another number."""
-    if model.browndye_settings is not None:
+    if model.using_bd():
         b_surface_dir = os.path.join(
             model.anchor_rootdir, model.k_on_info.b_surface_directory)
         rec_pqr_path = os.path.join(
@@ -690,7 +689,7 @@ def check_pqr_residues(model):
     residues. This check will suggest that users split their PQR
     atoms into individual residues to increase accuracy.
     """
-    if model.browndye_settings is not None:
+    if model.using_bd():
         b_surface_dir = os.path.join(
             model.anchor_rootdir, model.k_on_info.b_surface_directory)
         rec_pqr_path = os.path.join(
@@ -735,8 +734,11 @@ def check_pqr_residues(model):
 def check_for_one_bulk_anchor(model):
     """
     In order for the model to work properly, one or more bulk anchors is
-    required
+    required if BD is enabled.
     """
+    if not model.using_bd():
+        return True
+    
     num_bulk_anchors = 0
     for anchor in model.anchors:
         if anchor.bulkstate:
@@ -746,9 +748,47 @@ def check_for_one_bulk_anchor(model):
         return True
     else:
         warnstr = """CHECK FAILURE: {} bulk anchors were found. There needs
-        to be exactly one or more bulk anchors per model."""
+        to be one or more bulk anchors per model if BD is enabled."""
         print(warnstr.format(num_bulk_anchors))
         return False
+
+def check_mutual_neighbor_anchors(model):
+    """
+    Make sure that every anchor's neighbor recognizes the anchor itself
+    as a neighbor
+    """
+    anchors_missing_neighbors = []
+    double_booked_neighbors = []
+    for anchor in model.anchors:
+        for milestone in anchor.milestones:
+            anchor2 = model.anchors[milestone.neighbor_anchor_index]
+            # now check this anchor to ensure that it has me as a neighbor
+            has_me_as_neighbor = False
+            for milestone2 in anchor2.milestones:
+                if anchor.index == milestone2.neighbor_anchor_index:
+                    if has_me_as_neighbor:
+                        double_booked_neighbors.append(anchor.index)
+                    has_me_as_neighbor = True
+            
+            if not has_me_as_neighbor:
+                anchors_missing_neighbors.append(anchor.index)
+    
+    success = True
+    if len(anchors_missing_neighbors) > 0:
+        warnstr = """CHECK FAILURE: Anchors {} were found to have mismatched
+        neighbor anchors. This is likely a bug. Please contact the 
+        developers."""
+        print(warnstr.format(anchors_missing_neighbors))
+        success = False
+        
+    if len(double_booked_neighbors) > 0:
+        warnstr = """CHECK FAILURE: Anchors {} were found to have double-
+        booked neighbor anchors. This is likely a bug. Please contact the 
+        developers."""
+        print(warnstr.format(double_booked_neighbors))
+        success = False
+        
+    return success
 
 def check_pre_simulation_all(model):
     """
@@ -767,7 +807,7 @@ def check_pre_simulation_all(model):
     curdir = os.getcwd()
     check_passed_list = []
     #check_passed_list.append(check_pre_sim_bubbles(model))
-    if model.toy_settings is None:
+    if not model.using_toy():
         # Skipping MD/BD salt conc. check because the best results seem to 
         # come from using no salt in BD.
         #check_passed_list.append(check_pre_sim_MD_and_BD_salt_concentration(model))
@@ -780,6 +820,7 @@ def check_pre_simulation_all(model):
     
     check_passed_list.append(check_systems_within_Voronoi_cells(model))
     check_passed_list.append(check_for_one_bulk_anchor(model))
+    check_passed_list.append(check_mutual_neighbor_anchors(model))
     
     no_failures = True
     for check_passed in check_passed_list:
@@ -941,7 +982,7 @@ def check_bd_simulation_end_state(model):
     """
     
     ATOL = 0.1
-    if model.k_on_info is None:
+    if not model.using_bd():
         return True
     
     for bd_index, bd_milestone in enumerate(model.k_on_info.bd_milestones):
@@ -971,6 +1012,56 @@ def check_bd_simulation_end_state(model):
                 return False
     return True
 
+# TODO: write a check for eternally bouncing output files
+def check_output_files_for_stuck_anchors(model):
+    """
+    Systems started outside the milestone boundaries may bounce every
+    time step. There are checks before the simulation to ensure that this 
+    doesn't happen, but restarts and states have been observed to cause 
+    this phenomenon unexpectedly. This check makes sure that no output files
+    after the simulation are stuck behind a milestone.
+    """
+    MAX_SEQUENTIAL_BOUNCES = 1000
+    anchors_stuck = []
+    timestep = model.get_timestep() + 1e-6
+    for anchor in model.anchors:
+        output_file_glob = os.path.join(
+            model.anchor_rootdir, anchor.directory, 
+            anchor.production_directory, anchor.md_output_glob)
+        
+        output_file_list = glob.glob(output_file_glob)
+        
+        for output_file_name in output_file_list:
+            if anchor.index in anchors_stuck:
+                break
+            sequential_bounces = 0
+            last_time = 0.0
+            with open(output_file_name, "r") as f:
+                for line in f.readlines():
+                    if line.startswith("#"):
+                        continue
+                    cur_time = float(line.strip().split(",")[2])
+                    if cur_time - last_time <= timestep:
+                        sequential_bounces += 1
+                    else:
+                        sequential_bounces = 0
+                        
+                    if sequential_bounces > MAX_SEQUENTIAL_BOUNCES:
+                        anchors_stuck.append(anchor.index)
+                        break
+                    last_time = cur_time
+                    
+    if len(anchors_stuck) > 0:
+        warnstr = """CHECK FAILURE: Anchors {} had simulations that were
+        found to be stuck behind a milestone, and never stopped bouncing.
+        Any analysis performed on this model will be incorrect. This problem
+        can possibly be caused by an incorrect starting state file."""
+        print(warnstr.format(anchors_stuck))
+        return False
+    else:
+        return True
+            
+
 def check_post_simulation_all(model, long_check=False):
     """
     After the completion of the run stage, check simulation files
@@ -992,15 +1083,17 @@ def check_post_simulation_all(model, long_check=False):
     """
     curdir = os.getcwd()
     check_passed_list = []
-    if model.toy_settings is None:
+    if model.using_toy():
+        pass
+    else:
         check_passed_list.append(check_elber_umbrella_stage(model))
         check_passed_list.append(check_mmvt_in_Voronoi_cell(model))
         # TODO: remove?
         #check_passed_list.append(check_bd_simulation_end_state(model))
         if long_check:
             check_passed_list.append(check_xml_boundary_states(model))
-    else:
-        pass
+    
+    check_passed_list.append(check_output_files_for_stuck_anchors(model))
     
     no_failures = True
     for check_passed in check_passed_list:

@@ -919,8 +919,44 @@ class Model(Serializer):
                 + "{}. Available types are 'elber' and 'mmvt'.".format(
                     self.calculation_type)
             raise Exception(error_msg)
+        
+    def using_bd(self):
+        """
+        Return whether this model is using BD
+        """
+        if self.k_on_info is None:
+            return False
+        else:
+            return True
     
-    # TODO: create method to return the timestep
+    def using_toy(self):
+        """
+        Return whether this model is using BD
+        """
+        if self.toy_settings is None:
+            return False
+        else:
+            return True
+    
+    def get_timestep(self):
+        """
+        Return the timestep used in this model
+        """
+        if self.openmm_settings is not None:
+            if self.openmm_settings.langevin_integrator is not None:
+                timestep = self.openmm_settings.langevin_integrator.timestep
+            else:
+                raise Exception("Settings not provided for available "\
+                        "integrator type(s).")
+        elif self.namd_settings is not None:
+            if self.namd_settings.langevin_integrator:
+                timestep = self.namd_settings.langevin_integrator.timestep
+            else:
+                raise Exception("Settings not provided for available "\
+                        "integrator type(s).")
+        else:
+            raise Exception("No settings provided for available simulators.")
+        return timestep
     
 def load_model(model_file, directory=None):
     """

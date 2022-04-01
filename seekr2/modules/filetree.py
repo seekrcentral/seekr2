@@ -112,7 +112,7 @@ def generate_filetree_by_anchor(anchor, rootdir):
     anchor_dict = {}
     anchor_dict[anchor.production_directory] = {}
     anchor_dict[anchor.building_directory] = {}    
-    anchor_filetree = Filetree({anchor.name:anchor_dict})
+    anchor_filetree = Filetree({anchor.directory:anchor_dict})
     anchor_filetree.make_tree(rootdir)
     return
 
@@ -131,7 +131,7 @@ def generate_filetree_bd(model, rootdir):
     
    
     """
-    if model.k_on_info is not None:
+    if model.using_bd():
         b_surface_dict = {}
         b_surface_filetree = Filetree(
             {model.k_on_info.b_surface_directory:b_surface_dict})
@@ -273,7 +273,7 @@ def copy_bd_files(model, input_model, rootdir):
         A path to the model's root directory.
     
     """
-    if model.k_on_info is not None:
+    if model.using_bd():
         bd_settings = model.browndye_settings
         bd_input_settings = input_model.browndye_settings_input
         k_on_info = model.k_on_info

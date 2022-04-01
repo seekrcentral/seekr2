@@ -15,11 +15,16 @@ import seekr2.modules.common_analyze as common_analyze
 import seekr2.modules.markov_chain_monte_carlo as markov_chain_monte_carlo
 
 FLUX_MATRIX_K_EXPONENT = 1000
+LOW_N_IJ = 1e-10
+HIGH_N_IJ = 1e3
+DEFAULT_R_I = 1.0
+DEFAULT_Q_IJ = 1.0
+LOW_Q_IJ = 1e-15
 
 def flux_matrix_to_K(M):
     """Given a flux matrix M, compute probability transition matrix K."""
     
-    K = np.zeros((M.shape[0]-1, M.shape[0]-1), dtype=np.longdouble)
+    K = np.zeros((M.shape[0]-1, M.shape[0]-1))
     for i in range(M.shape[0]-1):
         for j in range(M.shape[0]-1):
             if i == j:
@@ -31,36 +36,11 @@ def flux_matrix_to_K(M):
     
     return K
 
-def mmvt_Q_N_R(n_milestones, n_anchors, N_i_j_alpha, R_i_alpha_total, 
-               T_alpha_total, T, pi_alpha):
-    """
-    
-    """
-    mmvt_Nij = np.zeros((n_milestones, n_milestones))
-    mmvt_Ri = np.zeros((n_milestones, 1))
-    
-    for alpha in range(n_anchors):
-        for i in range(n_milestones):
-            for j in range(n_milestones):
-                mmvt_Nij[i,j] += T * pi_alpha[alpha] * N_i_j_alpha[alpha][i,j] / T_alpha_total[alpha]
-        
-            mmvt_Ri[i,0] += T * pi_alpha[alpha] * R_i_alpha_total[alpha][i,0] / T_alpha_total[alpha]
-    
-    mmvt_Q = np.zeros((n_milestones, n_milestones))
-    for i in range(n_milestones):
-        for j in range(n_milestones):
-            if i == j: continue
-            if mmvt_Ri[i,0] > 0.0:
-                mmvt_Q[i,j] = mmvt_Nij[i,j] / mmvt_Ri[i,0]
-                    
-    for i in range(n_milestones):
-        mmvt_Q[i,i] = -np.sum(mmvt_Q[i,:])
-        
-    return mmvt_Nij, mmvt_Ri, mmvt_Q
-
 def make_new_Nij_alpha(mmvt_Qij_alpha, mmvt_Ri_alpha):
     """
-    
+    After a new matrix Q has been sampled, the "data" N_ij must be
+    adjusted to be consistent with with newly sampled matrix Q and 
+    R_i.
     """
     n_milestones = mmvt_Qij_alpha.shape[0]
     new_mmvt_Nij_alpha = np.zeros((n_milestones, n_milestones))
@@ -123,7 +103,6 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
             if not skip_restart_check and not len(file_lines) == 0:
                 # make sure that we delete lines that occurred after a restart 
                 # backup
-                
                 if i < len(files_lines)-1:
                     # then it's not the last file
                     if files_lines[i+1][0] == NEW_SWARM:
@@ -154,10 +133,6 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
         
     else:
         lines = existing_lines
-    
-    #print("lines:")
-    #for line in lines:
-    #    print(line)
     
     N_i_j_alpha = defaultdict(int)
     R_i_alpha_list = defaultdict(list)
@@ -225,6 +200,7 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
     R_i_alpha_total = defaultdict(float)
     
     for key in R_i_alpha_list:
+        assert key is not None
         R_i_alpha_average[key] = np.mean(R_i_alpha_list[key])
         R_i_alpha_std_dev[key] = np.std(R_i_alpha_list[key])
         R_i_alpha_total[key] = np.sum(R_i_alpha_list[key])
@@ -233,7 +209,7 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
     T_alpha_std_dev = np.std(T_alpha_list)
     T_alpha_total = np.sum(T_alpha_list)
     
-    if len(R_i_alpha_list) == 0:
+    if len(R_i_alpha_list) == 0 and src_boundary is not None:
         R_i_alpha_average[src_boundary] = T_alpha_average
         R_i_alpha_std_dev[src_boundary] = T_alpha_std_dev
         R_i_alpha_total[src_boundary] = T_alpha_total
@@ -768,8 +744,8 @@ class MMVT_data_sample(common_analyze.Data_sample):
         self.R_i_alpha = R_i_alpha
         self.T_alpha = T_alpha
         self.pi_alpha = None
-        self.N_ij = None
-        self.R_i = None
+        self.N_ij = {}
+        self.R_i = {}
         self.T = None
         self.Q = None
         self.Q_hat = None
@@ -783,9 +759,6 @@ class MMVT_data_sample(common_analyze.Data_sample):
         self.k_ons = {}
         self.b_surface_k_ons_src = None
         self.b_surface_k_on_errors_src = None
-        #self.b_surface_reaction_probabilities = None # REMOVE?
-        #self.b_surface_reaction_probability_errors = None # REMOVE?
-        #self.b_surface_transition_counts = None # REMOVE?
         self.bd_transition_counts = {}
         self.bd_transition_probabilities = {}
         
@@ -820,67 +793,80 @@ class MMVT_data_sample(common_analyze.Data_sample):
         if self.k_alpha_beta is None:
             raise Exception("Unable to call calculate_pi_alpha(): "\
                             "No statistics present in Data Sample.")
-        
-        flux_matrix_dimension = self.model.num_anchors
-        self.pi_alpha = np.zeros(flux_matrix_dimension, dtype=np.longdouble)
-        flux_matrix = np.zeros((flux_matrix_dimension, flux_matrix_dimension), dtype=np.longdouble)
-        column_sum = np.zeros(flux_matrix_dimension, dtype=np.longdouble)
+        # First, determine if there is a bulk anchor, and if so, use it as
+        # the "pivot", if not, make our own pivot.
+        # The "pivot" is the entry in the flux_matrix that 
         bulk_index = None
-        for alpha in range(flux_matrix_dimension):
-            anchor1 = self.model.anchors[alpha] # source anchor
-            if anchor1.bulkstate:
+        for alpha, anchor in enumerate(self.model.anchors):
+            if anchor.bulkstate:
                 assert bulk_index is None, "Only one bulk state is allowed "\
                     "in model"
-                flux_matrix[alpha,alpha] = 1.0
                 bulk_index = alpha
-                continue
                 
+        if bulk_index is None:
+            # Then we have a model without a bulk anchor: we need to make our
+            # own pivot
+            pivot_index = self.model.num_anchors
+            flux_matrix_dimension = self.model.num_anchors + 1
+        else:
+            # If a bulk anchor exists, we can use it as the pivot
+            assert bulk_index == self.model.num_anchors - 1, "The bulk "\
+                "anchor must be the last one in the model."
+            pivot_index = bulk_index
+            flux_matrix_dimension = self.model.num_anchors
+        
+        self.pi_alpha = np.zeros(flux_matrix_dimension)
+        flux_matrix = np.zeros((flux_matrix_dimension, flux_matrix_dimension))
+        column_sum = np.zeros(flux_matrix_dimension)
+        flux_matrix[pivot_index, pivot_index] = 1.0
+        for alpha, anchor1 in enumerate(self.model.anchors):
+            flux_matrix[alpha, pivot_index] = 1.0
+            if anchor1.bulkstate:
+                continue
+            id_alias = anchor1.alias_from_neighbor_id(pivot_index)
+            if id_alias is None:
+                flux_matrix[pivot_index, alpha] = 0.0
+            else:
+                flux_matrix[pivot_index, alpha] = 1e30
+            
             dead_end_anchor = False
             if len(anchor1.milestones) == 1:
                 dead_end_anchor = True
-            for beta in range(flux_matrix_dimension):
-                anchor2 = self.model.anchors[beta] # destination anchor
-                if anchor2.bulkstate :
-                    flux_matrix[alpha, beta] = 1.0
+            for beta, anchor2 in enumerate(self.model.anchors):
+                if beta == pivot_index:
+                    continue
+                if alpha == beta:
+                    pass 
+                else:
                     id_alias = anchor1.alias_from_neighbor_id(
                         anchor2.index)
                     if id_alias is None:
-                        flux_matrix[beta, alpha] = 0.0
+                        flux_matrix[alpha, beta] = 0.0
                     else:
-                        flux_matrix[beta, alpha] = 1e30
-                else:
-                    if alpha == beta:
-                        pass 
-                    else:
-                        id_alias = anchor1.alias_from_neighbor_id(
-                            anchor2.index)
-                        if id_alias is None:
-                            flux_matrix[alpha, beta] = 0.0
+                        if dead_end_anchor:
+                            # This line was supposed to work for a 1D
+                            # Smoluchowski system, but with a 3D
+                            # spherical system, the 2.0 needs to be 1.0.
+                            #flux_matrix[alpha, beta] = 2.0 *\
+                            #     self.k_alpha_beta[(alpha, beta)]
+                            flux_matrix[alpha, beta] = 1.0 *\
+                                 self.k_alpha_beta[(alpha, beta)]
                         else:
-                            if dead_end_anchor:
-                                # This line was supposed to work for a 1D
-                                # Smoluchowski system, but with a 3D
-                                # spherical system, the 2.0 needs to be 1.0.
-                                #flux_matrix[alpha, beta] = 2.0 *\
-                                #     self.k_alpha_beta[(alpha, beta)]
-                                flux_matrix[alpha, beta] = 1.0 *\
-                                     self.k_alpha_beta[(alpha, beta)]
-                            else:
-                                flux_matrix[alpha, beta] = \
-                                    self.k_alpha_beta[(alpha, beta)]
-                            column_sum[alpha] += flux_matrix[alpha, beta]
+                            flux_matrix[alpha, beta] = \
+                                self.k_alpha_beta[(alpha, beta)]
+                        column_sum[alpha] += flux_matrix[alpha, beta]
                 
             flux_matrix[alpha, alpha] = -column_sum[alpha]
             
-        assert bulk_index is not None, "A bulk state has not been defined, "\
-            "but is required."
-        prob_equil = np.zeros((flux_matrix_dimension,1), dtype=np.longdouble)
-        prob_equil[bulk_index] = 1.0
+        np.savetxt("/home/lvotapka/tmp/flux_matrix.txt", flux_matrix)
+        
+        prob_equil = np.zeros((flux_matrix_dimension,1))
+        prob_equil[pivot_index] = 1.0
         self.pi_alpha = abs(la.solve(flux_matrix.T, prob_equil))
         
         # refine pi_alpha
-        self.pi_alpha = self.pi_alpha.astype(dtype=np.longdouble)
-        pi_alpha_slice = np.zeros((flux_matrix_dimension-1, 1), dtype=np.longdouble)
+        #self.pi_alpha = self.pi_alpha.astype(dtype=np.longdouble)
+        pi_alpha_slice = np.zeros((flux_matrix_dimension-1, 1))
         for i in range(flux_matrix_dimension-1):
             pi_alpha_slice[i,0] = -self.pi_alpha[i,0] * flux_matrix[i,i]
                     
@@ -899,68 +885,100 @@ class MMVT_data_sample(common_analyze.Data_sample):
         construction of rate matrix Q.
         """
         if self.N_alpha_beta is None or self.k_alpha_beta is None \
-                or self.N_i_j_alpha is None or self.R_i_alpha is None \
-                or self.T_alpha is None:
+            or self.N_i_j_alpha is None or self.R_i_alpha is None \
+            or self.T_alpha is None:
             raise Exception("Unable to call fill_out_data_quantities(): "\
-                            "No statistics present in Data Sample.")
-            
-        self.N_ij = defaultdict(np.longdouble)
-        self.R_i = defaultdict(np.longdouble)
-        self.T = np.longdouble(0.0)
-        sum_pi_alpha_over_T_alpha = np.longdouble(0.0)
+                        "No statistics present in Data Sample.")
+        """ # TODO: remove
+        self.N_ij, self.R_i, self.T = mmvt_Q_N_R(
+            self.model, self.N_i_j_alpha, self.R_i_alpha, self.T_alpha, 
+            self.pi_alpha)
+        """
+        
+        self.N_ij = defaultdict(float)
+        self.R_i = defaultdict(float)
+        self.T = 0.0
+        sum_pi_alpha_over_T_alpha = 0.0
         for alpha, anchor in enumerate(self.model.anchors):
             if anchor.bulkstate:
                 continue
-            this_anchor_pi_alpha = np.longdouble(self.pi_alpha[alpha])
+            if self.T_alpha[alpha] == 0.0:
+                continue
+            this_anchor_pi_alpha = self.pi_alpha[alpha]
             sum_pi_alpha_over_T_alpha += this_anchor_pi_alpha \
-                / np.longdouble(self.T_alpha[alpha])
-        
-        self.T = sum_pi_alpha_over_T_alpha ** -1
+                / self.T_alpha[alpha]
+        self.T = float(sum_pi_alpha_over_T_alpha ** -1)
         assert self.T >= 0.0, "self.T should be positive: {}".format(self.T)
         for alpha, anchor in enumerate(self.model.anchors):
             if anchor.bulkstate:
                 continue
-            this_anchor_pi_alpha = np.longdouble(self.pi_alpha[alpha])
-            T_alpha = np.longdouble(self.T_alpha[alpha])
+            this_anchor_pi_alpha = float(self.pi_alpha[alpha])
+            T_alpha = self.T_alpha[alpha]
             assert T_alpha >= 0.0, \
                 "T_alpha should be positive: {}".format(T_alpha)
-            time_fraction = self.T / T_alpha
+            if T_alpha > 0.0:
+                time_fraction = self.T / T_alpha
+            else:
+                time_fraction = 0.0
             N_i_j_alpha = self.N_i_j_alpha[alpha]
-            
             for key in N_i_j_alpha:
-                assert time_fraction > 0.0, \
+                assert time_fraction >= 0.0, \
                     "time_fraction should be positive: {}".format(time_fraction)
                 assert this_anchor_pi_alpha >= 0.0, \
                     "this_anchor_pi_alpha should be positive: {}".format(
                         this_anchor_pi_alpha)
-                assert N_i_j_alpha[key] > 0.0, \
-                    "N_i_j_alpha[key] should be positive: {}".format(
-                        N_i_j_alpha[key])
-                self.N_ij[key] += time_fraction * \
-                    this_anchor_pi_alpha * np.longdouble(N_i_j_alpha[key])
+                if N_i_j_alpha[key] > 0.0:
+                    self.N_ij[key] += time_fraction * \
+                        this_anchor_pi_alpha * N_i_j_alpha[key]
+                else:
+                    # Bring the entry into existence
+                    self.N_ij[key] += 0.0
             
             R_i_alpha = self.R_i_alpha[alpha]
             if len(R_i_alpha) > 0:
                 for key in R_i_alpha:
-                    assert time_fraction > 0.0, \
+                    assert time_fraction >= 0.0, \
                         "time_fraction should be positive: {}".format(
                             time_fraction)
                     assert this_anchor_pi_alpha >= 0.0, \
                         "this_anchor_pi_alpha should be positive: {}".format(
                             this_anchor_pi_alpha)
-                    assert R_i_alpha[key] > 0.0, \
-                        "R_i_alpha[key] should be positive: {}".format(
-                            R_i_alpha[key])
-                    self.R_i[key] += time_fraction * this_anchor_pi_alpha * \
-                        np.longdouble(R_i_alpha[key])
-                        
+                    if R_i_alpha[key] > 0.0:
+                        self.R_i[key] += time_fraction * this_anchor_pi_alpha \
+                            * R_i_alpha[key]
+                    else:
+                        # Bring the entry into existence
+                        self.R_i[key] += 0.0
             else:
                 raise Exception("R_i_alpha should always be set.")
-                
+        
+        # Now we need to try and correct the zero entries
+        for key in self.N_ij:
+            if self.N_ij[key] == 0.0:
+                i = key[0]
+                if self.R_i[i] == 0.0:
+                    # Then this milestone has no transitions out: give
+                    #  it a high N_ij
+                    self.N_ij[key] = HIGH_N_IJ
+                else:
+                    # Then this milestone has other transitions out: give it
+                    #  a low N_IJ
+                    self.N_ij[key] = LOW_N_IJ
+                    
+        for i in self.R_i:
+            if self.R_i[i] == 0.0:
+                self.R_i[i] = DEFAULT_R_I
+            
         return
+        
     
     def make_mcmc_quantities(self):
         """
+        The MCMC matrix sampler requires inputs to be in Numpy matrix
+        form. The Data_sample objects do not have their inputs in matrix
+        form, so convert and return matrix objects that may be used in
+        the MCMC matrix sampler.
+        
         Finds k_alpha_beta_matrix, N_alpha_beta_matrix, T_alpha_matrix,
         mmvt_Nij_alpha, mmvt_Ri_alpha, mmvt_Qij_alpha, T
         """
@@ -991,7 +1009,8 @@ class MMVT_data_sample(common_analyze.Data_sample):
         for alpha in range(n_anchors):
             if self.model.anchors[alpha].bulkstate:
                 continue
-            invT += self.pi_alpha[alpha] / self.T_alpha[alpha]
+            if self.T_alpha[alpha] > 0.0:
+                invT += self.pi_alpha[alpha] / self.T_alpha[alpha]
             this_mmvt_Nij_alpha = np.zeros((n_milestones, n_milestones))
             this_mmvt_Ri_alpha = np.zeros((n_milestones, 1))
             this_mmvt_Qij_alpha = np.zeros((n_milestones, n_milestones))
@@ -1017,7 +1036,8 @@ class MMVT_data_sample(common_analyze.Data_sample):
             mmvt_Ri_alpha.append(this_mmvt_Ri_alpha)
             mmvt_Qij_alpha.append(this_mmvt_Qij_alpha)
             
-        T = 1.0 / invT        
+        T = 1.0 / invT 
+        
         return k_alpha_beta_matrix, N_alpha_beta_matrix, T_alpha_matrix,\
             mmvt_Nij_alpha, mmvt_Ri_alpha, mmvt_Qij_alpha, T
             
@@ -1037,9 +1057,49 @@ class MMVT_data_sample(common_analyze.Data_sample):
                         = k_alpha_beta_matrix[alpha,beta]
         return
     
+    def fill_N_R_alpha_from_matrices(self, mmvt_Nij_alpha_list, 
+                                     mmvt_Ri_alpha_list):
+        """
+        
+        """
+        for alpha, anchor in enumerate(self.model.anchors):
+            if self.N_i_j_alpha is None or self.R_i_alpha is None:
+                continue
+            if anchor.bulkstate:
+                continue
+            new_T_alpha = 0.0
+            N_i_j_alpha_keys = list(self.N_i_j_alpha[alpha].keys())
+            R_i_alpha_keys = list(self.R_i_alpha[alpha].keys())
+            for key in N_i_j_alpha_keys:
+                i, j = key
+                self.N_i_j_alpha[alpha][key] = float(
+                    mmvt_Nij_alpha_list[alpha][i,j])
+            
+            for key in R_i_alpha_keys:
+                self.R_i_alpha[alpha][key] = float(
+                    mmvt_Ri_alpha_list[alpha][key,0])
+                new_T_alpha += self.R_i_alpha[alpha][key]
+            self.T_alpha[alpha] = new_T_alpha
+        
+        return
+
+def find_nonzero_matrix_entries(M):
+    """
+    For a given matrix M find all the nonzero entries. Return the index
+    tuples in a list.
+    """
+    assert len(M.shape) == 2, "Only 2D matrices allowed."
+    nonzero_matrix_indices = []
+    n = M.shape[0]
+    m = M.shape[1]
+    for i in range(n):
+        for j in range(m):
+            if M[i,j] != 0:
+                nonzero_matrix_indices.append((i,j))
+    return nonzero_matrix_indices
+
 def monte_carlo_milestoning_error(
-        main_data_sample, num=1000, skip=None, stride=None, verbose=False, 
-        pre_equilibrium_approx=False):
+        main_data_sample, num=1000, stride=None, skip=None, verbose=False):
     """
     Calculates an error estimate by sampling a distribution of rate 
     matrices assumming a Poisson (gamma) distribution with 
@@ -1074,11 +1134,9 @@ def monte_carlo_milestoning_error(
         
     verbose : bool, default False
         allow additional verbosity/printing
-    
-    pre_equilibrium_approx : bool, default False
-        Whether to use the pre-equilibrium approximation for
-        computing kinetics.
     """
+    MAX_SKIP = 100
+    MAX_STRIDE = 100
     model = main_data_sample.model
     Q_ij = main_data_sample.Q
     N_ij = main_data_sample.N_ij
@@ -1087,9 +1145,13 @@ def monte_carlo_milestoning_error(
     n_milestones = Q.shape[0] #get size of count matrix
     n_anchors = model.num_anchors
     if skip is None:
-        skip = 10 * n_milestones**2
+        skip = n_milestones
+        if skip > MAX_SKIP:
+            skip = MAX_SKIP
     if stride is None:
-        stride = n_milestones**2
+        stride = n_milestones
+        if stride > MAX_STRIDE:
+            stride = MAX_STRIDE
     
     k_alpha_beta_matrix, N_alpha_beta_matrix, T_alpha_matrix, mmvt_Nij_alpha, \
         mmvt_Ri_alpha, mmvt_Qij_alpha, T \
@@ -1100,60 +1162,84 @@ def monte_carlo_milestoning_error(
     k_off_list = []
     k_ons_list = defaultdict(list)
     k_ons_error = defaultdict(float)
+    k_off_error = None
     p_i_list = []
     free_energy_profile_list = []
     data_sample_list = []
     if verbose: print("collecting ", num, " MCMC samples from ", 
                       num*(stride) + skip, " total moves")  
+    """ # TODO: marked for removal
+    connected_milestones = defaultdict(set)
+    for alpha, anchor in enumerate(model.anchors):
+        for i, milestone in enumerate(anchor.milestones):
+            for j, milestone2 in enumerate(anchor.milestones):
+                if i == j: 
+                    continue
+                connected_milestones[milestone.index].add(milestone2.index)
+    """
+    
     new_data_sample = None
+    nonzero_indices_k_alpha_beta_matrix = find_nonzero_matrix_entries(
+        k_alpha_beta_matrix)
+    nonzero_indices_Q_alpha_list = []
+    for alpha, anchor in enumerate(model.anchors):
+        if anchor.bulkstate:
+            continue
+        nonzero_indices_Q_alpha = find_nonzero_matrix_entries(
+            mmvt_Qij_alpha[alpha])
+        nonzero_indices_Q_alpha_list.append(nonzero_indices_Q_alpha)
+    
     for counter in range(num * (stride) + skip):
         #if verbose: print("MCMC stepnum: ", counter)
         new_data_sample = MMVT_data_sample(model)
         new_data_sample.N_alpha_beta = main_data_sample.N_alpha_beta
+        new_data_sample.N_i_j_alpha = main_data_sample.N_i_j_alpha
+        new_data_sample.R_i_alpha = main_data_sample.R_i_alpha
         new_data_sample.T_alpha = main_data_sample.T_alpha
         k_alpha_beta_matrix_new = markov_chain_monte_carlo\
             .irreversible_stochastic_matrix_algorithm_sample(
-                k_alpha_beta_matrix, N_alpha_beta_matrix, T_alpha_matrix)
-        new_data_sample.fill_k_from_matrices(k_alpha_beta_matrix_new)
-        new_data_sample.calculate_pi_alpha()
-        
+                k_alpha_beta_matrix, N_alpha_beta_matrix, T_alpha_matrix,
+                nonzero_indices_k_alpha_beta_matrix)
         mmvt_Qnew_list = []
-        mmvt_Nij_list = []
-        
-        for alpha in range(model.num_anchors-1):
+        for alpha, anchor in enumerate(model.anchors):
+            if anchor.bulkstate:
+                continue
             mmvt_Qnew_alpha = markov_chain_monte_carlo\
                 .irreversible_stochastic_matrix_algorithm_sample(
                     mmvt_Qij_alpha[alpha], mmvt_Nij_alpha[alpha], 
-                    mmvt_Ri_alpha[alpha])
-            new_mmvt_Nij_alpha = make_new_Nij_alpha(
-                mmvt_Qij_alpha[alpha], mmvt_Ri_alpha[alpha])
+                    mmvt_Ri_alpha[alpha], nonzero_indices_Q_alpha_list[alpha])
             mmvt_Qnew_list.append(mmvt_Qnew_alpha)
-            mmvt_Nij_list.append(new_mmvt_Nij_alpha)
             
         if counter > skip and counter % stride == 0:
-            new_mmvt_Nij, new_mmvt_Ri, new_mmvt_Q = mmvt_Q_N_R(
-                n_milestones, n_anchors-1, mmvt_Nij_list, mmvt_Ri_alpha, 
-                main_data_sample.T_alpha, T, new_data_sample.pi_alpha)
-        
-        k_alpha_beta_matrix = k_alpha_beta_matrix_new
-        mmvt_Qij_alpha = mmvt_Qnew_list
-            
-        if counter > skip and counter % stride == 0:
+            mmvt_Nij_list = []
+            for alpha, anchor in enumerate(model.anchors):
+                if anchor.bulkstate:
+                    continue
+                new_mmvt_Nij_alpha = make_new_Nij_alpha(
+                    mmvt_Qnew_list[alpha], mmvt_Ri_alpha[alpha])
+                mmvt_Nij_list.append(new_mmvt_Nij_alpha)
+                
+            new_data_sample.fill_k_from_matrices(k_alpha_beta_matrix_new)
+            new_data_sample.calculate_pi_alpha()
+            new_data_sample.fill_N_R_alpha_from_matrices(
+                mmvt_Nij_list, mmvt_Ri_alpha)
+            new_data_sample.fill_out_data_quantities()
+            new_data_sample.compute_rate_matrix()
             new_data_sample.N_ij = main_data_sample.N_ij
             new_data_sample.R_i = main_data_sample.R_i
-            new_data_sample.Q = new_mmvt_Q
-            new_data_sample.K = common_analyze.Q_to_K(new_mmvt_Q)
-            if model.k_on_info:
+            new_data_sample.K = common_analyze.Q_to_K(new_data_sample.Q)
+            if model.using_bd():
                 new_data_sample.parse_browndye_results(
                     bd_sample_from_normal=True)
             new_data_sample.calculate_thermodynamics()
-            new_data_sample.calculate_kinetics(pre_equilibrium_approx)
+            new_data_sample.calculate_kinetics()
             p_i_list.append(new_data_sample.p_i)
             free_energy_profile_list.append(new_data_sample.free_energy_profile)
             for key in new_data_sample.MFPTs:
                 MFPTs_list[key].append(new_data_sample.MFPTs[key])
-            k_off_list.append(new_data_sample.k_off)
-            if model.k_on_info:
+            if new_data_sample.k_off is not None:
+                k_off_list.append(new_data_sample.k_off)
+            if model.using_bd():
                 for key in new_data_sample.k_ons:
                     k_ons_list[key].append(new_data_sample.k_ons[key])  
             data_sample_list.append(new_data_sample)
@@ -1176,9 +1262,10 @@ def monte_carlo_milestoning_error(
             free_energy_profile_val_list.append(free_energy_profile_list[j][i])
         free_energy_profile_err[i] = np.std(free_energy_profile_val_list)
     for key in main_data_sample.MFPTs:
-        MFPTs_error[key] = np.std(MFPTs_list[key])
-    k_off_error = np.std(k_off_list)
-    if main_data_sample.model.k_on_info:
+        MFPTs_error[key] = np.std(MFPTs_list[key])    
+    if len(k_off_list) > 0:
+        k_off_error = np.std(k_off_list)
+    if main_data_sample.model.using_bd():
         for key in main_data_sample.k_ons:
             k_ons_error[key] = np.std(k_ons_list[key])
     

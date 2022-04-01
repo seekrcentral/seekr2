@@ -19,6 +19,7 @@ def make_mmvt_spherical_cv_object(spherical_cv_input, index):
     cv = mmvt_base.MMVT_spherical_CV(index, groups)
     return cv
     
+# TODO: marked for removal
 def make_mmvt_milestoning_objects_spherical(
         spherical_cv_input, milestone_alias, milestone_index, 
         input_anchor_index, anchor_index, input_anchors):
@@ -28,7 +29,7 @@ def make_mmvt_milestoning_objects_spherical(
     """
     
     milestones = []
-    num_anchors = len(input_anchors)
+    num_input_anchors = len(input_anchors)
     if input_anchor_index > 0:
         neighbor_index = anchor_index - 1
         neighbor_index_input = input_anchor_index - 1
@@ -47,7 +48,7 @@ def make_mmvt_milestoning_objects_spherical(
         milestone_index += 1
         milestones.append(milestone1)
         
-    if input_anchor_index < num_anchors-1:
+    if input_anchor_index < num_input_anchors-1:
         neighbor_index = anchor_index + 1
         neighbor_index_input = input_anchor_index + 1
         milestone2 = base.Milestone()
@@ -77,6 +78,7 @@ def make_mmvt_tiwary_cv_object(tiwary_cv_input, index):
         tiwary_cv_input.order_parameter_weights)
     return cv
 
+# TODO: marked for removal
 def make_mmvt_milestoning_objects_tiwary(
         tiwary_cv_input, milestone_alias, milestone_index, 
         input_anchor_index, anchor_index, input_anchors):
@@ -86,7 +88,7 @@ def make_mmvt_milestoning_objects_tiwary(
     """
     
     milestones = []
-    num_anchors = len(input_anchors)
+    num_input_anchors = len(input_anchors)
     if input_anchor_index > 0:
         neighbor_index = anchor_index - 1
         neighbor_index_input = input_anchor_index - 1
@@ -111,7 +113,7 @@ def make_mmvt_milestoning_objects_tiwary(
         milestone_index += 1
         milestones.append(milestone1)
         
-    if input_anchor_index < num_anchors-1:
+    if input_anchor_index < num_input_anchors-1:
         neighbor_index = anchor_index + 1
         neighbor_index_input = input_anchor_index + 1
         milestone2 = base.Milestone()
@@ -142,7 +144,8 @@ def make_mmvt_planar_cv_object(planar_cv_input, index):
         index, planar_cv_input.start_group, planar_cv_input.end_group, 
               planar_cv_input.mobile_group)
     return cv
-    
+
+# TODO: marked for removal
 def make_mmvt_milestoning_objects_planar(
         planar_cv_input, milestone_alias, milestone_index, 
         input_anchor_index, anchor_index, input_anchors):
@@ -152,7 +155,7 @@ def make_mmvt_milestoning_objects_planar(
     """
     
     milestones = []
-    num_anchors = len(input_anchors)
+    num_input_anchors = len(input_anchors)
     if input_anchor_index > 0:
         neighbor_index = anchor_index - 1
         neighbor_index_input = input_anchor_index - 1
@@ -171,7 +174,7 @@ def make_mmvt_milestoning_objects_planar(
         milestone_index += 1
         milestones.append(milestone1)
         
-    if input_anchor_index < num_anchors-1:
+    if input_anchor_index < num_input_anchors-1:
         neighbor_index = anchor_index + 1
         neighbor_index_input = input_anchor_index + 1
         milestone2 = base.Milestone()
@@ -198,7 +201,8 @@ def make_mmvt_RMSD_cv_object(RMSD_cv_input, index, root_directory):
     shutil.copyfile(RMSD_cv_input.ref_structure, absolute_RMSD_ref_pdb)
     cv = mmvt_base.MMVT_RMSD_CV(index, RMSD_cv_input.group, RMSD_ref_pdb)
     return cv
-    
+
+# TODO: marked for removal
 def make_mmvt_milestoning_objects_RMSD(
         RMSD_cv_input, milestone_alias, milestone_index, 
         input_anchor_index, anchor_index, input_anchors):
@@ -208,7 +212,7 @@ def make_mmvt_milestoning_objects_RMSD(
     """
     
     milestones = []
-    num_anchors = len(input_anchors)
+    num_input_anchors = len(input_anchors)
     if input_anchor_index > 0:
         neighbor_index = anchor_index - 1
         neighbor_index_input = input_anchor_index - 1
@@ -227,7 +231,7 @@ def make_mmvt_milestoning_objects_RMSD(
         milestone_index += 1
         milestones.append(milestone1)
         
-    if input_anchor_index < num_anchors-1:
+    if input_anchor_index < num_input_anchors-1:
         neighbor_index = anchor_index + 1
         neighbor_index_input = input_anchor_index + 1
         milestone2 = base.Milestone()
@@ -259,6 +263,7 @@ def make_mmvt_external_cv_object(external_cv_input, index):
     cv.restraining_expression = external_cv_input.restraining_expression
     return cv
     
+# TODO: marked for removal
 def make_mmvt_milestoning_objects_external(
         external_cv_input, milestone_alias, milestone_index, 
         input_anchor_index, anchor_index, input_anchors):
@@ -268,7 +273,7 @@ def make_mmvt_milestoning_objects_external(
     """
     
     milestones = []
-    num_anchors = len(input_anchors)
+    num_input_anchors = len(input_anchors)
     if input_anchor_index > 0:
         neighbor_index = anchor_index - 1
         neighbor_index_input = input_anchor_index - 1
@@ -287,7 +292,7 @@ def make_mmvt_milestoning_objects_external(
         milestone_index += 1
         milestones.append(milestone1)
         
-    if input_anchor_index < num_anchors-1:
+    if input_anchor_index < num_input_anchors-1:
         neighbor_index = anchor_index + 1
         neighbor_index_input = input_anchor_index + 1
         milestone2 = base.Milestone()

@@ -14,8 +14,7 @@ import seekr2.modules.common_converge as common_converge
 
 AVG_TRANSITION_TIME_MINIMUM = 0.1 # ps
 
-def converge(model, k_on_state=None, image_directory=None, 
-             pre_equilibrium_approx=False, verbose=False):
+def converge(model, k_on_state=None, image_directory=None, verbose=False):
     """
     Perform all convergence steps: a generic analysis of convergence 
     of quantities such as N_ij, R_i, k_off, and k_on.
@@ -24,8 +23,7 @@ def converge(model, k_on_state=None, image_directory=None,
     k_on_conv, k_off_conv, N_ij_conv, R_i_conv, max_step_list, \
         timestep_in_ns, data_sample_list \
         = common_converge.check_milestone_convergence(
-            model, k_on_state=k_on_state, 
-            pre_equilibrium_approx=pre_equilibrium_approx, verbose=verbose)
+            model, k_on_state=k_on_state, verbose=verbose)
     
     if image_directory is None or image_directory == "":
         return data_sample_list
@@ -166,14 +164,6 @@ if __name__ == "__main__":
         default=100, type=int, help="Enter a minimum number of transitions "\
         "that must be observed per milestone in a given anchor as a criteria "\
         "for the simulations.")
-    argparser.add_argument(
-        "-p", "--pre_equilibrium_approx", dest="pre_equilibrium_approx", 
-        default=False, help="This option uses the pre-equilibrium "\
-        "approximation when computing system kinetics. This setting may be "\
-        "desirable for very long-timescale kinetic processes, which might "\
-        "cause the poor matrix conditioning in the milestoning rate matrix, "\
-        "causing the typical SEEKR2 analysis approach to fail.", 
-        action="store_true")
     
     args = argparser.parse_args() # parse the args into a dictionary
     args = vars(args)
@@ -182,14 +172,13 @@ if __name__ == "__main__":
     image_directory = args["image_directory"]
     cutoff = args["cutoff"]
     minimum_anchor_transitions = args["minimum_anchor_transitions"]
-    pre_equilibrium_approx = args["pre_equilibrium_approx"]
     
     model = base.load_model(model_file)
     
     image_directory = common_analyze.make_image_directory(
         model, image_directory)
     
-    if model.k_on_info is None:
+    if not model.using_bd():
         assert k_on_state is None, "--k_on_state cannot be defined for "\
             "this model. The model was not initialized to compute k-on "\
             "quantities."

@@ -27,7 +27,7 @@ def test_Runner_namd_default(host_guest_mmvt_model):
     default_output_file, output_basename, state_file_prefix, restart_index = \
         runner.prepare()
     mmvt_output_filename = os.path.join(
-        host_guest_mmvt_model.anchor_rootdir, myanchor.name, "prod", 
+        host_guest_mmvt_model.anchor_rootdir, myanchor.directory, "prod", 
         "%s%d" % (mmvt_base.NAMDMMVT_BASENAME, 1))
     my_sim_namd = mmvt_sim_namd.create_sim_namd(
         host_guest_mmvt_model, myanchor, mmvt_output_filename)
@@ -50,7 +50,7 @@ def test_Runner_namd_load_state(host_guest_mmvt_model):
     default_output_file, output_basename, state_file_prefix, restart_index = \
         runner.prepare()
     mmvt_output_filename = os.path.join(
-        host_guest_mmvt_model.anchor_rootdir, myanchor.name, "prod", 
+        host_guest_mmvt_model.anchor_rootdir, myanchor.directory, "prod", 
         "%s%d" % (mmvt_base.NAMDMMVT_BASENAME, 1))
     loading_state_filename = os.path.join(host_guest_mmvt_model.anchor_rootdir, 
                                           "start.state")
@@ -75,7 +75,7 @@ def test_Runner_namd_save_states(host_guest_mmvt_model):
     default_output_file, output_basename, state_file_prefix, restart_index = \
         runner.prepare(force_overwrite=True, save_state_file=True)
     mmvt_output_filename = os.path.join(
-        host_guest_mmvt_model.anchor_rootdir, myanchor.name, "prod", 
+        host_guest_mmvt_model.anchor_rootdir, myanchor.directory, "prod", 
         "%s%d" % (mmvt_base.NAMDMMVT_BASENAME, 1))
     my_sim_namd = mmvt_sim_namd.create_sim_namd(
         host_guest_mmvt_model, myanchor, mmvt_output_filename)
@@ -98,7 +98,7 @@ def test_Runner_namd_save_states_until_all_bounds(host_guest_mmvt_model):
     default_output_file, output_basename, state_file_prefix, restart_index = \
         runner.prepare(force_overwrite=True, save_state_boundaries=True)
     mmvt_output_filename = os.path.join(
-        host_guest_mmvt_model.anchor_rootdir, myanchor.name, "prod", 
+        host_guest_mmvt_model.anchor_rootdir, myanchor.directory, "prod", 
         "%s%d" % (mmvt_base.NAMDMMVT_BASENAME, 1))
     my_sim_namd = mmvt_sim_namd.create_sim_namd(
         host_guest_mmvt_model, myanchor, mmvt_output_filename)

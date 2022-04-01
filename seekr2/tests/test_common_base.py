@@ -95,6 +95,13 @@ def test_model_get_type(tryp_ben_mmvt_model, tryp_ben_elber_model):
     with pytest.raises(Exception) as e_info:
         tryp_ben_mmvt_model.get_type()
     return
+
+def test_model_get_timestep(tryp_ben_mmvt_model):
+    """
+    Assure that the model.get_type() function is working properly
+    """
+    assert tryp_ben_mmvt_model.get_timestep() == 0.002
+    return
     
 def test_get_box_vectors_from_pdb():
     expected_box_vectors = unit.Quantity(

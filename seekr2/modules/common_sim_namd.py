@@ -460,7 +460,7 @@ class Integrator_parameters():
         Use the SEEKR Model() object settings to fill out this object
         with relevant quantities.
         """
-        self.timestep = model.namd_settings.langevin_integrator.timestep
+        self.timestep = model.get_timestep()
         self.langevinTemp = model.namd_settings.langevin_integrator\
             .target_temperature
         self.langevinDamping = model.namd_settings.langevin_integrator\

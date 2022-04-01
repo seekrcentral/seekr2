@@ -251,8 +251,7 @@ class Elber_data_sample(common_analyze.Data_sample):
         return
         
 def monte_carlo_milestoning_error(
-        main_data_sample, num=1000, skip=None, stride=None, verbose=False, 
-        pre_equilibrium_approx=False):
+        main_data_sample, num=1000, skip=None, stride=None, verbose=False):
     """
     Calculates an error estimate by sampling a distribution of rate 
     matrices assumming a Poisson (gamma) distribution with 
@@ -287,10 +286,6 @@ def monte_carlo_milestoning_error(
         
     verbose : bool, default False
         allow additional verbosity/printing
-    
-    pre_equilibrium_approx : bool, default False
-        Whether to use the pre-equilibrium approximation for
-        computing kinetics.
     """
     model = main_data_sample.model
     Q_ij = main_data_sample.Q
@@ -333,17 +328,17 @@ def monte_carlo_milestoning_error(
             new_data_sample.R_i = R_i
             new_data_sample.Q = Qnew
             new_data_sample.K = common_analyze.Q_to_K(Qnew)
-            if model.k_on_info:
+            if model.using_bd():
                 new_data_sample.parse_browndye_results(
                     bd_sample_from_normal=True)
             new_data_sample.calculate_thermodynamics()
-            new_data_sample.calculate_kinetics(pre_equilibrium_approx)
+            new_data_sample.calculate_kinetics()
             p_i_list.append(new_data_sample.p_i)
             free_energy_profile_list.append(new_data_sample.free_energy_profile)
             for key in new_data_sample.MFPTs:
                 MFPTs_list[key].append(new_data_sample.MFPTs[key])
             k_off_list.append(new_data_sample.k_off)
-            if model.k_on_info:
+            if model.using_bd():
                 for key in new_data_sample.k_ons:
                     k_ons_list[key].append(new_data_sample.k_ons[key])  
             data_sample_list.append(new_data_sample)
@@ -371,7 +366,7 @@ def monte_carlo_milestoning_error(
     for key in new_data_sample.MFPTs:
         MFPTs_error[key] = np.std(MFPTs_list[key])
     k_off_error = np.std(k_off_list)
-    if new_data_sample.model.k_on_info:
+    if new_data_sample.model.using_bd():
         for key in new_data_sample.k_ons:
             k_ons_error[key] = np.std(k_ons_list[key])
     

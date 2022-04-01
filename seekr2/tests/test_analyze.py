@@ -53,8 +53,7 @@ def make_smoluchowski_standard_for_k_off(mymodel, potential_energy_function):
 
 def make_smoluchowski_mmvt_analysis(mymodel, potential_energy_function, 
                                     k_on_src=None, transition_probs=None,
-                                    diffusion=1.0, beta=1.0, 
-                                    pre_equilibrium_approx=False):
+                                    diffusion=1.0, beta=1.0):
     calc = smol.make_smoluchowski_calculation_from_model(
         mymodel, potential_energy_function, beta=beta, diffusion=diffusion)
     my_analysis = analyze.Analysis(mymodel)
@@ -112,15 +111,12 @@ def make_smoluchowski_mmvt_analysis(mymodel, potential_energy_function,
     
     my_analysis.main_data_sample.compute_rate_matrix()
     my_analysis.main_data_sample.calculate_thermodynamics()
-    my_analysis.main_data_sample.calculate_kinetics(
-        pre_equilibrium_approx=pre_equilibrium_approx)
+    my_analysis.main_data_sample.calculate_kinetics()
     
     data_sample_list, p_i_error, free_energy_profile_err, MFPTs_error, \
         k_off_error, k_ons_error = mmvt_analyze.monte_carlo_milestoning_error(
-            my_analysis.main_data_sample, num=100, skip=None, stride=None,
-            pre_equilibrium_approx=False)
-    
-    mmvt_time = my_analysis.main_data_sample.MFPTs[(0,"bulk")]
+            my_analysis.main_data_sample, num=100, skip=None, stride=None)
+    mmvt_time = my_analysis.main_data_sample.MFPTs[("anchor_0", "bulk")]
     k_on = None
     if k_on_src is not None:
         k_on = my_analysis.main_data_sample.k_ons[0]
@@ -186,9 +182,8 @@ def make_smoluchowski_elber_analysis(mymodel, potential_energy_function,
     my_analysis.main_data_sample.calculate_kinetics()
     data_sample_list, p_i_error, free_energy_profile_err, MFPTs_error, \
         k_off_error, k_ons_error = elber_analyze.monte_carlo_milestoning_error(
-            my_analysis.main_data_sample, num=100, skip=None, stride=None,
-            pre_equilibrium_approx=False)
-    elber_time = my_analysis.main_data_sample.MFPTs[(0,"bulk")]
+            my_analysis.main_data_sample, num=100, skip=None, stride=None)
+    elber_time = my_analysis.main_data_sample.MFPTs[("anchor_0", "bulk")]
     k_on = None
     if k_on_src is not None:
         k_on = my_analysis.main_data_sample.k_ons[0]
@@ -358,7 +353,7 @@ def make_mmvt_calculation_based_on_output_files(model, potential_energy_function
         #    bd_milestone_output_file_name, k_on_src, transition_probs)
     
     my_analysis = analyze.analyze(model, num_error_samples=10)
-    mmvt_time = my_analysis.main_data_sample.MFPTs[(0,"bulk")]
+    mmvt_time = my_analysis.main_data_sample.MFPTs[("anchor_0", "bulk")]
     if k_on_src is not None:
         k_on = my_analysis.main_data_sample.k_ons[0]
     
@@ -489,7 +484,7 @@ def make_elber_calculation_based_on_output_files(model, potential_energy_functio
         """
     
     my_analysis = analyze.analyze(model, num_error_samples=10)
-    elber_time = my_analysis.main_data_sample.MFPTs[(0,"bulk")]
+    elber_time = my_analysis.main_data_sample.MFPTs[("anchor_0", "bulk")]
     if k_on_src is not None:
         k_on = my_analysis.main_data_sample.k_ons[0]
     

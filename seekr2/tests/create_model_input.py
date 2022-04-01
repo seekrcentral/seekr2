@@ -650,43 +650,6 @@ def create_smoluchowski_mmvt_model_input(root_dir, num_input_anchors=5):
             input_anchor.bulk_anchor = False
         cv_input1.input_anchors.append(input_anchor)
     
-    """ # TODO: remove
-    input_anchor1 = common_cv.Spherical_cv_anchor()
-    input_anchor1.radius = 0.5
-    input_anchor1.starting_amber_params = None
-    input_anchor1.bound_state = True
-    input_anchor1.bulk_anchor = False
-    cv_input1.input_anchors.append(input_anchor1)
-    
-    input_anchor2 = common_cv.Spherical_cv_anchor()
-    input_anchor2.radius = 1.5
-    input_anchor2.starting_amber_params = None
-    input_anchor2.bound_state = False
-    input_anchor2.bulk_anchor = False
-    cv_input1.input_anchors.append(input_anchor2)
-    
-    input_anchor3 = common_cv.Spherical_cv_anchor()
-    input_anchor3.radius = 2.5
-    input_anchor3.starting_amber_params = None
-    input_anchor3.bound_state = False
-    input_anchor3.bulk_anchor = False
-    cv_input1.input_anchors.append(input_anchor3)
-    
-    input_anchor4 = common_cv.Spherical_cv_anchor()
-    input_anchor4.radius = 3.5
-    input_anchor4.starting_amber_params = None
-    input_anchor4.bound_state = False
-    input_anchor4.bulk_anchor = False
-    cv_input1.input_anchors.append(input_anchor4)
-    
-    input_anchor5 = common_cv.Spherical_cv_anchor()
-    input_anchor5.radius = 4.5
-    input_anchor5.starting_amber_params = None
-    input_anchor5.bound_state = False
-    input_anchor5.bulk_anchor = True
-    cv_input1.input_anchors.append(input_anchor5)
-    """
-    
     model_input.cv_inputs = [cv_input1]
     
     model_input.browndye_settings_input  = None

@@ -99,7 +99,6 @@ def compare_solvers_analytical_calculated(tmpdir, potential_energy_function):
     lowest = 5 # 55
     highest = 10 # 60
     interval = 5
-    pre_equilibrium_approx = False
     print("i   benchmark_time  mmvt_time")
     for i in range(lowest, highest+interval, interval):
         mmvt_rootdir = os.path.join(
@@ -117,8 +116,7 @@ def compare_solvers_analytical_calculated(tmpdir, potential_energy_function):
         mmvt_model.k_on_info = None
         mmvt_time, dummy, mmvt_analysis = \
             test_analyze.make_smoluchowski_mmvt_analysis(
-                mmvt_model, potential_energy_function, 
-                pre_equilibrium_approx=pre_equilibrium_approx)
+                mmvt_model, potential_energy_function)
         elber_model.k_on_info = None
         #elber_time, dummy, elber_analysis = \
         #    test_analyze.make_smoluchowski_elber_analysis(
