@@ -338,6 +338,7 @@ def browndye_run_compute_rate_constant(compute_rate_constant_program,
     return k_ons, k_on_errors, reaction_probabilities, \
         reaction_probability_errors, transition_counts
 
+# TODO: determine if this function is needed anymore
 def combine_fhpd_results(bd_milestone, fhpd_directories, 
                          combined_results_filename):
     """

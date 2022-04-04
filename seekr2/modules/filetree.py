@@ -200,16 +200,6 @@ def copy_building_files_by_anchor(anchor, input_anchor, rootdir):
             if anchor.amber_params.box_vectors is None:
                 anchor.amber_params.box_vectors = base.Box_vectors()
                 box_vectors = base.get_box_vectors_from_pdb(new_pdb_filename)
-                """ # TODO: remove
-                pdb_structure = parmed.load_file(new_pdb_filename)
-                assert pdb_structure.box_vectors is not None, "No box vectors "\
-                "found in {}. ".format(new_pdb_filename) \
-                + "Box vectors for an anchor must be defined with a CRYST "\
-                "line within the PDB file, or explicitly set in the model "\
-                "input XML file."
-                anchor.amber_params.box_vectors.from_quantity(
-                    pdb_structure.box_vectors)
-                """
                 anchor.amber_params.box_vectors.from_quantity(
                     box_vectors)
         
@@ -235,23 +225,24 @@ def copy_building_files_by_anchor(anchor, input_anchor, rootdir):
                 anchor.forcefield_params.custom_forcefield_filenames.\
                     append(os.path.expanduser(ff_filename))
         
-        if forcefield.pdb_filename is not None and \
-                forcefield.pdb_filename != "":
-            forcefield.pdb_filename = os.path.expanduser(
-                forcefield.pdb_filename)
-            assert os.path.exists(forcefield.pdb_filename), \
+        if forcefield.pdb_coordinates_filename is not None and \
+                forcefield.pdb_coordinates_filename != "":
+            forcefield.pdb_coordinates_filename = os.path.expanduser(
+                forcefield.pdb_coordinates_filename)
+            assert os.path.exists(forcefield.pdb_coordinates_filename), \
                 "Provided file does not exist: {}".format(
-                    forcefield.pdb_filename)
-            pdb_filename = os.path.basename(forcefield.pdb_filename)
+                    forcefield.pdb_coordinates_filename)
+            pdb_filename = os.path.basename(forcefield.pdb_coordinates_filename)
             new_pdb_filename = os.path.join(anchor_building_dir, 
                                             pdb_filename)
-            copyfile(forcefield.pdb_filename, new_pdb_filename)
-            anchor.forcefield_params.pdb_filename = pdb_filename
+            copyfile(forcefield.pdb_coordinates_filename, new_pdb_filename)
+            anchor.forcefield_params.pdb_coordinates_filename = pdb_filename
             anchor.forcefield_params.box_vectors = forcefield.box_vectors
             if anchor.forcefield_params.box_vectors is None:
-                pdb_structure = parmed.load_file(new_pdb_filename)
+                anchor.forcefield_params.box_vectors = base.Box_vectors()
+                box_vectors = base.get_box_vectors_from_pdb(new_pdb_filename)
                 anchor.forcefield_params.box_vectors.from_quantity(
-                    pdb_structure.box_vectors)
+                    box_vectors)
     
     return
     

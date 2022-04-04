@@ -221,10 +221,9 @@ def pi_alpha_from_K_alpha_beta(k_alpha_beta, n_anchors):
     pi_alpha = abs(la.solve(flux_matrix.T, prob_equil))
     return pi_alpha
 
-@pytest.mark.skip()
 def test_mcmc_3x3_mmvt(tmpdir_factory):
     """
-    Skip this test for now...
+
     """
     num = 10000 #100000
     stride = 4
@@ -236,6 +235,47 @@ def test_mcmc_3x3_mmvt(tmpdir_factory):
     model = base.Model()
     model.num_milestones = n_milestones
     model.num_anchors = n_anchors
+    anchor0 = mmvt_base.MMVT_toy_anchor()
+    anchor0.index = 0
+    milestone_0_0 = base.Milestone()
+    milestone_0_0.index = 0
+    milestone_0_0.neighbor_anchor_index = 1
+    milestone_0_0.alias_index = 1
+    anchor0.milestones = [milestone_0_0]
+    
+    anchor1 = mmvt_base.MMVT_toy_anchor()
+    anchor1.index = 1
+    milestone_1_0 = base.Milestone()
+    milestone_1_0.index = 0
+    milestone_1_0.neighbor_anchor_index = 0
+    milestone_1_0.alias_index = 1
+    milestone_1_1 = base.Milestone()
+    milestone_1_1.index = 1
+    milestone_1_1.neighbor_anchor_index = 2
+    milestone_1_1.alias_index = 2
+    anchor1.milestones = [milestone_1_0, milestone_1_1]
+    
+    anchor2 = mmvt_base.MMVT_toy_anchor()
+    anchor2.index = 2
+    milestone_2_0 = base.Milestone()
+    milestone_2_0.index = 1
+    milestone_2_0.neighbor_anchor_index = 1
+    milestone_2_0.alias_index = 1
+    milestone_2_1 = base.Milestone()
+    milestone_2_1.index = 2
+    milestone_2_1.neighbor_anchor_index = 3
+    milestone_2_1.alias_index = 2
+    anchor2.milestones = [milestone_2_0, milestone_2_1]
+    
+    anchor3 = mmvt_base.MMVT_toy_anchor()
+    anchor3.index = 3
+    milestone_3_0 = base.Milestone()
+    milestone_3_0.index = 2
+    milestone_3_0.neighbor_anchor_index = 2
+    milestone_3_0.alias_index = 1
+    anchor3.milestones = [milestone_3_0]
+    
+    model.anchors = [anchor0, anchor1, anchor2, anchor3]
     
     # MMVT stats
     N_alpha_beta = {(0,1):12, (1,0):12,
@@ -257,6 +297,7 @@ def test_mcmc_3x3_mmvt(tmpdir_factory):
                      1.8,
                      0.6]
     
+    """
     k_alpha_beta_matrix, N_alpha_beta_matrix, T_alpha_matrix \
         = make_k_N_T_matrices(
             n_anchors, k_alpha_beta, N_alpha_beta, T_alpha_total)
@@ -272,6 +313,14 @@ def test_mcmc_3x3_mmvt(tmpdir_factory):
     mmvt_Nij, mmvt_Ri, mmvt_Q = mmvt_analyze.mmvt_Q_N_R(
         n_milestones, n_anchors, mmvt_Nij_alpha, mmvt_Ri_alpha, 
         T_alpha_total, T, pi_alpha)
+    """
+    main_data_sample = mmvt_analyze.MMVT_data_sample(
+            model, N_alpha_beta, k_alpha_beta, N_i_j_alpha, 
+            R_i_alpha_total, T_alpha_total)
+    main_data_sample.calculate_pi_alpha()
+    main_data_sample.fill_out_data_quantities()
+    main_data_sample.compute_rate_matrix()
+    mmvt_Q = main_data_sample.Q
     
     # Elber stats
     N_i_j = {(0,1): 4, (1,0): 4, (1,2): 2, (2,1): 2}
@@ -299,6 +348,7 @@ def test_mcmc_3x3_mmvt(tmpdir_factory):
     # Now compare the distributions of both of them
     
     # MMVT matrix sampler
+    """
     mmvt_q1_distribution = []
     mmvt_q2_distribution = []
     pi_alpha_dist = []
@@ -332,6 +382,10 @@ def test_mcmc_3x3_mmvt(tmpdir_factory):
         
         k_alpha_beta_matrix = k_alpha_beta_matrix_new
         mmvt_Qij_alpha = mmvt_Qnew_list
+    """
+    data_sample_list, p_i_error, free_energy_profile_err, MFPTs_error, \
+        k_off_error, k_ons_error = mmvt_analyze.monte_carlo_milestoning_error(
+        main_data_sample, num=num, stride=stride, skip=skip, verbose=True)
     
     # Elber matrix sampler
     elber_q1_distribution = []

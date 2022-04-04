@@ -85,33 +85,33 @@ def test_Cuda_platform_settings():
     assert properties["CudaPrecision"] == "mixed"
     return
 
-def test_model_get_type(tryp_ben_mmvt_model, tryp_ben_elber_model):
+def test_model_get_type(host_guest_mmvt_model, host_guest_elber_model):
     """
     Assure that the model.get_type() function is working properly
     """
-    assert tryp_ben_mmvt_model.get_type() == "mmvt"
-    assert tryp_ben_elber_model.get_type() == "elber"
-    tryp_ben_mmvt_model.calculation_type = "wrong"
+    assert host_guest_mmvt_model.get_type() == "mmvt"
+    assert host_guest_elber_model.get_type() == "elber"
+    host_guest_mmvt_model.calculation_type = "wrong"
     with pytest.raises(Exception) as e_info:
-        tryp_ben_mmvt_model.get_type()
+        host_guest_mmvt_model.get_type()
     return
 
-def test_model_get_timestep(tryp_ben_mmvt_model):
+def test_model_get_timestep(host_guest_mmvt_model):
     """
     Assure that the model.get_type() function is working properly
     """
-    assert tryp_ben_mmvt_model.get_timestep() == 0.002
+    assert host_guest_mmvt_model.get_timestep() == 0.002
     return
     
 def test_get_box_vectors_from_pdb():
     expected_box_vectors = unit.Quantity(
-        [[61.359, 0.0, 0.0], 
-         [-20.451767557539473, 57.850255701875476, 0.0], 
-         [-20.451767557539473, -28.92251350474921, 50.101300355778946]], 
+        [[40.142, 0.0, 0.0], 
+         [0.0, 40.329, 0.0], 
+         [0.0, 0.0, 32.472]], 
                       unit=unit.angstrom)
     test_pdb_filename = os.path.join(
         TEST_DIRECTORY, 
-        "../data/trypsin_benzamidine_files/mmvt/tryp_ben_at0.pdb")
+        "../data/hostguest_files/hostguest_at0.5.pdb")
     result = base.get_box_vectors_from_pdb(test_pdb_filename)
     assert np.isclose(expected_box_vectors.value_in_unit(unit.angstroms), 
                       result.value_in_unit(unit.angstroms)).all()

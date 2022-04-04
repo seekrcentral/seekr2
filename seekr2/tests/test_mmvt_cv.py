@@ -54,13 +54,6 @@ def test_torsion_order_parameter_get_value():
     assert np.isclose(phi, expected_phi)
     return
 
-def test_rmsd_input_and_model(rmsd_mmvt_model_input, rmsd_mmvt_model):
-    """
-    
-    """
-    check.check_pre_simulation_all(rmsd_mmvt_model)
-    return
-
 def test_toy_input_and_model(toy_mmvt_model_input, toy_mmvt_model):
     """
     

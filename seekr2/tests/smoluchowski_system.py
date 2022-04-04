@@ -55,7 +55,6 @@ import matplotlib.pyplot as plt
 import seekr2.analyze as analyze
 import seekr2.modules.common_base as base
 import seekr2.modules.mmvt_base as mmvt_base
-import seekr2.tests.make_test_model as make_test_model
 
 beta = 0.1
 max_time = 10.0

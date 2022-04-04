@@ -7,22 +7,22 @@ import os
 
 from seekr2.modules import elber_sim_openmm
 
-def test_elber_sim_openmm_amber(tmp_path, tryp_ben_elber_model):
-    myanchor = tryp_ben_elber_model.anchors[1]
-    tryp_ben_elber_model.openmm_settings.cuda_platform_settings = None
-    tryp_ben_elber_model.openmm_settings.reference_platform = True
+def test_elber_sim_openmm_amber(tmp_path, host_guest_elber_model):
+    myanchor = host_guest_elber_model.anchors[1]
+    host_guest_elber_model.openmm_settings.cuda_platform_settings = None
+    host_guest_elber_model.openmm_settings.reference_platform = True
     output_file = os.path.join(tmp_path, "output.txt")
     my_sim_openmm = elber_sim_openmm.create_sim_openmm(
-        tryp_ben_elber_model, myanchor, output_file)
+        host_guest_elber_model, myanchor, output_file)
     return
 
 @pytest.mark.skip
-def test_elber_sim_openmm_forcefield(tmp_path, tryp_ben_elber_model):
+def test_elber_sim_openmm_forcefield(tmp_path, host_guest_elber_model):
     # TODO: un-skip this test if forcefield inputs ever become widely-used
-    myanchor = tryp_ben_elber_model.anchors[1]
-    tryp_ben_elber_model.openmm_settings.cuda_platform_settings = None
-    tryp_ben_elber_model.openmm_settings.reference_platform = True
+    myanchor = host_guest_elber_model.anchors[1]
+    host_guest_elber_model.openmm_settings.cuda_platform_settings = None
+    host_guest_elber_model.openmm_settings.reference_platform = True
     output_file = os.path.join(tmp_path, "output.txt")
     my_sim_openmm = elber_sim_openmm.create_sim_openmm(
-        tryp_ben_elber_model, myanchor, output_file)
+        host_guest_elber_model, myanchor, output_file)
     return

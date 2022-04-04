@@ -179,13 +179,13 @@ def test_browndye_parse_bd_milestone_results():
 
 #TODO: modify for writing FHPD structures without old BD milestoning way
 @pytest.mark.skip()
-def test_combine_fhpd_results(tryp_ben_mmvt_model):
+def test_combine_fhpd_results(host_guest_mmvt_model):
     test_bd_results_filename = os.path.join(
         TEST_DIRECTORY, "data/sample_bd_milestone_results.xml")
     lig_filenames = ["lig1_0_0", "lig1_0_1", "lig1_0_2"]
     bd_milestone_dir = os.path.join(
-        tryp_ben_mmvt_model.anchor_rootdir,
-        tryp_ben_mmvt_model.k_on_info.bd_milestones[0].directory)
+        host_guest_mmvt_model.anchor_rootdir,
+        host_guest_mmvt_model.k_on_info.bd_milestones[0].directory)
     fhpd_dir = os.path.join(
         bd_milestone_dir,
         tryp_ben_mmvt_model.k_on_info.bd_milestones[0].fhpd_directory)

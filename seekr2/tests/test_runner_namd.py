@@ -5,16 +5,12 @@ test runner_namd.py script(s)
 """
 
 import os
-import pytest
 import glob
-import re
 
 import seekr2.modules.common_base as base
 import seekr2.modules.mmvt_base as mmvt_base
-import seekr2.modules.common_sim_namd as sim_namd
 import seekr2.modules.mmvt_sim_namd as mmvt_sim_namd
 import seekr2.modules.runner_namd as runner_namd
-import seekr2.tests.make_test_model as make_test_model
 
 def test_Runner_namd_default(host_guest_mmvt_model):
     host_guest_mmvt_model.calculation_settings.num_production_steps = 10

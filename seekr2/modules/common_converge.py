@@ -38,6 +38,8 @@ def analyze_bd_only(model, data_sample):
     should be performed. This function only performs a BD analysis on
     a particular data sample.
     """
+    if model.k_on_info is None:
+        return
     bulk_milestones = []
     MFPTs = {}
     for alpha, anchor in enumerate(model.anchors):

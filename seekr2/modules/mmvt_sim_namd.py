@@ -298,16 +298,19 @@ def create_sim_namd(model, anchor, output_filename):
         
     output_filename : str
         The base name of various output files produced by NAMD.
+        
+    Returns
+    -------
+    sim_namd : Sim_namd()
+        An object to store all the information needed to run a NAMD
+        SEEKR calculation.
     """
     
     sim_namd = common_sim_namd.Sim_namd()
-    building_directory = os.path.join(
-        model.anchor_rootdir, anchor.directory, anchor.building_directory)
     box_vectors = None
     if anchor.amber_params is not None:
         box_vectors = anchor.amber_params.box_vectors
-        #assert box_vectors is not None, "No source of box vectors provided."
-    
+        
     elif anchor.charmm_params is not None:
         raise Exception("Charmm systems not yet implemented")
     

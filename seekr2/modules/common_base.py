@@ -644,7 +644,7 @@ class Forcefield_params(Serializer):
     def __init__(self):
         self.built_in_forcefield_filenames = []
         self.custom_forcefield_filenames = []
-        self.pdb_filename = ""
+        self.pdb_coordinates_filename = ""
         self.box_vectors = None
         return
 

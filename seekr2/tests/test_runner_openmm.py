@@ -6,16 +6,12 @@ test runner_openmm.py script(s)
 
 import pytest
 import os
-import glob
 import shutil
 
-import seekr2.modules.common_base as base
 import seekr2.modules.mmvt_base as mmvt_base
-import seekr2.modules.elber_base as elber_base
 import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
 import seekr2.modules.elber_sim_openmm as elber_sim_openmm
 import seekr2.modules.runner_openmm as runner_openmm
-import seekr2.tests.make_test_model as make_test_model
 import seekr2.run as run
 
 TEST_DIRECTORY = os.path.dirname(__file__)
@@ -90,11 +86,12 @@ def test_Runner_openmm_load_state(host_guest_mmvt_model):
     assert os.path.exists(mmvt_output_filename)
     return
 
-def test_Runner_openmm_forcefield(tmp_path):
+# No working XML inputs for hostguest
+@pytest.mark.skip()
+def test_Runner_openmm_forcefield(tmp_path, host_guest_mmvt_model_forcefield):
     if not os.path.exists(tmp_path):
         os.mkdir(tmp_path)
-    mymodel = make_test_model.make_test_model(tmp_path, mode="forcefield")
-    #sim_openmm_factory = sim_openmm.Sim_openmm_factory()
+    mymodel = host_guest_mmvt_model_forcefield
     myanchor = mymodel.anchors[1]
     mmvt_output_filename = os.path.join(
                     tmp_path, myanchor.directory, "prod", 

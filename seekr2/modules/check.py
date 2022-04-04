@@ -1012,7 +1012,6 @@ def check_bd_simulation_end_state(model):
                 return False
     return True
 
-# TODO: write a check for eternally bouncing output files
 def check_output_files_for_stuck_anchors(model):
     """
     Systems started outside the milestone boundaries may bounce every
@@ -1047,6 +1046,8 @@ def check_output_files_for_stuck_anchors(model):
                         sequential_bounces = 0
                         
                     if sequential_bounces > MAX_SEQUENTIAL_BOUNCES:
+                        print("max sequential bounces exceeded for anchor "\
+                              "{} at time {}".format(anchor.index, cur_time))
                         anchors_stuck.append(anchor.index)
                         break
                     last_time = cur_time

@@ -158,8 +158,10 @@ def create_openmm_system(sim_openmm, model, anchor, frame=0,
                     anchor.forcefield_params.custom_forcefield_filenames:
                 forcefield_filenames.append(os.path.join(
                     building_directory, forcefield_filename))
+            print("anchor.forcefield_params.pdb_filename:", anchor.forcefield_params.pdb_coordinates_filename)
             pdb_filename = os.path.join(building_directory, 
-                                   anchor.forcefield_params.pdb_filename)
+                                   anchor.forcefield_params.pdb_coordinates_filename)
+            print("pdb_filename:", pdb_filename)
             pdb = openmm_app.PDBFile(pdb_filename)
             forcefield = openmm_app.ForceField(
                 *forcefield_filenames)

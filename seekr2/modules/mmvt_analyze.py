@@ -824,10 +824,11 @@ class MMVT_data_sample(common_analyze.Data_sample):
             if anchor1.bulkstate:
                 continue
             id_alias = anchor1.alias_from_neighbor_id(pivot_index)
-            if id_alias is None:
-                flux_matrix[pivot_index, alpha] = 0.0
-            else:
-                flux_matrix[pivot_index, alpha] = 1e30
+            flux_matrix[pivot_index, alpha] = 0.0
+            #if id_alias is None:
+            #    flux_matrix[pivot_index, alpha] = 0.0
+            #else:
+            #    flux_matrix[pivot_index, alpha] = 1e30
             
             dead_end_anchor = False
             if len(anchor1.milestones) == 1:
@@ -858,6 +859,8 @@ class MMVT_data_sample(common_analyze.Data_sample):
                 
             flux_matrix[alpha, alpha] = -column_sum[alpha]
             
+        flux_matrix[pivot_index, pivot_index-1] = 1e30
+        # TODO: remove
         np.savetxt("/home/lvotapka/tmp/flux_matrix.txt", flux_matrix)
         
         prob_equil = np.zeros((flux_matrix_dimension,1))
@@ -1135,7 +1138,7 @@ def monte_carlo_milestoning_error(
     verbose : bool, default False
         allow additional verbosity/printing
     """
-    MAX_SKIP = 100
+    MAX_SKIP = 1000
     MAX_STRIDE = 100
     model = main_data_sample.model
     Q_ij = main_data_sample.Q
@@ -1145,11 +1148,11 @@ def monte_carlo_milestoning_error(
     n_milestones = Q.shape[0] #get size of count matrix
     n_anchors = model.num_anchors
     if skip is None:
-        skip = n_milestones
+        skip = 40*n_milestones
         if skip > MAX_SKIP:
             skip = MAX_SKIP
     if stride is None:
-        stride = n_milestones
+        stride = 4*n_milestones
         if stride > MAX_STRIDE:
             stride = MAX_STRIDE
     
