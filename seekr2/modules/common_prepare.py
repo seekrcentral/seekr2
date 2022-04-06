@@ -530,7 +530,8 @@ def resolve_connections(connection_flag_dict, model, associated_input_anchor,
                 +"must have the same value for 'bulk_anchor'."   
             # Ensure that both anchors don't have starting structures 
             # defined
-            if anchor.__class__.__name__ == "MMVT_toy_anchor":
+            if anchor.__class__.__name__ \
+                    in ["MMVT_toy_anchor", "Elber_toy_anchor"]:
                 """ # TODO: marked for removal
                 assert len(anchor_kept.starting_positions) == 0 or \
                         len(anchor_discarded.starting_positions) == 0, \
@@ -684,6 +685,8 @@ def create_cvs(model, collective_variable_inputs, root_directory):
         elif model.get_type() == "elber":
             if isinstance(cv_input, common_cv.Spherical_cv_input):
                 cv = elber_cv.make_elber_spherical_cv_object(cv_input, index=i)
+            elif isinstance(cv_input, common_cv.Toy_cv_input):
+                cv = elber_cv.make_elber_external_cv_object(cv_input, index=i)
             else:
                 raise Exception("CV type not implemented in Elber: %s" \
                                 % type(cv_input))
@@ -766,12 +769,19 @@ def create_anchors(model, model_input):
                         
                 elif model.get_type() == "elber":
                     milestone_alias = 1
-                    milestones, milestone_alias, milestone_index = \
-                        elber_cv.make_elber_milestoning_objects_spherical(
-                        cv_input, milestone_alias, milestone_index, 
-                        input_anchor_index, anchor.index, cv_input.input_anchors, 
-                        model.calculation_settings.umbrella_force_constant)
-                
+                    if isinstance(cv_input, common_cv.Spherical_cv_input):
+                        milestones, milestone_alias, milestone_index = \
+                            elber_cv.make_elber_milestoning_objects_spherical(
+                            cv_input, milestone_alias, milestone_index, 
+                            input_anchor_index, anchor.index, cv_input.input_anchors, 
+                            model.calculation_settings.umbrella_force_constant)
+                    elif isinstance(cv_input, common_cv.Toy_cv_input):
+                        milestones, milestone_alias, milestone_index = \
+                            elber_cv.make_elber_milestoning_objects_external(
+                            cv_input, milestone_alias, milestone_index, 
+                            input_anchor_index, anchor.index, cv_input.input_anchors, 
+                            model.calculation_settings.umbrella_force_constant)
+                            
                     anchor.milestones += milestones
                 input_anchor_index += 1
                 

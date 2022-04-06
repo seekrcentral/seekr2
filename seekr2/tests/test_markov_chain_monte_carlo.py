@@ -5,22 +5,14 @@ Unit tests for the MCMC sampling algorithms to estimate error bars in
 milestoning calculations.
 """
 
-from collections import defaultdict
-
-import pytest
 import numpy as np
-import scipy.linalg as la
 import matplotlib.pyplot as plt
 
 import seekr2.modules.common_base as base
 import seekr2.modules.mmvt_base as mmvt_base
-import seekr2.modules.elber_base as elber_base
 import seekr2.modules.common_analyze as common_analyze
 import seekr2.modules.mmvt_analyze as mmvt_analyze
-import seekr2.modules.elber_analyze as elber_analyze
-import seekr2.analyze as analyze
 import seekr2.modules.markov_chain_monte_carlo as markov_chain_monte_carlo
-import seekr2.tests.create_model_input as create_model_input
 
 def make_2d_test_plots(v1_data_points, v2_data_points, X, Y, Z, max_x, max_y):
     """
@@ -126,7 +118,8 @@ def mcmc_algorithm_any_2x2_common(algorithm, Q, N, R, max_x, max_y,
 
 def test_mcmc_algorithm_1_2x2_elber():
     """
-    
+    Test a simple 2x2 Elber system to ensure that the correct matrices
+    are generated and sampled. Optionally generate a plot showing this.
     """
     max_x = 3.0 * 12.0 / 500.0
     max_y = 3.0 * 30.0 / 150.0
@@ -151,79 +144,11 @@ def test_mcmc_algorithm_1_2x2_elber():
     
     return
 
-def make_k_N_T_matrices(n_anchors, k_alpha_beta, N_alpha_beta, T_alpha_total):
-    k_alpha_beta_matrix = np.zeros((n_anchors, n_anchors))
-    N_alpha_beta_matrix = np.zeros((n_anchors, n_anchors))
-    T_alpha_matrix = np.zeros((n_anchors, 1))
-    for alpha in range(n_anchors):
-        for beta in range(n_anchors):
-            if alpha == beta: continue
-            if (alpha,beta) in k_alpha_beta:
-                k_alpha_beta_matrix[alpha,beta] = k_alpha_beta[(alpha,beta)]
-                k_alpha_beta_matrix[alpha,alpha] -= k_alpha_beta[(alpha,beta)]
-                N_alpha_beta_matrix[alpha,beta] = N_alpha_beta[(alpha,beta)]
-        
-        T_alpha_matrix[alpha,0] = T_alpha_total[alpha]
-    return k_alpha_beta_matrix, N_alpha_beta_matrix, T_alpha_matrix
-
-def make_N_R_T_alpha_matrices(
-        n_anchors, n_milestones, pi_alpha, N_i_j_alpha, R_i_alpha_total,
-        T_alpha_total):
-    invT = 0.0
-    mmvt_Nij_alpha = []
-    mmvt_Ri_alpha = []
-    mmvt_Qij_alpha = []
-    for alpha in range(n_anchors):
-        invT += pi_alpha[alpha] / T_alpha_total[alpha]
-        this_mmvt_Nij_alpha = np.zeros((n_milestones, n_milestones))
-        this_mmvt_Ri_alpha = np.zeros((n_milestones, 1))
-        this_mmvt_Qij_alpha = np.zeros((n_milestones, n_milestones))
-        for i in range(n_milestones):
-            for j in range(n_milestones):
-                key = (i,j)
-                if key in N_i_j_alpha[alpha]:
-                    this_mmvt_Nij_alpha[i,j] = N_i_j_alpha[alpha][key]
-            
-            if i in R_i_alpha_total[alpha]:
-                this_mmvt_Ri_alpha[i,0] = R_i_alpha_total[alpha][i]
-        
-        
-        for i in range(n_milestones):
-            for j in range(n_milestones):
-                if i == j: continue
-                if this_mmvt_Ri_alpha[i,0] > 0.0:
-                    this_mmvt_Qij_alpha[i,j] = this_mmvt_Nij_alpha[i,j] \
-                        / this_mmvt_Ri_alpha[i,0]
-                    this_mmvt_Qij_alpha[i,i] -= this_mmvt_Nij_alpha[i,j] \
-                        / this_mmvt_Ri_alpha[i,0]
-                    
-        mmvt_Nij_alpha.append(this_mmvt_Nij_alpha)
-        mmvt_Ri_alpha.append(this_mmvt_Ri_alpha)
-        mmvt_Qij_alpha.append(this_mmvt_Qij_alpha)
-        
-    T = 1.0 / invT
-    return mmvt_Nij_alpha, mmvt_Ri_alpha, mmvt_Qij_alpha, T
-
-def pi_alpha_from_K_alpha_beta(k_alpha_beta, n_anchors):
-    """
-    
-    """
-    flux_matrix = np.zeros((n_anchors+1, n_anchors+1))
-    for i in range(n_anchors):
-        for j in range(n_anchors):
-            flux_matrix[i,j] = k_alpha_beta[i,j]
-            
-        flux_matrix[i, -1] = 1.0
-    flux_matrix[-1,-1] = 1.0
-    flux_matrix[-1,-2] = 1.0e5
-    prob_equil = np.zeros((n_anchors+1,1), dtype=np.longdouble)
-    prob_equil[-1] = 1.0
-    pi_alpha = abs(la.solve(flux_matrix.T, prob_equil))
-    return pi_alpha
-
 def test_mcmc_3x3_mmvt(tmpdir_factory):
     """
-
+    Use the same statistics to generate both MMVT and Elber rate matrices.
+    Then use the data to sample matrices and compare the distributions to
+    ensure that the MMVT and Elber matrix sampling methods are consistent.
     """
     num = 10000 #100000
     stride = 4
@@ -297,29 +222,14 @@ def test_mcmc_3x3_mmvt(tmpdir_factory):
                      1.8,
                      0.6]
     
-    """
-    k_alpha_beta_matrix, N_alpha_beta_matrix, T_alpha_matrix \
-        = make_k_N_T_matrices(
-            n_anchors, k_alpha_beta, N_alpha_beta, T_alpha_total)
-           
-    pi_alpha = pi_alpha_from_K_alpha_beta(
-        k_alpha_beta_matrix, n_anchors)
-    
-    mmvt_Nij_alpha, mmvt_Ri_alpha, mmvt_Qij_alpha, T \
-        = make_N_R_T_alpha_matrices(
-            n_anchors, n_milestones, pi_alpha, N_i_j_alpha, R_i_alpha_total,
-            T_alpha_total)
-    
-    mmvt_Nij, mmvt_Ri, mmvt_Q = mmvt_analyze.mmvt_Q_N_R(
-        n_milestones, n_anchors, mmvt_Nij_alpha, mmvt_Ri_alpha, 
-        T_alpha_total, T, pi_alpha)
-    """
     main_data_sample = mmvt_analyze.MMVT_data_sample(
             model, N_alpha_beta, k_alpha_beta, N_i_j_alpha, 
             R_i_alpha_total, T_alpha_total)
     main_data_sample.calculate_pi_alpha()
     main_data_sample.fill_out_data_quantities()
     main_data_sample.compute_rate_matrix()
+    main_data_sample.calculate_thermodynamics()
+    main_data_sample.calculate_kinetics()
     mmvt_Q = main_data_sample.Q
     
     # Elber stats
@@ -348,44 +258,15 @@ def test_mcmc_3x3_mmvt(tmpdir_factory):
     # Now compare the distributions of both of them
     
     # MMVT matrix sampler
-    """
-    mmvt_q1_distribution = []
-    mmvt_q2_distribution = []
-    pi_alpha_dist = []
-    for counter in range(num * (stride) + skip):
-        #if verbose: print("MCMC stepnum: ", counter)
-        k_alpha_beta_matrix_new = markov_chain_monte_carlo\
-            .irreversible_stochastic_matrix_algorithm_sample(
-                k_alpha_beta_matrix, N_alpha_beta_matrix, T_alpha_matrix)
-        pi_alpha_new = pi_alpha_from_K_alpha_beta(k_alpha_beta_matrix_new, n_anchors)
-        pi_alpha_dist.append(pi_alpha_new)
-        
-        mmvt_Qnew_list = []
-        mmvt_Nij_list = []
-        
-        for alpha in range(n_anchors):
-            mmvt_Qnew_alpha = markov_chain_monte_carlo\
-                .irreversible_stochastic_matrix_algorithm_sample(
-                    mmvt_Qij_alpha[alpha], mmvt_Nij_alpha[alpha], 
-                    mmvt_Ri_alpha[alpha])
-            new_mmvt_Nij_alpha = mmvt_analyze.make_new_Nij_alpha(
-                mmvt_Qij_alpha[alpha], mmvt_Ri_alpha[alpha])
-            mmvt_Qnew_list.append(mmvt_Qnew_alpha)
-            mmvt_Nij_list.append(new_mmvt_Nij_alpha)
-            
-        if counter > skip and counter % stride == 0:
-            new_mmvt_Nij, new_mmvt_Ri, new_mmvt_Q = mmvt_analyze.mmvt_Q_N_R(
-                n_milestones, n_anchors, mmvt_Nij_list, mmvt_Ri_alpha, 
-                T_alpha_total, T, pi_alpha_new)
-            mmvt_q1_distribution.append(new_mmvt_Q[0,1])
-            mmvt_q2_distribution.append(new_mmvt_Q[1,0])
-        
-        k_alpha_beta_matrix = k_alpha_beta_matrix_new
-        mmvt_Qij_alpha = mmvt_Qnew_list
-    """
     data_sample_list, p_i_error, free_energy_profile_err, MFPTs_error, \
         k_off_error, k_ons_error = mmvt_analyze.monte_carlo_milestoning_error(
         main_data_sample, num=num, stride=stride, skip=skip, verbose=True)
+    
+    mmvt_q1_distribution = []
+    mmvt_q2_distribution = []
+    for data_sample in data_sample_list:
+        mmvt_q1_distribution.append(data_sample.Q[0,1])
+        mmvt_q2_distribution.append(data_sample.Q[1,0])
     
     # Elber matrix sampler
     elber_q1_distribution = []
@@ -401,10 +282,14 @@ def test_mcmc_3x3_mmvt(tmpdir_factory):
         
         elber_Q = elber_Qnew
     
-    assert np.isclose(np.mean(elber_q1_distribution), np.mean(mmvt_q1_distribution), rtol=0.5, atol=0.01)
-    assert np.isclose(np.std(elber_q1_distribution), np.std(mmvt_q1_distribution), rtol=0.5, atol=0.01)
-    assert np.isclose(np.mean(elber_q2_distribution), np.mean(mmvt_q2_distribution), rtol=0.5, atol=0.01)
-    assert np.isclose(np.std(elber_q2_distribution), np.std(mmvt_q2_distribution), rtol=0.5, atol=0.01)
+    assert np.isclose(np.mean(elber_q1_distribution), 
+                      np.mean(mmvt_q1_distribution), rtol=0.5, atol=0.01)
+    assert np.isclose(np.std(elber_q1_distribution), 
+                      np.std(mmvt_q1_distribution), rtol=0.5, atol=0.01)
+    assert np.isclose(np.mean(elber_q2_distribution), 
+                      np.mean(mmvt_q2_distribution), rtol=0.5, atol=0.01)
+    assert np.isclose(np.std(elber_q2_distribution), 
+                      np.std(mmvt_q2_distribution), rtol=0.5, atol=0.01)
     
     return
     

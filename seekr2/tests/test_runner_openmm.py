@@ -12,7 +12,6 @@ import seekr2.modules.mmvt_base as mmvt_base
 import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
 import seekr2.modules.elber_sim_openmm as elber_sim_openmm
 import seekr2.modules.runner_openmm as runner_openmm
-import seekr2.run as run
 
 TEST_DIRECTORY = os.path.dirname(__file__)
 TEST_DATA_DIRECTORY = os.path.join(TEST_DIRECTORY, "data")
@@ -198,8 +197,3 @@ def test_mmvt_swarm(host_guest_mmvt_model):
         assert os.path.exists(default_output_file)
     
     return
-
-def test_toy_run(toy_mmvt_model):
-    toy_mmvt_model.openmm_settings.cuda_platform_settings = None
-    toy_mmvt_model.openmm_settings.reference_platform = True
-    run.run(toy_mmvt_model, "any")

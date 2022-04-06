@@ -8,45 +8,11 @@ import os
 
 import numpy as np
 import pytest
-import shutil
 
 import seekr2.modules.common_analyze as common_analyze
 from seekr2.tests.conftest import compare_dicts
 
 TEST_DIRECTORY = os.path.dirname(__file__)
-
-def test_solve_rate_matrix():
-    """
-    Test the alternative, more stable way of solving a rate matrix 
-    used in SEEKR2.
-    """
-    Q = np.array(
-        [[-0.5, 0.5, 0.0, 0.0],
-         [0.1, -0.3, 0.2, 0.0],
-         [0.0, 0.15, -0.3, 0.15],
-         [0.0, 0.0, 0.3, -0.4]])
-    
-    K = np.zeros(Q.shape, dtype=np.longdouble)
-    for i in range(Q.shape[0]):
-        for j in range(Q.shape[0]):
-            if i == j:
-                K[i,j] = 0.0
-            else:
-                K[i,j] = -Q[i,j] / Q[i,i]
-         
-    for i in range(K.shape[0]-1):
-        my_sum = sum(K[i,:])
-        for j in range(K.shape[0]):
-            K[i,j] = K[i,j] / my_sum
-            
-    test_times_1 = common_analyze.solve_rate_matrix(Q)
-    
-    one_vector = np.ones((Q.shape[0]))
-    test_times_2 = np.linalg.solve(Q, -one_vector)
-    
-    error = np.linalg.norm(test_times_2 - test_times_1)
-    assert error < 1e-8
-    return
 
 def test_Q_to_K():
     """
@@ -157,67 +123,6 @@ def test_browndye_run_compute_rate_constant():
     compare_dicts(transition_counts, expected_transition_counts)
     return
 
-# TODO: remove test since it's for old BD milestoning way
-@pytest.mark.skip()
-def test_browndye_parse_bd_milestone_results():
-    """
-    Test the function which extracts Browndye results from the BD
-    milestone.
-    """
-    test_bd_results_filename = os.path.join(
-        TEST_DIRECTORY, "data/sample_bd_milestone_results.xml")
-    transition_probabilities, transition_counts \
-        = common_analyze.browndye_parse_bd_milestone_results(
-            [test_bd_results_filename], sample_error_from_normal=False)
-    expected_transition_probabilities = {9: 0.6, 
-                                         "escaped": 0.4, 
-                                         "stuck": 0}
-    compare_dicts(transition_probabilities, 
-                  expected_transition_probabilities)
-    expected_transition_counts = {9: 600, "escaped": 400, "stuck": 0}
-    compare_dicts(transition_counts, expected_transition_counts)
-
-#TODO: modify for writing FHPD structures without old BD milestoning way
-@pytest.mark.skip()
-def test_combine_fhpd_results(host_guest_mmvt_model):
-    test_bd_results_filename = os.path.join(
-        TEST_DIRECTORY, "data/sample_bd_milestone_results.xml")
-    lig_filenames = ["lig1_0_0", "lig1_0_1", "lig1_0_2"]
-    bd_milestone_dir = os.path.join(
-        host_guest_mmvt_model.anchor_rootdir,
-        host_guest_mmvt_model.k_on_info.bd_milestones[0].directory)
-    fhpd_dir = os.path.join(
-        bd_milestone_dir,
-        tryp_ben_mmvt_model.k_on_info.bd_milestones[0].fhpd_directory)
-    if not os.path.exists(fhpd_dir):
-        os.mkdir(fhpd_dir)
-    lig_filenames_full_paths = []
-    for lig_filename in lig_filenames:
-        lig_filename_full_path = os.path.join(fhpd_dir, lig_filename)
-        lig_filenames_full_paths.append(lig_filename_full_path)
-        if not os.path.exists(lig_filename_full_path):
-            os.mkdir(lig_filename_full_path)
-        dest_filename = os.path.join(lig_filename_full_path, "results1.xml")
-        shutil.copyfile(test_bd_results_filename, dest_filename)
-    
-    combined_results_filename = os.path.join(bd_milestone_dir, "results.xml")
-    common_analyze.combine_fhpd_results(
-        tryp_ben_mmvt_model.k_on_info.bd_milestones[0], 
-        lig_filenames_full_paths, 
-        combined_results_filename)
-    
-    transition_probabilities, transition_counts \
-        = common_analyze.browndye_parse_bd_milestone_results(
-            [combined_results_filename], sample_error_from_normal=False)
-    expected_transition_probabilities = {9: 0.6, 
-                                         "escaped": 0.4, 
-                                         "stuck": 0}
-    compare_dicts(transition_probabilities, 
-                  expected_transition_probabilities)
-    expected_transition_counts = {9: 1800, "escaped": 1200, "stuck": 0}
-    compare_dicts(transition_counts, expected_transition_counts)
-    return
-
 def test_init_Data_sample():
     """
     Initialize Data_sample() to get more code coverage, though this
@@ -229,3 +134,4 @@ def test_init_Data_sample():
 
 # CANNOT MAKE FULL UNIT TESTS OF DATA_SAMPLE OBJECT UNTIL TOY ENGINE 
 # IMPLEMENTED
+# TODO: use toy engines to make full suite of data sample tests.

@@ -142,8 +142,6 @@ class Elber_anchor_statistics():
             raise Exception("Engine not allowed: {}. Must be 'openmm' "\
                             "or 'browndye'.")
                 
-        #assert len(self.N_i_j) > 0, \
-        #    "Missing statistics for anchor %d" % anchor.index
         return
     
     def print_stats(self):
@@ -178,9 +176,6 @@ class Elber_data_sample(common_analyze.Data_sample):
         values are incubation times spent at those milestones.
     Q : numpy.array()
         A 2x2 rate matrix for a milestoning calculation. No sink states.
-    Q_hat : numpy.array()
-        A 2x2 rate matrix for a milestoning calculation. Sink state(s) 
-        included.
     K : numpy.array()
         A Markov transition probability matrix constructed from Q. No
         sink states.
@@ -211,7 +206,6 @@ class Elber_data_sample(common_analyze.Data_sample):
         self.N_ij = None
         self.R_i = None
         self.Q = None
-        self.Q_hat = None
         self.K = None
         self.K_hat = None
         self.p_i = None
@@ -296,9 +290,9 @@ def monte_carlo_milestoning_error(
     N = np.zeros((m, m))
     R = np.zeros((m, 1))
     if skip is None:
-        skip = 10 * Q.shape[0]**2
+        skip = 40 * Q.shape[0]
     if stride is None:
-        stride = Q.shape[0]**2
+        stride = 4 * Q.shape[0]
         
     for i in range(m):
         for j in range(m):

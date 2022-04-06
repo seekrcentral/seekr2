@@ -66,6 +66,7 @@ def analyze_bd_only(model, data_sample):
         
         if len(bulk_milestones) > 0:
             bulk_milestone = bulk_milestones[0]
+            # TODO: update for newer handling of BD milestones
             for bd_milestone in model.k_on_info.bd_milestones:
                 bd_results_file = os.path.join(
                     model.anchor_rootdir, bd_milestone.directory, 

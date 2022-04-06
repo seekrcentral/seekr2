@@ -57,6 +57,7 @@ import seekr2.modules.common_base as base
 import seekr2.modules.elber_base as elber_base
 import seekr2.modules.mmvt_base as mmvt_base
 import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
+import seekr2.modules.elber_sim_openmm as elber_sim_openmm
 
 # The charges of common ions
 ION_CHARGE_DICT = {"li":1.0, "na":1.0, "k":1.0, "rb":1.0, "cs":1.0, "fr":1.0,
@@ -445,9 +446,15 @@ def check_systems_within_Voronoi_cells(model):
             output_file = tmp_path.name
             model.openmm_settings.cuda_platform_settings = None
             model.openmm_settings.reference_platform = True
-            my_sim_openmm = mmvt_sim_openmm.create_sim_openmm(
-                model, anchor, output_file)
-            context = my_sim_openmm.simulation.context
+            if model.get_type() == "mmvt":
+                my_sim_openmm = mmvt_sim_openmm.create_sim_openmm(
+                    model, anchor, output_file)
+                context = my_sim_openmm.simulation.context
+            else:
+                my_sim_openmm = elber_sim_openmm.create_sim_openmm(
+                    model, anchor, output_file)
+                context = my_sim_openmm.umbrella_simulation.context
+            
             
         else:
             traj = load_structure_with_mdtraj(model, anchor)
@@ -469,7 +476,8 @@ def check_systems_within_Voronoi_cells(model):
                 for anchor2 in model.anchors:
                     within_milestones = True
                     for milestone in anchor2.milestones:
-                        if anchor.__class__.__name__ == "MMVT_toy_anchor":
+                        if anchor.__class__.__name__ \
+                                in ["MMVT_toy_anchor", "Elber_toy_anchor"]:
                             result2 = cv.check_openmm_context_within_boundary(
                                 context, milestone.variables, verbose=True)
                             

@@ -59,17 +59,10 @@ class Common_sim_openmm:
                         "Sim_openmm object's force objects.")
 
 
-def fill_generic_parameters(sim_openmm, model, anchor, output_filename):
-    """
-    Enter parameters to the sim_openmm object that are common to
-    both MMVT and Elber calculations.
-    """
-    sim_openmm.output_filename = output_filename
-    return
-
 def write_toy_pdb_file(topology, positions, out_file_name):
     """
-    
+    For toy systems, write a PDB file to use as a topology file for
+    mdtraj.
     """
     out_file = open(out_file_name, "w")
     openmm_app.PDBFile.writeHeader(topology, out_file)
@@ -79,7 +72,7 @@ def write_toy_pdb_file(topology, positions, out_file_name):
 
 def make_toy_system_object(model):
     """
-    
+    Make openmm system and topology files for use with a toy system.
     """
     system = openmm.System()
     topology = openmm_app.Topology()
@@ -116,7 +109,7 @@ def create_openmm_system(sim_openmm, model, anchor, frame=0,
     box_vectors = None
     num_frames = 0
     positions_obj = None
-    if anchor.__class__.__name__ == "MMVT_toy_anchor":
+    if anchor.__class__.__name__ in ["MMVT_toy_anchor", "Elber_toy_anchor"]:
         if load_state_file is not None:
             positions = None
             num_frames = 1
@@ -229,7 +222,7 @@ def create_openmm_system(sim_openmm, model, anchor, frame=0,
         
     rigidWater = model.openmm_settings.rigidWater
     
-    if anchor.__class__.__name__ == "MMVT_toy_anchor":
+    if anchor.__class__.__name__ in ["MMVT_toy_anchor", "Elber_toy_anchor"]:
         system, topology = make_toy_system_object(model)
     else:
         if anchor.amber_params is not None:
@@ -262,9 +255,9 @@ def create_openmm_system(sim_openmm, model, anchor, frame=0,
         
     return system, topology, positions, box_vectors, num_frames
 
-def add_barostat(sim_openmm, model):
+def add_barostat(system, model):
     """
-    Add a barostat to the sim_openmm object to maintain constant
+    Add a barostat to the system object to maintain constant
     simulation pressure.
     """
     if model.openmm_settings.barostat:
@@ -272,7 +265,7 @@ def add_barostat(sim_openmm, model):
             model.openmm_settings.barostat.target_pressure, 
             model.openmm_settings.barostat.target_temperature,
             model.openmm_settings.barostat.frequency)
-        sim_openmm.system.addForce(barostat)
+        system.addForce(barostat)
     return
 
 def add_platform(sim_openmm, model):

@@ -150,7 +150,6 @@ class Seekr_namd_settings():
         
         for milestone in anchor.milestones:
             assert milestone.alias_index >= 0
-            print("milestone.neighbor_anchor_index:", milestone.neighbor_anchor_index)
             assert milestone.neighbor_anchor_index >= 0
             anchor_index_set = "set ANCHOR_{0}".format(milestone.alias_index)
             my_string += add_string_buffer(anchor_index_set, 

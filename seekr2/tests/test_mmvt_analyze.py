@@ -17,11 +17,8 @@ test_output_filename = os.path.join(TEST_DIRECTORY,
 test_statistics_filename = os.path.join(TEST_DIRECTORY, 
                                         "data/test_analyze_statistics.txt")
 
-
 def test_read_output_file():
-    N_i_j_alpha, R_i_alpha_list, R_i_alpha_average, \
-        R_i_alpha_std_dev, R_i_alpha_total, N_alpha_beta, \
-        T_alpha_list, T_alpha_average, T_alpha_std_dev, \
+    N_i_j_alpha, R_i_alpha_total, N_alpha_beta, \
         T_alpha_total, existing_lines \
             = mmvt_analyze.openmm_read_output_file_list(
                 [test_output_filename])
@@ -30,8 +27,6 @@ def test_read_output_file():
     R_i_alpha_dict1 = R_i_alpha_total
     N_alpha_beta_dict1 = N_alpha_beta
     T_alpha1 = T_alpha_total
-    #N_i_j_alpha_dict1, R_i_alpha_dict1, N_alpha_beta_dict1, T_alpha1 = \
-    #    analyze.openmm_read_output_file_list([test_output_filename])
     
     N_i_j_alpha_dict2 = {(1, 2): 52, (2, 1): 52}
     R_i_alpha_dict2 = {1: 1658.696, 2: 198.912}
@@ -51,34 +46,6 @@ def test_read_output_file():
         assert np.isclose(N_alpha_beta_dict1[key], N_alpha_beta_dict2[key])
     
     assert np.isclose(T_alpha1, T_alpha2)
-    
-    """ # No longer a valid test. Remove?
-    N_i_j_alpha, R_i_alpha_list, R_i_alpha_average, \
-        R_i_alpha_std_dev, R_i_alpha_total, N_alpha_beta, \
-        T_alpha_list, T_alpha_average, T_alpha_std_dev, \
-        T_alpha_total, existing_lines \
-            = mmvt_analyze.openmm_read_output_file_list([test_output_filename, 
-                                                    test_output_filename], 
-                                                   skip_restart_check=True)
-    
-    N_i_j_alpha_dict1 = N_i_j_alpha
-    R_i_alpha_dict1 = R_i_alpha_total
-    N_alpha_beta_dict1 = N_alpha_beta
-    T_alpha1 = T_alpha_total
-    #N_i_j_alpha_dict1, R_i_alpha_dict1, N_alpha_beta_dict1, T_alpha = \
-    #    analyze.openmm_read_output_file_list([test_output_filename, 
-    #                                   test_output_filename])
-        
-    for key in N_i_j_alpha_dict1:
-        assert key in N_i_j_alpha_dict2
-        assert np.isclose(N_i_j_alpha_dict1[key], 2*N_i_j_alpha_dict2[key], 
-                          rtol=0.01)
-        
-    for key in N_alpha_beta_dict1:
-        assert key in N_alpha_beta_dict2
-        assert np.isclose(N_alpha_beta_dict1[key], 2*N_alpha_beta_dict2[key], 
-                          rtol=0.01)
-    """
     return
 
 @pytest.mark.skip()
@@ -121,7 +88,8 @@ def test_init_objects():
 
 def test_find_nonzero_matrix_entries():
     """
-    
+    Test whether non-diagonal non-zero entries in a matrix will be 
+    found.
     """
     M0 = np.zeros((3,3))
     result0 = mmvt_analyze.find_nonzero_matrix_entries(M0)
@@ -132,8 +100,8 @@ def test_find_nonzero_matrix_entries():
     M1[0,1] = 1.0
     M1[2,1] = 3.0
     result1 = mmvt_analyze.find_nonzero_matrix_entries(M1)
-    assert len(result1) == 3
-    assert (0,0) in result1
+    assert len(result1) == 2
+    assert not((0,0) in result1)
     assert (0,1) in result1
     assert (2,1) in result1
     return

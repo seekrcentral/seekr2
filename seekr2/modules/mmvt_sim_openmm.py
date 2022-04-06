@@ -8,7 +8,6 @@ objects are specific to MMVT only.
 import os
 import tempfile
 
-import numpy as np
 try:
     import openmm.app as openmm_app
 except ImportError:
@@ -184,14 +183,13 @@ def create_sim_openmm(model, anchor, output_filename, state_prefix=None,
         
     """
     sim_openmm = MMVT_sim_openmm()
-    common_sim_openmm.fill_generic_parameters(
-        sim_openmm, model, anchor, output_filename)
+    sim_openmm.output_filename = output_filename
     system, topology, positions, box_vectors, num_frames \
         = common_sim_openmm.create_openmm_system(
             sim_openmm, model, anchor, frame, load_state_file=load_state_file)
     sim_openmm.system = system
     add_integrator(sim_openmm, model, state_prefix=state_prefix)
-    common_sim_openmm.add_barostat(sim_openmm, model)
+    common_sim_openmm.add_barostat(system, model)
     common_sim_openmm.add_platform(sim_openmm, model)
     add_forces(sim_openmm, model, anchor)
     positions = add_simulation(
@@ -246,10 +244,10 @@ def get_starting_structure_num_frames(model, anchor, dummy_outfile,
     """
     if load_state_file is None:
         sim_openmm = MMVT_sim_openmm()
-        common_sim_openmm.fill_generic_parameters(
-            sim_openmm, model, anchor, dummy_outfile)
-        dummy_system, dummy_topology, positions, dummy_box_vectors, num_frames \
-            = common_sim_openmm.create_openmm_system(sim_openmm, model, anchor)
+        sim_openmm.output_filename = dummy_outfile
+        dummy_system, dummy_topology, dummy_positions, dummy_box_vectors, \
+            num_frames = common_sim_openmm.create_openmm_system(
+                sim_openmm, model, anchor)
     else:
         num_frames = 1
     

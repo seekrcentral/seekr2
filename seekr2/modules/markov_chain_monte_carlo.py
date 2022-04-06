@@ -30,7 +30,8 @@ def irreversible_stochastic_matrix_algorithm_sample(
         i = random.choice(range(m))
         j = random.choice(range(m))
         counter = 0
-        while (Q[i,j] == 0.0) or (Q[i,i] == 0.0) or (N[i,j] == 0) or (R[i,0] == 0):
+        while (Q[i,j] == 0.0) or (Q[i,i] == 0.0) or (N[i,j] == 0) \
+                or (R[i,0] == 0) or (i==j):
             i = random.choice(range(m))
             j = random.choice(range(m))
             counter += 1
@@ -38,6 +39,7 @@ def irreversible_stochastic_matrix_algorithm_sample(
                 raise Exception("Maximum iterations exceeded.")
     else:
         i, j = random.choice(nonzero_indices)
+        assert i!=j, "Cannot choose same indices i and j"
     
     # step 1 - Initialize the matrix (already done)
     Qnew = deepcopy(Q)
@@ -50,13 +52,16 @@ def irreversible_stochastic_matrix_algorithm_sample(
     
     # step 2.3 - Nonreversible element shift
     # prior probability: P(Q)
-    log_prior_probability_old = -Qnew[i,j]
-    log_prior_probability_new = -Qnew[i,j] + delta
-    log_p_Q_old = N[i,j] * np.log(Qnew[i,j])  - Qnew[i,j] * R[i,0]
-    log_p_Q_new = N[i,j] * np.log(Qnew[i,j] - delta) \
-        - (Qnew[i,j] - delta) * R[i,0]
-    p_acc =  log_p_Q_new - log_p_Q_old + log_prior_probability_new \
-        - log_prior_probability_old
+    log_prior_probability_old = np.abs(-Qnew[i,j])
+    log_prior_probability_new = np.abs(-Qnew[i,j] + delta)
+    if (log_prior_probability_old == 0.0) or (log_prior_probability_new == 0.0):
+        p_acc = 0.0
+    else:
+        log_p_Q_old = N[i,j] * np.log(np.abs(Qnew[i,j]))  - Qnew[i,j] * R[i,0]
+        log_p_Q_new = N[i,j] * np.log(np.abs(Qnew[i,j] - delta)) \
+            - (Qnew[i,j] - delta) * R[i,0]
+        p_acc = log_p_Q_new - log_p_Q_old + log_prior_probability_new \
+            - log_prior_probability_old
         
     if np.log(random_uniform) <= p_acc: 
         #log(r) can be directly compared to 

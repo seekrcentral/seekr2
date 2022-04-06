@@ -76,6 +76,13 @@ def add_integrators(sim_openmm, model, state_prefix=None):
         
         integrator_type = model.openmm_settings.langevin_integrator.integrator_type
         
+        if random_seed == 0:
+            rev_seed = 0
+            fwd_seed = 0
+        else:
+            rev_seed = random_seed + 1
+            fwd_seed = random_seed + 2
+        
         if integrator_type == "langevin":
             umbrella_integrator_object = openmm.LangevinIntegrator
             fwd_rev_integrator_object = seekr2plugin.ElberLangevinIntegrator
@@ -102,7 +109,7 @@ def add_integrators(sim_openmm, model, state_prefix=None):
             timestep*unit.picoseconds,
             sim_openmm.rev_output_filename)
         if random_seed is not None:
-            sim_openmm.rev_integrator.setRandomNumberSeed(random_seed+1)
+            sim_openmm.rev_integrator.setRandomNumberSeed(rev_seed)
         sim_openmm.rev_integrator.setEndOnSrcMilestone(True)
         
         #sim_openmm.fwd_integrator = openmm.VerletIntegrator(
@@ -113,7 +120,7 @@ def add_integrators(sim_openmm, model, state_prefix=None):
             timestep*unit.picoseconds,
             sim_openmm.fwd_output_filename)
         if random_seed is not None:
-            sim_openmm.fwd_integrator.setRandomNumberSeed(random_seed+2)
+            sim_openmm.fwd_integrator.setRandomNumberSeed(fwd_seed)
         sim_openmm.fwd_integrator.setEndOnSrcMilestone(False)
         
         if rigid_constraint_tolerance is not None:
@@ -238,8 +245,7 @@ def create_sim_openmm(model, anchor, output_filename, state_prefix=None):
     rev_output_filename = os.path.join(directory, rev_basename)
     sim_openmm.rev_output_filename = rev_output_filename
     sim_openmm.fwd_output_filename = fwd_output_filename
-    common_sim_openmm.fill_generic_parameters(
-        sim_openmm, model, anchor, output_filename)
+    sim_openmm.output_filename = output_filename
     umbrella_system, umbrella_topology, umbrella_positions, \
         umbrella_box_vectors, umbrella_num_frames \
         = common_sim_openmm.create_openmm_system(sim_openmm, model, anchor)
@@ -251,7 +257,9 @@ def create_sim_openmm(model, anchor, output_filename, state_prefix=None):
     sim_openmm.rev_system = rev_system
     sim_openmm.fwd_system = fwd_system
     add_integrators(sim_openmm, model, state_prefix=state_prefix)
-    common_sim_openmm.add_barostat(sim_openmm, model)
+    common_sim_openmm.add_barostat(umbrella_system, model)
+    common_sim_openmm.add_barostat(rev_system, model)
+    common_sim_openmm.add_barostat(fwd_system, model)
     common_sim_openmm.add_platform(sim_openmm, model)
     add_forces(sim_openmm, model, anchor)
     add_simulations(sim_openmm, model, umbrella_topology, umbrella_positions, 

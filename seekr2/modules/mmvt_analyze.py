@@ -7,9 +7,7 @@ from collections import defaultdict
 from copy import deepcopy
 
 import numpy as np
-import scipy as sp
 import scipy.linalg as la
-import scipy.sparse.linalg as sp
 
 import seekr2.modules.common_analyze as common_analyze
 import seekr2.modules.markov_chain_monte_carlo as markov_chain_monte_carlo
@@ -20,10 +18,10 @@ HIGH_N_IJ = 1e3
 DEFAULT_R_I = 1.0
 DEFAULT_Q_IJ = 1.0
 LOW_Q_IJ = 1e-15
+HIGH_FLUX = 1e10
 
 def flux_matrix_to_K(M):
     """Given a flux matrix M, compute probability transition matrix K."""
-    
     K = np.zeros((M.shape[0]-1, M.shape[0]-1))
     for i in range(M.shape[0]-1):
         for j in range(M.shape[0]-1):
@@ -57,7 +55,6 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
     Read the output files produced by the plugin (backend) of 
     SEEKR2 and extract transition statistics and times
     """
-    
     MAX_ITER = 1000000000
     NEW_SWARM = "NEW_SWARM"
     swarm_index = 0
@@ -83,7 +80,6 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
                     file_lines.append(line_list)
                     dest_boundary = int(line_list[0])
                     bounce_index = int(line_list[1])
-                    # TODO: change the following value to interval time
                     dest_time = float(line_list[2]) 
                     if start_time is None:
                         start_time = dest_time
@@ -151,7 +147,6 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
         
         dest_boundary = int(line[0])
         bounce_index = int(line[1])
-        # TODO: change the following value to interval time
         dest_time = float(line[2]) 
         # This is used to cut out early transitions for analysis
         if min_time is not None:
@@ -188,36 +183,21 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
             "{}, Dest_time: {}, last_bounce_time: {}".format(
                 bounce_index, dest_time, last_bounce_time)
         T_alpha_list.append(dest_time - last_bounce_time)
-        #R_i_alpha_dict[src_boundary] += dest_time - last_bounce_time
-        #assert dest_time - last_bounce_time != 0, \
-        #    "Two bounces occurred at the same time and at the same "\
-        #    "milestone in file name: %s, line number: %d" % (
-        #        output_file_name, counter)
         last_bounce_time = dest_time
     
-    R_i_alpha_average = defaultdict(float)
-    R_i_alpha_std_dev = defaultdict(float)
     R_i_alpha_total = defaultdict(float)
     
     for key in R_i_alpha_list:
         assert key is not None
-        R_i_alpha_average[key] = np.mean(R_i_alpha_list[key])
-        R_i_alpha_std_dev[key] = np.std(R_i_alpha_list[key])
         R_i_alpha_total[key] = np.sum(R_i_alpha_list[key])
         
-    T_alpha_average = np.mean(T_alpha_list)
-    T_alpha_std_dev = np.std(T_alpha_list)
     T_alpha_total = np.sum(T_alpha_list)
     
     if len(R_i_alpha_list) == 0 and src_boundary is not None:
-        R_i_alpha_average[src_boundary] = T_alpha_average
-        R_i_alpha_std_dev[src_boundary] = T_alpha_std_dev
         R_i_alpha_total[src_boundary] = T_alpha_total
         R_i_alpha_list[src_boundary] = T_alpha_list
         
-    return N_i_j_alpha, R_i_alpha_list, R_i_alpha_average, \
-        R_i_alpha_std_dev, R_i_alpha_total, N_alpha_beta, T_alpha_list, \
-        T_alpha_average, T_alpha_std_dev, T_alpha_total, lines
+    return N_i_j_alpha, R_i_alpha_total, N_alpha_beta, T_alpha_total, lines
 
 def openmm_read_statistics_file(statistics_file_name):
     """
@@ -486,28 +466,16 @@ def namd_read_output_file_list(output_file_list, anchor, timestep,
         """
         last_bounce_time = dest_time
     
-    R_i_alpha_average = defaultdict(float)
-    R_i_alpha_std_dev = defaultdict(float)
     R_i_alpha_total = defaultdict(float)
     for key in R_i_alpha_list:
-        R_i_alpha_average[key] = np.mean(R_i_alpha_list[key])
-        R_i_alpha_std_dev[key] = np.std(R_i_alpha_list[key])
         R_i_alpha_total[key] = np.sum(R_i_alpha_list[key])
         
-    T_alpha_average = np.mean(T_alpha_list)
-    T_alpha_std_dev = np.std(T_alpha_list)
     T_alpha_total = np.sum(T_alpha_list)
     
     if len(R_i_alpha_list) == 0 and alias_src is not None:
-        R_i_alpha_average[alias_src] = T_alpha_average
-        R_i_alpha_std_dev[alias_src] = T_alpha_std_dev
-        R_i_alpha_total[alias_src] = T_alpha_total
-        R_i_alpha_list[alias_src] = T_alpha_list
+        R_i_alpha_total[alias_src] = T_alpha_total        
         
-        
-    return N_i_j_alpha, R_i_alpha_list, R_i_alpha_average, \
-        R_i_alpha_std_dev, R_i_alpha_total, N_alpha_beta, T_alpha_list, \
-        T_alpha_average, T_alpha_std_dev, T_alpha_total, lines
+    return N_i_j_alpha, R_i_alpha_total, N_alpha_beta, T_alpha_total, lines
 
 class MMVT_anchor_statistics():
     """
@@ -581,15 +549,8 @@ class MMVT_anchor_statistics():
     """
     
     def __init__(self, alpha):
-        
         self.N_i_j_alpha = None
-        self.R_i_alpha_list = None
-        self.R_i_alpha_average = None
-        self.R_i_alpha_std_dev = None
         self.R_i_alpha_total = None
-        self.T_alpha_list = []
-        self.T_alpha_average = None
-        self.T_alpha_std_dev = None
         self.T_alpha_total = None
         self.N_alpha_beta = None
         self.k_alpha_beta = {}
@@ -604,16 +565,12 @@ class MMVT_anchor_statistics():
         output files to fill out transition statistics.
         """
         if engine == "openmm":
-            self.N_i_j_alpha, self.R_i_alpha_list, self.R_i_alpha_average, \
-            self.R_i_alpha_std_dev, self.R_i_alpha_total, self.N_alpha_beta, \
-            self.T_alpha_list, self.T_alpha_average, self.T_alpha_std_dev, \
+            self.N_i_j_alpha, self.R_i_alpha_total, self.N_alpha_beta, \
             self.T_alpha_total, self.existing_lines \
                 = openmm_read_output_file_list(
                     output_file_list, min_time, max_time, self.existing_lines)
         elif engine == "namd":
-            self.N_i_j_alpha, self.R_i_alpha_list, self.R_i_alpha_average, \
-            self.R_i_alpha_std_dev, self.R_i_alpha_total, self.N_alpha_beta, \
-            self.T_alpha_list, self.T_alpha_average, self.T_alpha_std_dev, \
+            self.N_i_j_alpha, self.R_i_alpha_total, self.N_alpha_beta, \
             self.T_alpha_total, self.existing_lines \
                 = namd_read_output_file_list(
                     output_file_list, anchor, timestep, min_time, max_time, 
@@ -627,22 +584,13 @@ class MMVT_anchor_statistics():
             self.k_alpha_beta[key] = self.N_alpha_beta[key] / self.T_alpha_total
             
         assert self.T_alpha_total >= 0.0
-        #assert len(self.k_alpha_beta) > 0, \
-        #    "Missing statistics for anchor %d" % anchor.index
-        #self.print_stats()
         return
     
     def print_stats(self):
         """ Print statistics for easy viewing."""
         print("self.alpha:", self.alpha)
         print("self.N_i_j_alpha:", self.N_i_j_alpha)
-        print("self.R_i_alpha_average:", self.R_i_alpha_average)
-        print("self.R_i_alpha_std_dev:", self.R_i_alpha_std_dev)
         print("self.R_i_alpha_total:", self.R_i_alpha_total)
-        if self.R_i_alpha_list is not None:
-            print("len(self.R_i_alpha_list):", len(self.R_i_alpha_list))
-        print("self.T_alpha_average:", self.T_alpha_average)
-        print("self.T_alpha_std_dev:", self.T_alpha_std_dev)
         print("self.T_alpha_total:", self.T_alpha_total)
         print("self.N_alpha_beta:", self.N_alpha_beta)
         print("self.k_alpha_beta:", self.k_alpha_beta)
@@ -695,10 +643,6 @@ class MMVT_data_sample(common_analyze.Data_sample):
     Q : numpy.array()
         A 2x2 rate matrix for a milestoning calculation. No sink states.
         
-    Q_hat : numpy.array()
-        A 2x2 rate matrix for a milestoning calculation. Sink state(s) 
-        included.
-        
     K : numpy.array()
         A Markov transition probability matrix constructed from Q. No
         sink states.
@@ -748,7 +692,6 @@ class MMVT_data_sample(common_analyze.Data_sample):
         self.R_i = {}
         self.T = None
         self.Q = None
-        self.Q_hat = None
         self.K = None
         self.K_hat = None
         self.p_i = None
@@ -825,11 +768,6 @@ class MMVT_data_sample(common_analyze.Data_sample):
                 continue
             id_alias = anchor1.alias_from_neighbor_id(pivot_index)
             flux_matrix[pivot_index, alpha] = 0.0
-            #if id_alias is None:
-            #    flux_matrix[pivot_index, alpha] = 0.0
-            #else:
-            #    flux_matrix[pivot_index, alpha] = 1e30
-            
             dead_end_anchor = False
             if len(anchor1.milestones) == 1:
                 dead_end_anchor = True
@@ -859,16 +797,12 @@ class MMVT_data_sample(common_analyze.Data_sample):
                 
             flux_matrix[alpha, alpha] = -column_sum[alpha]
             
-        flux_matrix[pivot_index, pivot_index-1] = 1e30
-        # TODO: remove
-        np.savetxt("/home/lvotapka/tmp/flux_matrix.txt", flux_matrix)
-        
+        flux_matrix[pivot_index, pivot_index-1] = HIGH_FLUX
         prob_equil = np.zeros((flux_matrix_dimension,1))
         prob_equil[pivot_index] = 1.0
         self.pi_alpha = abs(la.solve(flux_matrix.T, prob_equil))
         
         # refine pi_alpha
-        #self.pi_alpha = self.pi_alpha.astype(dtype=np.longdouble)
         pi_alpha_slice = np.zeros((flux_matrix_dimension-1, 1))
         for i in range(flux_matrix_dimension-1):
             pi_alpha_slice[i,0] = -self.pi_alpha[i,0] * flux_matrix[i,i]
@@ -892,11 +826,6 @@ class MMVT_data_sample(common_analyze.Data_sample):
             or self.T_alpha is None:
             raise Exception("Unable to call fill_out_data_quantities(): "\
                         "No statistics present in Data Sample.")
-        """ # TODO: remove
-        self.N_ij, self.R_i, self.T = mmvt_Q_N_R(
-            self.model, self.N_i_j_alpha, self.R_i_alpha, self.T_alpha, 
-            self.pi_alpha)
-        """
         
         self.N_ij = defaultdict(float)
         self.R_i = defaultdict(float)
@@ -910,6 +839,7 @@ class MMVT_data_sample(common_analyze.Data_sample):
             this_anchor_pi_alpha = self.pi_alpha[alpha]
             sum_pi_alpha_over_T_alpha += this_anchor_pi_alpha \
                 / self.T_alpha[alpha]
+                
         self.T = float(sum_pi_alpha_over_T_alpha ** -1)
         assert self.T >= 0.0, "self.T should be positive: {}".format(self.T)
         for alpha, anchor in enumerate(self.model.anchors):
@@ -974,7 +904,6 @@ class MMVT_data_sample(common_analyze.Data_sample):
             
         return
         
-    
     def make_mcmc_quantities(self):
         """
         The MCMC matrix sampler requires inputs to be in Numpy matrix
@@ -1046,7 +975,9 @@ class MMVT_data_sample(common_analyze.Data_sample):
             
     def fill_k_from_matrices(self, k_alpha_beta_matrix):
         """
-        
+        When the k-matrix is sampled by the MCMC procedure, the entries
+        need to be converted back into a dictionary form in order to
+        use the existing data_sample methods.
         """
         n_anchors = self.model.num_anchors
         self.k_alpha_beta = defaultdict(float)
@@ -1063,7 +994,10 @@ class MMVT_data_sample(common_analyze.Data_sample):
     def fill_N_R_alpha_from_matrices(self, mmvt_Nij_alpha_list, 
                                      mmvt_Ri_alpha_list):
         """
-        
+        When the N matrix and R vector is sampled by the MCMC 
+        procedure, the entries need to be converted back into a 
+        dictionary form in order to use the existing data_sample 
+        methods.
         """
         for alpha, anchor in enumerate(self.model.anchors):
             if self.N_i_j_alpha is None or self.R_i_alpha is None:
@@ -1097,6 +1031,8 @@ def find_nonzero_matrix_entries(M):
     m = M.shape[1]
     for i in range(n):
         for j in range(m):
+            if i == j:
+                continue
             if M[i,j] != 0:
                 nonzero_matrix_indices.append((i,j))
     return nonzero_matrix_indices
@@ -1142,11 +1078,8 @@ def monte_carlo_milestoning_error(
     MAX_STRIDE = 100
     model = main_data_sample.model
     Q_ij = main_data_sample.Q
-    N_ij = main_data_sample.N_ij
-    R_i = main_data_sample.R_i
     Q = deepcopy(Q_ij)
     n_milestones = Q.shape[0] #get size of count matrix
-    n_anchors = model.num_anchors
     if skip is None:
         skip = 40*n_milestones
         if skip > MAX_SKIP:
@@ -1159,7 +1092,6 @@ def monte_carlo_milestoning_error(
     k_alpha_beta_matrix, N_alpha_beta_matrix, T_alpha_matrix, mmvt_Nij_alpha, \
         mmvt_Ri_alpha, mmvt_Qij_alpha, T \
         = main_data_sample.make_mcmc_quantities()
-        
     MFPTs_list = defaultdict(list)
     MFPTs_error = defaultdict(float)
     k_off_list = []
@@ -1171,16 +1103,6 @@ def monte_carlo_milestoning_error(
     data_sample_list = []
     if verbose: print("collecting ", num, " MCMC samples from ", 
                       num*(stride) + skip, " total moves")  
-    """ # TODO: marked for removal
-    connected_milestones = defaultdict(set)
-    for alpha, anchor in enumerate(model.anchors):
-        for i, milestone in enumerate(anchor.milestones):
-            for j, milestone2 in enumerate(anchor.milestones):
-                if i == j: 
-                    continue
-                connected_milestones[milestone.index].add(milestone2.index)
-    """
-    
     new_data_sample = None
     nonzero_indices_k_alpha_beta_matrix = find_nonzero_matrix_entries(
         k_alpha_beta_matrix)
@@ -1193,7 +1115,6 @@ def monte_carlo_milestoning_error(
         nonzero_indices_Q_alpha_list.append(nonzero_indices_Q_alpha)
     
     for counter in range(num * (stride) + skip):
-        #if verbose: print("MCMC stepnum: ", counter)
         new_data_sample = MMVT_data_sample(model)
         new_data_sample.N_alpha_beta = main_data_sample.N_alpha_beta
         new_data_sample.N_i_j_alpha = main_data_sample.N_i_j_alpha

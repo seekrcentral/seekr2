@@ -161,91 +161,6 @@ def create_host_guest_elber_model_input(root_dir, bd=True):
     model_input.calculation_settings.fwd_output_interval = None
     return model_input
 
-def create_smoluchowski_mmvt_model_input(root_dir, num_input_anchors=5):
-    """
-    Create a Smoluchowski MMVT model input object.
-    """
-    os.chdir(TEST_DIRECTORY)
-    model_input = common_prepare.Model_input()
-    model_input.calculation_type = "mmvt"
-    model_input.calculation_settings = common_prepare.MMVT_input_settings()
-    model_input.calculation_settings.md_output_interval = 0
-    model_input.calculation_settings.md_steps_per_anchor = 0
-    model_input.temperature = 300.0
-    model_input.pressure = 1.0
-    model_input.ensemble = "nvt"
-    model_input.root_directory = root_dir
-    model_input.md_program = "smoluchowski"
-    model_input.constraints = "none"
-    model_input.rigidWater = False
-    model_input.hydrogenMass = None
-    model_input.timestep = 0.002
-    model_input.nonbonded_cutoff = 0.0
-    cv_input1 = common_cv.Spherical_cv_input()
-    cv_input1.group1 = [0]
-    cv_input1.group2 = [1]
-    cv_input1.input_anchors = []
-    
-    for i in range(num_input_anchors):
-        input_anchor = common_cv.Spherical_cv_anchor()
-        input_anchor.radius = i + 0.5
-        input_anchor.starting_amber_params = None
-        if i == 0:
-            input_anchor.bound_state = True
-        else:
-            input_anchor.bound_state = False
-        
-        if i == num_input_anchors-1:
-            input_anchor.bulk_anchor = True
-        else:
-            input_anchor.bulk_anchor = False
-        cv_input1.input_anchors.append(input_anchor)
-    
-    model_input.cv_inputs = [cv_input1]
-    
-    model_input.browndye_settings_input  = None
-    
-    return model_input
-
-def create_smoluchowski_elber_model_input(root_dir, num_input_anchors=5):
-    """
-    Create a Smoluchowski Elber model input object.
-    """
-    os.chdir(TEST_DIRECTORY)
-    model_input = create_smoluchowski_mmvt_model_input(root_dir)
-    model_input.calculation_type = "elber"
-    model_input.calculation_settings = common_prepare.Elber_input_settings()
-    model_input.calculation_settings.num_umbrella_stage_steps = 100000
-    model_input.calculation_settings.umbrella_force_constant = 9000.0
-    model_input.calculation_settings.fwd_rev_interval = 500
-    model_input.calculation_settings.rev_output_interval = None
-    model_input.calculation_settings.fwd_output_interval = None
-    
-    cv_input1 = common_cv.Spherical_cv_input()
-    cv_input1.group1 = [0]
-    cv_input1.group2 = [1]
-    cv_input1.input_anchors = []
-    cv_input1.input_anchors = []
-    
-    for i in range(num_input_anchors):
-        input_anchor = common_cv.Spherical_cv_anchor()
-        input_anchor.radius = i + 1.0
-        input_anchor.starting_amber_params = None
-        if i == 0:
-            input_anchor.bound_state = True
-        else:
-            input_anchor.bound_state = False
-        
-        if i == num_input_anchors-1:
-            input_anchor.bulk_anchor = True
-        else:
-            input_anchor.bulk_anchor = False
-        cv_input1.input_anchors.append(input_anchor)
-    
-    model_input.cv_inputs = [cv_input1]
-    model_input.browndye_settings_input  = None
-    return model_input
-
 def create_tiwary_mmvt_model_input(root_dir):
     """
     Create a generic host-guest model input object.
@@ -401,13 +316,15 @@ def create_tiwary_mmvt_model_input(root_dir):
 def create_toy_mmvt_model_input(root_dir):
     """
     Create a toy mmvt model input.
+    
+    This is the Entropy barrier system.
     """
     os.chdir(TEST_DIRECTORY)
     model_input = common_prepare.Model_input()
     model_input.calculation_type = "mmvt"
     model_input.calculation_settings = common_prepare.MMVT_input_settings()
-    model_input.calculation_settings.md_output_interval = 50
-    model_input.calculation_settings.md_steps_per_anchor = 5000
+    model_input.calculation_settings.md_output_interval = 1000
+    model_input.calculation_settings.md_steps_per_anchor = 100000
     model_input.temperature = 300.0
     model_input.pressure = 1.0
     model_input.ensemble = "nvt"
@@ -428,7 +345,7 @@ def create_toy_mmvt_model_input(root_dir):
     
     values_list = [-0.7, -0.5, -0.3, -0.1, 0.1, 0.3, 0.5, 0.7]
     positions_list = [
-        [[[0.0, -0.7, 0.0]], [[0.2, -0.7, 0.0]]],
+        [[[0.0, -0.7, 0.0]], [[0.3, -0.7, 0.0]]],
         [[[0.0, -0.5, 0.0]]],
         [[[0.0, -0.3, 0.0]]],
         [[[0.0, -0.1, 0.0]]],
@@ -464,4 +381,19 @@ def create_toy_mmvt_model_input(root_dir):
     model_input.toy_settings_input.num_particles = 1
     model_input.toy_settings_input.masses = np.array([10.0])
     
+    return model_input
+
+def create_toy_elber_model_input(root_dir):
+    """
+    Create a generic host-guest model input object.
+    """
+    model_input = create_toy_mmvt_model_input(root_dir)
+    model_input.calculation_type = "elber"
+    model_input.calculation_settings = common_prepare.Elber_input_settings()
+    model_input.calculation_settings.num_umbrella_stage_steps = 100000
+    model_input.calculation_settings.umbrella_force_constant = 9000.0
+    model_input.calculation_settings.fwd_rev_interval = 500
+    model_input.calculation_settings.rev_output_interval = None
+    model_input.calculation_settings.fwd_output_interval = None
+    model_input.cv_inputs[0].restraining_expression = "0.5*k*(y1-value)^2"
     return model_input

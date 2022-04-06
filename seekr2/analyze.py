@@ -29,8 +29,6 @@ def check_graph_connected(graph, state_index1, state_index2):
     A graph is made of anchor indices that have recorded bounces against
     neighboring anchors. If pathways can be found, then sufficient statistics
     likely exist to compute kinetics from the resulting bounces.
-    
-    TODO: more documentation here.
     """
     max_iter = len(graph) + 5
     if state_index1 == state_index2:
@@ -142,7 +140,6 @@ class Analysis:
         statistics and times, as well as MMVT theory, to compute 
         kinetics and thermodynamics quantities.
         """
-        
         self.model = model
         self.anchor_stats_list = []
         self.main_data_sample = None
@@ -170,7 +167,6 @@ class Analysis:
         Check the anchor statistics to make sure that enough bounces
         have been observed to perform the analysis
         """
-        
         anchors_missing_statistics = []
         for i, anchor in enumerate(self.model.anchors):
             if anchor.bulkstate:
@@ -183,7 +179,6 @@ class Analysis:
             
             # Hacky!
             existing_alias_transitions.append(2)
-            
             for milestone in anchor.milestones:
                 found_problem = False
                 if milestone.alias_index not in existing_alias_transitions:
@@ -208,7 +203,6 @@ class Analysis:
                 else:
                     raise common_analyze.MissingStatisticsError(
                         error_warning_string)
-                        
         return True
     
     def mmvt_check_anchor_stats(self, silent=False):
@@ -266,8 +260,7 @@ class Analysis:
                         if anchor.index not in anchors_missing_i_j_statistics:
                             anchors_missing_i_j_statistics.append(anchor.index)
                         break
-        #TODO: something with anchors_missing_alpha_beta_statistics or
-        #   anchors_missing_i_j_statistics?
+        
         # Check a graph connectivity
         missing_path = False
         for endstate_index in endstate_list:
@@ -379,18 +372,11 @@ class Analysis:
         from the output files, construct the global transition
         statistics objects. Applies to systems using MMVT milestoning.
         """
-        # TODO: get rid of all this STD, avg, and stuff - not needed
         N_alpha_beta = defaultdict(int)
         k_alpha_beta = defaultdict(float)
         N_i_j_alpha = []
         R_i_alpha_total = []
-        R_i_alpha_average = []
-        R_i_alpha_std_dev = []
-        R_i_alpha_count = []
         T_alpha_total = []
-        T_alpha_average = []
-        T_alpha_std_dev = []
-        T_alpha_count = []
         
         for alpha, anchor1 in enumerate(self.model.anchors):
             if anchor1.bulkstate:
@@ -421,14 +407,10 @@ class Analysis:
             anchor_N_i_j_alpha = self.anchor_stats_list[alpha].N_i_j_alpha
             N_i_j_alpha_element = defaultdict(int)
             R_i_alpha_element = defaultdict(float)
-            R_i_alpha_count_element = defaultdict(int)
-            R_i_alpha_std_element = defaultdict(float)
             
             # Fill out empty milestone statistics
             for milestone1 in anchor1.milestones:
                 R_i_alpha_element[milestone1.index] = 0.0
-                R_i_alpha_count_element[milestone1.index] = 0
-                R_i_alpha_std_element[milestone1.index] = 0.0
                 for milestone2 in anchor1.milestones:
                     if milestone1.index == milestone2.index:
                         continue
@@ -444,8 +426,6 @@ class Analysis:
             N_i_j_alpha.append(N_i_j_alpha_element)
             
             anchor_R_i_alpha = self.anchor_stats_list[alpha].R_i_alpha_total
-            anchor_R_i_alpha_std = self.anchor_stats_list[alpha].R_i_alpha_std_dev
-            anchor_R_i_alpha_list = self.anchor_stats_list[alpha].R_i_alpha_list
             
             for key in anchor_R_i_alpha:
                 alias_id_i = key
@@ -454,18 +434,10 @@ class Analysis:
                     "Anchor {} missing alias {}.".format(anchor1.index, 
                                                          alias_id_i)
                 R_i_alpha_element[id_i] = anchor_R_i_alpha[key]
-                R_i_alpha_std_element[id_i] = anchor_R_i_alpha_std[key]
-                R_i_alpha_count_element[id_i] = len(anchor_R_i_alpha_list[key])
             
             R_i_alpha_total.append(R_i_alpha_element)
-            R_i_alpha_std_dev.append(R_i_alpha_std_element)
-            R_i_alpha_count.append(R_i_alpha_count_element)            
             anchor_T_alpha = self.anchor_stats_list[alpha].T_alpha_total
-            anchor_T_alpha_std = self.anchor_stats_list[alpha].T_alpha_std_dev
-            anchor_T_alpha_list = self.anchor_stats_list[alpha].T_alpha_list
             T_alpha_total.append(anchor_T_alpha)
-            T_alpha_std_dev.append(anchor_T_alpha_std)
-            T_alpha_count.append(len(anchor_T_alpha_list))
             
         self.main_data_sample = mmvt_analyze.MMVT_data_sample(
             self.model, N_alpha_beta, k_alpha_beta, N_i_j_alpha, 
@@ -518,13 +490,8 @@ class Analysis:
         """
         N_i_j_list = []
         R_i_total = []
-        R_i_average = []
-        R_i_std_dev = []
-        R_i_count = []
-        bulkstate = None
         for i, anchor1 in enumerate(self.model.anchors):
             if anchor1.bulkstate:
-                bulkstate = i
                 continue
             
             anchor_N_i_j = self.anchor_stats_list[i].N_i_j
@@ -537,20 +504,9 @@ class Analysis:
             N_i_j_list.append(N_i_j_element)
             
             anchor_R_i = self.anchor_stats_list[i].R_i_total
-            anchor_R_i_std = self.anchor_stats_list[i].R_i_std_dev
-            anchor_R_i_list = self.anchor_stats_list[i].R_i_list
             R_i_element = defaultdict(float)
-            R_i_count_element = defaultdict(int)
-            R_i_std_element = defaultdict(float)
-            
-            
             R_i_element[i] = anchor_R_i
-            R_i_std_element[i] = anchor_R_i_std
-            R_i_count_element[i] = len(anchor_R_i_list)
-                
-            R_i_total.append(R_i_element)
-            R_i_std_dev.append(R_i_std_element)
-            R_i_count.append(R_i_count_element)            
+            R_i_total.append(R_i_element)    
         
         self.main_data_sample = elber_analyze.Elber_data_sample(
             self.model, N_i_j_list, R_i_total)
@@ -616,53 +572,6 @@ class Analysis:
             self.process_data_samples_elber()
         return
     
-    def resample_k_N_R_T(self, N_alpha_beta, N_i_j_alpha, R_i_alpha_total,
-                         R_i_alpha_average, R_i_alpha_std_dev, R_i_alpha_count,
-                         T_alpha_total, T_alpha_average, T_alpha_std_dev, 
-                         T_alpha_count):
-        """
-        Create data samples from a distribution for computing the
-        uncertainties of the thermo and kinetics.
-        """
-        sampled_k_alpha_beta = {}
-        sampled_T_alpha_total = []
-        sampled_R_i_alpha_total = []
-        for alpha, anchor in enumerate(self.model.anchors):
-            if anchor.bulkstate:
-                continue
-            element_R_i_alpha_total = {}
-            for key in R_i_alpha_total[alpha]:
-                n_R_i = R_i_alpha_count[alpha][key]
-                if n_R_i != 0:
-                    R_i_total_std_dev = R_i_alpha_std_dev[alpha][key] * np.sqrt(n_R_i)
-                    R_fluctuation = np.random.normal(scale=R_i_total_std_dev)
-                else:
-                    R_fluctuation = 0.0
-                element_R_i_alpha_total[key] = abs(R_i_alpha_total[alpha][key] + R_fluctuation)
-            
-            n_T = T_alpha_count[alpha]
-            if n_T != 0:
-                T_total_std_dev = T_alpha_std_dev[alpha] * np.sqrt(n_T)
-                T_fluctuation = np.random.normal(scale=T_total_std_dev)
-            else:
-                T_fluctuation = 0.0
-            element_T_alpha_total = abs(T_alpha_total[alpha] + T_fluctuation)
-            # This way preserves T = sum of R_i
-            sampled_T_alpha_total.append(np.sum(list(element_R_i_alpha_total.values())))
-            # In contrast, this way samples T and R_i independently
-            #sampled_T_alpha_total.append(element_T_alpha_total)
-            sampled_R_i_alpha_total.append(element_R_i_alpha_total)
-            
-            for beta, anchor2 in enumerate(self.model.anchors):
-                key = (alpha, beta)
-                sampled_k_alpha_beta[key] = N_alpha_beta[key] / sampled_T_alpha_total[alpha]
-            
-        sampled_N_alpha_beta = deepcopy(N_alpha_beta)
-        sampled_N_i_j_alpha = deepcopy(N_i_j_alpha)
-        
-        return sampled_k_alpha_beta, sampled_N_i_j_alpha, \
-            sampled_R_i_alpha_total, sampled_T_alpha_total
-    
     def print_results(self):
         """Print all results of the analysis calculation."""
         print("Printing results from MMVT SEEKR calculation")
@@ -684,14 +593,16 @@ class Analysis:
                     diss_constant_err = diss_constant \
                         * common_analyze.quadriture(
                         k_on_err/k_on, self.k_off_error/self.k_off)
+                    delta_G_err = diss_constant_err*common_analyze.GAS_CONSTANT\
+                    *self.model.temperature/diss_constant
                 else:
                     diss_constant_err = None
-                delta_G_err = diss_constant_err*common_analyze.GAS_CONSTANT\
-                    *self.model.temperature/diss_constant
+                    delta_G_err = None
             else:
                 print("  k_on (1/s * 1/M) to state", key, ":", 
                       common_analyze.pretty_string_value_error(k_on, None))
                 diss_constant_err = None
+                delta_G_err = None
             
             print("  Dissociation constant (M) to state", key, ":", 
                   common_analyze.pretty_string_value_error(
@@ -716,11 +627,14 @@ class Analysis:
                           float(self.MFPTs[key]*1.0e-12), None))
         return
     
-    def save_cv_plots(self, cv_index):
+    def save_plots(self, image_directory):
         """
-        Save plots associated with a given CV.
-        """
+        Save a potentially useful series of plots of some quantities
+        obtained during the analysis.
         
+        TODO: interact with model, because the way these plots are saved
+        depends on the structure of the CVs.
+        """
         anchor_indices = np.zeros(len(self.model.anchors), dtype=np.int8)
         for i, anchor in enumerate(self.model.anchors):
             anchor_indices[i] = anchor.index
@@ -754,17 +668,7 @@ class Analysis:
         plt.xlabel("milestones")
         pi_fig.savefig(os.path.join(image_directory, "free_energy_profile.png"))
         return
-    def save_plots(self, image_directory):
-        """
-        Save a potentially useful series of plots of some quantities
-        obtained during the analysis.
         
-        TODO: interact with model, because the way these plots are saved
-        depends on the structure of the CVs.
-        """
-        
-        
-
 def analyze(model, force_warning=False, num_error_samples=1000, 
             stride_error_samples=None, skip_error_samples=None,
             skip_checks=False, min_time=0.0, max_time=None):
@@ -845,12 +749,9 @@ if __name__ == "__main__":
     skip_checks = args["skip_checks"]
     min_time = args["minimum_time"]
     max_time = args["maximum_time"]
-    
     model = base.load_model(model_file)
-    
     image_directory = common_analyze.make_image_directory(
         model, image_directory)
-        
     if not skip_checks:
         check.check_post_simulation_all(model, long_check=True)
     
@@ -859,8 +760,6 @@ if __name__ == "__main__":
             stride_error_samples=stride_error_samples,
             skip_error_samples=skip_error_samples, 
             skip_checks=skip_checks, min_time=min_time, max_time=max_time)
-    
     analysis.print_results()
-    
     print("All plots being saved to:", image_directory)
     analysis.save_plots(image_directory)

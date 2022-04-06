@@ -177,10 +177,6 @@ def choose_next_simulation_openmm(
                     simulation = sim_openmm_obj.umbrella_simulation
                 
                 simulation.loadCheckpoint(restart_checkpoint_filename)
-                # TODO: remove
-                #currentStep = int(round(simulation.context.getState().getTime()\
-                #                  .value_in_unit(unit.picoseconds) \
-                #                  / sim_openmm_obj.timestep))
                 currentStep = simulation.context.getState().getStepCount()
                 dummy_file.close()
                 restart = True
@@ -532,6 +528,9 @@ def run(model, instruction, min_total_simulation_length=None,
     curdir = os.getcwd()
     md_complete = False
     bd_complete = False
+    assert model.calculation_settings.num_production_steps \
+        >= model.calculation_settings.restart_checkpoint_interval, \
+        "Runs cannot be shorter than the checkpoint interval."
     
     # Only cleanse BD files if BD is being run in this instance
     if (instruction in ["any", "any_bd", "b_surface"]):

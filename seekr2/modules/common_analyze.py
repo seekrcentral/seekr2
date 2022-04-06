@@ -9,13 +9,10 @@ import os
 import glob
 import xml.etree.ElementTree as ET
 import subprocess
-import random
 from collections import defaultdict
-import time
 
 import numpy as np
 from scipy import linalg as la
-from scipy.stats import gamma
 import PyGT
 
 import seekr2.modules.common_base as base
@@ -33,76 +30,24 @@ class MissingStatisticsError(Exception):
     """Catch a very specific type of error in analysis stage."""
     pass
 
-def solve_rate_matrix(Q_hat, max_iter=100, ETOL=1e-15):
-    """
-    Use an infinite series combined with a divide-and-conquer method
-    to solve the Q-matrix since the numpy/scipy solver tends to have 
-    numerical instabilities.
-    """
-    
-    K_hat = Q_to_K(Q_hat)
-    K_pow_n = np.linalg.matrix_power(K_hat, 0)
-    sum_of_series_tmp = np.identity(K_hat.shape[0], dtype=np.longdouble)
-    section = np.identity(K_hat.shape[0], dtype=np.longdouble)
-    
-    section_list = []
-    for i in range(max_iter):
-        n = 2**i
-        K_pow_n = np.linalg.matrix_power(K_hat, n)
-        assert np.isfinite(K_pow_n).all()
-        section = np.dot(K_pow_n, sum_of_series_tmp)
-        assert np.isfinite(sum_of_series_tmp).all()
-        assert np.isfinite(section).all()
-        sum_of_series_tmp += section
-        section_list.append(section)
-        error = np.linalg.norm(section)
-        if not np.isfinite(error):
-            break
-        if i == max_iter-1:
-            print("Warning: solve_rate_matrix reached max iterations. "\
-                  "Results may be incorrect.")
-        if error < ETOL:
-            break
-        
-    sum_of_series = np.zeros(K_hat.shape, dtype=np.longdouble)
-    section_list.reverse()
-    for section in section_list:
-        sum_of_series += section
-    sum_of_series += np.identity(K_hat.shape[0], dtype=np.longdouble)
-    
-    T = np.zeros(Q_hat.shape, dtype=np.longdouble)
-    t_vector = np.zeros((Q_hat.shape[0], 1), dtype=np.longdouble)
-    for i in range(Q_hat.shape[0]):
-        T[i,i] = -1.0 / Q_hat[i,i]
-        t_vector[i,0] = T[i,i]
-    one_vector = np.ones((Q_hat.shape[0]), dtype=np.longdouble)
-    times = sum_of_series @ T @ one_vector
-    return times
-
 def Q_to_K(Q):
     """Given a rate matrix Q, compute probability transition matrix K."""
-    
     K = np.zeros(Q.shape, dtype=np.longdouble)
     for i in range(Q.shape[0]):
         for j in range(Q.shape[0]):
             if i == j:
                 K[i,j] = 0.0
             else:
-                #if Q[i,i] == 0.0:
-                #    K[i,j] = 0.0
-                #else:
                 K[i,j] = -Q[i,j] / Q[i,i]
     
     return K
 
 def quadriture(err1, err2):
     """Add two errors in quadriture."""
-    
     return float(np.sqrt(err1**2 + err2**2))
 
 def minor1d(array1d, i):
     """Accept 1D array and return a new array with element i removed."""
-    
     range1 = list(range(i)) + list(range(i+1, array1d.shape[0]))
     return array1d[np.array(range1)]
     
@@ -156,7 +101,6 @@ def pretty_string_value_error(value, error, error_digits=2, use_unicode=True):
         >>> pretty_string_value_error(5.6e-2, 2.0e-3, error_digits=1)
         "5.6 +/- 0.2 * 10^-02"
     """
-    
     if value is None:
         return "None"
     if error is None or not np.isfinite(error):
@@ -184,7 +128,6 @@ def pretty_string_value_error(value, error, error_digits=2, use_unicode=True):
         new_value_mantissa = string_for_formatting.format(value_mantissa)
         new_error_mantissa = string_for_formatting.format(
             error_mantissa*10**exp_diff)
-        
         if use_unicode:
             new_string = "(%s \u00B1 %s) * 10^%s" % (
                 new_value_mantissa, new_error_mantissa, value_exponent_str)
@@ -265,7 +208,6 @@ def browndye_run_compute_rate_constant(compute_rate_constant_program,
     reaction_probabilities = defaultdict(float)
     reaction_probability_errors = defaultdict(float)
     transition_counts = defaultdict(int)
-    #k_b = None
     k_b = 0.0
     total_n_trajectories = 0
     
@@ -284,7 +226,6 @@ def browndye_run_compute_rate_constant(compute_rate_constant_program,
         escaped = int(reactions.find("escaped").text.strip())
         for completed in reactions.iter("completed"):
             name = completed.find("name").text.strip().split("_")
-            #src = name[0]
             dest = int(name[1])
             n = int(completed.find("n").text.strip())
             transition_counts[dest] += n
@@ -302,20 +243,13 @@ def browndye_run_compute_rate_constant(compute_rate_constant_program,
             k_on_error = 0.5*(float(k_on_tag_high.text) - k_on)
             reaction_probability = rate.find("reaction_probability")
             beta_tag = reaction_probability.find("mean")
-            #beta_tag_high = reaction_probability.find("high")  # TODO: remove
             assert beta_tag is not None
-            #assert beta_tag_high is not None  # TODO: remove
             beta = float(beta_tag.text)
-            #beta_error = 0.5*(float(beta_tag_high.text) - beta) # TODO: remove
             if beta != 0.0:
                 k_b = k_on / beta
             
             if sample_error_from_normal:
                 k_on = np.random.normal(loc=k_on, scale=k_on_error)
-    
-    # TODO: remove
-    #assert k_b is not None, "No BD reactions from the b-surface " \
-    #    "successfully reached any of the milestone surfaces."
     
     for key in transition_counts:
         reaction_probabilities[key] \
@@ -337,70 +271,6 @@ def browndye_run_compute_rate_constant(compute_rate_constant_program,
     assert k_ons.keys() == transition_counts.keys()
     return k_ons, k_on_errors, reaction_probabilities, \
         reaction_probability_errors, transition_counts
-
-# TODO: determine if this function is needed anymore
-def combine_fhpd_results(bd_milestone, fhpd_directories, 
-                         combined_results_filename):
-    """
-    Read all results files in the first-hitting-point-distribution 
-    (FHPD) directories and combine them into a single results file
-    to be placed in the bd_milestone directory.
-    """
-    
-    reaction_dict = defaultdict(float)
-    number_escaped = 0
-    number_stuck = 0
-    number_total = 0
-    number_total_check = 0
-    results_filename_list = []
-    if len(fhpd_directories) == 0:
-        return
-    
-    for fhpd_directory in fhpd_directories:
-        results_glob = os.path.join(fhpd_directory, 
-                                    "results*.xml")
-        results_filename_list += glob.glob(results_glob)
-    
-    if len(results_filename_list) == 0:
-        print("No BD output files found.")
-        return
-    
-    for results_filename in results_filename_list:
-        tree = ET.parse(results_filename)
-        root = tree.getroot()
-        reactions_XML = root.find("reactions")
-        number_total += int(reactions_XML.find("n_trajectories").text.strip())
-        number_stuck += int(reactions_XML.find("stuck").text.strip())
-        number_escaped += int(reactions_XML.find("escaped").text.strip())
-        for completed_XML in reactions_XML.iter("completed"):
-            name = completed_XML.find("name").text.strip()
-            n = int(completed_XML.find("n").text.strip())
-            reaction_dict[name] += n
-            number_total_check += n
-        
-    assert number_total == number_total_check + number_stuck + number_escaped
-    for completed_XML in reactions_XML.iter("completed"):
-        reactions_XML.remove(completed_XML)
-    
-    reactions_XML.find("n_trajectories").text = str(number_total)
-    reactions_XML.find("stuck").text = str(number_stuck)
-    reactions_XML.find("escaped").text = str(number_escaped)
-    for key in reaction_dict:
-        completed_XML = ET.SubElement(reactions_XML, "completed")
-        completed_XML.text = "\n      "
-        completed_XML.tail = "\n  "
-        name_XML = ET.SubElement(completed_XML, "name")
-        name_XML.text = key
-        name_XML.tail = "\n      "
-        n_XML = ET.SubElement(completed_XML, "n")
-        n_XML.text = str(int(reaction_dict[key]))
-        n_XML.tail = "\n    "
-        
-    xmlstr = ET.tostring(root).decode("utf-8")
-    with open(combined_results_filename, 'w') as f:
-        f.write(xmlstr)
-        
-    return
 
 class Data_sample():
     """
@@ -426,10 +296,6 @@ class Data_sample():
         The rate matrix constructed from transition counts and times.
         No sink state is defined - probability is conserved for 
         thermodynamics calculations.
-    
-    Q_hat : numpy.array()
-        Same as attribute Q, but one or more sink states are defined - 
-        probability is not conserved, allowing kinetics calculations.
     
     K : numpy.array()
         The probability transition matrix made only from transition
@@ -480,7 +346,6 @@ class Data_sample():
         self.N_ij = None
         self.R_i = None
         self.Q = None
-        self.Q_hat = None
         self.K = None
         self.K_hat = None
         self.p_i = None
@@ -505,7 +370,6 @@ class Data_sample():
             fluctuation introduced in a magnitude proportional to k-on
             errors. This is used only for error estimations.
         """
-        
         b_surface_output_file_glob = os.path.join(
             self.model.anchor_rootdir,
             self.model.k_on_info.b_surface_directory, 
@@ -521,12 +385,12 @@ class Data_sample():
                         "compute_rate_constant"), output_file_list, 
                         sample_error_from_normal=bd_sample_from_normal)
                 self.bd_transition_counts["b_surface"] = transition_counts
-                self.bd_transition_probabilities["b_surface"] = reaction_probabilities
+                self.bd_transition_probabilities["b_surface"] \
+                    = reaction_probabilities
                 self.b_surface_k_ons_src = k_ons_src
                 self.b_surface_b_surface_k_on_errors_src = k_on_errors_src
             else:
                 raise Exception("No valid BD program settings provided.")
-        
         
         if len(self.model.k_on_info.bd_milestones) > 0 \
                 and len(output_file_list) > 0:
@@ -541,13 +405,15 @@ class Data_sample():
                     = transition_counts[outer_milestone_index] \
                     - transition_counts[inner_milestone_index]
                 if sum(transition_counts_bd_milestone.values()) == 0:
-                    transition_probabilities_bd_milestone[inner_milestone_index] \
-                        = 0
+                    transition_probabilities_bd_milestone[
+                        inner_milestone_index] = 0
                     transition_probabilities_bd_milestone["escaped"] \
                         = 0
                 else:
-                    transition_probabilities_bd_milestone[inner_milestone_index] \
-                        = transition_counts_bd_milestone[inner_milestone_index] \
+                    transition_probabilities_bd_milestone[
+                        inner_milestone_index] \
+                        = transition_counts_bd_milestone[
+                            inner_milestone_index] \
                         / sum(transition_counts_bd_milestone.values())
                     transition_probabilities_bd_milestone["escaped"] \
                         = transition_counts_bd_milestone["escaped"] \
@@ -557,7 +423,6 @@ class Data_sample():
                     = transition_counts_bd_milestone
                 self.bd_transition_probabilities[bd_milestone.index] \
                         = transition_probabilities_bd_milestone
-                
         return
     
     def compute_rate_matrix(self):
@@ -642,13 +507,13 @@ class Data_sample():
         and probabilities of transfers between different states. Fill
         out all kinetics quantities.
         """
-        
         end_milestones = {}
         bulk_milestones = []
         MFPTs = {}
         k_off = 0.0
         k_ons = {}
-        for alpha, anchor in enumerate(self.model.anchors):
+        bulk_milestone = None
+        for anchor in self.model.anchors:
             if anchor.endstate:
                 for milestone_id in anchor.get_ids():
                     if self.model.get_type() == "elber":
@@ -662,37 +527,18 @@ class Data_sample():
                         if anchor.alias_from_id(milestone_id) == 1: 
                             # TODO: hacky
                             continue
-                    bulk_milestones.append(milestone_id)
+                    #bulk_milestones.append(milestone_id)
+                    bulk_milestone = milestone_id
 
-        # first, if there is one, make the bulk state the sink state to 
-        #  compute k_offs
-        Q_hat = self.Q[:,:]
-        p_i_hat = self.p_i[:]
         B, tau = PyGT.tools.load_CTMC(self.Q.T)
-        #mfpt_matrix = PyGT.mfpt.full_MFPT_matrix(B, tau).T
         assert len(bulk_milestones) <= 1, \
             "There cannot be more than one bulk milestone."
-        
-        if len(bulk_milestones) == 1:
-            for bulk_milestone in sorted(bulk_milestones, reverse=True):
-                pass
-                # TODO: remove
-                #Q_hat = minor2d(Q_hat, bulk_milestone, bulk_milestone)
-                #p_i_hat = minor1d(p_i_hat, bulk_milestone)
-            
-            Q_hat = Q_hat.astype(dtype=np.longdouble)
-            n = len(Q_hat)
-            
+        if bulk_milestone is not None:
+            #bulk_milestone = bulk_milestones[0]
+            n = self.Q.shape[0]
             for end_milestone in end_milestones:
-                if end_milestone in bulk_milestones:
+                if end_milestone == bulk_milestone:
                     continue
-                # must account for the removal of bulk state to matrix indices
-                #no_bulk_index = end_milestone
-                #for bulk_milestone in bulk_milestones:
-                #    if end_milestone > bulk_milestone: 
-                #        no_bulk_index -= 1
-                    
-                #mfpt = bulk_times[no_bulk_index]
                 
                 mfpt_ij, mfpt_ji = PyGT.mfpt.compute_MFPT(
                     end_milestone, bulk_milestone, B, tau)
@@ -701,9 +547,10 @@ class Data_sample():
             
             MFPT_to_bulk = 0
             for i in range(self.model.num_milestones):
-                mfpt_ij, mfpt_ji = PyGT.mfpt.compute_MFPT(i, bulk_milestone, B, tau)
+                mfpt_ij, mfpt_ji = PyGT.mfpt.compute_MFPT(
+                    i, bulk_milestone, B, tau)
                 mfpt = mfpt_ji
-                MFPT_to_bulk += mfpt * p_i_hat[i]
+                MFPT_to_bulk += mfpt * self.p_i[i]
             
             # convert to 1/s
             k_off = 1.0e12 / MFPT_to_bulk
@@ -711,21 +558,21 @@ class Data_sample():
         
         p_i_hat_normalize = defaultdict(float)
         for end_milestone_dest in end_milestones:
-            if end_milestone_dest in bulk_milestones:
+            if end_milestone_dest == bulk_milestone:
                 continue
             for end_milestone_src in end_milestones:
                 if end_milestones[end_milestone_dest] \
                         == end_milestones[end_milestone_src]:
                     continue
-                if end_milestone_src in bulk_milestones:
+                if end_milestone_src == bulk_milestone:
                     continue
                 p_i_hat_normalize[end_milestone_src] \
-                    += p_i_hat[end_milestone_src]
+                    += self.p_i[end_milestone_src]
         
         # Next, compute the MFPTs between different states
         possible_MFPTs = defaultdict(float)
         for end_milestone_dest in end_milestones:
-            if end_milestone_dest in bulk_milestones:
+            if end_milestone_dest == bulk_milestone:
                 continue
             
             for end_milestone_src in end_milestones:
@@ -733,32 +580,16 @@ class Data_sample():
                         == end_milestones[end_milestone_src]:
                     # don't get the MFPT from a milestone to itself
                     continue
-                if end_milestone_src in bulk_milestones:
+                if end_milestone_src == bulk_milestone:
                     # a bulk milestone will never be a source
                     continue
-                # TODO: move above this loop? Can save time, but Elber
-                #  milestoning calls the bulk state an end state, which is
-                #  a problem
-                #Q_hat_endstate = minor2d(self.Q[:], end_milestone_dest, end_milestone_dest)
-                #I = np.zeros((len(Q_hat_endstate)), dtype = float)    
-                #I[:] = 1.0
-                #end_state_times = la.solve(Q_hat_endstate, -I)
                 
-                # series solution
-                #end_state_times = solve_rate_matrix(Q_hat_endstate)
-                #mfpt = end_state_times[end_milestone_src]
-                #MFPTs[(end_milestone_src, end_milestone_dest)] = mfpt
-                
-                #PyGT solution
-                #end_state_times_full = mfpt_matrix[:, end_milestone_dest]
-                #end_state_times = minor1d(end_state_times_full, end_milestone_dest)
-                #mfpt = end_state_times[end_milestone_src]
-                
-                mfpt_ij, mfpt_ji = PyGT.mfpt.compute_MFPT(end_milestone_src, end_milestone_dest, B, tau)
+                mfpt_ij, mfpt_ji = PyGT.mfpt.compute_MFPT(
+                    end_milestone_src, end_milestone_dest, B, tau)
                 mfpt = mfpt_ji
                 possible_MFPTs[(end_milestones[end_milestone_src], 
                        end_milestone_dest)] += mfpt \
-                       * p_i_hat[end_milestone_src] \
+                       * self.p_i[end_milestone_src] \
                        / p_i_hat_normalize[end_milestone_src]
         
         # TODO: verify if correct: this finds the destination with the 
@@ -783,13 +614,11 @@ class Data_sample():
                 K_hat[end_milestone, :] = 0.0
                 K_hat[end_milestone, end_milestone] = 1.0
             
-            p_i_hat = self.p_i[:]
             n = K_hat.shape[0]
             source_vec = np.zeros((n,1))
             
             if len(self.bd_transition_counts) > 0:
-                if len(bulk_milestones) > 0:
-                    bulk_milestone = bulk_milestones[0]
+                if bulk_milestone is not None:
                     for bd_milestone in self.model.k_on_info.bd_milestones:
                         source_index = bd_milestone.outer_milestone.index
                         if self.b_surface_k_ons_src is None:
@@ -820,7 +649,5 @@ class Data_sample():
                 self.K_hat = K_hat
                 self.k_ons = k_ons
         
-        self.Q_hat = Q_hat
         self.MFPTs = MFPTs
         return
-    
