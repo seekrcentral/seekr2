@@ -132,12 +132,12 @@ def make_browndye_input_xml(model, rootdir, receptor_xml_filename,
     root.system.reaction_file = REACTION_FILENAME
     reaction_filename = root.system.reaction_file
     if make_apbs_mode:
-        root.system.solvent.debye_length = -1.0
+        root.system.solvent.debye_length = "-1.0"
         input_xml_filename = os.path.join(bd_directory, "apbs_input.xml")
     else:
         root.system.solvent.debye_length = model.browndye_settings.debye_length
-        assert root.system.solvent.debye_length > 0.0, "The Debye length must "\
-            "be set if make_apbs_mode=False"
+        assert float(root.system.solvent.debye_length) > 0.0, \
+            "The Debye length must be set if make_apbs_mode=False"
         input_xml_filename = os.path.join(bd_directory, "input.xml")
         
     root.system.solvent.kT = model.temperature / 298.0
@@ -182,7 +182,7 @@ def make_browndye_input_xml(model, rootdir, receptor_xml_filename,
                 
     return debye_length, reaction_filename
     
-def make_browndye_reaction_xml(model, abs_reaction_path, bd_milestone=None):
+def make_browndye_reaction_xml(model, abs_reaction_path):
     """
     Creates Browndye2 reaction file.
     
@@ -202,14 +202,7 @@ def make_browndye_reaction_xml(model, abs_reaction_path, bd_milestone=None):
         reaction file is being made for.
     """
     rxnroot = sim_browndye2.Reaction_root()
-    if bd_milestone is None:
-        rxnroot.first_state = "b_surface"
-        #bd_milestone_name = "b_surface"
-    else:
-        rxnroot.first_state = str(
-            bd_milestone.outer_milestone.index)
-        #bd_milestone_name = bd_milestone.name
-    
+    rxnroot.first_state = "b_surface"
     ghost_indices_rec = model.browndye_settings.ghost_indices_rec
     ghost_indices_lig = model.browndye_settings.ghost_indices_lig
     

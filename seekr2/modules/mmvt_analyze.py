@@ -58,12 +58,15 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
     MAX_ITER = 1000000000
     NEW_SWARM = "NEW_SWARM"
     swarm_index = 0
+    no_checkpoints = True
     if existing_lines is None:
         existing_lines = []
         files_lines = []
         start_times = []
+        checkpoint_times = []
         for i, output_file_name in enumerate(output_file_list):
             start_time = None
+            checkpoint_time = None
             file_lines = []
             outfile_basename = os.path.basename(output_file_name)
             if re.search("swarm", outfile_basename):
@@ -76,13 +79,18 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
                 for counter, line in enumerate(output_file):
                     if line.startswith("#") or len(line.strip()) == 0:
                         continue
-                    line_list = line.strip().split(',')
+                    if line.startswith("CHECKPOINT"):
+                        no_checkpoints = False
+                        checkpoint_time = float(line.strip().split(",")[1])
+                        continue
+                    line_list = line.strip().split(",")
                     file_lines.append(line_list)
                     dest_boundary = int(line_list[0])
                     bounce_index = int(line_list[1])
                     dest_time = float(line_list[2]) 
                     if start_time is None:
                         start_time = dest_time
+                    
                 
                 if len(file_lines) == 0:
                     continue
@@ -91,21 +99,28 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
                     start_times.append(0.0)
                 else:
                     start_times.append(start_time)
+                
+                checkpoint_times.append(checkpoint_time)
             
             files_lines.append(file_lines)
             
         lines = []
         for i, file_lines in enumerate(files_lines):
             if not skip_restart_check and not len(file_lines) == 0:
-                # make sure that we delete lines that occurred after a restart 
-                # backup
+                # make sure that we delete lines that occurred after a
+                # checkpoint backup
                 if i < len(files_lines)-1:
                     # then it's not the last file
                     if files_lines[i+1][0] == NEW_SWARM:
                         # If the current file is the beginning of a swarm
                         next_start_time = 1e99
                     else:
-                        next_start_time = start_times[i+1]
+                        
+                        if no_checkpoints:
+                            next_start_time = start_times[i+1]
+                        else:
+                            if checkpoint_times[i] is not None:
+                                next_start_time = checkpoint_times[i]
                 else:
                     next_start_time = 1e99
                 counter = 0
@@ -116,7 +131,7 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
                 if len(file_lines) == 0:
                     continue
                 
-                while float(file_lines[-1][2]) > next_start_time:
+                while float(file_lines[-1][2]) >= next_start_time:
                     file_lines.pop()
                     if counter > MAX_ITER or len(file_lines)==0:
                         break
@@ -298,65 +313,76 @@ def namd_read_output_file_list(output_file_list, anchor, timestep,
         Total time spent within this cell.
     """
     MAX_ITER = 1000000000
+    no_checkpoints = True
     if existing_lines is None:
         existing_lines = []
         files_lines = []
         start_times = []
+        checkpoint_times = []
         for i, output_file_name in enumerate(output_file_list):
             start_time = None
-            file_lines = []
+            checkpoint_time = None
+            file_lines = []            
             with open(output_file_name, "r") as output_file:
                 for counter, line in enumerate(output_file):
-                    if not line.startswith("SEEKR") or len(line.strip()) == 0:
+                    if line.startswith("CHECKPOINT"):
+                        no_checkpoints = False
+                        checkpoint_time = float(line.strip().split(" ")[3])
                         continue
-                    elif line.startswith("SEEKR: Cell"):
-                        line = line.strip().split(" ")
-                        file_lines.append(line)
-                        current_stepnum = int(line[8].strip(","))
-                        if start_time is None:
-                            start_time = current_stepnum
+                    elif not line.startswith("SEEKR: Cell") \
+                            or len(line.strip()) == 0:
+                        continue
+                    #elif line.startswith("SEEKR: Cell"):
+                    line = line.strip().split(" ")
+                    file_lines.append(line)
+                    current_stepnum = int(line[8].strip(","))
+                    if start_time is None:
+                        start_time = current_stepnum
                     
-                    elif line.startswith("SEEKR: Milestone"):
-                        line = line.strip().split(" ")
-                        file_lines.append(line)
-                        current_stepnum = int(line[10].strip(","))
-                        if start_time is None:
-                            start_time = current_stepnum
+                    # Not used anymore
+                    #elif line.startswith("SEEKR: Milestone"):
+                    #    line = line.strip().split(" ")
+                    #    file_lines.append(line)
+                    #    current_stepnum = int(line[10].strip(","))
+                    #    if start_time is None:
+                    #        start_time = current_stepnum
+                    
+                if len(file_lines) == 0:
+                    continue
                 
-                start_times.append(start_time)
+                if start_time is None:
+                    start_times.append(0.0)
+                else:
+                    start_times.append(start_time)
+                
+                checkpoint_times.append(checkpoint_time)
             
             files_lines.append(file_lines)
-                
+            
         lines = []
         for i, file_lines in enumerate(files_lines):
-            if not skip_restart_check:
-                # make sure that we delete lines that occurred after a restart 
-                # backup
+            if not skip_restart_check and not len(file_lines) == 0:
+                # make sure that we delete lines that occurred after a
+                # checkpoint backup
                 if i < len(files_lines)-1:
                     # then it's not the last file
-                    # TODO: this feature is broken
-                    #next_start_time = start_times[i+1]
-                    next_start_time = 1e99
+                    if no_checkpoints:
+                        next_start_time = start_times[i+1]
+                    else:
+                        if checkpoint_times[i] is not None:
+                            next_start_time = checkpoint_times[i]
                 else:
                     next_start_time = 1e99
                 counter = 0
-                last_line = file_lines[-1]
-                if last_line[1].startswith("Cell"):
-                    last_stepnum = int(last_line[8].strip(","))
-                elif last_line[1].startswith("Milestone"):
-                    last_stepnum = int(last_line[10].strip(","))
-                else:
-                    raise Exception("Problem: last_line: {}".format(last_line))
-                    
-                while last_stepnum > next_start_time:
+                
+                if len(file_lines) == 0:
+                    continue
+                
+                while float(file_lines[-1][8]) >= next_start_time:
                     file_lines.pop()
-                    last_line = file_lines[-1]
-                    if last_line[1].startswith("SEEKR: Cell"):
-                        last_stepnum = int(last_line[8].strip(","))
-                    elif last_line[1].startswith("SEEKR: Milestone"):
-                        last_stepnum = int(last_line[10].strip(","))
-                    if counter > MAX_ITER:
+                    if counter > MAX_ITER or len(file_lines)==0:
                         break
+                    
                     counter += 1
                 
             lines += file_lines
@@ -368,112 +394,68 @@ def namd_read_output_file_list(output_file_list, anchor, timestep,
     R_i_alpha_list = defaultdict(list)
     N_alpha_beta = defaultdict(int)
     T_alpha_list = []
+    
     last_bounce_time = -1.0
-    alias_src = None
-        
+    src_boundary = None
+    src_time = None
     for counter, line in enumerate(lines):
-        if line[1].startswith("Cell"):
-            current_anchor_raw = int(line[4].strip(","))
-            next_anchor_raw = int(line[6].strip(","))
-            current_stepnum = int(line[8].strip(","))
-            diff = next_anchor_raw - current_anchor_raw
-            next_anchor = anchor.index + diff
-            dest_boundary = None
-            dest_time = current_stepnum * timestep
-            if min_time is not None:
-                if dest_time < min_time:
-                    continue
+        next_anchor_raw = int(line[6].strip(","))
+        current_stepnum = int(line[8].strip(","))
                 
-            if max_time is not None:
-                if dest_time > max_time:
-                    break
+        dest_time = current_stepnum * timestep
+        dest_boundary = None
+        for milestone in anchor.milestones:
+            if milestone.neighbor_anchor_index == next_anchor_raw:
+                dest_boundary = milestone.alias_index
                 
-            for milestone in anchor.milestones:
-                if milestone.neighbor_anchor_index == next_anchor:
-                    dest_boundary = milestone.index
-                    alias_dest = milestone.alias_index
-                    alias_src = alias_dest
-            
-            src_boundary = dest_boundary
-            assert dest_boundary is not None
-            
-        elif line[1].startswith("Milestone"):
-            src_boundary = line[6].strip(",")
-            dest_boundary = int(line[8].strip(",")) # NOTE: make it alias_id, not id
-            current_stepnum = int(line[10].strip(","))
-            dest_time = current_stepnum * timestep
-            if min_time is not None:
-                if dest_time < min_time:
-                    continue
-                
-            if max_time is not None:
-                if dest_time > max_time:
-                    break
-                
-            if src_boundary == "none":
-                src_boundary = dest_boundary
-                src_time = dest_time
-                # TODO: the situation will need to be eventually resolved
-                # when a restart backup is restored and the later files
-                # have bounces which occur at a later time than the first
-                # bounces of the open file. Those overwritten statistics
-                # will have to be discarded somehow. The following
-                # assertion should, in the meantime, prevent those
-                # statistics from being inadvertently counted
-                """
-                if dest_time < last_bounce_time:
-                    print("dest_time:", dest_time)
-                    print("last_bounce_time:", last_bounce_time)
-                assert dest_time > last_bounce_time
-                """
-                # Handle this if 'restart' is in the file name.
-                
+        # This is used to cut out early transitions for analysis
+        if min_time is not None:
+            if dest_time < min_time:
                 continue
             
-            else:
-                src_boundary = int(src_boundary)
-                incubation_steps = int(line[13].strip(","))
-                incubation_time = incubation_steps * timestep
-                time_diff = dest_time - src_time
+        # This is used in convergence
+        if max_time is not None:
+            if dest_time > max_time:
+                break
+            
+        if src_boundary is None:
+            src_boundary = dest_boundary
+            src_time = dest_time
+            last_bounce_time = dest_time
+            continue
+        
+        if src_boundary != dest_boundary:
+            time_diff = dest_time - src_time
+            if not skip_restart_check:
                 assert time_diff >= 0.0, "incubation times cannot be "\
                     "negative. Has an output file been concatenated "\
-                    "incorrectly? file name: %s, line number: %d" % (
-                        output_file_name, counter)
-                alias_src = None
-                alias_dest = None
-                for milestone in anchor.milestones:
-                    if milestone.index == src_boundary:
-                        alias_src = milestone.alias_index
-                    elif milestone.index == dest_boundary:
-                        alias_dest = milestone.alias_index
-                
-                N_i_j_alpha[(alias_src, alias_dest)] += 1
-                R_i_alpha_list[alias_src].append(incubation_time)
-            
+                    "incorrectly? file name(s): %s, line number: %d" % (
+                    ",".join(output_file_list), counter)
+            N_i_j_alpha[(src_boundary, dest_boundary)] += 1
+            R_i_alpha_list[src_boundary].append(time_diff)
             src_boundary = dest_boundary
             src_time = dest_time
             
-        else:
-            raise Exception("Unable to handle line: %s" % line)
-        
-        N_alpha_beta[alias_dest] += 1
+        # dest_boundary is beta
+        N_alpha_beta[dest_boundary] += 1
+        assert dest_time - last_bounce_time >= 0.0, "times between bounces "\
+            "cannot be negative. bounce index: "\
+            "{}, Dest_time: {}, last_bounce_time: {}".format(
+                counter, dest_time, last_bounce_time)
         T_alpha_list.append(dest_time - last_bounce_time)
-        """
-        assert dest_time - last_bounce_time != 0, \
-            "Two bounces occurred at the same time and at the same "\
-            "milestone in file name: %s, line number: %d" % (
-                output_file_name, counter)
-        """
         last_bounce_time = dest_time
     
     R_i_alpha_total = defaultdict(float)
+    
     for key in R_i_alpha_list:
+        assert key is not None
         R_i_alpha_total[key] = np.sum(R_i_alpha_list[key])
         
     T_alpha_total = np.sum(T_alpha_list)
     
-    if len(R_i_alpha_list) == 0 and alias_src is not None:
-        R_i_alpha_total[alias_src] = T_alpha_total        
+    if len(R_i_alpha_list) == 0 and src_boundary is not None:
+        R_i_alpha_total[src_boundary] = T_alpha_total
+        R_i_alpha_list[src_boundary] = T_alpha_list
         
     return N_i_j_alpha, R_i_alpha_total, N_alpha_beta, T_alpha_total, lines
 

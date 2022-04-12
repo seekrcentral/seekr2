@@ -504,9 +504,10 @@ class Analysis:
             N_i_j_list.append(N_i_j_element)
             
             anchor_R_i = self.anchor_stats_list[i].R_i_total
-            R_i_element = defaultdict(float)
-            R_i_element[i] = anchor_R_i
-            R_i_total.append(R_i_element)    
+            #R_i_element = defaultdict(float)
+            #R_i_element[i] = anchor_R_i
+            #R_i_total.append(R_i_element)
+            R_i_total.append(anchor_R_i)
         
         self.main_data_sample = elber_analyze.Elber_data_sample(
             self.model, N_i_j_list, R_i_total)

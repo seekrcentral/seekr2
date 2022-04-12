@@ -4,35 +4,25 @@ test_runner_browndye2.py
 test runner_browndye2.py script(s)
 """
 
+import re
 import os
 import glob
-import pathlib # for 'touching' a nonexistent file
+import pathlib
 
+import seekr2.modules.common_sim_browndye2 as sim_browndye2
 import seekr2.modules.runner_browndye2 as runner_browndye2
 
 TEST_DIRECTORY = os.path.dirname(__file__)
 
-def test_runner_browndye2_b_surface_mmvt(host_guest_mmvt_model):
-    model = host_guest_mmvt_model
-    bd_directory = os.path.join(host_guest_mmvt_model.anchor_rootdir, "b_surface")
-    runner_browndye2.run_bd_top(model.browndye_settings.browndye_bin_dir, 
-               bd_directory)
-    runner_browndye2.run_nam_simulation(
-        model.browndye_settings.browndye_bin_dir, bd_directory, 
-        model.k_on_info.bd_output_glob)
-    assert len(glob.glob(os.path.join(bd_directory, "results*.xml"))) > 0
-    return
-
-def test_runner_browndye2_b_surface_elber(host_guest_elber_model):
-    model = host_guest_elber_model
-    bd_directory = os.path.join(host_guest_elber_model.anchor_rootdir, "b_surface")
-    runner_browndye2.run_bd_top(model.browndye_settings.browndye_bin_dir, 
-               bd_directory)
-    runner_browndye2.run_nam_simulation(
-        model.browndye_settings.browndye_bin_dir, bd_directory, 
-        model.k_on_info.bd_output_glob)
-    assert len(glob.glob(os.path.join(bd_directory, "results*.xml"))) > 0
-    return
+def extract_xml_line(xml_filename, tag):
+    sim_file_old_lines = []
+    with open(xml_filename, 'r') as f:
+        for line in f.readlines():
+            sim_file_old_lines.append(line)
+    for line in sim_file_old_lines:
+        result = re.search(r"<{}> (.+?) </{}>".format(tag, tag), line)
+        if result:
+            return result.group(1)
 
 def test_make_empty_pqrxml(tmp_path):
     """
@@ -67,6 +57,44 @@ def test_cleanse_bd_outputs(tmp_path):
     assert len(os.listdir(directory)) == 0
     return
 
+def test_make_browndye_input_xml(host_guest_mmvt_model):
+    num_bd_steps = 1000
+    bd_directory = os.path.join(host_guest_mmvt_model.anchor_rootdir, 
+                                "b_surface")
+    receptor_xml_filename = os.path.join(bd_directory, "hostguest_receptor.xml")
+    ligand_xml_filename = os.path.join(bd_directory, "hostguest_ligand.xml")
+    input_xml_filename = os.path.join(bd_directory, "input.xml")
+    if os.path.exists(input_xml_filename):
+        os.remove(input_xml_filename)
+    debye_length, reaction_filename = runner_browndye2.make_browndye_input_xml(
+        host_guest_mmvt_model, host_guest_mmvt_model.anchor_rootdir, 
+        receptor_xml_filename, ligand_xml_filename, 
+        num_bd_steps, bd_directory=None, make_apbs_mode=False)
+    bd_directory = os.path.join(host_guest_mmvt_model.anchor_rootdir, 
+                                "b_surface")
+    assert float(debye_length) > 0.0
+    assert os.path.exists(input_xml_filename)
+    
+    apbs_input_xml_filename = os.path.join(bd_directory, "apbs_input.xml")
+    if os.path.exists(apbs_input_xml_filename):
+        os.remove(apbs_input_xml_filename)
+    debye_length, reaction_filename = runner_browndye2.make_browndye_input_xml(
+        host_guest_mmvt_model, host_guest_mmvt_model.anchor_rootdir, 
+        receptor_xml_filename, ligand_xml_filename, 
+        num_bd_steps, bd_directory="b_surface", make_apbs_mode=True)
+    assert float(debye_length) > 0.0
+    assert os.path.exists(apbs_input_xml_filename)
+    return
+
+def test_make_browndye_reaction_xml(host_guest_mmvt_model):
+    bd_directory = os.path.join(host_guest_mmvt_model.anchor_rootdir, 
+                                "b_surface")
+    abs_reaction_path = os.path.join(bd_directory, "rxns.xml")
+    runner_browndye2.make_browndye_reaction_xml(
+        host_guest_mmvt_model, abs_reaction_path)
+    assert os.path.exists(abs_reaction_path)
+    return
+
 def test_modify_variables(host_guest_mmvt_model):
     """
     Test the function that modifies variables within the BD input xml.
@@ -74,7 +102,8 @@ def test_modify_variables(host_guest_mmvt_model):
     bd_directory = os.path.join(
         host_guest_mmvt_model.anchor_rootdir,
         host_guest_mmvt_model.k_on_info.b_surface_directory)
-    print("host_guest_mmvt_model.anchor_rootdir:", host_guest_mmvt_model.anchor_rootdir)
+    print("host_guest_mmvt_model.anchor_rootdir:", 
+          host_guest_mmvt_model.anchor_rootdir)
     assert os.path.exists(host_guest_mmvt_model.anchor_rootdir)
     print("bd_directory:", bd_directory)
     assert os.path.exists(bd_directory)
@@ -85,5 +114,91 @@ def test_modify_variables(host_guest_mmvt_model):
         bd_directory, host_guest_mmvt_model.k_on_info.bd_output_glob, 
         100, 4, 3456, "my_out.xml", restart=False,
         n_trajectories_per_output=25)
-    # TODO: more checks here?
+    simulation_filename_base = sim_browndye2.BROWNDYE_RECEPTOR + "_" \
+        + sim_browndye2.BROWNDYE_LIGAND + "_simulation.xml"
+    simulation_filename = os.path.join(bd_directory, 
+                                       simulation_filename_base)
+    result = extract_xml_line(simulation_filename, "n_trajectories")
+    assert result == "100"
+    result = extract_xml_line(simulation_filename, "n_threads")
+    assert result == "4"
+    result = extract_xml_line(simulation_filename, "seed")
+    assert result == "3456"
+    result = extract_xml_line(simulation_filename, "output")
+    assert result == "my_out.xml"
+    result = extract_xml_line(simulation_filename, "n_trajectories_per_output")
+    assert result == "25"
     return
+
+def test_runner_browndye2_b_surface_mmvt(host_guest_mmvt_model):
+    model = host_guest_mmvt_model
+    bd_directory = os.path.join(host_guest_mmvt_model.anchor_rootdir, 
+                                "b_surface")
+    runner_browndye2.run_bd_top(model.browndye_settings.browndye_bin_dir, 
+               bd_directory, force_overwrite=True)
+    runner_browndye2.run_nam_simulation(
+        model.browndye_settings.browndye_bin_dir, bd_directory, 
+        model.k_on_info.bd_output_glob)
+    assert len(glob.glob(os.path.join(bd_directory, "results*.xml"))) == 1
+    
+    # Test restart
+    n_trajectories = model.k_on_info.b_surface_num_trajectories * 2
+    runner_browndye2.run_bd_top(model.browndye_settings.browndye_bin_dir, 
+               bd_directory, restart=True)
+    runner_browndye2.modify_variables(
+        bd_directory, model.k_on_info.bd_output_glob, n_trajectories, 
+        restart=True)
+    runner_browndye2.run_nam_simulation(
+        model.browndye_settings.browndye_bin_dir, bd_directory, 
+        model.k_on_info.bd_output_glob)
+    assert len(glob.glob(os.path.join(bd_directory, "results*.xml"))) == 2
+    
+    # Test force overwrite
+    n_trajectories = model.k_on_info.b_surface_num_trajectories
+    runner_browndye2.run_bd_top(model.browndye_settings.browndye_bin_dir, 
+               bd_directory, force_overwrite=True)
+    runner_browndye2.modify_variables(
+        bd_directory, model.k_on_info.bd_output_glob, n_trajectories, 
+        restart=False)
+    runner_browndye2.run_nam_simulation(
+        model.browndye_settings.browndye_bin_dir, bd_directory, 
+        model.k_on_info.bd_output_glob)
+    assert len(glob.glob(os.path.join(bd_directory, "results*.xml"))) == 1
+    return
+
+def test_runner_browndye2_b_surface_elber(host_guest_elber_model):
+    model = host_guest_elber_model
+    bd_directory = os.path.join(host_guest_elber_model.anchor_rootdir, 
+                                "b_surface")
+    runner_browndye2.run_bd_top(model.browndye_settings.browndye_bin_dir, 
+               bd_directory, force_overwrite=True)
+    runner_browndye2.run_nam_simulation(
+        model.browndye_settings.browndye_bin_dir, bd_directory, 
+        model.k_on_info.bd_output_glob)
+    assert len(glob.glob(os.path.join(bd_directory, "results*.xml"))) == 1
+    
+    # Test restart
+    n_trajectories = model.k_on_info.b_surface_num_trajectories * 2
+    runner_browndye2.run_bd_top(model.browndye_settings.browndye_bin_dir, 
+               bd_directory, restart=True)
+    runner_browndye2.modify_variables(
+        bd_directory, model.k_on_info.bd_output_glob, n_trajectories, 
+        restart=True)
+    runner_browndye2.run_nam_simulation(
+        model.browndye_settings.browndye_bin_dir, bd_directory, 
+        model.k_on_info.bd_output_glob)
+    assert len(glob.glob(os.path.join(bd_directory, "results*.xml"))) == 2
+    
+    # Test force overwrite
+    n_trajectories = model.k_on_info.b_surface_num_trajectories
+    runner_browndye2.run_bd_top(model.browndye_settings.browndye_bin_dir, 
+               bd_directory, force_overwrite=True)
+    runner_browndye2.modify_variables(
+        bd_directory, model.k_on_info.bd_output_glob, n_trajectories, 
+        restart=False)
+    runner_browndye2.run_nam_simulation(
+        model.browndye_settings.browndye_bin_dir, bd_directory, 
+        model.k_on_info.bd_output_glob)
+    assert len(glob.glob(os.path.join(bd_directory, "results*.xml"))) == 1
+    return
+

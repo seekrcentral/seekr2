@@ -58,6 +58,7 @@ import seekr2.modules.elber_base as elber_base
 import seekr2.modules.mmvt_base as mmvt_base
 import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
 import seekr2.modules.elber_sim_openmm as elber_sim_openmm
+import seekr2.modules.common_converge as common_converge
 
 # The charges of common ions
 ION_CHARGE_DICT = {"li":1.0, "na":1.0, "k":1.0, "rb":1.0, "cs":1.0, "fr":1.0,
@@ -69,6 +70,7 @@ AVOGADROS_NUMBER = 6.022e23
 SAVE_STATE_DIRECTORY = "states/"
 MAX_STRUCTURES_TO_CHECK = 100
 RECURSION_LIMIT = 100000
+MAX_BD_STUCK = 5
 
 def load_structure_with_parmed(model, anchor):
     """
@@ -1070,6 +1072,22 @@ def check_output_files_for_stuck_anchors(model):
     else:
         return True
             
+def check_for_stuck_BD(model):
+    """
+    Examine BD output to ensure that too many BD trajectories weren't
+    stuck.
+    """
+    if model.using_bd():
+        bd_transition_counts = common_converge.get_bd_transition_counts(model)
+        if "stuck" in bd_transition_counts:
+            if bd_transition_counts["stuck"] > MAX_BD_STUCK:
+                warnstr = """CHECK FAILURE: A large number of BD
+                trajectories stuck. {} stuck BD trajectories found."""
+                print(warnstr.format(bd_transition_counts["stuck"]))
+                return False
+            else:
+                return True
+    return True
 
 def check_post_simulation_all(model, long_check=False):
     """
@@ -1103,6 +1121,7 @@ def check_post_simulation_all(model, long_check=False):
             check_passed_list.append(check_xml_boundary_states(model))
     
     check_passed_list.append(check_output_files_for_stuck_anchors(model))
+    check_passed_list.append(check_for_stuck_BD(model))
     
     no_failures = True
     for check_passed in check_passed_list:

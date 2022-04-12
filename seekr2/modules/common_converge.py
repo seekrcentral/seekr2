@@ -32,6 +32,30 @@ MIN_PLOT_NORM = 1e-8
 # The interval between which to update the user on convergence script progress
 PROGRESS_UPDATE_INTERVAL = DEFAULT_NUM_POINTS // 10
 
+def get_bd_transition_counts(model):
+    """
+    Obtain how many transitions have occurred in the BD stage.
+    """
+    if not model.using_bd():
+        raise Exception("No valid BD program settings provided.")
+        
+    output_file_glob = os.path.join(
+        model.anchor_rootdir, model.k_on_info.b_surface_directory, 
+        model.k_on_info.bd_output_glob)
+    output_file_list = glob.glob(output_file_glob)
+    output_file_list = base.order_files_numerically(output_file_list)
+    compute_rate_constant_program = os.path.join(
+        model.browndye_settings.browndye_bin_dir, "compute_rate_constant")
+    bd_transition_counts = {}
+    if len(output_file_list) > 0:
+        k_ons_src, k_on_errors_src, reaction_probabilities, \
+            reaction_probability_errors, transition_counts = \
+            common_analyze.browndye_run_compute_rate_constant(
+                compute_rate_constant_program, output_file_list, 
+                sample_error_from_normal=False)
+        bd_transition_counts["b_surface"] = transition_counts
+    return bd_transition_counts
+
 def analyze_bd_only(model, data_sample):
     """
     If there are missing MD statistics, then perhaps only a BD analysis

@@ -1,0 +1,4 @@
+SEEKR: Cell Collision: current: 1, new: 0, stepnum: 140
+SEEKR: Cell Collision: current: 1, new: 0, stepnum: 145
+SEEKR: Cell Collision: current: 1, new: 0, stepnum: 150
+SEEKR: Cell Collision: current: 1, new: 0, stepnum: 155

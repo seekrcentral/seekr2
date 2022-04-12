@@ -7,9 +7,6 @@ Run any and all simulations required for the SEEKR2 calculation.
 import os
 import argparse
 import tempfile
-import math
-
-from parmed import unit
 
 import seekr2.modules.common_base as base
 import seekr2.converge as converge
@@ -32,11 +29,15 @@ def choose_next_simulation_browndye2(
     Examine the model and all Browndye2 simulations that have run so
     far (if any), then construct a list of which BD milestones to
     run, in order.
+    
+    Meaning of the list:
+    [steps_to_go_minimum, steps_run_so_far, bd_region_simulating, 
+    restart, total_number_of_trajectories_at_end]
     """
     if instruction not in ["any", "any_bd", "b_surface"]:
         return []
     
-    import seekr2.modules.common_sim_browndye2 as sim_browndye2
+    #import seekr2.modules.common_sim_browndye2 as sim_browndye2
     import seekr2.modules.runner_browndye2 as runner_browndye2
     
     if min_b_surface_simulation_length is None:
@@ -51,13 +52,8 @@ def choose_next_simulation_browndye2(
                                             check_mode=False)
         
     bd_milestone_info_to_run_unsorted = []
-    data_sample_list = converge.converge(model)
-    data_sample = data_sample_list[-1]
-    if data_sample is None:
-        bd_transition_counts = {}
-    else:
-        bd_transition_counts = data_sample.bd_transition_counts
-        
+    bd_transition_counts = common_converge.get_bd_transition_counts(model)
+    
     if instruction in ["any", "any_bd", "b_surface"]:
         # then try to run the b-surface simulations
         if "b_surface" not in bd_transition_counts:
@@ -66,17 +62,22 @@ def choose_next_simulation_browndye2(
                  min_b_surface_simulation_length])
         else:
             # see how many simulations need to be run in b_surface
-            total_b_surface_sims = sum(
-                bd_transition_counts["b_surface"].values())
+            total_b_surface_sims = bd_transition_counts["b_surface"]["total"]
+            milestone_b_surface_counts = {}
+            for key in bd_transition_counts["b_surface"]:
+                if isinstance(key, int):
+                    milestone_b_surface_counts[key] \
+                        = bd_transition_counts["b_surface"][key]
+            
             total_b_surface_encounters = min(
-                bd_transition_counts["b_surface"].values())
+                milestone_b_surface_counts.values())
             steps_to_go_minimum = min_b_surface_simulation_length \
                 - total_b_surface_sims
             
             if steps_to_go_minimum > 0:
                 bd_milestone_info_to_run_unsorted.append(
                     [steps_to_go_minimum, total_b_surface_encounters, \
-                     "b_surface", True, steps_to_go_minimum])
+                     "b_surface", True, total_b_surface_sims])
             
             elif min_b_surface_encounters is not None:
                 if total_b_surface_encounters < min_b_surface_encounters:
@@ -87,7 +88,7 @@ def choose_next_simulation_browndye2(
                     bd_milestone_info_to_run_unsorted.append(
                         [total_bd_simulation_length-total_b_surface_sims, \
                          total_b_surface_encounters, "b_surface", True, \
-                         total_bd_simulation_length])
+                         total_b_surface_sims])
     
     return bd_milestone_info_to_run_unsorted
 
@@ -264,11 +265,11 @@ def choose_next_simulation_namd(
     number of steps, minimum convergence, maximum number of steps,
     etc.), construct a list of anchors to run, in order.
     """
-    import seekr2.modules.runner_namd as runner_namd
-    import seekr2.modules.mmvt_sim_namd as mmvt_sim_namd
-        
     if (instruction in ["any_bd", "b_surface",]):
         return []
+    
+    import seekr2.modules.runner_namd as runner_namd
+    #import seekr2.modules.mmvt_sim_namd as mmvt_sim_namd
     
     anchor_info_to_run_unsorted = []
     for alpha, anchor in enumerate(model.anchors):
@@ -317,8 +318,8 @@ def choose_next_simulation_namd(
                     or minimum_anchor_transitions is not None:
                 data_sample_list = converge.converge(model)
                 steps_to_go_to_minimum = 0
-                transition_results, dummy \
-                    = common_converge.calc_transition_steps(
+                transition_results, dummy1, dummy2 \
+                        = common_converge.calc_transition_steps(
                     model, data_sample_list[-1])
                 
                 num_transitions = transition_results[alpha]
@@ -454,8 +455,9 @@ def run_openmm(model, anchor_index, restart, total_simulation_length,
             model, myanchor, default_output_file, state_file_prefix, frame, 
             load_state_file)
     elif model.get_type() == "elber":
+        assert frame == 0, "Swarms not yet allowed in Elber simulations."
         sim_openmm_obj = elber_sim_openmm.create_sim_openmm(
-            model, myanchor, default_output_file, state_file_prefix, frame)
+            model, myanchor, default_output_file, state_file_prefix)
     
     runner.run(sim_openmm_obj, restart, load_state_file, restart_index)
     if model.get_type() == "mmvt":
@@ -492,6 +494,11 @@ def run_namd(model, anchor_index, restart, total_simulation_length,
         model.calculation_settings.num_production_steps = \
             total_simulation_length
     
+    if model.calculation_settings.num_production_steps \
+            < model.calculation_settings.restart_checkpoint_interval:
+        model.calculation_settings.restart_checkpoint_interval \
+            = model.calculation_settings.num_production_steps
+        
     runner = runner_namd.Runner_namd(model, myanchor, namd_command, 
                                      namd_arguments)
     default_output_file, output_basename, state_file_prefix, restart_index \
@@ -528,9 +535,7 @@ def run(model, instruction, min_total_simulation_length=None,
     curdir = os.getcwd()
     md_complete = False
     bd_complete = False
-    assert model.calculation_settings.num_production_steps \
-        >= model.calculation_settings.restart_checkpoint_interval, \
-        "Runs cannot be shorter than the checkpoint interval."
+    ran_nothing = True
     
     # Only cleanse BD files if BD is being run in this instance
     if (instruction in ["any", "any_bd", "b_surface"]):
@@ -581,6 +586,7 @@ def run(model, instruction, min_total_simulation_length=None,
             elif model.namd_settings is not None:
                 assert swarm_index is None, \
                     "MMVT swarms not available for NAMD."
+                print("force_overwrite:", force_overwrite)
                 run_namd(model, anchor_index, restart, 
                          total_simulation_length, 
                          cuda_device_index=cuda_device_index, 
@@ -596,6 +602,7 @@ def run(model, instruction, min_total_simulation_length=None,
                 
         if len(anchor_info_to_run) > 0:
             md_complete = False
+            ran_nothing = False
         else:
             md_complete = True
         counter += 1
@@ -622,12 +629,14 @@ def run(model, instruction, min_total_simulation_length=None,
                 restart = False
             print("running BD:", bd_milestone_index, "restart:", 
                   restart, "trajectories to run:", steps_to_go_to_minimum, 
-                  "transitions so far:", num_transitions)
+                  "trajectories so far:", total_num_trajs, 
+                  "number of transitions", num_transitions)
             run_browndye2(
                 model, bd_milestone_index, restart, steps_to_go_to_minimum, 
                 force_overwrite=bd_force_overwrite)
         if len(bd_milestone_info_to_run) > 0:
             bd_complete = False
+            ran_nothing = False
         else:
             bd_complete = True
         bd_force_overwrite = False
@@ -636,6 +645,8 @@ def run(model, instruction, min_total_simulation_length=None,
             raise Exception("BD while loop appears to be stuck.")
     
     os.chdir(curdir)
+    if ran_nothing:
+        print("Nothing was run because all criteria are satisfied.")
     return
 
 def catch_erroneous_instruction(instruction):
@@ -646,7 +657,7 @@ def catch_erroneous_instruction(instruction):
         "'b_surface', or '#', where '#' is an integer."
     if instruction not in ["any", "any_md", "any_bd", "b_surface"]:
         try:
-            integer_instruction = int(instruction)
+            dummy_integer_instruction = int(instruction)
         except ValueError:
             print(error_msg)
             return False

@@ -1,0 +1,11 @@
+SEEKR: Cell Collision: current: 1, new: 0, stepnum: 110
+SEEKR: Milestone Transition: anchor: 1, source: none, destination: 0, stepnum: 110, incubation steps: 110
+SEEKR: Cell Collision: current: 1, new: 2, stepnum: 115
+SEEKR: Milestone Transition: anchor: 1, source: 0, destination: 1, stepnum: 115, incubation steps: 5
+SEEKR: Cell Collision: current: 1, new: 0, stepnum: 120
+SEEKR: Milestone Transition: anchor: 1, source: 1, destination: 0, stepnum: 120, incubation steps: 5
+SEEKR: Cell Collision: current: 1, new: 0, stepnum: 125
+SEEKR: Cell Collision: current: 1, new: 0, stepnum: 130
+SEEKR: Cell Collision: current: 1, new: 0, stepnum: 135
+SEEKR: Cell Collision: current: 1, new: 0, stepnum: 140
+SEEKR: Cell Collision: current: 1, new: 0, stepnum: 145

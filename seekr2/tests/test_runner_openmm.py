@@ -7,14 +7,157 @@ test runner_openmm.py script(s)
 import pytest
 import os
 import shutil
+import glob
+import pathlib
 
 import seekr2.modules.mmvt_base as mmvt_base
 import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
 import seekr2.modules.elber_sim_openmm as elber_sim_openmm
 import seekr2.modules.runner_openmm as runner_openmm
+import seekr2.run as run
 
 TEST_DIRECTORY = os.path.dirname(__file__)
 TEST_DATA_DIRECTORY = os.path.join(TEST_DIRECTORY, "data")
+
+def test_all_boundaries_have_state(toy_mmvt_model):
+    anchor = toy_mmvt_model.anchors[1]
+    state_dir = os.path.join(
+        toy_mmvt_model.anchor_rootdir, anchor.directory,
+        anchor.production_directory, "states")
+    if not os.path.exists(state_dir):
+        os.mkdir(state_dir)
+    state_glob = os.path.join(state_dir, "openmm_*")
+    state1 = os.path.join(state_dir, "openmm_0_1")
+    pathlib.Path(state1).touch()
+    assert not runner_openmm.all_boundaries_have_state(state_glob, anchor)
+    state2 = os.path.join(state_dir, "openmm_1_1")
+    pathlib.Path(state2).touch()
+    assert not runner_openmm.all_boundaries_have_state(state_glob, anchor)
+    state3 = os.path.join(state_dir, "openmm_2_2")
+    pathlib.Path(state3).touch()
+    assert runner_openmm.all_boundaries_have_state(state_glob, anchor)
+    return
+
+def test_elber_anchor_has_umbrella_files(toy_elber_model):
+    anchor = toy_elber_model.anchors[1]
+    assert not runner_openmm.elber_anchor_has_umbrella_files(
+        toy_elber_model, anchor)
+    prod_dir = os.path.join(
+        toy_elber_model.anchor_rootdir, anchor.directory,
+        anchor.production_directory)
+    umbrella1 = os.path.join(prod_dir, "umbrella1.dcd")
+    pathlib.Path(umbrella1).touch()
+    assert runner_openmm.elber_anchor_has_umbrella_files(
+        toy_elber_model, anchor)
+    return
+
+def test_search_for_state_to_load(toy_mmvt_model):
+    anchor0 = toy_mmvt_model.anchors[1]
+    state_dir = os.path.join(
+        toy_mmvt_model.anchor_rootdir, anchor0.directory,
+        anchor0.production_directory, "states")
+    if not os.path.exists(state_dir):
+        os.mkdir(state_dir)
+    state0 = os.path.join(state_dir, "openmm_2_2")
+    pathlib.Path(state0).touch()
+    anchor1 = toy_mmvt_model.anchors[2]
+    state1 = runner_openmm.search_for_state_to_load(toy_mmvt_model, anchor1)
+    assert state1 == os.path.join(state_dir, "openmm_2_2")
+    anchor2 = toy_mmvt_model.anchors[3]
+    state2 = runner_openmm.search_for_state_to_load(toy_mmvt_model, anchor2)
+    assert state2 is None
+    return
+    
+def test_get_data_file_length(tmp_path):
+    assert runner_openmm.get_data_file_length("doesnt_exist.txt") == 0
+    num_lines1 = 13
+    data_file1 = os.path.join(tmp_path, "data_file1.txt")
+    with open(data_file1, "w") as f:
+        for i in range(num_lines1):
+            f.write("line {}\n".format(i))
+            
+    assert runner_openmm.get_data_file_length(data_file1) == num_lines1
+    return
+
+def test_read_reversal_data_file_last(tmp_path):
+    data_file1 = os.path.join(tmp_path, "data_file1.txt")
+    with open(data_file1, "w") as f:
+        f.write("1,0,123\n")
+    assert runner_openmm.read_reversal_data_file_last(data_file1)
+    with open(data_file1, "a") as f:
+        f.write("2,1,234\n")
+    assert not runner_openmm.read_reversal_data_file_last(data_file1)
+    with open(data_file1, "a") as f:
+        f.write("3,2,345\n")
+    assert runner_openmm.read_reversal_data_file_last(data_file1)
+    return
+
+def test_cleanse_anchor_outputs(toy_mmvt_model, toy_elber_model):
+    num_steps = 10000
+    toy_mmvt_model.calculation_settings.num_production_steps = num_steps
+    toy_mmvt_model.openmm_settings.cuda_platform_settings = None
+    toy_mmvt_model.openmm_settings.reference_platform = True
+    anchor1 = toy_mmvt_model.anchors[0]
+    prod_directory = os.path.join(
+        toy_mmvt_model.anchor_rootdir, anchor1.directory,
+        anchor1.production_directory)
+    run.run(toy_mmvt_model, "0", force_overwrite=True, save_state_file=True)
+    runner_openmm.cleanse_anchor_outputs(
+        toy_mmvt_model, anchor1, skip_umbrella_files=False)
+    assert len(os.listdir(prod_directory)) == 0
+    
+    num_steps = 10000
+    toy_elber_model.calculation_settings.num_umbrella_stage_steps = num_steps
+    toy_elber_model.openmm_settings.cuda_platform_settings = None
+    toy_elber_model.openmm_settings.reference_platform = True
+    anchor1 = toy_mmvt_model.anchors[1]
+    prod_directory = os.path.join(
+        toy_elber_model.anchor_rootdir, anchor1.directory,
+        anchor1.production_directory)
+    run.run(toy_elber_model, "1", force_overwrite=True, save_state_file=True)
+    runner_openmm.cleanse_anchor_outputs(
+        toy_elber_model, anchor1, skip_umbrella_files=False)
+    assert len(os.listdir(prod_directory)) == 0
+    
+    run.run(toy_elber_model, "1", force_overwrite=True, save_state_file=True)
+    runner_openmm.cleanse_anchor_outputs(
+        toy_elber_model, anchor1, skip_umbrella_files=True)
+    assert os.listdir(prod_directory)[0].endswith("umbrella1.dcd")
+
+def test_get_last_bounce(tmp_path):
+    num_lines1 = 13
+    data_file1 = os.path.join(tmp_path, "data_file1.txt")
+    with open(data_file1, "w") as f:
+        for i in range(num_lines1):
+            f.write("1,{},{}\n".format(i, i*0.002))
+            
+    assert runner_openmm.get_last_bounce(data_file1) == 13
+    return
+
+def test_saveCheckpoint(host_guest_mmvt_model):
+    host_guest_mmvt_model.calculation_settings.num_production_steps = 10
+    host_guest_mmvt_model.openmm_settings.cuda_platform_settings = None
+    host_guest_mmvt_model.openmm_settings.reference_platform = True
+    myanchor = host_guest_mmvt_model.anchors[1]
+    mmvt_output_filename = os.path.join(
+        host_guest_mmvt_model.anchor_rootdir, myanchor.directory, "prod", 
+        "%s%d.%s" % (mmvt_base.OPENMMVT_BASENAME, 1, 
+                             mmvt_base.OPENMMVT_EXTENSION))
+    runner = runner_openmm.Runner_openmm(host_guest_mmvt_model, myanchor)
+    default_output_file, state_file_prefix, restart_index = runner.prepare(
+        force_overwrite=True)
+    my_sim_openmm = mmvt_sim_openmm.create_sim_openmm(
+        host_guest_mmvt_model, myanchor, mmvt_output_filename)
+    assert not os.path.exists(runner.restart_checkpoint_filename)
+    runner_openmm.saveCheckpoint(my_sim_openmm, 
+                                 runner.restart_checkpoint_filename)
+    assert os.path.exists(runner.restart_checkpoint_filename)
+    lastline = ""
+    with open(my_sim_openmm.output_filename, "r") as f:
+        for line in f.readlines():
+            lastline = line
+            print("line:", line)
+    assert lastline.startswith("CHECKPOINT")
 
 def test_Runner_openmm_default(host_guest_mmvt_model):
     host_guest_mmvt_model.calculation_settings.num_production_steps = 10

@@ -18,7 +18,6 @@ from parmed import unit
 import seekr2.modules.common_base as base
 import seekr2.modules.mmvt_base as mmvt_base
 import seekr2.modules.elber_base as elber_base
-import seekr2.modules.common_prepare as common_prepare
 import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
 import seekr2.modules.elber_sim_openmm as elber_sim_openmm
 import seekr2.modules.check as check
@@ -72,7 +71,6 @@ def elber_anchor_has_umbrella_files(model, anchor):
         return True
     else:
         return False
-    #return umbrella_files_list
 
 def search_for_state_to_load(model, anchor):
     """
@@ -113,11 +111,10 @@ def get_data_file_length(data_file_name):
         The number of lines within the file.
     """
     
-    if not os.path.exists(data_file_name): # if the file doesn't exist, return 0
+    if not os.path.exists(data_file_name):
         return 0
-    data_file = open(data_file_name, 'r') # open the file for reading
-    file_length = len(data_file.readlines()) # get the number of lines
-    data_file.close()
+    with open(data_file_name, "r") as f:
+        file_length = len(f.readlines())
     return file_length 
 
 def read_reversal_data_file_last(data_file_name):
@@ -135,11 +132,9 @@ def read_reversal_data_file_last(data_file_name):
     success : bool
         Whether the latest trajectory was successful
     """
-    
-    data_file = open(data_file_name, 'r')
-    line = data_file.readlines()[-1]
-    data_file.close()
-    if line[0] != '2': # TODO: HACKY!
+    with open(data_file_name, "r") as f:
+        line = f.readlines()[-1].strip().split(",")
+    if line[0] != "2": # TODO: HACKY!
         return True
     else:
         return False
@@ -149,12 +144,6 @@ def cleanse_anchor_outputs(model, anchor, skip_umbrella_files=False):
     Delete all simulation outputs for an existing anchor to make way
     for new outputs.
     """
-    if model.get_type() == "mmvt":
-        basename = mmvt_base.OPENMMVT_BASENAME
-        extension = mmvt_base.OPENMMVT_EXTENSION
-    elif model.get_type() == "elber":
-        basename = elber_base.OPENMM_ELBER_BASENAME
-        extension = elber_base.OPENMM_ELBER_EXTENSION
     output_directory = os.path.join(
         model.anchor_rootdir, anchor.directory, anchor.production_directory)
     output_files_glob = os.path.join(output_directory, anchor.md_output_glob)
@@ -178,6 +167,11 @@ def cleanse_anchor_outputs(model, anchor, skip_umbrella_files=False):
                            RESTART_CHECKPOINT_FILENAME)
     if os.path.exists(backup_file):
         os.remove(backup_file)
+    backup_swarm_glob = os.path.join(output_directory, 
+                           RESTART_CHECKPOINT_FILENAME+".swarm_*")
+    for backup_file in glob.glob(backup_swarm_glob):
+        if os.path.exists(backup_file):
+            os.remove(backup_file)
     states_dir = os.path.join(output_directory, 
                               SAVE_STATE_DIRECTORY)
     if os.path.exists(states_dir):
@@ -210,6 +204,19 @@ def get_last_bounce(data_file_name):
     else:
         count = int(line.split(",")[1])+1
     return count
+
+def saveCheckpoint(sim_openmm, checkpoint_filename):
+    """
+    Write a checkpoint file and save a line in the output to indicate
+    that a checkpoint occurred.
+    """
+    sim_openmm.simulation.saveCheckpoint(checkpoint_filename)
+    sim_time = sim_openmm.simulation.context.getTime().value_in_unit(
+        unit.picoseconds)
+    with open(sim_openmm.output_filename, "a") as f:
+        f.write("CHECKPOINT,{:.3f}\n".format(sim_time))
+    return
+        
 
 class Runner_openmm():
     """
@@ -314,7 +321,6 @@ class Runner_openmm():
                 "%s%s.restart%d.%s" % (self.basename, self.swarm_string, 
                                        restart_index, self.extension))
         else:
-            #if common_prepare.anchor_has_files(self.model, self.anchor):
             if len(output_restarts_list) > 0:
                 if not force_overwrite and not umbrella_restart_mode:
                     print("This anchor already has existing output files "\
@@ -367,41 +373,37 @@ class Runner_openmm():
             state_prefix = None
             self.save_all_states = False
         
+        restart_checkpoint_basename \
+            = RESTART_CHECKPOINT_FILENAME + self.swarm_string
+        self.restart_checkpoint_filename = os.path.join(
+            self.output_directory, restart_checkpoint_basename)
+        
         return default_output_filename, state_prefix, restart_index
     
     def run(self, sim_openmm_obj, restart=False, load_state_file=None, 
             restart_index=1):
         """Run the SEEKR simulation."""
         self.sim_openmm = sim_openmm_obj
-        settings = self.model.openmm_settings
         calc_settings = self.model.calculation_settings
-        restart_checkpoint_basename \
-            = RESTART_CHECKPOINT_FILENAME + self.swarm_string
-        self.restart_checkpoint_filename = os.path.join(
-            self.output_directory, restart_checkpoint_basename)
+        
         if self.model.get_type() == "mmvt":
             simulation = self.sim_openmm.simulation
-            self.restart_checkpoint_interval = calc_settings.restart_checkpoint_interval
+            self.restart_checkpoint_interval \
+                = calc_settings.restart_checkpoint_interval
         elif self.model.get_type() == "elber":
             simulation = self.sim_openmm.umbrella_simulation
             self.restart_checkpoint_interval = calc_settings.fwd_rev_interval
 
         if restart:
             simulation.loadCheckpoint(self.restart_checkpoint_filename)
-            # TODO: remove
-            #currentStep = int(round(simulation.context.getState().getTime()\
-            #                  .value_in_unit(unit.picoseconds) \
-            #                  / self.sim_openmm.timestep))
             currentStep = simulation.context.getState().getStepCount()
-            self.start_chunk = int(currentStep // self.restart_checkpoint_interval)
+            self.start_chunk = int(
+                currentStep // self.restart_checkpoint_interval)
+            
             simulation.currentStep = currentStep
             print("restarting from saved checkpoint:", 
                   self.restart_checkpoint_filename, "at step:", currentStep)
             # see how many restart files have already been created
-            seekr_output_files_glob = os.path.join(
-                self.output_directory, self.glob)
-            seekr_output_restarts_list = glob.glob(seekr_output_files_glob)
-            
             traj_filename = os.path.join(
                 self.output_directory, 
                 "%s.restart%d%s.%s" % (self.basename, restart_index, 
@@ -439,15 +441,16 @@ class Runner_openmm():
             * self.steps_per_chunk  * self.sim_openmm.timestep * 1e-3 \
             * 86400 / total_time
         print("Benchmark (ns/day):", ns_per_day)
-        simulation.saveCheckpoint(self.restart_checkpoint_filename)
+        #saveCheckpoint(self.sim_openmm, self.restart_checkpoint_filename)
+        #simulation.saveCheckpoint(self.restart_checkpoint_filename)
         return
     
     def run_mmvt(self, traj_filename):
         """Run the SEEKR2 MMVT calculation."""
-        openmm_settings = self.model.openmm_settings
         calc_settings = self.model.calculation_settings
         simulation = self.sim_openmm.simulation
-        trajectory_reporter_interval = calc_settings.trajectory_reporter_interval
+        trajectory_reporter_interval \
+            = calc_settings.trajectory_reporter_interval
         energy_reporter_interval = calc_settings.energy_reporter_interval
         traj_reporter = self.sim_openmm.traj_reporter
         if trajectory_reporter_interval is not None:
@@ -456,12 +459,11 @@ class Runner_openmm():
             if self.restart_checkpoint_interval is not None:
                 assert trajectory_reporter_interval >= \
                     self.restart_checkpoint_interval
-            if trajectory_reporter_interval > calc_settings.num_production_steps:
-                trajectory_reporter_interval = calc_settings.num_production_steps
-            #assert trajectory_reporter_interval <= calc_settings.num_production_steps, \
-            #    "The trajectory reporter interval must be less or equal to "\
-            #    "the length of the simulation."
-        
+            if trajectory_reporter_interval \
+                    > calc_settings.num_production_steps:
+                trajectory_reporter_interval \
+                    = calc_settings.num_production_steps
+            
         if energy_reporter_interval is not None:
             simulation.reporters.append(
                 self.sim_openmm.energy_reporter(
@@ -469,18 +471,15 @@ class Runner_openmm():
                     potentialEnergy=True, temperature=True, volume=True))
             if energy_reporter_interval > calc_settings.num_production_steps:
                 energy_reporter_interval = calc_settings.num_production_steps
-            #assert energy_reporter_interval <= calc_settings.num_production_steps, \
-            #    "The energy reporter interval must be less than or equal to "\
-            #    "the length of the simulation."
-        
+            
         if self.restart_checkpoint_interval is not None:
-            if self.restart_checkpoint_interval > calc_settings.num_production_steps:
-                self.restart_checkpoint_interval = calc_settings.num_production_steps
-            self.end_chunk = calc_settings.num_production_steps // self.restart_checkpoint_interval
+            if self.restart_checkpoint_interval \
+                    > calc_settings.num_production_steps:
+                self.restart_checkpoint_interval \
+                    = calc_settings.num_production_steps
+            self.end_chunk = calc_settings.num_production_steps \
+                // self.restart_checkpoint_interval
             self.steps_per_chunk = self.restart_checkpoint_interval
-            #assert self.restart_checkpoint_interval <= \
-            #    calc_settings.num_production_steps, "The restart checkpoint interval "\
-            #    "must be less than or equal to the length of the simulation."
         else:
             self.end_chunk = self.start_chunk + 1
             self.steps_per_chunk = calc_settings.num_production_steps
@@ -490,28 +489,39 @@ class Runner_openmm():
                 if all_boundaries_have_state(self.state_prefix+"*", 
                                              self.anchor):
                     if self.save_all_states:
-                        self.sim_openmm.integrator.setSaveStateFileName(self.state_prefix)
+                        self.sim_openmm.integrator.setSaveStateFileName(
+                            self.state_prefix)
                     else:
                         self.sim_openmm.integrator.setSaveStateFileName("")
                         self.save_one_state_for_all_boundaries = False
-                    bounce_counter = get_last_bounce(self.sim_openmm.output_filename)
+                    bounce_counter = get_last_bounce(
+                        self.sim_openmm.output_filename)
                     if bounce_counter is None:
                         bounce_counter = self.start_bounce_counter
                     self.sim_openmm.integrator.setBounceCounter(bounce_counter)
-                    self.sim_openmm.simulation.context.reinitialize(preserveState=True)
+                    self.sim_openmm.simulation.context.reinitialize(
+                        preserveState=True)
                     
                 else:
-                    self.sim_openmm.integrator.setSaveStateFileName(self.state_prefix)
-                    bounce_counter = get_last_bounce(self.sim_openmm.output_filename)
+                    self.sim_openmm.integrator.setSaveStateFileName(
+                        self.state_prefix)
+                    bounce_counter = get_last_bounce(
+                        self.sim_openmm.output_filename)
                     if bounce_counter is None:
                         bounce_counter = self.start_bounce_counter
                     self.sim_openmm.integrator.setBounceCounter(bounce_counter)
-                    self.sim_openmm.simulation.context.reinitialize(preserveState=True)
+                    self.sim_openmm.simulation.context.reinitialize(
+                        preserveState=True)
                     
-            self.sim_openmm.simulation.saveCheckpoint(self.restart_checkpoint_filename)
+            saveCheckpoint(self.sim_openmm, self.restart_checkpoint_filename)
+            #self.sim_openmm.simulation.saveCheckpoint(
+            #    self.restart_checkpoint_filename)
             self.sim_openmm.simulation.step(self.steps_per_chunk)
         
-        self.sim_openmm.simulation.saveCheckpoint(self.restart_checkpoint_filename)
+        saveCheckpoint(self.sim_openmm, self.restart_checkpoint_filename)
+        #self.sim_openmm.simulation.saveCheckpoint(
+        #    self.restart_checkpoint_filename)
+        
         return
     
     def run_elber(self, traj_filename):
@@ -519,8 +529,10 @@ class Runner_openmm():
         openmm_settings = self.model.openmm_settings
         calc_settings = self.model.calculation_settings
         umbrella_simulation = self.sim_openmm.umbrella_simulation
-        umbrella_trajectory_reporter_interval = calc_settings.umbrella_trajectory_reporter_interval
-        umbrella_energy_reporter_interval = calc_settings.umbrella_energy_reporter_interval
+        umbrella_trajectory_reporter_interval \
+            = calc_settings.umbrella_trajectory_reporter_interval
+        umbrella_energy_reporter_interval \
+            = calc_settings.umbrella_energy_reporter_interval
         umbrella_traj_reporter = self.sim_openmm.umbrella_traj_reporter
         directory = os.path.dirname(traj_filename)
         basename = os.path.basename(traj_filename)
@@ -531,27 +543,40 @@ class Runner_openmm():
                 and not self.umbrellas_already_exist_mode:
             umbrella_simulation.reporters.append(umbrella_traj_reporter(
                 umbrella_traj_filename, umbrella_trajectory_reporter_interval))
-            assert umbrella_trajectory_reporter_interval <= calc_settings.num_umbrella_stage_steps, \
-                "The umbrella trajectory reporter interval must be less or equal to "\
-                "the length of the simulation."
+            if calc_settings.num_umbrella_stage_steps \
+                    < umbrella_trajectory_reporter_interval:
+                calc_settings.num_umbrella_stage_steps \
+                    = umbrella_trajectory_reporter_interval
+            #assert umbrella_trajectory_reporter_interval <= calc_settings.num_umbrella_stage_steps, \
+            #    "The umbrella trajectory reporter interval must be less or equal to "\
+            #    "the length of the simulation."
         
         if umbrella_energy_reporter_interval is not None:
             umbrella_simulation.reporters.append(
                 self.sim_openmm.umbrella_energy_reporter(
                     sys.stdout, umbrella_energy_reporter_interval, step=True, 
                     potentialEnergy=True, temperature=True, volume=True))
-            assert umbrella_trajectory_reporter_interval <= calc_settings.num_umbrella_stage_steps, \
-                "The umbrella energy reporter interval must be less than or equal to "\
-                "the length of the simulation."
+            if calc_settings.num_umbrella_stage_steps \
+                    < umbrella_energy_reporter_interval:
+                calc_settings.num_umbrella_stage_steps \
+                    = umbrella_energy_reporter_interval
+            #assert umbrella_energy_reporter_interval \
+            #        <= calc_settings.num_umbrella_stage_steps, \
+            #    "The umbrella energy reporter interval must be less "\
+            #    "than or equal to the length of the simulation."
         
         rev_simulation = self.sim_openmm.rev_simulation
-        rev_trajectory_reporter_interval = calc_settings.rev_trajectory_reporter_interval
-        rev_energy_reporter_interval = calc_settings.rev_energy_reporter_interval
+        rev_trajectory_reporter_interval \
+            = calc_settings.rev_trajectory_reporter_interval
+        rev_energy_reporter_interval \
+            = calc_settings.rev_energy_reporter_interval
         rev_traj_reporter = self.sim_openmm.rev_traj_reporter
                 
         fwd_simulation = self.sim_openmm.fwd_simulation
-        fwd_trajectory_reporter_interval = calc_settings.fwd_trajectory_reporter_interval
-        fwd_energy_reporter_interval = calc_settings.fwd_energy_reporter_interval
+        fwd_trajectory_reporter_interval \
+            = calc_settings.fwd_trajectory_reporter_interval
+        fwd_energy_reporter_interval \
+            = calc_settings.fwd_energy_reporter_interval
         fwd_traj_reporter = self.sim_openmm.fwd_traj_reporter
         
         assert calc_settings.fwd_rev_interval \
@@ -597,8 +622,6 @@ class Runner_openmm():
                 print("loading umbrella frame {}.".format(chunk))
                 umbrella_simulation.context.setPositions(
                     umbrella_traj.openmm_positions(chunk))
-                #umbrella_simulation.context.setPeriodicBoxVectors(
-                #    *umbrella_traj.openmm_boxes(chunk))
                 umbrella_state = \
                     umbrella_simulation.context.getState(
                         getPositions=True, getVelocities=True)
@@ -614,25 +637,20 @@ class Runner_openmm():
             for launch_id in range(calc_settings.num_rev_launches):
                 crossing_counter = chunk * calc_settings.num_rev_launches \
                     + launch_id
-                chunk_str = "_%d" % chunk
                 counter_str = "_%d" % crossing_counter
                 if self.save_one_state_for_all_boundaries:
                     if all_boundaries_have_state(self.state_prefix+"*", 
                                                  self.anchor):
                         if self.save_all_states:
-                            #self.sim_openmm.rev_seekr_force.setSaveStateFileName(
-                            #    self.state_prefix+chunk_str+"r")
                             self.sim_openmm.rev_integrator.setSaveStateFileName(
                                 self.state_prefix+counter_str+"r")
-                            #self.sim_openmm.fwd_seekr_force.setSaveStateFileName(
-                            #    self.state_prefix+chunk_str+"f")
                             self.sim_openmm.fwd_integrator.setSaveStateFileName(
                                 self.state_prefix+counter_str+"f")
                         else:
-                            #self.sim_openmm.rev_seekr_force.setSaveStateFileName("")
-                            self.sim_openmm.rev_integrator.setSaveStateFileName("")
-                            #self.sim_openmm.fwd_seekr_force.setSaveStateFileName("")
-                            self.sim_openmm.fwd_integrator.setSaveStateFileName("")
+                            self.sim_openmm.rev_integrator\
+                                .setSaveStateFileName("")
+                            self.sim_openmm.fwd_integrator\
+                                .setSaveStateFileName("")
                             self.save_one_state_for_all_boundaries = False
                         self.sim_openmm.rev_simulation.context.reinitialize(
                             preserveState=True)
@@ -640,12 +658,8 @@ class Runner_openmm():
                             preserveState=True)
                         
                     else:
-                        #self.sim_openmm.rev_seekr_force.setSaveStateFileName(
-                        #    self.state_prefix+chunk_str+"r")
                         self.sim_openmm.rev_integrator.setSaveStateFileName(
                             self.state_prefix+counter_str+"r")
-                        #self.sim_openmm.fwd_seekr_force.setSaveStateFileName(
-                        #    self.state_prefix+chunk_str+"f")
                         self.sim_openmm.fwd_integrator.setSaveStateFileName(
                             self.state_prefix+counter_str+"f"+str(launch_id))
                         self.sim_openmm.rev_simulation.context.reinitialize(
@@ -673,7 +687,8 @@ class Runner_openmm():
                     rev_simulation.reporters.append(
                         self.sim_openmm.rev_energy_reporter(
                             sys.stdout, rev_energy_reporter_interval, step=True, 
-                            potentialEnergy=True, temperature=True, volume=True))
+                            potentialEnergy=True, temperature=True, 
+                            volume=True))
                 rev_simulation.context.reinitialize(preserveState=True)
                 rev_start_state = rev_simulation.context.getState(
                     getPositions=True, getVelocities=True)
@@ -682,15 +697,18 @@ class Runner_openmm():
                 had_error = False
                 while get_data_file_length(rev_data_file_name) \
                         == rev_data_file_length:
-                    rev_data_file_length = get_data_file_length(rev_data_file_name)
+                    rev_data_file_length = get_data_file_length(
+                        rev_data_file_name)
                     try:
                         rev_simulation.step(REV_STAGE_STEPS_PER_BLOCK)
-                    except Exception: # if there was a NAN error
+                    except Exception: 
+                        # if there was a NAN error
                         print("Error encountered. Continuing with the next "\
                               "umbrella frame.")
                         num_errors += 1
                         had_error = True
-                        break # don't want to log this as a success
+                        # don't want to log this as a success
+                        break 
                     rev_block_counter += 1
                     if rev_block_counter > MAX_REVERSE_ITER:
                         print("maximum iterations exceeded.")
@@ -700,7 +718,9 @@ class Runner_openmm():
                 rev_simulation.context.setStepCount(0)
                 rev_simulation.currentStep = 0
                 if had_error == True:
-                    break # move on to the next frame
+                    # move on to the next frame
+                    break 
+                
                 if read_reversal_data_file_last(rev_data_file_name):
                     fwd_simulation.context.setPositions(
                         rev_start_state.getPositions())
@@ -712,7 +732,8 @@ class Runner_openmm():
                         crossing_counter)
                     fwd_simulation.context.reinitialize(preserveState=True)
                     # TODO: add reporter update here
-                    fwd_data_file_length = get_data_file_length(fwd_data_file_name)
+                    fwd_data_file_length = get_data_file_length(
+                        fwd_data_file_name)
                     if fwd_trajectory_reporter_interval is not None:
                         fwd_traj_filename = os.path.join(
                             self.output_directory, 
@@ -722,18 +743,21 @@ class Runner_openmm():
                     if fwd_energy_reporter_interval is not None:
                         fwd_simulation.reporters.append(
                             self.sim_openmm.fwd_energy_reporter(
-                                sys.stdout, fwd_energy_reporter_interval, step=True, 
-                                potentialEnergy=True, temperature=True, volume=True))
+                                sys.stdout, fwd_energy_reporter_interval, 
+                                step=True, potentialEnergy=True, 
+                                temperature=True, volume=True))
                     fwd_block_counter = 0
                     had_error = False
                     while get_data_file_length(fwd_data_file_name) \
                             == fwd_data_file_length:
-                        fwd_data_file_length = get_data_file_length(fwd_data_file_name)
+                        fwd_data_file_length = get_data_file_length(
+                            fwd_data_file_name)
                         try:
                             fwd_simulation.step(FWD_STAGE_STEPS_PER_BLOCK)
-                        except Exception: # if there was a NAN error
-                            print("Error encountered. Continuing with the next "\
-                                  "umbrella frame.")
+                        except Exception: 
+                            # if there was a NAN error
+                            print("Error encountered. Continuing with the "\
+                                  "next umbrella frame.")
                             num_errors += 1
                             had_error = True
                             break

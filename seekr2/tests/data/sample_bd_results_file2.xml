@@ -1,0 +1,36 @@
+<rates>
+  <solvent>
+    <kT> 1.0005 </kT>
+    <debye_length> 1.79769e+308 </debye_length>
+    <dielectric> 78 </dielectric>
+    <vacuum_permittivity> 0.000142 </vacuum_permittivity>
+    <water_viscosity> 0.243 </water_viscosity>
+    <relative_viscosity> 1 </relative_viscosity>
+  </solvent>
+    <hydrodynamic_interactions> 1 </hydrodynamic_interactions>
+  <time_step_tolerances>
+    <minimum_core_dt> 0.2 </minimum_core_dt>
+    <minimum_core_rxn_dt> 0.05 </minimum_core_rxn_dt>
+    <minimum_chain_dt> 0 </minimum_chain_dt>
+    <minimum_chain_rxn_dt> 0 </minimum_chain_rxn_dt>
+  </time_step_tolerances>
+  <molecule_info>
+    <b_radius> 17.3332 </b_radius>
+    <b_reaction_rate> 11.2152 </b_reaction_rate>
+    <n_reactions> 2 </n_reactions>
+  </molecule_info>
+  <reactions>
+    <n_trajectories> 100000 </n_trajectories>
+    <stuck> 0 </stuck>
+    <escaped> 54070 </escaped>
+    <completed>
+      <name> b_12 </name>
+      <n> 65239 </n>
+    </completed>
+    <completed>
+      <name> 12_11 </name>
+      <n> 45930 </n>
+    </completed>
+  </reactions>
+  <n_bd_steps> 181617390</n_bd_steps>
+</rates>

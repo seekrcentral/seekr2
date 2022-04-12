@@ -209,7 +209,7 @@ def browndye_run_compute_rate_constant(compute_rate_constant_program,
     reaction_probability_errors = defaultdict(float)
     transition_counts = defaultdict(int)
     k_b = 0.0
-    total_n_trajectories = 0
+    #total_n_trajectories = 0
     
     for results_filename in results_filename_list:
         cmd = "%s < %s" % (compute_rate_constant_program, 
@@ -221,7 +221,7 @@ def browndye_run_compute_rate_constant(compute_rate_constant_program,
         results_root = ET.parse(results_filename)
         reactions = results_root.find("reactions")
         n_trajectories = int(reactions.find("n_trajectories").text.strip())
-        total_n_trajectories += n_trajectories
+        #total_n_trajectories += n_trajectories
         stuck = int(reactions.find("stuck").text.strip())
         escaped = int(reactions.find("escaped").text.strip())
         for completed in reactions.iter("completed"):
@@ -231,6 +231,7 @@ def browndye_run_compute_rate_constant(compute_rate_constant_program,
             transition_counts[dest] += n
         transition_counts["escaped"] += escaped
         transition_counts["stuck"] += stuck
+        transition_counts["total"] += n_trajectories
         
         # now obtain probabilities and rates
         for rate in root.iter("rate"):
@@ -253,9 +254,8 @@ def browndye_run_compute_rate_constant(compute_rate_constant_program,
     
     for key in transition_counts:
         reaction_probabilities[key] \
-            = transition_counts[key] / total_n_trajectories
+            = transition_counts[key] / transition_counts["total"]
         k_ons[key] = k_b * reaction_probabilities[key]
-        
         if transition_counts[key] > 1:
             reaction_probability_errors[key] = reaction_probabilities[key] \
                 / np.sqrt(transition_counts[key]-1)
@@ -384,6 +384,7 @@ class Data_sample():
                         self.model.browndye_settings.browndye_bin_dir,
                         "compute_rate_constant"), output_file_list, 
                         sample_error_from_normal=bd_sample_from_normal)
+                
                 self.bd_transition_counts["b_surface"] = transition_counts
                 self.bd_transition_probabilities["b_surface"] \
                     = reaction_probabilities
@@ -399,14 +400,18 @@ class Data_sample():
                 transition_probabilities_bd_milestone = defaultdict(float)
                 inner_milestone_index = bd_milestone.inner_milestone.index
                 outer_milestone_index = bd_milestone.outer_milestone.index
+                assert inner_milestone_index in transition_counts
+                assert outer_milestone_index in transition_counts
                 transition_counts_bd_milestone[inner_milestone_index] \
                     = transition_counts[inner_milestone_index]
                 transition_counts_bd_milestone["escaped"] \
                     = transition_counts[outer_milestone_index] \
                     - transition_counts[inner_milestone_index]
-                if sum(transition_counts_bd_milestone.values()) == 0:
+                transition_counts_bd_milestone["total"] \
+                    = transition_counts[outer_milestone_index]
+                if transition_probabilities_bd_milestone["escaped"] == 0:
                     transition_probabilities_bd_milestone[
-                        inner_milestone_index] = 0
+                        inner_milestone_index] = 1.0
                     transition_probabilities_bd_milestone["escaped"] \
                         = 0
                 else:
@@ -414,10 +419,10 @@ class Data_sample():
                         inner_milestone_index] \
                         = transition_counts_bd_milestone[
                             inner_milestone_index] \
-                        / sum(transition_counts_bd_milestone.values())
+                        / transition_counts_bd_milestone["total"]
                     transition_probabilities_bd_milestone["escaped"] \
                         = transition_counts_bd_milestone["escaped"] \
-                        / sum(transition_counts_bd_milestone.values())
+                        / transition_counts_bd_milestone["total"]
                 
                 self.bd_transition_counts[bd_milestone.index] \
                     = transition_counts_bd_milestone
@@ -534,7 +539,6 @@ class Data_sample():
         assert len(bulk_milestones) <= 1, \
             "There cannot be more than one bulk milestone."
         if bulk_milestone is not None:
-            #bulk_milestone = bulk_milestones[0]
             n = self.Q.shape[0]
             for end_milestone in end_milestones:
                 if end_milestone == bulk_milestone:

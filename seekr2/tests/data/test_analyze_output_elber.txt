@@ -1,0 +1,13 @@
+#"Crossed boundary ID","crossing counter","total time (ps)"
+# An asterisk(*) indicates that source milestone was never crossed - asterisked statistics are invalid and should be excluded.
+3,2,0.11
+3*,3,0.482
+3,5,0.296
+3,6,0.12
+1,7,0.164
+1,10,0.124
+1*,11,0.358
+3,14,0.084
+1,15,0.178
+3,18,0.248
+

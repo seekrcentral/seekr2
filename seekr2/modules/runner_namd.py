@@ -12,9 +12,9 @@ import shutil
 
 import seekr2.modules.common_base as base
 import seekr2.modules.mmvt_base as mmvt_base
-import seekr2.modules.elber_base as elber_base
 import seekr2.modules.common_sim_namd as common_sim_namd
 import seekr2.modules.mmvt_sim_namd as mmvt_sim_namd
+#import seekr2.modules.elber_sim_namd as elber_sim_namd
 
 RESTART_CHECKPOINT_FILENAME = "backup_checkpoint"
 SAVE_STATE_DIRECTORY = "states/"
@@ -25,7 +25,6 @@ def search_for_state_to_load(model, anchor):
     Find an existing state in an adjacent anchor that could be used to
     seed this anchor as a set of starting positions.
     """
-    
     for milestone in anchor.milestones:
         neighbor_anchor = model.anchors[milestone.neighbor_anchor_index]
         for neighbor_milestone in neighbor_anchor.milestones:
@@ -50,7 +49,6 @@ def read_xsc_step_number(xsc_filename):
     Read a NAMD .xsc file to extract the latest step to use as input
     for restarts and such.
     """
-    
     last_step = 0
     with open(xsc_filename, "r") as f:
         for line in f.readlines():
@@ -65,10 +63,8 @@ def cleanse_anchor_outputs(model, anchor):
     Delete all simulation outputs for an existing anchor to make way
     for new outputs.
     """
-    
     if model.get_type() == "mmvt":
         basename = mmvt_base.NAMDMMVT_BASENAME
-        extension = mmvt_base.NAMDMMVT_EXTENSION
     # Elber not supported in NAMD
     #elif model.get_type() == "elber":
     #    basename = elber_base.OPENMM_ELBER_BASENAME
@@ -86,6 +82,10 @@ def cleanse_anchor_outputs(model, anchor):
         output_directory, "%s*.colvars.*" % basename)
     for colvars_file in glob.glob(colvars_glob):
         os.remove(colvars_file)
+    colvars_file = os.path.join(
+        output_directory, "colvars.script")
+    if os.path.exists(colvars_file):
+        os.remove(colvars_file)
     coor_glob = os.path.join(
         output_directory, "%s*.coor*" % basename)
     for coor_file in glob.glob(coor_glob):
@@ -98,6 +98,10 @@ def cleanse_anchor_outputs(model, anchor):
         output_directory, "%s*.xsc*" % basename)
     for xsc_file in glob.glob(xsc_glob):
         os.remove(xsc_file)
+    fftw_glob = os.path.join(
+        output_directory, "FFTW*.txt")
+    for fftw_file in glob.glob(fftw_glob):
+        os.remove(fftw_file)
     input_glob = os.path.join(
         output_directory, 
         common_sim_namd.NAMD_INPUT_FILENAME.format("*"))
@@ -156,7 +160,6 @@ class Runner_namd():
     output_directory : str
         A path to the directory where output will be written.
     """
-    
     def __init__(self, model, anchor, namd_command, namd_arguments):
         self.model = model
         self.sim_namd = None
@@ -176,13 +179,13 @@ class Runner_namd():
                 self.anchor.production_directory)
             self.header = mmvt_sim_namd.SEEKR_MMVT_PROD_HEADER
         elif model.get_type() == "elber":
-            self.glob = elber_base.OPENMM_ELBER_GLOB
-            self.basename = elber_base.OPENMM_ELBER_BASENAME
-            self.extension = elber_base.OPENMM_ELBER_EXTENSION
-            
-            self.output_directory = os.path.join(
-                self.model.anchor_rootdir, self.anchor.directory)
-            self.header = elber_sim_namd.SEEKR_ELBER_PROD_HEADER
+            raise Exception("Elber milestoning not available in NAMD.")
+            #self.glob = elber_base.OPENMM_ELBER_GLOB
+            #self.basename = elber_base.OPENMM_ELBER_BASENAME
+            #self.extension = elber_base.OPENMM_ELBER_EXTENSION
+            #self.output_directory = os.path.join(
+            #    self.model.anchor_rootdir, self.anchor.directory)
+            #self.header = elber_sim_namd.SEEKR_ELBER_PROD_HEADER
         self.save_one_state_for_all_boundaries = False
         self.check_state_interval = 1000
     
@@ -192,7 +195,6 @@ class Runner_namd():
         This function gets run before the sim_namd object is created
         so that the proper paths can be found, etc.
         """
-        
         settings = self.model.namd_settings
         assert settings is not None, "This model was not prepared for NAMD."
         restart_index = 1
@@ -218,45 +220,7 @@ class Runner_namd():
                     raise Exception("Cannot overwrite existing MMVT outputs.")
                 else:
                     cleanse_anchor_outputs(self.model, self.anchor)
-                """
-                else:
-                    for mmvt_output_file in mmvt_output_restarts_list:
-                        os.remove(mmvt_output_file)
-                    dcd_glob = os.path.join(
-                        self.output_directory, "%s*.dcd*" % self.basename)
-                    for dcd_file in glob.glob(dcd_glob):
-                        os.remove(dcd_file)
-                    colvars_glob = os.path.join(
-                        self.output_directory, "%s*.colvars.*" % self.basename)
-                    for colvars_file in glob.glob(colvars_glob):
-                        os.remove(colvars_file)
-                    coor_glob = os.path.join(
-                        self.output_directory, "%s*.coor*" % self.basename)
-                    for coor_file in glob.glob(coor_glob):
-                        os.remove(coor_file)
-                    vel_glob = os.path.join(
-                        self.output_directory, "%s*.vel*" % self.basename)
-                    for vel_file in glob.glob(vel_glob):
-                        os.remove(vel_file)
-                    xsc_glob = os.path.join(
-                        self.output_directory, "%s*.xsc*" % self.basename)
-                    for xsc_file in glob.glob(xsc_glob):
-                        os.remove(xsc_file)
-                    input_glob = os.path.join(
-                        self.output_directory, 
-                        common_sim_namd.NAMD_INPUT_FILENAME.format("*"))
-                    for input_file in glob.glob(input_glob):
-                        os.remove(input_file)
-                    checkpoint_glob = os.path.join(
-                        self.output_directory, RESTART_CHECKPOINT_FILENAME+"*")
-                    for checkpoint_file in glob.glob(checkpoint_glob):
-                        os.remove(checkpoint_file)
-                    states_dir = os.path.join(
-                        self.output_directory, SAVE_STATE_DIRECTORY)
-                    if os.path.exists(states_dir):
-                        shutil.rmtree(states_dir)
-                """
-                        
+                
             default_output_filename = "%s%d.%s" % (
                 self.basename, 1, self.extension)
             output_basename = "%s%d" % (self.basename, 1)
@@ -284,9 +248,7 @@ class Runner_namd():
         """
         Run the MMVT NAMD simulation.
         """
-        
         self.sim_namd = sim_namd_obj
-        settings = self.model.namd_settings
         calc_settings = self.model.calculation_settings
         output_directory = os.path.join(
             self.model.anchor_rootdir, self.anchor.directory, 
@@ -475,6 +437,5 @@ if __name__ == "__main__":
          = runner.save_one_state_for_all_boundaries
     sim_namd_obj.seekr_namd_settings.check_state_interval\
          = runner.check_state_interval
-    
     runner.run(sim_namd_obj, output_file, restart, load_state_file, 
                restart_index)

@@ -5,27 +5,22 @@ test_sim_browndye2.py
 import pytest
 import os
 import re
+from shutil import copyfile
 
 import parmed
 import numpy as np
 
 import seekr2.modules.common_sim_browndye2 as sim_browndye2
 
+TEST_DIRECTORY = os.path.dirname(__file__)
+
 def verify_xml_text(filename, tag, text):
     with open(filename, 'r') as f:
         for line in f.readlines():
-            #print("line:", line)
             result = re.search("<%s>%s</%s>" % (tag, text, tag), line)
             if result:
                 return
-            """
-            result = re.search("<%s>(.+?)</%s>" % (tag, tag), line)
-            if result:
-                xml_text = result.group(1)
-                assert xml_text == text
-                return
-            """
-    
+            
     raise Exception("tag not found in file: %s" % tag)
     return
 
@@ -90,7 +85,7 @@ def make_test_browndye_input(tmp_path):
     root.system.group_list.append(group2)
     
     root.write(test_filename)
-    return test_filename
+    return test_filename, root
 
 def make_test_browndye_rxn(tmp_path):
     test_filename = os.path.join(tmp_path, "test_rxn.xml")
@@ -118,7 +113,6 @@ def test_add_ghost_atom_to_pqr_from_atoms_center_of_mass(tmp_path):
     input_pqr_filename = \
         os.path.join(os.path.dirname(__file__), 
                      "../data/hostguest_files/hostguest_ligand.pqr")
-    #print("input_pqr_filename:", input_pqr_filename)
     atom_index_list = list(range(15))
     output_pqr_filename = os.path.join(tmp_path, "test.pqr")
     ghost_index = sim_browndye2.add_ghost_atom_to_pqr_from_atoms_center_of_mass(
@@ -126,15 +120,39 @@ def test_add_ghost_atom_to_pqr_from_atoms_center_of_mass(tmp_path):
     pqr_struct = parmed.load_file(output_pqr_filename, skip_bonds=True)
     ghost_atom = pqr_struct.atoms[ghost_index-1]
     assert(ghost_atom.name == "GHO")
-    #expected_ghost_location = np.array([[-0.056, -0.323, 2.439]])
     expected_ghost_location = np.array([[0.0, 0.0, 0.0]])
     ghost_location = pqr_struct.coordinates[ghost_index-1]
     difference = np.linalg.norm(expected_ghost_location - ghost_location)
     assert(difference == 0.0)
     return
 
+def test_make_pqrxml(tmp_path):
+    pqr_test_filename = os.path.join(TEST_DIRECTORY, "data/ligand_for_test.pqr")
+    new_pqr_filename = os.path.join(tmp_path, "ligand_for_test.pqr")
+    copyfile(pqr_test_filename, new_pqr_filename)
+    xml_filename = sim_browndye2.make_pqrxml(new_pqr_filename)
+    assert os.path.exists(xml_filename)
+
+def test_make_and_run_apbs(tmp_path):
+    os.chdir(tmp_path)
+    ligand_pqr_filename = \
+        os.path.join(os.path.dirname(__file__), 
+                     "../data/hostguest_files/hostguest_ligand.pqr")
+    receptor_pqr_filename = \
+        os.path.join(os.path.dirname(__file__), 
+                     "../data/hostguest_files/hostguest_receptor.pqr")
+    new_pqr_ligand = os.path.join(tmp_path, "ligand.pqr")
+    new_pqr_receptor = os.path.join(tmp_path, "receptor.pqr")
+    copyfile(ligand_pqr_filename, new_pqr_ligand)
+    copyfile(receptor_pqr_filename, new_pqr_receptor)
+    xml_ligand = sim_browndye2.make_pqrxml(new_pqr_ligand)
+    xml_receptor = sim_browndye2.make_pqrxml(new_pqr_receptor)
+    input_apbs_xml, root = make_test_browndye_input(tmp_path)
+    debye_length = sim_browndye2.make_and_run_apbs(root, input_apbs_xml)
+    assert float(debye_length) > 0.0
+
 def test_browndye_input_serializer_apbs_mode(tmp_path):
-    test_filename = make_test_browndye_input(tmp_path)
+    test_filename, root = make_test_browndye_input(tmp_path)
     assert os.path.exists(test_filename)
     
     verify_xml_text(test_filename, "n_trajectories", "65535")

@@ -700,8 +700,6 @@ class Root():
         xmlNTraj.text = str(self.n_trajectories)
         if self.n_trajectories_per_output is not None:
             assert self.n_trajectories_per_output > 0
-            #if self.n_trajectories_per_output > self.n_trajectories:
-            #    self.n_trajectories_per_output = self.n_trajectories
             xmlNTrajPerOut = ET.SubElement(xmlRoot, "n_trajectories_per_output")
             xmlNTrajPerOut.text = str(self.n_trajectories_per_output)
         assert self.max_n_steps > 0
@@ -904,7 +902,7 @@ def add_ghost_atom_to_pqr_from_atoms_center_of_mass(
     mol_total_mass = 0.0
     for atom_index, atom in enumerate(pqr_struct.atoms):
         atom_pos = pqr_struct.coordinates[atom_index,:]
-        atom_mass = pqr_struct.atoms[atom_index].mass
+        atom_mass = atom.mass
         if atom_mass == 0.0:
             atom_mass = 0.0001
         mol_center_of_mass += atom_mass * atom_pos
@@ -915,18 +913,18 @@ def add_ghost_atom_to_pqr_from_atoms_center_of_mass(
     ghost_structure = parmed.Structure()
     ghost_structure.add_atom(ghost_atom, "GHO", 1)
     ghost_structure.coordinates = np.array(center_of_mass)
-    complex = pqr_struct + ghost_structure
-    for residue in complex.residues:
+    pqr_complex = pqr_struct + ghost_structure
+    for residue in pqr_complex.residues:
         residue.chain = ""
     
-    new_coordinates = np.zeros(complex.coordinates.shape)
-    for atom_index, atom in enumerate(complex.atoms):
-        new_coordinates[atom_index,:] = complex.coordinates[atom_index,:] \
+    new_coordinates = np.zeros(pqr_complex.coordinates.shape)
+    for atom_index in range(len(pqr_complex.atoms)):
+        new_coordinates[atom_index,:] = pqr_complex.coordinates[atom_index,:] \
             - mol_center_of_mass[0,:]
     
-    complex.coordinates = new_coordinates
-    complex.save(new_pqr_filename, overwrite=True)
-    ghost_index = len(complex.atoms)
+    pqr_complex.coordinates = new_coordinates
+    pqr_complex.save(new_pqr_filename, overwrite=True)
+    ghost_index = len(pqr_complex.atoms)
     return ghost_index
 
 def make_pqrxml(input_pqr_filename, browndye2_bin="", 
@@ -952,9 +950,6 @@ def make_and_run_apbs(root, input_apbs_xml, browndye2_bin="",
     """
     assert root.system.solvent.ions is not None, \
         "Ions must be included for APBS calculations"
-    # TODO: remove
-    #assert len(root.system.solvent.ions) > 0, \
-    #    "Ions must be included for APBS calculations"
     mol_name_list = []
     for group in root.system.group_list:
         mol_name = group.name
