@@ -36,9 +36,7 @@ def get_bd_transition_counts(model):
     """
     Obtain how many transitions have occurred in the BD stage.
     """
-    if not model.using_bd():
-        raise Exception("No valid BD program settings provided.")
-        
+    assert model.using_bd(), "No valid BD program settings provided."
     output_file_glob = os.path.join(
         model.anchor_rootdir, model.k_on_info.b_surface_directory, 
         model.k_on_info.bd_output_glob)
@@ -64,60 +62,15 @@ def analyze_bd_only(model, data_sample):
     """
     if model.k_on_info is None:
         return
-    bulk_milestones = []
-    MFPTs = {}
-    for alpha, anchor in enumerate(model.anchors):
-        if anchor.bulkstate:
-            for milestone_id in anchor.get_ids():
-                bulk_milestones.append(milestone_id)
-                
     output_file_glob = os.path.join(
         model.anchor_rootdir, model.k_on_info.b_surface_directory, 
         model.k_on_info.bd_output_glob)
     output_file_list = glob.glob(output_file_glob)
     output_file_list = base.order_files_numerically(output_file_list)
-    if len(output_file_list) > 0:
-        if model.using_bd():
-            k_ons_src, k_on_errors_src, reaction_probabilities, \
-                reaction_probability_errors, transition_counts = \
-                common_analyze.browndye_run_compute_rate_constant(os.path.join(
-                    model.browndye_settings.browndye_bin_dir,
-                    "compute_rate_constant"), output_file_list, 
-                    sample_error_from_normal=False)
-            data_sample.bd_transition_counts["b_surface"] = transition_counts
-        else:
-            raise Exception("No valid BD program settings provided.")
-        
-        if len(bulk_milestones) > 0:
-            bulk_milestone = bulk_milestones[0]
-            # TODO: update for newer handling of BD milestones
-            for bd_milestone in model.k_on_info.bd_milestones:
-                bd_results_file = os.path.join(
-                    model.anchor_rootdir, bd_milestone.directory, 
-                    "results.xml")
-                
-                if not os.path.exists(bd_results_file):
-                    bd_directory_list_glob = os.path.join(
-                        model.anchor_rootdir, 
-                        bd_milestone.directory, 
-                        "first_hitting_point_distribution", "lig*/")
-                    bd_directory_list = glob.glob(
-                        bd_directory_list_glob)
-                    if len(bd_directory_list) == 0:
-                        continue
-                    common_analyze.combine_fhpd_results(
-                        bd_milestone, bd_directory_list, bd_results_file)
-                
-                results_filename_list = [bd_results_file]
-                transition_probabilities, transition_counts = \
-                    common_analyze.browndye_parse_bd_milestone_results(
-                        results_filename_list)
-                data_sample.bd_transition_counts[bd_milestone.index] \
-                    = transition_counts
-                    
+    data_sample.bd_transition_counts = get_bd_transition_counts(model)
     return
 
-def analyze_kinetics(model, analysis, max_step_list, k_on_state=None):
+def analyze_kinetics(model, analysis, max_step, k_on_state=None):
     """
     Extract relevant analysis quantities from sub-sections of the 
     data, which will later be processed for plotting.
@@ -158,7 +111,7 @@ def analyze_kinetics(model, analysis, max_step_list, k_on_state=None):
     R_i : dict
         An n dict representing the incubation times at each milestone.
     """
-    analysis.extract_data(max_step_list=max_step_list)
+    analysis.extract_data(max_step=max_step)
     analysis.fill_out_data_samples()
     try:
         sufficient_statistics = analysis.check_extraction(silent=True)
@@ -176,28 +129,19 @@ def analyze_kinetics(model, analysis, max_step_list, k_on_state=None):
         return k_on, k_off, main_data_sample.N_ij, main_data_sample.R_i
     except (common_analyze.MissingStatisticsError, np.linalg.LinAlgError,
             AssertionError, ValueError) as e:
-        if model.get_type() == "mmvt":
-            #data_sample = common_analyze.Data_sample(model)
-            #data_sample = mmvt_analyze.MMVT_data_sample(model)
-            pass
-        elif model.get_type() == "elber":
-            #data_sample = elber_analyze.Elber_data_sample(model)
-            pass
-            
         if model.using_bd():
-            #data_sample.parse_browndye_results()
-            analysis.main_data_sample.parse_browndye_results()
+            analyze_bd_only(model, analysis.main_data_sample)
             
         return 0.0, 0.0, {}, {}
 
-def get_mmvt_max_steps(model, dt):
+def get_mmvt_max_steps(model):
     """
     Extract the largest simulation step number for all the sims in 
     the anchors.
     """
-    max_step_list = np.zeros((model.num_anchors, DEFAULT_NUM_POINTS))
-    for alpha, anchor in enumerate(model.anchors):
-        max_steps = 0.0
+    dt = model.get_timestep()
+    max_steps = 0.0
+    for anchor in model.anchors:
         output_file_glob = os.path.join(
             model.anchor_rootdir, anchor.directory, 
             anchor.production_directory,
@@ -212,7 +156,13 @@ def get_mmvt_max_steps(model, dt):
                         while output_file.read(1) != b"\n":
                             output_file.seek(-2, os.SEEK_CUR)
                         last_line = output_file.readline().decode()
-                        mytime = float(last_line.strip().split(",")[2])
+                        if last_line.startswith("#"):
+                            # empty output file
+                            continue
+                        elif last_line.startswith("CHECKPOINT"):
+                            mytime = float(last_line.strip().split(",")[1])
+                        else:
+                            mytime = float(last_line.strip().split(",")[2])
                         step = int(mytime / dt)
                     elif model.namd_settings is not None:
                         step = 0
@@ -237,46 +187,56 @@ def get_mmvt_max_steps(model, dt):
         max_steps = DEFAULT_NUM_POINTS * int(math.ceil(
             max_steps / DEFAULT_NUM_POINTS))
         
-        if max_steps == 0:
-            continue
-        
-        conv_stride = max_steps // DEFAULT_NUM_POINTS
+    conv_stride = max_steps // DEFAULT_NUM_POINTS
+    if conv_stride == 0:
+        conv_intervals = np.zeros(DEFAULT_NUM_POINTS)
+    else:
         conv_intervals = np.arange(conv_stride, max_steps+conv_stride, 
                                    conv_stride)
         conv_intervals = conv_intervals + DEFAULT_SKIP
-        max_step_list[alpha,:] = conv_intervals
-                    
-    return max_step_list
-    
-def get_elber_max_steps(model, dt):
+    return conv_intervals
+
+def get_elber_max_steps(model):
     """
     Extract the largest simulation step number for all the sims in 
     the anchors.
     """
-    max_step_list = np.zeros((model.num_anchors, DEFAULT_NUM_POINTS))
-    for alpha, anchor in enumerate(model.anchors):
-        max_steps = 0.0
+    max_steps = 0.0
+    for anchor in model.anchors:
+        steps = 0.0
         output_file_glob = os.path.join(
             model.anchor_rootdir, anchor.directory, 
             anchor.production_directory,
             anchor.md_output_glob)
         for output_filename in glob.glob(output_file_glob):
-            num_lines = sum(1 for line in open(output_filename))
-            max_steps += num_lines
+            with open(output_filename, "rb") as output_file:
+                try:
+                    output_file.seek(-2, os.SEEK_END)
+                    while output_file.read(1) != b"\n":
+                        output_file.seek(-2, os.SEEK_CUR)
+                    last_line = output_file.readline().decode()
+                    if last_line.startswith("#"):
+                        # empty output file
+                        continue
+                    else:
+                        steps = int(last_line.strip().split(",")[1])
+                except OSError:
+                    steps = 0
+                
+        if steps > max_steps:
+            max_steps = steps
         
-        max_steps = DEFAULT_NUM_POINTS * int(math.ceil(
-            max_steps / DEFAULT_NUM_POINTS))
-        if max_steps == 0:
-            #return max_step_list
-            continue
-        
-        conv_stride = max_steps // DEFAULT_NUM_POINTS
+    max_steps = DEFAULT_NUM_POINTS * int(math.ceil(
+        max_steps / DEFAULT_NUM_POINTS))
+    
+    conv_stride = max_steps // DEFAULT_NUM_POINTS
+    if conv_stride == 0:
+        conv_intervals = np.zeros(DEFAULT_NUM_POINTS)
+    else:
         conv_intervals = np.arange(conv_stride, max_steps+conv_stride, 
                                    conv_stride)
         conv_intervals = conv_intervals + DEFAULT_SKIP
-        max_step_list[alpha,:] = conv_intervals
-        
-    return max_step_list
+    return conv_intervals
     
 def check_milestone_convergence(model, k_on_state=None, verbose=False):
     """
@@ -329,15 +289,16 @@ def check_milestone_convergence(model, k_on_state=None, verbose=False):
     
     data_sample_list = []
     dt = model.get_timestep()
-    timestep_in_ns = unit.Quantity(dt, unit.picosecond).value_in_unit(
-        unit.nanoseconds)
+    timestep_in_ns = (dt * unit.picosecond).value_in_unit(unit.nanoseconds)
     if model.get_type() == "mmvt":
-        max_step_list = get_mmvt_max_steps(model, dt)
+        max_step_list = get_mmvt_max_steps(model)
     elif model.get_type() == "elber":
-        max_step_list = get_elber_max_steps(model, dt)
+        max_step_list = get_elber_max_steps(model)
     
     k_off_conv = np.zeros(DEFAULT_NUM_POINTS)
     k_on_conv = np.zeros(DEFAULT_NUM_POINTS)
+    # partial allows us to create a defaultdict with values that are
+    # empty arrays of a certain size DEFAULT_NUM_POINTS
     N_ij_conv = defaultdict(functools.partial(np.zeros, DEFAULT_NUM_POINTS))
     R_i_conv = defaultdict(functools.partial(np.zeros, DEFAULT_NUM_POINTS))
     analysis = analyze.Analysis(model, force_warning=False)
@@ -345,8 +306,10 @@ def check_milestone_convergence(model, k_on_state=None, verbose=False):
         if verbose and (interval_index % PROGRESS_UPDATE_INTERVAL == 0):
             print("Processing interval {} of {}".format(interval_index, 
                                                         DEFAULT_NUM_POINTS))
+        max_step = max_step_list[interval_index]
+        
         k_on, k_off, N_ij, R_i = analyze_kinetics(
-            model, analysis, max_step_list[:, interval_index], k_on_state)
+            model, analysis, max_step, k_on_state)
         data_sample_list.append(analysis.main_data_sample)
         k_on_conv[interval_index] = k_on
         k_off_conv[interval_index] = k_off
@@ -397,12 +360,14 @@ def plot_scalar_conv(conv_values, conv_intervals, label, title, timestep_in_ns,
     ax : object
         matplotlib Axes object
     """
-    
+    if not np.all(np.isfinite(conv_values)) or np.all(conv_values == 0):
+        return None, None
     fig, ax = plt.subplots()
     ax.plot(np.multiply(conv_intervals, timestep_in_ns), conv_values, 
             linestyle="-", marker="o", markersize=1)
     plt.ylabel("$"+label+"$")
-    plt.xlabel("convergence window")
+    # TODO: change this to plotting over time
+    plt.xlabel("time per anchor (ns)")
     plt.title(title)
     if y_axis_logarithmic:
         plt.yscale("log", nonpositive="mask")
@@ -460,6 +425,8 @@ def plot_dict_conv(conv_dict, conv_intervals, label_base, timestep_in_ns,
     name_list = []
     for key in conv_dict:
         conv_values = conv_dict[key]
+        if not np.all(np.isfinite(conv_values)):
+            continue
         if skip_null:
             if np.linalg.norm(conv_values) < MIN_PLOT_NORM:
                 continue
@@ -468,7 +435,7 @@ def plot_dict_conv(conv_dict, conv_intervals, label_base, timestep_in_ns,
                 map(str, key)) + "$"
             title = "$" + label_base + "_{" + "\\rightarrow".join(
                 map(str, key)) + "}$"
-            name = label_base + "_" + "".join(map(str, key))
+            name = label_base + "_" + "_".join(map(str, key))
         elif isinstance(key, int):
             label = "$" + label_base + "_" + str(key) + "$"
             title = "$" + label_base + "_" + str(key) + "$"
@@ -480,7 +447,8 @@ def plot_dict_conv(conv_dict, conv_intervals, label_base, timestep_in_ns,
         ax.plot(np.multiply(conv_intervals, timestep_in_ns), conv_values, 
                 linestyle='-', marker="o", markersize = 1)
         plt.ylabel(label)
-        plt.xlabel("convergence_window")
+        # TODO: change this to plotting over time
+        plt.xlabel("time per anchor (ns)")
         if y_axis_logarithmic:
             plt.yscale("log", nonpositive="mask")
         plt.title(title)
@@ -489,20 +457,6 @@ def plot_dict_conv(conv_dict, conv_intervals, label_base, timestep_in_ns,
         title_list.append(title)
         name_list.append(name)
     return fig_list, ax_list, title_list, name_list
-
-def calc_window_rmsd(conv_values):
-    """
-    For a window of convergence values, compute the RMSD and average
-    of those values.
-    """
-    if len(conv_values) == 0:
-        return 0.0, 0.0
-    average = np.mean(conv_values)
-    RMSD_sum = 0.0
-    for i, conv_value in enumerate(conv_values):
-        RMSD_sum += (conv_value - average)**2
-    RMSD = np.sqrt(RMSD_sum / len(conv_values))
-    return RMSD, average
 
 def calc_transition_steps(model, data_sample):
     """
@@ -526,7 +480,7 @@ def calc_transition_steps(model, data_sample):
                 continue
         
         elif model.get_type() == "elber":
-            if data_sample.R_i_list[alpha][alpha] == 0.0:
+            if data_sample.R_i_list[alpha] == 0.0:
                 transition_minima.append(0)
                 transition_prob_details.append(transition_detail)
                 transition_time_details.append(transition_time_detail)
@@ -557,9 +511,12 @@ def calc_transition_steps(model, data_sample):
                                 < lowest_value:
                             lowest_value  = 1.0 / k_rate_dict[key]
                     transition_time = lowest_value
+                    if transition_time < model.get_timestep():
+                        transition_time = 0.0
                     
                     transition_detail = {(alpha,alpha):transition_quantity}
-                    transition_time_detail = {(alpha,alpha):transition_time}
+                    #transition_time_detail = {(alpha,alpha):transition_time}
+                    transition_time_detail = {alpha:transition_time}
                     
             elif model.get_type() == "elber":
                 raise Exception("Elber simulations cannot have one milestone.")
@@ -571,7 +528,7 @@ def calc_transition_steps(model, data_sample):
                 
             elif model.get_type() == "elber":
                 transition_dict = data_sample.N_i_j_list[alpha]
-                time_dict = data_sample.R_i_list[alpha]
+                time_dict = {alpha: data_sample.R_i_list[alpha]}
                 
             if len(transition_dict) == 0:
                 transition_quantity = 0
@@ -598,12 +555,28 @@ def calc_transition_steps(model, data_sample):
         transition_time_details.append(transition_time_detail)
     return transition_minima, transition_prob_details, transition_time_details
 
-def calc_RMSD_conv_amount(model, data_sample_list, window_size=30,
-                               number_of_convergence_windows=20):
+def calc_window_rmsd(conv_values):
+    """
+    For a window of convergence values, compute the RMSD and average
+    of those values.
+    """
+    if len(conv_values) == 0:
+        return 0.0, 0.0
+    average = np.mean(conv_values)
+    RMSD_sum = 0.0
+    for conv_value in conv_values:
+        RMSD_sum += (conv_value - average)**2
+    RMSD = np.sqrt(RMSD_sum / len(conv_values))
+    return RMSD, average
+
+def calc_RMSD_conv_amount(model, data_sample_list, window_size=None,
+                               number_of_convergence_windows=1):
     """
     Calculate the RMSD convergence of window spanning a portion of
     a list of data samples.
     """
+    if window_size is None:
+        window_size = DEFAULT_NUM_POINTS // 2
     convergence_results = []
     for alpha, anchor in enumerate(model.anchors):
         if anchor.bulkstate:
@@ -611,7 +584,7 @@ def calc_RMSD_conv_amount(model, data_sample_list, window_size=30,
         conv_list = []
         RMSD_window_conv_list = []
         for window_index in range(number_of_convergence_windows):
-            backwards = number_of_convergence_windows - window_index + 1
+            backwards = number_of_convergence_windows - window_index - 1
             bound1 = len(data_sample_list) - window_size - backwards
             bound2 = len(data_sample_list) - backwards
             for data_sample in data_sample_list[bound1:bound2]:
@@ -620,7 +593,7 @@ def calc_RMSD_conv_amount(model, data_sample_list, window_size=30,
                         RMSD_window_conv_list.append(1e99)
                         break
                 elif model.get_type() == "elber":
-                    if data_sample.R_i_list[alpha][alpha] == 0.0:
+                    if data_sample.R_i_list[alpha] == 0.0:
                         RMSD_window_conv_list.append(1e99)
                         break
                 
@@ -634,8 +607,11 @@ def calc_RMSD_conv_amount(model, data_sample_list, window_size=30,
                             if key[0] == alpha and transition_dict[key] \
                                     < lowest_value:
                                 lowest_value  = transition_dict[key]
-                                conv_quantity \
-                                    = transition_dict[key] / T_alpha
+                                if T_alpha == 0:
+                                    conv_quantity = 1e99
+                                else:
+                                    conv_quantity = transition_dict[key] \
+                                        / T_alpha
                         
                         if lowest_value == 1e99 or lowest_value == 0:
                             RMSD_window_conv_list.append(1e99)
@@ -649,21 +625,24 @@ def calc_RMSD_conv_amount(model, data_sample_list, window_size=30,
                         T_alpha = data_sample.T_alpha[alpha]
                     elif model.get_type() == "elber":
                         transition_dict = data_sample.N_i_j_list[alpha]
-                        T_alpha = data_sample.R_i_list[alpha][alpha]
+                        T_alpha = data_sample.R_i_list[alpha]
                         
                     lowest_value = 1e99
                     
                     for key in transition_dict:
                         if transition_dict[key] < lowest_value:
                             lowest_value  = transition_dict[key]
-                            conv_quantity = transition_dict[key] / T_alpha
+                            if T_alpha == 0:
+                                conv_quantity = 1e99
+                            else:
+                                conv_quantity = transition_dict[key] / T_alpha
                     
                     if lowest_value == 1e99 or lowest_value == 0:
                         RMSD_window_conv_list.append(1e99)
                         break
-                        
-                conv_list.append(conv_quantity)
                 
+                conv_list.append(conv_quantity)
+                                
             RMSD, window_average = calc_window_rmsd(conv_list)
             if window_average == 0.0:
                 RMSD_window_conv_list.append(1e99)
@@ -673,5 +652,5 @@ def calc_RMSD_conv_amount(model, data_sample_list, window_size=30,
             
         max_RMSD = np.max(RMSD_window_conv_list)
         convergence_results.append(max_RMSD)
-    
+        
     return convergence_results

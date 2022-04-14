@@ -264,6 +264,7 @@ class Spherical_cv_input(CV_input):
         last_radius = -1e9
         found_bulk_anchor = False
         for i, input_anchor in enumerate(self.input_anchors):
+            assert input_anchor.__class__.__name__ == "Spherical_cv_anchor"
             radius = input_anchor.radius
             assert radius >= 0.0, "A radius must be greater than "\
                 "or equal to zero."
@@ -618,14 +619,13 @@ class Tiwary_cv_input(CV_input):
     def check(self):
         """
         Check user inputs to ensure they have been entered properly.
-        TODO: REMOVE?
         """
         
         last_value = -1e9
         num_bulk_anchors = 0
         for i, input_anchor in enumerate(self.input_anchors):
+            assert input_anchor.__class__.__name__ == "Tiwary_cv_anchor"
             value = input_anchor.value
-            
             assert value > last_value, "Each subsequent value "\
                 "argument must be greater than the last (sorted)."
             
@@ -800,6 +800,7 @@ class Planar_cv_input(CV_input):
         last_value = -1e9
         num_bulk_anchors = 0
         for i, input_anchor in enumerate(self.input_anchors):
+            assert input_anchor.__class__.__name__ == "Planar_cv_anchor"
             value = input_anchor.value
             assert value > last_value, "Each subsequent value "\
                 "argument must be greater than the last (sorted)."
@@ -975,6 +976,7 @@ class RMSD_cv_input(CV_input):
         last_value = -1e9
         found_bulk_anchor = False
         for i, input_anchor in enumerate(self.input_anchors):
+            assert input_anchor.__class__.__name__ == "RMSD_cv_anchor"
             value = input_anchor.value
             assert value >= 0.0, "A value must be greater than "\
                 "or equal to zero."
@@ -1137,6 +1139,7 @@ class Toy_cv_input(CV_input):
         last_value = -1e9
         found_bulk_anchor = False
         for i, input_anchor in enumerate(self.input_anchors):
+            assert input_anchor.__class__.__name__ == "Toy_cv_anchor"
             value = input_anchor.value
             assert value > last_value, "Each subsequent value "\
                 "argument must be greater than the last (sorted)."

@@ -10,6 +10,7 @@ import pytest
 
 import seekr2.modules.common_base as base
 import seekr2.modules.mmvt_base as mmvt_base
+import seekr2.modules.runner_openmm as runner_openmm
 import seekr2.modules.mmvt_analyze as mmvt_analyze
 from seekr2.tests.conftest import compare_dicts
 import seekr2.run as run
@@ -288,7 +289,10 @@ def make_mmvt_data_sample(model):
         = 100.0
     model.calculation_settings.num_production_steps = num_steps
     model.calculation_settings.energy_reporter_interval = num_steps
-    run.run(model, "1")
+    for anchor in model.anchors:
+        runner_openmm.cleanse_anchor_outputs(
+            model, anchor, skip_umbrella_files=False)
+    run.run(model, "1", force_overwrite = True)
     analysis = analyze.Analysis(model)
     analysis.extract_data()
     analysis.fill_out_data_samples()

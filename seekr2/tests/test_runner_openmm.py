@@ -40,6 +40,8 @@ def test_all_boundaries_have_state(toy_mmvt_model):
 
 def test_elber_anchor_has_umbrella_files(toy_elber_model):
     anchor = toy_elber_model.anchors[1]
+    runner_openmm.cleanse_anchor_outputs(
+        toy_elber_model, anchor, skip_umbrella_files=False)
     assert not runner_openmm.elber_anchor_has_umbrella_files(
         toy_elber_model, anchor)
     prod_dir = os.path.join(

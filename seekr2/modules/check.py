@@ -1049,7 +1049,10 @@ def check_output_files_for_stuck_anchors(model):
                 for line in f.readlines():
                     if line.startswith("#"):
                         continue
-                    cur_time = float(line.strip().split(",")[2])
+                    if line.startswith("CHECKPOINT"):
+                        cur_time = float(line.strip().split(",")[1])
+                    else:
+                        cur_time = float(line.strip().split(",")[2])
                     if cur_time - last_time <= timestep:
                         sequential_bounces += 1
                     else:

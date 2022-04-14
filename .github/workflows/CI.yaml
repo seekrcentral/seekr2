@@ -112,6 +112,9 @@ jobs:
       run: |
         python -m pip install . --no-deps
         conda list
+        
+        # Install seekr systems repository
+        git clone https://github.com/seekrcentral/seekr2_systems.git
 
         # Install seekr openmm plugin
         git clone https://github.com/seekrcentral/seekr2_openmm_plugin.git
@@ -153,6 +156,7 @@ jobs:
         python setup.py install
         python -m openmm.testInstallation
         pytest -v --cov=seekr2 --cov-report=xml --color=yes -m "not needs_cuda" seekr2/tests/
+        # pytest -v --cov=seekr2 --cov-report=xml --color=yes seekr2_systems/tests/
         # python setup.py test
 
     - name: CodeCov

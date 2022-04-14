@@ -29,9 +29,9 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
                         continue
                     line_list = line.strip().split(",")
                     dest_boundary = line_list[0]
-                    transition_counter = line_list[1]
+                    transition_counter = int(line_list[1])
                     incubation_time = float(line_list[2])
-                    line_list = (dest_boundary, incubation_time)
+                    line_list = (dest_boundary, transition_counter, incubation_time)
                     file_lines.append(line_list)
             
             files_lines.append(file_lines)
@@ -45,20 +45,20 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
     
     N_i_j = defaultdict(int)
     R_i_list = []
-    parsed_lines = []
-    
+        
     for counter, line in enumerate(lines):
         
         if line[0].endswith("*"):
             continue
         dest_boundary = int(line[0])
-        incubation_time = float(line[1])
+        transition_counter = line[1]
+        incubation_time = line[2]
         if min_time is not None:
             if counter < min_time:
                 continue
         if max_time is not None:
-            if counter > max_time:
-                continue
+            if transition_counter > max_time:
+                break
             
         if not skip_restart_check:
             assert incubation_time >= 0.0, "incubation times cannot be "\
@@ -67,10 +67,9 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
                 output_file_name, counter)
         N_i_j[dest_boundary] += 1
         R_i_list.append(incubation_time)
-        parsed_lines.append(line)
     
     R_i_total = np.sum(R_i_list)
-    return N_i_j, R_i_total, parsed_lines
+    return N_i_j, R_i_total, lines
         
 class Elber_anchor_statistics():
     """
@@ -111,7 +110,7 @@ class Elber_anchor_statistics():
         return
     
     def read_output_file_list(self, engine, output_file_list, min_time, 
-                              max_time):
+                              max_time, anchor, timestep):
         """Parse the statistics from the plugin's output file."""
         if engine == "openmm":
             self.N_i_j, self.R_i_total, self.existing_lines \

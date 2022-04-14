@@ -146,12 +146,21 @@ def test_Data_sample_parse_browndye_results(host_guest_mmvt_model):
                                      11: 45930}
     counts_bd_milestone0 = data_sample.bd_transition_counts[0]
     compare_dicts(counts_bd_milestone0, expected_counts_bd_milestone0)
+    
     expected_b_surface_probabilities = {"total": 1.0, "escaped": 54070/100000,
                                         12: 65239/100000, 11: 45930/100000, 
                                         "stuck": 0.0}
     b_surface_probabilities \
         = data_sample.bd_transition_probabilities["b_surface"]
     compare_dicts(b_surface_probabilities, expected_b_surface_probabilities)
+    
+    expected_probabilities_bd_milestone0 = {
+        "total": 1.0, "escaped": (65239-45930)/65239, 11: 45930/65239}
+    probabilities_bd_milestone0 \
+        = data_sample.bd_transition_probabilities[0]
+    compare_dicts(probabilities_bd_milestone0, 
+                  expected_probabilities_bd_milestone0)
+    
     k_on = data_sample.b_surface_k_ons_src["total"]
     expected_k_ons = {"total": k_on, "escaped": k_on * 54070/100000,
                       "stuck": 0.0, 12: k_on * 65239/100000, 
@@ -165,6 +174,7 @@ def test_Data_sample_parse_browndye_results(host_guest_mmvt_model):
                           12: k_on * (65239/100000) / np.sqrt(65239-1), 
                           11: k_on * (45930/100000) / np.sqrt(45930-1)}
     compare_dicts(k_on_err, expected_k_ons_err)
+    return
 
 def test_Data_sample_compute_rate_matrix(toy_mmvt_model):
     data_sample = common_analyze.Data_sample(toy_mmvt_model)

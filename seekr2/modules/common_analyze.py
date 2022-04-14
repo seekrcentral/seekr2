@@ -409,7 +409,7 @@ class Data_sample():
                     - transition_counts[inner_milestone_index]
                 transition_counts_bd_milestone["total"] \
                     = transition_counts[outer_milestone_index]
-                if transition_probabilities_bd_milestone["escaped"] == 0:
+                if transition_counts_bd_milestone["escaped"] == 0:
                     transition_probabilities_bd_milestone[
                         inner_milestone_index] = 1.0
                     transition_probabilities_bd_milestone["escaped"] \

@@ -396,4 +396,6 @@ def create_toy_elber_model_input(root_dir):
     model_input.calculation_settings.rev_output_interval = None
     model_input.calculation_settings.fwd_output_interval = None
     model_input.cv_inputs[0].restraining_expression = "0.5*k*(y1-value)^2"
+    model_input.cv_inputs[0].input_anchors[0].starting_positions = np.array(
+        [[[0.0, -0.7, 0.0]]])
     return model_input

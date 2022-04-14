@@ -532,6 +532,7 @@ def run(model, instruction, min_total_simulation_length=None,
     Run all simulations, both MD and BD, as specified by the user 
     inputs.
     """
+    assert catch_erroneous_instruction(instruction)
     curdir = os.getcwd()
     md_complete = False
     bd_complete = False
@@ -805,8 +806,6 @@ if __name__ == "__main__":
     min_b_surface_encounters = args["min_b_surface_encounters"]
     num_rev_launches = args["num_rev_launches"]
     umbrella_restart_mode = args["umbrella_restart_mode"]
-    
-    assert catch_erroneous_instruction(instruction)
     
     model = base.load_model(model_file, directory)
     

@@ -10,7 +10,6 @@ import warnings
 import glob
 from collections import defaultdict
 import math
-from copy import deepcopy
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -29,6 +28,22 @@ def check_graph_connected(graph, state_index1, state_index2):
     A graph is made of anchor indices that have recorded bounces against
     neighboring anchors. If pathways can be found, then sufficient statistics
     likely exist to compute kinetics from the resulting bounces.
+    
+    Parameters:
+    -----------
+    graph : dict
+        A dictionary whose keys are node incides and whose values are
+        lists of connected node indices
+    state_index1 : int
+        The index of the "source" node.
+    state_index2 : int
+        The index o the "sink" node.
+        
+    Returns:
+    --------
+    connected : bool
+        If a valid path can be found between state_index1 and 
+        state_index2, then return True. Otherwise return False.
     """
     max_iter = len(graph) + 5
     if state_index1 == state_index2:
@@ -301,7 +316,7 @@ class Analysis:
                         error_warning_string)
         return True
     
-    def extract_data(self, min_time=None, max_time=None, max_step_list=None):
+    def extract_data(self, min_time=None, max_time=None, max_step=None):
         """
         Extract the data from simulations used in this analysis.
         """
@@ -314,11 +329,14 @@ class Analysis:
         for alpha, anchor in enumerate(self.model.anchors):
             if anchor.bulkstate:
                 continue
-            if max_step_list is not None:
-                max_time = max_step_list[alpha] * timestep
+            
+            if self.model.get_type() == "mmvt":
+                if max_step is not None:
+                    max_time = max_step * timestep
             else:
-                max_time = max_time
-                
+                if max_step is not None:
+                    max_time = max_step
+            
             # These contain only alias_id keys, not the true id values
             if not files_already_read:
                 if self.model.get_type() == "mmvt":
@@ -352,7 +370,7 @@ class Analysis:
                 pass    
             
             if not files_already_read:
-                self.anchor_stats_list.append(anchor_stats)        
+                self.anchor_stats_list.append(anchor_stats)
         return
         
     def check_extraction(self, silent=False):
@@ -504,9 +522,6 @@ class Analysis:
             N_i_j_list.append(N_i_j_element)
             
             anchor_R_i = self.anchor_stats_list[i].R_i_total
-            #R_i_element = defaultdict(float)
-            #R_i_element[i] = anchor_R_i
-            #R_i_total.append(R_i_element)
             R_i_total.append(anchor_R_i)
         
         self.main_data_sample = elber_analyze.Elber_data_sample(

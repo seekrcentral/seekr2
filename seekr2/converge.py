@@ -29,32 +29,36 @@ def converge(model, k_on_state=None, image_directory=None, verbose=False):
         return data_sample_list
     
     k_off_fig, ax = common_converge.plot_scalar_conv(
-        k_off_conv, max_step_list[0,:], title="$k_{off}$ Convergence", 
+        k_off_conv, max_step_list, title="$k_{off}$ Convergence", 
         label="k_{off} (s^{-1})", timestep_in_ns=timestep_in_ns)
     k_on_fig, ax = common_converge.plot_scalar_conv(
-        k_on_conv, max_step_list[0,:], title="$k_{on}$ Convergence", 
+        k_on_conv, max_step_list, title="$k_{on}$ Convergence", 
         label="k_{on} (s^{-1} M^{-1})", timestep_in_ns=timestep_in_ns)
     N_ij_fig_list, ax, N_ij_title_list, N_ij_name_list \
         = common_converge.plot_dict_conv(
-        N_ij_conv, max_step_list[0,:], label_base="avg. N", 
+        N_ij_conv, max_step_list, label_base="N", 
         timestep_in_ns=timestep_in_ns)
     R_i_fig_list, ax, R_i_title_list, R_i_name_list \
         = common_converge.plot_dict_conv(
-        R_i_conv, max_step_list[0,:], label_base="avg. R", 
+        R_i_conv, max_step_list, label_base="R", 
         timestep_in_ns=timestep_in_ns)
     
-    k_off_fig.savefig(os.path.join(image_directory, "k_off_convergence.png"))
-    k_on_fig.savefig(os.path.join(image_directory, "k_on_convergence.png"))
-    for i, (name, title) in enumerate(zip(N_ij_name_list, N_ij_title_list)):
+    if k_off_fig is not None:
+        k_off_fig.savefig(os.path.join(image_directory, "k_off_convergence.png"))
+    if k_on_fig is not None:
+        k_on_fig.savefig(os.path.join(image_directory, "k_on_convergence.png"))
+    for i, name in enumerate(N_ij_name_list):
         N_ij_fig = N_ij_fig_list[i]
-        N_ij_filename = os.path.join(image_directory, common_analyze.N_IJ_DIR, 
-                                     name+".png")
-        N_ij_fig.savefig(N_ij_filename)
-    for i, (name, title) in enumerate(zip(R_i_name_list, R_i_title_list)):
+        if N_ij_fig is not None:
+            N_ij_filename = os.path.join(
+                image_directory, common_analyze.N_IJ_DIR, name+".png")
+            N_ij_fig.savefig(N_ij_filename)
+    for i, name in enumerate(R_i_name_list):
         R_i_fig = R_i_fig_list[i]
-        R_i_filename = os.path.join(image_directory, common_analyze.R_I_DIR, 
-                                    name+".png")
-        R_i_fig.savefig(R_i_filename)
+        if R_i_fig is not None:
+            R_i_filename = os.path.join(
+                image_directory, common_analyze.R_I_DIR, name+".png")
+            R_i_fig.savefig(R_i_filename)
     
     print("All plots have been saved to:", image_directory)
     os.chdir(curdir)
@@ -64,8 +68,9 @@ def print_convergence_results(model, convergence_results, cutoff,
                               transition_results, transition_time_results,
                               minimum_anchor_transitions, 
                               bd_transition_counts={}):
-    """Print the results of a convergence test."""
-    
+    """
+    Print the results of a convergence test.
+    """
     print("Molecular dynamics results:")
     for alpha, anchor in enumerate(model.anchors):
         if anchor.bulkstate:
@@ -91,9 +96,7 @@ def print_convergence_results(model, convergence_results, cutoff,
                     and len(transition_detail) > 1:
                 warnstr = "\n    WARNING: transition time(s) for this "\
                     "milestone are below the recommended minimum "\
-                    "({} ps) ".format(AVG_TRANSITION_TIME_MINIMUM) \
-                    +"You should consider increasing the space between "\
-                    "milestones."
+                    "({} ps) ".format(AVG_TRANSITION_TIME_MINIMUM)
             time_string += " {} : {:.3f},".format(
                 key, transition_avg_times[key])
         anchor_string = " - Anchor {}: ".format(anchor.index) \
@@ -109,29 +112,13 @@ def print_convergence_results(model, convergence_results, cutoff,
         print("Brownian dynamics results:")
         print(" - b-surface reaction counts:")
         for bd_milestone_id in bd_transition_counts["b_surface"]:
-            if bd_milestone_id in ["escaped", "stuck"]:
-                print("     to %s:" % bd_milestone_id, 
+            if bd_milestone_id in ["escaped", "stuck", "total"]:
+                print("     {}:".format(bd_milestone_id), 
                       bd_transition_counts["b_surface"][bd_milestone_id])
             else:
-                print("     to milestone %d:" % bd_milestone_id, 
+                print("     to milestone {}:".format(bd_milestone_id), 
                     bd_transition_counts["b_surface"][bd_milestone_id])
         
-        bd_transition_counts.pop("b_surface")
-        
-        for bd_milestone in model.k_on_info.bd_milestones:
-            if bd_milestone.index in bd_transition_counts:
-                key = bd_milestone.index
-                print(" - BD milestone {} reaction counts:".format(key))
-                for bd_milestone_id in bd_transition_counts[key]:
-                    if bd_milestone_id in ["escaped", "stuck"]:
-                        print("     to %s:" % bd_milestone_id, 
-                              bd_transition_counts[key][bd_milestone_id])
-                    else:
-                        print("     to milestone %d:" % bd_milestone_id, 
-                            bd_transition_counts[key][bd_milestone_id])
-            else:
-                print("No results found for BD milestone {}.".format(
-                    bd_milestone.index))
     else:
         print("No BD results found.")
     
@@ -210,15 +197,13 @@ if __name__ == "__main__":
     
     data_sample_list = converge(model, k_on_state, image_directory, 
                                 verbose=True)
-        
+    main_data_sample = data_sample_list[-1]
     rmsd_convergence_results = common_converge.calc_RMSD_conv_amount(
         model, data_sample_list)
     transition_minima, transition_prob_results, transition_time_results \
         = common_converge.calc_transition_steps(
-        model, data_sample_list[-1])
-
-    bd_transition_counts = data_sample_list[-1].bd_transition_counts
-        
+        model, main_data_sample)
+    bd_transition_counts = main_data_sample.bd_transition_counts
     print_convergence_results(model, rmsd_convergence_results, cutoff, 
                               transition_prob_results, transition_time_results,
                               minimum_anchor_transitions,

@@ -199,7 +199,7 @@ def get_last_bounce(data_file_name):
         if len(lines) == 0:
             return None
         line = lines[-1]
-    if line.startswith("#"):
+    if line.startswith("#") or line.startswith("CHECKPOINT"):
         return None
     else:
         count = int(line.split(",")[1])+1

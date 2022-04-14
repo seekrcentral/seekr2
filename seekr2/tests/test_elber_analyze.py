@@ -36,10 +36,10 @@ def test_openmm_read_output_file_list():
     
     N_i_j, R_i_list, lines = elber_analyze.openmm_read_output_file_list(
         [test_output_filename], min_time=1)
-    assert len(lines) == 7
+    assert len(lines) == 10
     N_i_j, R_i_list, lines = elber_analyze.openmm_read_output_file_list(
         [test_output_filename], max_time=9)
-    assert len(lines) == 8
+    assert len(lines) == 10
     return
 
 def test_Elber_anchor_statistics_read_output_file_list(toy_elber_model):
@@ -53,7 +53,7 @@ def test_Elber_anchor_statistics_read_output_file_list(toy_elber_model):
     min_time = None
     max_time = None
     stats.read_output_file_list(engine, output_file_list, min_time, 
-                              max_time)
+                              max_time, None, None)
     
     N_i_j_exp = {1: 3, 3: 5}
     R_i_exp = 1.324
