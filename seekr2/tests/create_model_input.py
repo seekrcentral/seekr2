@@ -340,7 +340,8 @@ def create_toy_mmvt_model_input(root_dir):
     cv_input1 = common_cv.Toy_cv_input()
     cv_input1.groups = [[0]]
     cv_input1.variable_name = "value"
-    cv_input1.openmm_expression = "step(k*(y1-value))"
+    cv_input1.cv_expression = "y1"
+    #cv_input1.openmm_expression = "step(k*(y1-value))"
     cv_input1.input_anchors = []
     
     values_list = [-0.7, -0.5, -0.3, -0.1, 0.1, 0.3, 0.5, 0.7]
@@ -395,7 +396,7 @@ def create_toy_elber_model_input(root_dir):
     model_input.calculation_settings.fwd_rev_interval = 500
     model_input.calculation_settings.rev_output_interval = None
     model_input.calculation_settings.fwd_output_interval = None
-    model_input.cv_inputs[0].restraining_expression = "0.5*k*(y1-value)^2"
+    #model_input.cv_inputs[0].restraining_expression = "0.5*k*(y1-value)^2"
     model_input.cv_inputs[0].input_anchors[0].starting_positions = np.array(
         [[[0.0, -0.7, 0.0]]])
     return model_input

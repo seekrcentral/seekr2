@@ -29,7 +29,7 @@ def test_check_graph_connected():
 
 def test_Analysis_elber_check_anchor_stats(toy_elber_model):
     num_steps = 10000
-    fwd_rev_interval = 100
+    fwd_rev_interval = 10
     toy_elber_model.openmm_settings.cuda_platform_settings = None
     toy_elber_model.openmm_settings.reference_platform = True
     toy_elber_model.openmm_settings.langevin_integrator.friction_coefficient \
@@ -52,7 +52,7 @@ def test_Analysis_elber_check_anchor_stats(toy_elber_model):
     return
 
 def test_Analysis_mmvt_check_anchor_stats(toy_mmvt_model):
-    num_steps = 100000
+    num_steps = 1000000
     long_timescale_residence_time_in_ps = 1263.06
     toy_mmvt_model.openmm_settings.cuda_platform_settings = None
     toy_mmvt_model.openmm_settings.reference_platform = True

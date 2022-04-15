@@ -259,8 +259,18 @@ def make_mmvt_external_cv_object(external_cv_input, index):
         groups.append(group)
     
     cv = mmvt_base.MMVT_external_CV(index, groups)
-    cv.openmm_expression = external_cv_input.openmm_expression
-    cv.restraining_expression = external_cv_input.restraining_expression
+    cv.cv_expression = external_cv_input.cv_expression
+    assert cv.cv_expression is not None, \
+        "A CV expression is required to define MMVT milestones."
+    if external_cv_input.openmm_expression is None:
+        cv.openmm_expression = "step(k*("+cv.cv_expression+" - value))"
+    else:
+        cv.openmm_expression = external_cv_input.openmm_expression
+    
+    if external_cv_input.restraining_expression is None:
+        cv.restraining_expression = "0.5*k*("+cv.cv_expression+" - value)^2"
+    else:
+        cv.restraining_expression = external_cv_input.restraining_expression
     return cv
     
 # TODO: marked for removal

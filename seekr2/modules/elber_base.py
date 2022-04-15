@@ -366,8 +366,7 @@ class Elber_external_CV(Elber_collective_variable):
         self.index = index
         self.groups = groups
         self.name = "elber_external"
-        #self.openmm_expression = None
-        #self.restraining_expression = None
+        self.cv_expression = None
         self.openmm_umbrella_expression = None
         self.openmm_fwd_rev_expression \
             = None
@@ -548,8 +547,10 @@ class Elber_external_CV(Elber_collective_variable):
             expr_var = "{}={};".format(variable, milestone_variables[variable])
             expr += expr_var
         
+        #expr += base.convert_openmm_to_python_expr(
+        #    "result="+self.openmm_fwd_rev_expression)
         expr += base.convert_openmm_to_python_expr(
-            "result="+self.openmm_fwd_rev_expression)
+            "result="+self.cv_expression)
         mylocals = locals()
         exec(expr, globals(), mylocals)
         result = mylocals["result"]

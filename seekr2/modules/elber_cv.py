@@ -76,7 +76,7 @@ def make_elber_milestoning_objects_spherical(
 
 def make_elber_external_cv_object(external_cv_input, index):
     """
-    Create a SphericalCV object to be placed into the Model.
+    Create a ExternalCV object to be placed into the Model.
     """
     
     groups = []
@@ -84,12 +84,21 @@ def make_elber_external_cv_object(external_cv_input, index):
         groups.append(group)
     
     cv = elber_base.Elber_external_CV(index, groups)
-    cv.openmm_fwd_rev_expression = external_cv_input.openmm_expression
-    assert external_cv_input.openmm_expression is not None, \
-        "An OpenMM expression is required to define Elber milestones."
-    cv.openmm_umbrella_expression = external_cv_input.restraining_expression
-    assert external_cv_input.restraining_expression is not None, \
-        "A restraining expression is required for Elber milestoning."
+    cv.cv_expression = external_cv_input.cv_expression
+    assert cv.cv_expression is not None, \
+        "A CV expression is required to define Elber milestones."
+    
+    cv.cv_expression = external_cv_input.cv_expression
+    if external_cv_input.openmm_expression is None:
+        cv.openmm_fwd_rev_expression = "step(k*("+cv.cv_expression+" - value))"
+    else:
+        cv.openmm_fwd_rev_expression = external_cv_input.openmm_expression
+    
+    if external_cv_input.restraining_expression is None:
+        cv.openmm_umbrella_expression = "0.5*k*("+cv.cv_expression+" - value)^2"
+    else:
+        cv.openmm_umbrella_expression = external_cv_input.restraining_expression
+    
     return cv
     
 def make_elber_milestoning_objects_external(

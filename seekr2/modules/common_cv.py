@@ -1124,6 +1124,7 @@ class Toy_cv_input(CV_input):
     def __init__(self):
         self.index = 0
         self.groups = []
+        self.cv_expression = None
         self.openmm_expression = None
         self.restraining_expression = None
         self.input_anchors = []
