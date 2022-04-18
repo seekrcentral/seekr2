@@ -681,6 +681,8 @@ class Periodic_boundary_conditions():
                 unit.angstroms)
             my_string += add_string_buffer("PMEGridSpacing", 
                                            str(PMEGridSpacing_in_A))
+        else:
+            my_string += add_string_buffer("PME", "no")
         my_string += add_string_buffer("wrapWater", self.wrapWater)
         my_string += add_string_buffer("wrapAll", self.wrapAll)
         my_string += add_string_buffer("wrapNearest", self.wrapNearest)
