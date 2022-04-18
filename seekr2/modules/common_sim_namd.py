@@ -699,7 +699,7 @@ class Periodic_boundary_conditions():
         else:
             assert self.cellBasisVector2 is None
             assert self.cellBasisVector3 is None
-            
+                
         return my_string
             
 class Namd_root():

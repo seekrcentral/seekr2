@@ -31,12 +31,16 @@ Optional Arguments
 **-n NUM_ERROR_SAMPLES, --num_error_samples NUM_ERROR_SAMPLES**
   Specify the number of error samples to generate for estimating 
   error/uncertainty of computed values. Default: 1000.
-
-**-p, --pre_equilibrium_approx**
-  This option uses the pre-equilibrium approximation when computing system 
-  kinetics. This setting may be desirable for very long-timescale kinetic 
-  processes, which might cause the poor matrix conditioning in the milestoning 
-  rate matrix, causing the typical SEEKR2 analysis approach to fail.
+  
+**-S STRIDE_ERROR_SAMPLES, --stride_error_samples STRIDE_ERROR_SAMPLES**
+  Specify the number of strides betweensaved error samples. An argument of 
+  None automatically assigns the quantity at the number of milestones in the 
+  model squared. Default: None
+  
+**-K SKIP_ERROR_SAMPLES, --skip_error_samples SKIP_ERROR_SAMPLES**
+  Specify the number of error samples. An argument of None automatically 
+  assigns the quantity at ten times the number of milestones in the model 
+  squared. Default: None.
 
 **-d IMAGE_DIRECTORY, --image_directory IMAGE_DIRECTORY**
   Define the directory where all plots and images will be saved. By default, 
@@ -47,4 +51,13 @@ Optional Arguments
   By default, post-simulation checks will be run before 
   the analysis is started, and if the checks fail, the analysis will not proceed.
   This argument bypasses those checks and allows the analysis to proceed anyways.
-
+  
+**-t MINIMUM_TIME, --minimum_time MINIMUM_TIME**
+  A user may wish to skip an amount of simulation time for each anchor before 
+  counting the transitions for milestoning analysis. Enter the time (in ps) to 
+  skip a portion of the production simulations when performing analysis.
+  
+**-T MAXIMUM_TIME, --maximum_time MAXIMUM_TIME**
+  A user may wish to stop the analysis of simulation time for each anchor at 
+  a particular time. Enter the time (in ps) at which to end the analysis at 
+  a given anchor if the simulation time exceeds it.

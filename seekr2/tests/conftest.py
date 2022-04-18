@@ -78,6 +78,7 @@ def host_guest_mmvt_model_persistent_namd(tmpdir_factory,
                           force_overwrite=False)
     model_dir = os.path.dirname(model_xml_path)
     host_guest_mmvt_model_obj.anchor_rootdir = os.path.abspath(model_dir)
+    host_guest_mmvt_model_obj.namd_settings.PMEGridSpacing = None
     return host_guest_mmvt_model_obj
 
 @pytest.fixture

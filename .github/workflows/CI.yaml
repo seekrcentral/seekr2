@@ -88,11 +88,11 @@ jobs:
         export TCLDIR=${PWD}/tcl/tcl8.5.9-linux-x86_64
         
         # This was commented before
-        wget http://www.ks.uiuc.edu/Research/namd/libraries/fftw-linux-x86_64.tar.gz
-        tar xzf fftw-linux-x86_64.tar.gz
-        mkdir fftw
-        mv linux-x86_64 fftw
-        export FFTWDIR=${PWD}/fftw/linux-x86_64
+        #wget http://www.ks.uiuc.edu/Research/namd/libraries/fftw-linux-x86_64.tar.gz
+        #tar xzf fftw-linux-x86_64.tar.gz
+        #mkdir fftw
+        #mv linux-x86_64 fftw
+        #export FFTWDIR=${PWD}/fftw/linux-x86_64
         
         git clone https://oauth2:${NAMD_ACCESS_TOKEN2}@gitlab.com/tcbgUIUC/namd.git
         cd namd

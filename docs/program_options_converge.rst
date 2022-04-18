@@ -48,11 +48,3 @@ Optional Arguments
                        Enter a minimum number of transitions that must be 
                        observed per milestone in a given MD anchor as a 
                        criteria for the simulations to be considered converged.
-
--p, --pre_equilibrium_approx
-                       This option uses the pre-equilibrium approximation 
-                       when computing system kinetics. This setting may be 
-                       desirable for very long-timescale kinetic processes, 
-                       which might cause the poor matrix conditioning in the 
-                       milestoning rate matrix, causing the typical SEEKR2 
-                       analysis approach to fail.
