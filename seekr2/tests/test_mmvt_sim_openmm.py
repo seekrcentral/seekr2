@@ -53,7 +53,8 @@ def test_add_simulation(tmp_path, toy_mmvt_model):
     my_sim_openmm = mmvt_sim_openmm.create_sim_openmm(
         toy_mmvt_model, anchor, output_file)
     assert my_sim_openmm.simulation is not None
-    
+
+@pytest.mark.needs_cuda
 def test_mmvt_sim_openmm_amber(tmp_path, host_guest_mmvt_model):
     myanchor = host_guest_mmvt_model.anchors[1]
     output_file = os.path.join(tmp_path, "output.txt")
@@ -98,7 +99,8 @@ def test_get_starting_structure_num_frames(tmp_path, toy_mmvt_model):
     num_frames2 = mmvt_sim_openmm.get_starting_structure_num_frames(
         toy_mmvt_model, myanchor, output_file, load_state_file="dummy")
     assert num_frames2 == 1
-    
+
+@pytest.mark.needs_cuda
 def test_check_if_state_in_anchor(host_guest_mmvt_model):
     state_file = os.path.join(TEST_DIRECTORY, "data/hostguest_state_a1.xml")
     myanchor1 = host_guest_mmvt_model.anchors[1]

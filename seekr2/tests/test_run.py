@@ -262,6 +262,8 @@ def test_normal_restart_openmm(toy_mmvt_model):
     toy_mmvt_model.openmm_settings.cuda_platform_settings = None
     toy_mmvt_model.openmm_settings.reference_platform = True
     toy_mmvt_model.calculation_settings.num_production_steps = first_steps
+    toy_mmvt_model.calculation_settings.trajectory_reporter_interval \
+        = first_steps // 10
     run.run(toy_mmvt_model, "1", force_overwrite=True)
     checkpoint_step = get_checkpoint_step(
         toy_mmvt_model, toy_mmvt_model.anchors[1])
@@ -305,6 +307,8 @@ def test_interruption_restart_openmm(toy_mmvt_model):
         .trajectory_reporter_interval
     num_dcd_frames = num_steps // dcd_interval
     toy_mmvt_model.calculation_settings.num_production_steps = num_steps
+    toy_mmvt_model.calculation_settings.trajectory_reporter_interval \
+        = 10000
     toy_mmvt_model.openmm_settings.cuda_platform_settings = None
     toy_mmvt_model.openmm_settings.reference_platform = True
     try:
