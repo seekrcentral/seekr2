@@ -135,15 +135,15 @@ def test_choose_next_simulation_openmm(toy_mmvt_model):
     toy_mmvt_model.calculation_settings.num_production_steps = 10000
     run.run(toy_mmvt_model, "2", force_overwrite=True)
     anchor_info_to_run = run.choose_next_simulation_openmm(
-        toy_mmvt_model, "2", min_total_simulation_length=200000, 
+        toy_mmvt_model, "2", min_total_simulation_length=20000, 
         max_total_simulation_length=1000000, convergence_cutoff=None, 
         minimum_anchor_transitions=None, force_overwrite=False, 
         umbrella_restart_mode=False, load_state_file=None)
-    assert anchor_info_to_run[0][0] == 100000
+    assert anchor_info_to_run[0][0] == 10000
     #assert anchor_info_to_run[0][1] == 1000
     assert anchor_info_to_run[0][2] == 2
     assert anchor_info_to_run[0][3] == True
-    assert anchor_info_to_run[0][4] == 200000
+    assert anchor_info_to_run[0][4] == 20000
     assert anchor_info_to_run[0][5] == None
     
     # test convergence
@@ -268,10 +268,10 @@ def test_normal_restart_openmm(toy_mmvt_model):
     checkpoint_step = get_checkpoint_step(
         toy_mmvt_model, toy_mmvt_model.anchors[1])
     assert checkpoint_step == first_steps
-    dcd_length1, dcd_file_number1 = get_trajectory_length(toy_mmvt_model, 
-                                        toy_mmvt_model.anchors[1])
-    assert dcd_length1 == num_dcd_frames1
-    assert dcd_file_number1 == 1
+    #dcd_length1, dcd_file_number1 = get_trajectory_length(toy_mmvt_model, 
+    #                                    toy_mmvt_model.anchors[1])
+    #assert dcd_length1 == num_dcd_frames1
+    #assert dcd_file_number1 == 1
     
     second_steps = 20000
     num_dcd_frames2 = second_steps // dcd_interval
@@ -280,10 +280,10 @@ def test_normal_restart_openmm(toy_mmvt_model):
     checkpoint_step = get_checkpoint_step(
         toy_mmvt_model, toy_mmvt_model.anchors[1])
     assert checkpoint_step == second_steps
-    dcd_length2, dcd_file_number2 = get_trajectory_length(toy_mmvt_model, 
-                                        toy_mmvt_model.anchors[1])
-    assert dcd_length2 == num_dcd_frames2
-    assert dcd_file_number2 == 2
+    #dcd_length2, dcd_file_number2 = get_trajectory_length(toy_mmvt_model, 
+    #                                    toy_mmvt_model.anchors[1])
+    #assert dcd_length2 == num_dcd_frames2
+    #assert dcd_file_number2 == 2
     
     # Test that there are two output files
     out_glob = os.path.join(
