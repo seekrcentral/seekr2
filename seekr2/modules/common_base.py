@@ -152,7 +152,7 @@ def convert_openmm_to_python_expr(old_function_str):
     Convert the expression from a form used by OpenMM
     to a form used by Python.
     """
-    new_function_str = re.sub("\^", "**", old_function_str)
+    new_function_str = re.sub(r"\^", "**", old_function_str)
     return new_function_str
 
 class Box_vectors(Serializer):

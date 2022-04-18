@@ -15,3 +15,4 @@ https://seekrtools.readthedocs.io/en/latest/tutorial.html
    :caption: Contents:
 
    tutorial1_hostguest
+   tutorial2_toy_systems

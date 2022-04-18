@@ -28,8 +28,6 @@ file. Some examples of input files can be found in the following locations::
   seekr2/seekr2/data/sample_input_mmvt_openmm.xml
   seekr2/seekr2/data/sample_input_mmvt_namd.xml
   seekr2/seekr2/data/sample_input_elber_openmm.xml
-  seekr2/seekr2/data/trypsin_benzamidine_files/input_tryp_ben_mmvt.xml
-  seekr2/seekr2/data/trypsin_benzamidine_files/input_tryp_ben_elber.xml
   
 Inside these files are entries like temperature, type of calculations, system
 parameters, and starting atomic positions. This file also defines the 
@@ -56,6 +54,9 @@ specified by the <root_directory> tag in the model input XML file.
 More arguments to prepare.py can be found by running prepare.py with the "-h" 
 argument, or by consulting the :doc:`Program Options<program_options>` 
 documentation.
+
+Additionally, more systems and sample input files can be found in the 
+seekr2_systems repository: https://github.com/seekrcentral/seekr2_systems.git.
 
 Run
 ---
