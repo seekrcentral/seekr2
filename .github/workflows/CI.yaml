@@ -157,7 +157,7 @@ jobs:
         python setup.py install
         python -m openmm.testInstallation
         pytest -v --cov=seekr2 --cov-report=xml --color=yes -m "not needs_cuda" seekr2/tests/
-        pytest -v --cov=seekr2_systems --cov-report=xml --color=yes seekr2_systems/tests/
+        pytest -v --cov=seekr2_systems --cov-append --cov-report=xml --color=yes seekr2_systems/tests/
         # python setup.py test
 
     - name: CodeCov
