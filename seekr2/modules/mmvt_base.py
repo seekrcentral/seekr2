@@ -5,6 +5,7 @@ Base classes, objects, and constants used in multiple stages of the
 MMVT calculations.
 """
 import math
+import os
 
 import numpy as np
 from scipy.spatial import transform
@@ -1086,34 +1087,61 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
             
         return True
     
-    """ # TODO: implement if needed. Should be working, just needs tests
-    def check_openmm_context_within_boundary(
+    # TODO: Should be working, just needs tests
+    def get_openmm_context_cv_value(
             self, context, milestone_variables, positions=None, 
             ref_positions=None, verbose=False, tolerance=0.0):
-        ""
-        Check if an OpenMM context describes a system that remains
-        within the expected anchor. Return True if passed, return
-        False if failed.
-        ""
-
+        """
+        
+        """
         system = context.getSystem()
         if positions is None:
             state = context.getState(getPositions=True)
             positions = state.getPositions()
             
         if ref_positions is None:
-            pdb_file = openmm_app.PDBFile(self.ref_structure)
+            pdb_filename = self.ref_structure
+            pdb_file = openmm_app.PDBFile(pdb_filename)
             ref_positions = pdb_file.positions
-            
-        rotation, value, sensitivity = transform.Rotation.align_vectors(
-            positions, ref_positions)
         
-        #value = base.get_openmm_rmsd(
-        #    system, positions, ref_positions, self.group1)
+        pos_subset = []
+        ref_subset = []
+        for atom_index in self.group:
+            pos_subset.append(positions[atom_index].value_in_unit(unit.nanometers))
+            ref_subset.append(ref_positions[atom_index].value_in_unit(unit.nanometers))
+        
+        pos_subset = np.array(pos_subset)
+        ref_subset = np.array(ref_subset)
+        
+        avg_pos = np.array([float(np.mean(pos_subset[:,0])), 
+                            float(np.mean(pos_subset[:,1])), 
+                            float(np.mean(pos_subset[:,2]))])
+        avg_ref = np.array([np.mean(ref_subset[:,0]), 
+                            np.mean(ref_subset[:,1]), 
+                            np.mean(ref_subset[:,2])])        
+        pos_subset_centered = pos_subset - avg_pos
+        ref_subset_centered = ref_subset - avg_ref
+        rotation, value = transform.Rotation.align_vectors(
+            pos_subset_centered, ref_subset_centered)
+        rmsd = value / np.sqrt(len(self.group))
+        return rmsd
+    
+    def check_openmm_context_within_boundary(
+            self, context, milestone_variables, positions=None, 
+            ref_positions=None, verbose=False, tolerance=0.0):
+        """
+        Check if an OpenMM context describes a system that remains
+        within the expected anchor. Return True if passed, return
+        False if failed.
+        """
+        
+        value = self.get_openmm_context_cv_value(
+            context, milestone_variables, positions, 
+            ref_positions, verbose, tolerance)
         result = self.check_value_within_boundary(
             value, milestone_variables, verbose=verbose, tolerance=tolerance)
         return result
-    """
+    
     
     def check_value_within_boundary(self, value, milestone_variables, 
                                     verbose=False, tolerance=0.0):

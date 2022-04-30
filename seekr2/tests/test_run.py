@@ -19,6 +19,7 @@ def get_trajectory_length(model, anchor, top_filename=None):
     dcd_glob = os.path.join(model.anchor_rootdir, anchor.directory, 
         anchor.production_directory, "*.dcd")
     dcd_file_list = glob.glob(dcd_glob)
+    print("dcd_file_list:", dcd_file_list)
     # TODO: won't work for any type of system besides a toy
     if top_filename is None:
         top_filename = os.path.join(model.anchor_rootdir, anchor.directory, 
@@ -93,86 +94,85 @@ def test_choose_next_simulation_browndye2(host_guest_mmvt_model):
 
 def test_choose_next_simulation_openmm(toy_mmvt_model):
     anchor_info_to_run = run.choose_next_simulation_openmm(
-        toy_mmvt_model, "2", min_total_simulation_length=10000, 
-        max_total_simulation_length=100000, convergence_cutoff=None, 
+        toy_mmvt_model, "2", min_total_simulation_length=100000, 
+        max_total_simulation_length=1000000, convergence_cutoff=None, 
         minimum_anchor_transitions=None, force_overwrite=True, 
         umbrella_restart_mode=False, load_state_file=None)
-    assert anchor_info_to_run[0][0] == 10000
+    assert anchor_info_to_run[0][0] == 100000
     assert anchor_info_to_run[0][1] == 0
     assert anchor_info_to_run[0][2] == 2
     assert anchor_info_to_run[0][3] == False
-    assert anchor_info_to_run[0][4] == 10000
+    assert anchor_info_to_run[0][4] == 100000
     assert anchor_info_to_run[0][5] == None
     
     # Test swarm
     anchor_info_to_run = run.choose_next_simulation_openmm(
-        toy_mmvt_model, "0", min_total_simulation_length=10000, 
-        max_total_simulation_length=100000, convergence_cutoff=None, 
+        toy_mmvt_model, "0", min_total_simulation_length=100000, 
+        max_total_simulation_length=1000000, convergence_cutoff=None, 
         minimum_anchor_transitions=None, force_overwrite=True, 
         umbrella_restart_mode=False, load_state_file=None)
-    assert anchor_info_to_run[0][0] == 10000
+    assert anchor_info_to_run[0][0] == 100000
     assert anchor_info_to_run[0][1] == 0
     assert anchor_info_to_run[0][2] == 0
     assert anchor_info_to_run[0][3] == False
-    assert anchor_info_to_run[0][4] == 10000
+    assert anchor_info_to_run[0][4] == 100000
     assert anchor_info_to_run[0][5] == 0
-    assert anchor_info_to_run[1][0] == 10000
+    assert anchor_info_to_run[1][0] == 100000
     assert anchor_info_to_run[1][1] == 0
     assert anchor_info_to_run[1][2] == 0
     assert anchor_info_to_run[1][3] == False
-    assert anchor_info_to_run[1][4] == 10000
+    assert anchor_info_to_run[1][4] == 100000
     assert anchor_info_to_run[1][5] == 1
     
     # Test swarm with loaded state file
     anchor_info_to_run = run.choose_next_simulation_openmm(
-        toy_mmvt_model, "0", min_total_simulation_length=10000, 
-        max_total_simulation_length=100000, convergence_cutoff=None, 
+        toy_mmvt_model, "0", min_total_simulation_length=100000, 
+        max_total_simulation_length=1000000, convergence_cutoff=None, 
         minimum_anchor_transitions=None, force_overwrite=True, 
         umbrella_restart_mode=False, load_state_file="dummy")
     assert anchor_info_to_run[0][5] == None
     
     # Test restart
-    toy_mmvt_model.calculation_settings.num_production_steps = 10000
+    toy_mmvt_model.calculation_settings.num_production_steps = 100000
     run.run(toy_mmvt_model, "2", force_overwrite=True)
     anchor_info_to_run = run.choose_next_simulation_openmm(
-        toy_mmvt_model, "2", min_total_simulation_length=20000, 
-        max_total_simulation_length=1000000, convergence_cutoff=None, 
+        toy_mmvt_model, "2", min_total_simulation_length=200000, 
+        max_total_simulation_length=10000000, convergence_cutoff=None, 
         minimum_anchor_transitions=None, force_overwrite=False, 
         umbrella_restart_mode=False, load_state_file=None)
-    assert anchor_info_to_run[0][0] == 10000
-    #assert anchor_info_to_run[0][1] == 1000
+    assert anchor_info_to_run[0][0] == 100000
     assert anchor_info_to_run[0][2] == 2
     assert anchor_info_to_run[0][3] == True
-    assert anchor_info_to_run[0][4] == 20000
+    assert anchor_info_to_run[0][4] == 200000
     assert anchor_info_to_run[0][5] == None
     
     # test convergence
     anchor_info_to_run = run.choose_next_simulation_openmm(
-        toy_mmvt_model, "2", min_total_simulation_length=10000, 
+        toy_mmvt_model, "2", min_total_simulation_length=100000, 
         max_total_simulation_length=1000000, convergence_cutoff=1e-20, 
         minimum_anchor_transitions=None, force_overwrite=False, 
         umbrella_restart_mode=False, load_state_file=None)
-    #assert anchor_info_to_run[0][0] == 0
-    #assert anchor_info_to_run[0][2] == 2
-    #assert anchor_info_to_run[0][3] == True
-    #assert anchor_info_to_run[0][4] == 10000 + run.CONVERGENCE_INTERVAL
+    assert anchor_info_to_run[0][0] == 0
+    assert anchor_info_to_run[0][2] == 2
+    assert anchor_info_to_run[0][3] == True
+    assert anchor_info_to_run[0][4] == 100000 + run.CONVERGENCE_INTERVAL
     
     # test max
     anchor_info_to_run = run.choose_next_simulation_openmm(
-        toy_mmvt_model, "2", min_total_simulation_length=10000, 
-        max_total_simulation_length=9000, convergence_cutoff=0.000002, 
+        toy_mmvt_model, "2", min_total_simulation_length=100000, 
+        max_total_simulation_length=90000, convergence_cutoff=None, 
         minimum_anchor_transitions=None, force_overwrite=False, 
         umbrella_restart_mode=False, load_state_file=None)
     assert len(anchor_info_to_run) == 0
     
     # test minimum anchor transitions
     anchor_info_to_run = run.choose_next_simulation_openmm(
-        toy_mmvt_model, "2", min_total_simulation_length=10000, 
+        toy_mmvt_model, "2", min_total_simulation_length=100000, 
         max_total_simulation_length=None, convergence_cutoff=None, 
-        minimum_anchor_transitions=10000, force_overwrite=False, 
+        minimum_anchor_transitions=100000, force_overwrite=False, 
         umbrella_restart_mode=False, load_state_file=None)
     assert anchor_info_to_run[0][3] == True
-    assert anchor_info_to_run[0][4] == run.CONVERGENCE_INTERVAL
+    assert anchor_info_to_run[0][4] == 100000 + run.CONVERGENCE_INTERVAL
     
 def test_choose_next_simulation_namd(host_guest_mmvt_model_namd):
     anchor_info_to_run = run.choose_next_simulation_namd(
@@ -268,10 +268,13 @@ def test_normal_restart_openmm(toy_mmvt_model):
     checkpoint_step = get_checkpoint_step(
         toy_mmvt_model, toy_mmvt_model.anchors[1])
     assert checkpoint_step == first_steps
-    #dcd_length1, dcd_file_number1 = get_trajectory_length(toy_mmvt_model, 
-    #                                    toy_mmvt_model.anchors[1])
-    #assert dcd_length1 == num_dcd_frames1
-    #assert dcd_file_number1 == 1
+    dcd_length1, dcd_file_number1 = get_trajectory_length(toy_mmvt_model, 
+                                        toy_mmvt_model.anchors[1])
+    print("dcd_length1:", dcd_length1)
+    print("dcd_file_number1:", dcd_file_number1)
+    
+    assert dcd_length1 == num_dcd_frames1
+    assert dcd_file_number1 == 1
     
     second_steps = 20000
     num_dcd_frames2 = second_steps // dcd_interval
@@ -280,10 +283,13 @@ def test_normal_restart_openmm(toy_mmvt_model):
     checkpoint_step = get_checkpoint_step(
         toy_mmvt_model, toy_mmvt_model.anchors[1])
     assert checkpoint_step == second_steps
-    #dcd_length2, dcd_file_number2 = get_trajectory_length(toy_mmvt_model, 
-    #                                    toy_mmvt_model.anchors[1])
-    #assert dcd_length2 == num_dcd_frames2
-    #assert dcd_file_number2 == 2
+    dcd_length2, dcd_file_number2 = get_trajectory_length(toy_mmvt_model, 
+                                        toy_mmvt_model.anchors[1])
+    print("dcd_length2:", dcd_length2)
+    print("dcd_file_number2:", dcd_file_number2)
+    
+    assert dcd_length2 == num_dcd_frames2
+    assert dcd_file_number2 == 2
     
     # Test that there are two output files
     out_glob = os.path.join(

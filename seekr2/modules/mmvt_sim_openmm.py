@@ -257,6 +257,8 @@ def check_if_state_in_anchor(model, anchor, state_file):
     """
     Given a state file, make sure that it is in the assigned anchor.
     """
+    curdir = os.getcwd()
+    os.chdir(model.anchor_rootdir)
     tmp_path = tempfile.NamedTemporaryFile()
     output_filename = tmp_path.name
     sim_openmm = create_sim_openmm(
@@ -269,5 +271,7 @@ def check_if_state_in_anchor(model, anchor, state_file):
             sim_openmm.simulation.context, milestone.variables, 
             verbose=True)
         if not result:
+            os.chdir(curdir)
             return False
+    os.chdir(curdir)
     return True

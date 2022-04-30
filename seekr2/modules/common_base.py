@@ -606,6 +606,14 @@ def same_amber_params(amber_params1, amber_params2):
     """
     Returns True if both amber_params objects are the same
     """
+    if amber_params1 is None:
+        if amber_params2 is None:
+            return True
+        else:
+            return False
+    if amber_params2 is None:
+        return False
+    
     if amber_params1.prmtop_filename != amber_params2.prmtop_filename:
         return False
     if amber_params1.box_vectors != amber_params2.box_vectors:

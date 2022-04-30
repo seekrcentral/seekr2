@@ -658,6 +658,13 @@ class Tiwary_cv_input(CV_input):
         milestone_index = super(Tiwary_cv_input, self)\
             .make_mmvt_milestone_between_two_anchors(
                 anchor1, anchor2, input_anchor1, input_anchor2, milestone_index)
+        
+        for i, order_parameter_weight in enumerate(
+                self.order_parameter_weights):
+            key = "c{}".format(i)
+            anchor1.milestones[-1].variables[key] = order_parameter_weight
+            anchor2.milestones[-1].variables[key] = order_parameter_weight
+        
         return milestone_index
     
     # TODO: marked for removal
@@ -1063,7 +1070,7 @@ class Toy_cv_anchor(CV_anchor):
         self.value = 0.0
         self.lower_milestone_value = None
         self.upper_milestone_value = None
-        self.starting_positions = []
+        self.starting_positions = None
         self.bound_state = False
         self.bulk_anchor = False
         self.connection_flags = []
@@ -1260,11 +1267,14 @@ class Grid_combo(Combo):
                 # Grid objects with assigned starting positions are meaningless
                 if anchor.__class__.__name__ == "MMVT_toy_anchor":
                     starting_positions = input_anchor.starting_positions
-                else:
-                    starting_positions = input_anchor.starting_amber_params
-                assert starting_positions is None, \
+                    assert starting_positions is None, \
                         "Grid combo cv's with anchors cannot have starting "\
                         "positions. Use HIDR to assign starting positions."
+                else:
+                    starting_positions = input_anchor.starting_amber_params
+                    if anchor.amber_params is None:
+                        anchor.amber_params = starting_positions
+                
                 variable_name = "{}_{}".format(cv_input.variable_name, 
                                            cv_input.index)
                 variable_value = input_anchor.get_variable_value()
