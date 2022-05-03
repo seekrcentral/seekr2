@@ -265,7 +265,8 @@ def planar_mmvt_model_input_persistent(tmpdir_factory):
     """
     Create a model object that is persistent across the tests in this file.
     """
-    rootdir = tmpdir_factory.mktemp("planar_mmvt")
+    #rootdir = tmpdir_factory.mktemp("planar_mmvt")
+    rootdir = "/home/lvotapka/tmp/planar_test"
     planar_mmvt_model_input_persisent_obj \
         = create_model_input.create_planar_mmvt_model_input(rootdir)
     return planar_mmvt_model_input_persisent_obj
@@ -292,6 +293,8 @@ def planar_mmvt_model_persistent(planar_mmvt_model_input_persistent):
                           force_overwrite=False)
     model_dir = os.path.dirname(model_xml_path)
     planar_mmvt_model_obj.anchor_rootdir = os.path.abspath(model_dir)
+    planar_mmvt_model_obj.openmm_settings.cuda_platform_settings = None
+    planar_mmvt_model_obj.openmm_settings.reference_platform = True
     return planar_mmvt_model_obj
 
 @pytest.fixture
@@ -335,6 +338,8 @@ def rmsd_mmvt_model_persistent(rmsd_mmvt_model_input_persistent):
                           force_overwrite=False)
     model_dir = os.path.dirname(model_xml_path)
     rmsd_mmvt_model_obj.anchor_rootdir = os.path.abspath(model_dir)
+    rmsd_mmvt_model_obj.openmm_settings.cuda_platform_settings = None
+    rmsd_mmvt_model_obj.openmm_settings.reference_platform = True
     return rmsd_mmvt_model_obj
 
 @pytest.fixture
@@ -464,6 +469,8 @@ def toy_multi_model_persistent(toy_multi_model_input_persistent):
                           force_overwrite=False)
     model_dir = os.path.dirname(model_xml_path)
     toy_multi_model_obj.anchor_rootdir = os.path.abspath(model_dir)
+    toy_multi_model_obj.anchors[0].starting_positions = np.array([[[-0.7, -0.7, 0.0]]])
+    
     return toy_multi_model_obj
 
 @pytest.fixture

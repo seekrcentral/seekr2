@@ -13,6 +13,7 @@ import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
 import seekr2.modules.common_converge as common_converge
 import seekr2.modules.runner_openmm as runner_openmm
 import seekr2.modules.runner_namd as runner_namd
+import seekr2.modules.check as check
 import seekr2.run as run
 
 def get_trajectory_length(model, anchor, top_filename=None):
@@ -234,7 +235,9 @@ def test_normal_run_openmm(toy_mmvt_model):
     toy_mmvt_model.calculation_settings.num_production_steps = num_steps
     toy_mmvt_model.openmm_settings.cuda_platform_settings = None
     toy_mmvt_model.openmm_settings.reference_platform = True
+    check.check_pre_simulation_all(toy_mmvt_model)
     run.run(toy_mmvt_model, "any", force_overwrite=True)
+    check.check_post_simulation_all(toy_mmvt_model)
     for anchor in toy_mmvt_model.anchors:
         if anchor.bulkstate:
             continue
@@ -445,3 +448,19 @@ def test_normal_restart_namd(host_guest_mmvt_model_namd):
     out_file_list = glob.glob(out_glob)
     assert len(out_file_list) == 2
     return
+
+def test_run_multidim(toy_multi_model):
+    run.run(toy_multi_model, "0", min_total_simulation_length=1000)
+
+def test_run_planar(planar_mmvt_model):
+    check.check_pre_simulation_all(planar_mmvt_model)
+    run.run(planar_mmvt_model, "1", min_total_simulation_length=10,
+            force_overwrite=True)
+    check.check_post_simulation_all(planar_mmvt_model)
+
+def test_run_rmsd(rmsd_mmvt_model):
+    check.check_pre_simulation_all(rmsd_mmvt_model)
+    run.run(rmsd_mmvt_model, "0", min_total_simulation_length=10,
+            force_overwrite=True)
+    check.check_post_simulation_all(rmsd_mmvt_model)
+    pass

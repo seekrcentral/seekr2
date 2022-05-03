@@ -339,7 +339,7 @@ def create_planar_mmvt_model_input(root_dir):
     cv_input1.mobile_group = list(range(147, 162))
     cv_input1.input_anchors = []
     
-    planar_list = [0.0, 0.5, 1.0]
+    planar_list = [0.0, 0.5, 1.5]
     amber_prmtop_filename = os.path.abspath(
         "../data/hostguest_files/hostguest.parm7")
     pdb_filename = os.path.abspath(
