@@ -265,8 +265,7 @@ def planar_mmvt_model_input_persistent(tmpdir_factory):
     """
     Create a model object that is persistent across the tests in this file.
     """
-    #rootdir = tmpdir_factory.mktemp("planar_mmvt")
-    rootdir = "/home/lvotapka/tmp/planar_test"
+    rootdir = tmpdir_factory.mktemp("planar_mmvt")
     planar_mmvt_model_input_persisent_obj \
         = create_model_input.create_planar_mmvt_model_input(rootdir)
     return planar_mmvt_model_input_persisent_obj
