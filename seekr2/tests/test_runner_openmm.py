@@ -7,7 +7,6 @@ test runner_openmm.py script(s)
 import pytest
 import os
 import shutil
-import glob
 import pathlib
 
 import seekr2.modules.mmvt_base as mmvt_base
