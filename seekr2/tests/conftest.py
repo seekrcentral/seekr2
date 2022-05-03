@@ -261,6 +261,92 @@ def tiwary_mmvt_model(tiwary_mmvt_model_persistent):
     return tiwary_mmvt_model
 
 @pytest.fixture(scope="session")
+def planar_mmvt_model_input_persistent(tmpdir_factory):
+    """
+    Create a model object that is persistent across the tests in this file.
+    """
+    rootdir = tmpdir_factory.mktemp("planar_mmvt")
+    planar_mmvt_model_input_persisent_obj \
+        = create_model_input.create_planar_mmvt_model_input(rootdir)
+    return planar_mmvt_model_input_persisent_obj
+
+@pytest.fixture()
+def planar_mmvt_model_input(planar_mmvt_model_input_persistent):
+    """
+    Create a copy of the model input that is not persistent. But this 
+    at least doesn't require us to generate an entirely new model 
+    input.
+    """
+    planar_mmvt_model_input_obj = copy.deepcopy(
+        planar_mmvt_model_input_persistent)
+    return planar_mmvt_model_input_obj
+
+@pytest.fixture(scope="session")
+def planar_mmvt_model_persistent(planar_mmvt_model_input_persistent):
+    """
+    Create a model object that is persistent across the tests in this file.
+    """
+    os.chdir(TEST_DIRECTORY)
+    planar_mmvt_model_obj, model_xml_path \
+        = prepare.prepare(planar_mmvt_model_input_persistent, 
+                          force_overwrite=False)
+    model_dir = os.path.dirname(model_xml_path)
+    planar_mmvt_model_obj.anchor_rootdir = os.path.abspath(model_dir)
+    return planar_mmvt_model_obj
+
+@pytest.fixture
+def planar_mmvt_model(planar_mmvt_model_persistent):
+    """
+    Create a copy of the model that is not persistent. But this at least
+    doesn't require us to generate an entirely new model
+    """
+    planar_mmvt_model = copy.deepcopy(planar_mmvt_model_persistent)
+    return planar_mmvt_model
+
+@pytest.fixture(scope="session")
+def rmsd_mmvt_model_input_persistent(tmpdir_factory):
+    """
+    Create a model object that is persistent across the tests in this file.
+    """
+    rootdir = tmpdir_factory.mktemp("rmsd_mmvt")
+    rmsd_mmvt_model_input_persisent_obj \
+        = create_model_input.create_rmsd_mmvt_model_input(rootdir)
+    return rmsd_mmvt_model_input_persisent_obj
+
+@pytest.fixture()
+def rmsd_mmvt_model_input(rmsd_mmvt_model_input_persistent):
+    """
+    Create a copy of the model input that is not persistent. But this 
+    at least doesn't require us to generate an entirely new model 
+    input.
+    """
+    rmsd_mmvt_model_input_obj = copy.deepcopy(
+        rmsd_mmvt_model_input_persistent)
+    return rmsd_mmvt_model_input_obj
+
+@pytest.fixture(scope="session")
+def rmsd_mmvt_model_persistent(rmsd_mmvt_model_input_persistent):
+    """
+    Create a model object that is persistent across the tests in this file.
+    """
+    os.chdir(TEST_DIRECTORY)
+    rmsd_mmvt_model_obj, model_xml_path \
+        = prepare.prepare(rmsd_mmvt_model_input_persistent, 
+                          force_overwrite=False)
+    model_dir = os.path.dirname(model_xml_path)
+    rmsd_mmvt_model_obj.anchor_rootdir = os.path.abspath(model_dir)
+    return rmsd_mmvt_model_obj
+
+@pytest.fixture
+def rmsd_mmvt_model(rmsd_mmvt_model_persistent):
+    """
+    Create a copy of the model that is not persistent. But this at least
+    doesn't require us to generate an entirely new model
+    """
+    rmsd_mmvt_model = copy.deepcopy(rmsd_mmvt_model_persistent)
+    return rmsd_mmvt_model
+
+@pytest.fixture(scope="session")
 def toy_mmvt_model_input_persistent(tmpdir_factory):
     """
     Create a model object that is persistent across the tests in this file.
@@ -345,6 +431,50 @@ def toy_elber_model(toy_elber_model_persistent):
     """
     toy_elber_model = copy.deepcopy(toy_elber_model_persistent)
     return toy_elber_model
+
+@pytest.fixture(scope="session")
+def toy_multi_model_input_persistent(tmpdir_factory):
+    """
+    Create a model object that is persistent across the tests in this file.
+    """
+    rootdir = tmpdir_factory.mktemp("toy_multi")
+    toy_multi_model_input_persisent_obj \
+        = create_model_input.create_toy_multi_model_input(rootdir)
+    return toy_multi_model_input_persisent_obj
+
+@pytest.fixture()
+def toy_multi_model_input(toy_multi_model_input_persistent):
+    """
+    Create a copy of the model input that is not persistent. But this 
+    at least doesn't require us to generate an entirely new model 
+    input.
+    """
+    toy_multi_model_input_obj = copy.deepcopy(
+        toy_multi_model_input_persistent)
+    return toy_multi_model_input_obj
+
+@pytest.fixture(scope="session")
+def toy_multi_model_persistent(toy_multi_model_input_persistent):
+    """
+    Create a model object that is persistent across the tests in this file.
+    """
+    os.chdir(TEST_DIRECTORY)
+    toy_multi_model_obj, model_xml_path \
+        = prepare.prepare(toy_multi_model_input_persistent, 
+                          force_overwrite=False)
+    model_dir = os.path.dirname(model_xml_path)
+    toy_multi_model_obj.anchor_rootdir = os.path.abspath(model_dir)
+    return toy_multi_model_obj
+
+@pytest.fixture
+def toy_multi_model(toy_multi_model_persistent):
+    """
+    Create a copy of the model that is not persistent. But this at least
+    doesn't require us to generate an entirely new model
+    """
+    toy_multi_model = copy.deepcopy(toy_multi_model_persistent)
+    return toy_multi_model
+
 
 def compare_dicts(dict1, dict2):
     """

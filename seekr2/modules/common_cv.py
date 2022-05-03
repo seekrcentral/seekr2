@@ -13,7 +13,6 @@ from abserdes import Serializer
 import seekr2.modules.common_base as base
 import seekr2.modules.mmvt_base as mmvt_base
 import seekr2.modules.elber_base as elber_base
-import seekr2.modules.mmvt_cv as mmvt_cv
 
 def create_anchor(model, anchor_index):
     """
@@ -66,7 +65,8 @@ def assign_state_point(state_point, model):
     
     if not already_found_anchor:
         raise Exception(
-            "Cannot assign state point named {}: no suitable anchors found.".format(
+            "Cannot assign state point named {}: no suitable anchors found. "\
+            "The point might be located on a milestone.".format(
                 state_point.name))
     return
 
@@ -76,6 +76,7 @@ def assign_state_points(model_input, model):
     """
     for cv_input in model_input.cv_inputs:
         for state_point in cv_input.state_points:
+            state_point.expand_state_point(cv_input)
             assign_state_point(state_point, model)
     return
 
@@ -88,6 +89,23 @@ class State_point(Serializer):
     def __init__(self):
         self.name = ""
         self.location = []
+        return
+        
+    def expand_state_point(self, cv_input):
+        if isinstance(cv_input, Toy_cv_input):
+            self.location = [[self.location]]
+        else:
+            self.location = [self.location]
+        if isinstance(cv_input, Combo):
+            old_location = self.location[0]
+            self.location = []
+            for inner_cv_input in cv_input.cv_inputs:
+                if isinstance(inner_cv_input, Toy_cv_input):
+                    self.location.append([old_location])
+                else:
+                    self.location.append(old_location)
+        
+        return
 
 class CV_input(Serializer):
     """
@@ -181,7 +199,6 @@ class Spherical_cv_anchor(CV_anchor):
         self.bound_state = False
         self.bulk_anchor = False
         self.connection_flags = []
-        self.state_points = []
         return
         
     def check(self, j, cv_input):
@@ -246,16 +263,6 @@ class Spherical_cv_input(CV_input):
         self.state_points = []
         return
         
-    def read_plain_input(self, inputs):
-        """
-        Read a plain input file (as opposed to an XML)
-        TODO: REMOVE?
-        """
-        
-        raise Exception("Reading a plain text file is not yet implemented. "\
-                        "Only an XML CV input may be read at this time.")
-        return
-    
     def check(self):
         """
         Check user inputs to ensure they have been entered properly.
@@ -337,17 +344,6 @@ class Spherical_cv_input(CV_input):
         milestone_index += 1
         return milestone_index
     
-    # TODO: marked for removal
-    """
-    def make_mmvt_milestoning_objects(self, milestone_alias, milestone_index, 
-                                      input_anchor_index, anchor_index):
-        milestones, milestone_alias, milestone_index = \
-            mmvt_cv.make_mmvt_milestoning_objects_spherical(
-            self, milestone_alias, milestone_index, input_anchor_index, 
-            anchor_index, self.input_anchors)
-        return milestones, milestone_alias, milestone_index
-    """
-    
 class Tiwary_cv_anchor(CV_anchor):
     """
     This object represents an anchor within a Tiwary-style CV,
@@ -394,7 +390,6 @@ class Tiwary_cv_anchor(CV_anchor):
         self.bound_state = False
         self.bulk_anchor = False
         self.connection_flags = []
-        self.state_points = []
         return
         
     def check(self, j, cv_input):
@@ -607,15 +602,6 @@ class Tiwary_cv_input(CV_input):
         self.state_points = []
         return
         
-    def read_plain_input(self, inputs):
-        """
-        Read a plain input file (as opposed to an XML)
-        """
-        
-        raise Exception("Reading a plain text file is not yet implemented. "\
-                        "Only an XML CV input may be read at this time.")
-        return
-    
     def check(self):
         """
         Check user inputs to ensure they have been entered properly.
@@ -667,17 +653,6 @@ class Tiwary_cv_input(CV_input):
         
         return milestone_index
     
-    # TODO: marked for removal
-    """
-    def make_mmvt_milestoning_objects(self, milestone_alias, milestone_index, 
-                                      input_anchor_index, anchor_index):
-        milestones, milestone_alias, milestone_index = \
-            mmvt_cv.make_mmvt_milestoning_objects_tiwary(
-            self, milestone_alias, milestone_index, input_anchor_index, 
-            anchor_index, self.input_anchors)
-        return milestones, milestone_alias, milestone_index
-    """
-    
 class Planar_cv_anchor(CV_anchor):
     """
     This object represents an anchor within the planar incremental
@@ -725,7 +700,6 @@ class Planar_cv_anchor(CV_anchor):
         self.bound_state = False
         self.bulk_anchor = False
         self.connection_flags = []
-        self.state_points = []
         return
         
     def check(self, j, cv_input):
@@ -775,8 +749,8 @@ class Planar_cv_input(CV_input):
         is the other end of the CV distance vector.
         
     input_anchors : list
-        A list of Spherical_cv_anchor objects which specify inputs for
-        the spherical anchors.
+        A list of Planar_cv_anchor objects which specify inputs for
+        the planar anchors.
     """
     
     def __init__(self):
@@ -789,16 +763,6 @@ class Planar_cv_input(CV_input):
         self.state_points = []
         return
         
-    def read_plain_input(self, inputs):
-        """
-        Read a plain input file (as opposed to an XML)
-        TODO: REMOVE?
-        """
-        
-        raise Exception("Reading a plain text file is not yet implemented. "\
-                        "Only an XML CV input may be read at this time.")
-        return
-    
     def check(self):
         """
         Check user inputs to ensure they have been entered properly.
@@ -846,17 +810,6 @@ class Planar_cv_input(CV_input):
                 anchor1, anchor2, input_anchor1, input_anchor2, milestone_index)
         return milestone_index
     
-    #TODO: marked for removal
-    """
-    def make_mmvt_milestoning_objects(self, milestone_alias, milestone_index, 
-                                      input_anchor_index, anchor_index):
-        milestones, milestone_alias, milestone_index = \
-            mmvt_cv.make_mmvt_milestoning_objects_planar(
-            self, milestone_alias, milestone_index, input_anchor_index,
-            anchor_index, self.input_anchors)
-        return milestones, milestone_alias, milestone_index
-    """
-
 class RMSD_cv_anchor(CV_anchor):
     """
     This object represents an anchor within an RMSD CV. Used for input 
@@ -902,7 +855,6 @@ class RMSD_cv_anchor(CV_anchor):
         self.bound_state = False
         self.bulk_anchor = False
         self.connection_flags = []
-        self.state_points = []
         return
         
     def check(self, j, cv_input):
@@ -965,16 +917,6 @@ class RMSD_cv_input(CV_input):
         self.state_points = []
         return
         
-    def read_plain_input(self, inputs):
-        """
-        Read a plain input file (as opposed to an XML)
-        TODO: REMOVE?
-        """
-        
-        raise Exception("Reading a plain text file is not yet implemented. "\
-                        "Only an XML CV input may be read at this time.")
-        return
-    
     def check(self):
         """
         Check user inputs to ensure they have been entered properly.
@@ -1018,17 +960,6 @@ class RMSD_cv_input(CV_input):
             .make_mmvt_milestone_between_two_anchors(
                 anchor1, anchor2, input_anchor1, input_anchor2, milestone_index)
         return milestone_index
-    
-    # TODO: marked for removal
-    """
-    def make_mmvt_milestoning_objects(self, milestone_alias, milestone_index, 
-                                      input_anchor_index, anchor_index):
-        milestones, milestone_alias, milestone_index = \
-            mmvt_cv.make_mmvt_milestoning_objects_RMSD(
-            self, milestone_alias, milestone_index, input_anchor_index, 
-            anchor_index, self.input_anchors)
-        return milestones, milestone_alias, milestone_index
-    """
     
 class Toy_cv_anchor(CV_anchor):
     """
@@ -1074,7 +1005,6 @@ class Toy_cv_anchor(CV_anchor):
         self.bound_state = False
         self.bulk_anchor = False
         self.connection_flags = []
-        self.state_points = []
         return
         
     def check(self, j, cv_input):
@@ -1192,17 +1122,6 @@ class Toy_cv_input(CV_input):
                 anchor1, anchor2, input_anchor1, input_anchor2, milestone_index)
         return milestone_index
     
-    # TODO: marked for removal
-    """
-    def make_mmvt_milestoning_objects(self, milestone_alias, milestone_index, 
-                                      input_anchor_index, anchor_index):
-        milestones, milestone_alias, milestone_index = \
-            mmvt_cv.make_mmvt_milestoning_objects_external(
-            self, milestone_alias, milestone_index, input_anchor_index, 
-            anchor_index, self.input_anchors)
-        return milestones, milestone_alias, milestone_index
-    """
-
 class Combo(Serializer):
     """
     A combo superclass - a way to combine CVs in a multidimensional

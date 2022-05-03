@@ -19,13 +19,14 @@ def get_trajectory_length(model, anchor, top_filename=None):
     dcd_glob = os.path.join(model.anchor_rootdir, anchor.directory, 
         anchor.production_directory, "*.dcd")
     dcd_file_list = glob.glob(dcd_glob)
+    dcd_file_len = len(dcd_file_list)
     print("dcd_file_list:", dcd_file_list)
     # TODO: won't work for any type of system besides a toy
     if top_filename is None:
         top_filename = os.path.join(model.anchor_rootdir, anchor.directory, 
             anchor.building_directory, "toy.pdb")
     traj = mdtraj.load(dcd_file_list, top=top_filename)
-    return len(traj), len(dcd_file_list)
+    return len(traj), dcd_file_len
 
 def get_checkpoint_step(model, anchor):
     dummy_file = tempfile.NamedTemporaryFile()

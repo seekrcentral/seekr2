@@ -313,6 +313,96 @@ def create_tiwary_mmvt_model_input(root_dir):
     
     return model_input
 
+def create_planar_mmvt_model_input(root_dir):
+    """
+    Create a generic host-guest model input object.
+    """
+    os.chdir(TEST_DIRECTORY)
+    model_input = common_prepare.Model_input()
+    model_input.calculation_type = "mmvt"
+    model_input.calculation_settings = common_prepare.MMVT_input_settings()
+    model_input.calculation_settings.md_output_interval = 10000
+    model_input.calculation_settings.md_steps_per_anchor = 100000 #1000000
+    model_input.temperature = 298.15
+    model_input.pressure = 1.0
+    model_input.ensemble = "nvt"
+    model_input.root_directory = root_dir
+    model_input.md_program = "openmm"
+    model_input.constraints = "HBonds"
+    model_input.rigidWater = True
+    model_input.hydrogenMass = None
+    model_input.timestep = 0.002
+    model_input.nonbonded_cutoff = 0.9
+    cv_input1 = common_cv.Planar_cv_input()
+    cv_input1.start_group = [23]
+    cv_input1.end_group = [112]
+    cv_input1.mobile_group = list(range(147, 162))
+    cv_input1.input_anchors = []
+    
+    planar_list = [0.0, 0.5, 1.0]
+    amber_prmtop_filename = os.path.abspath(
+        "../data/hostguest_files/hostguest.parm7")
+    pdb_filename = os.path.abspath(
+        "../data/hostguest_files/hostguest_at0.5.pdb")
+    for i, value in enumerate(planar_list):
+        input_anchor = common_cv.Planar_cv_anchor()
+        input_anchor.value = value
+        if i == 1:
+            assign_amber_params(input_anchor, amber_prmtop_filename, 
+                                pdb_filename)
+        input_anchor.bound_state = False
+        input_anchor.bulk_anchor = False
+        cv_input1.input_anchors.append(input_anchor)
+    
+    model_input.cv_inputs = [cv_input1]
+    model_input.browndye_settings_input = None
+    return model_input
+
+def create_rmsd_mmvt_model_input(root_dir):
+    """
+    Create a generic host-guest model input object.
+    """
+    os.chdir(TEST_DIRECTORY)
+    model_input = common_prepare.Model_input()
+    model_input.calculation_type = "mmvt"
+    model_input.calculation_settings = common_prepare.MMVT_input_settings()
+    model_input.calculation_settings.md_output_interval = 10000
+    model_input.calculation_settings.md_steps_per_anchor = 100000 #1000000
+    model_input.temperature = 298.15
+    model_input.pressure = 1.0
+    model_input.ensemble = "nvt"
+    model_input.root_directory = root_dir
+    model_input.md_program = "openmm"
+    model_input.constraints = "HBonds"
+    model_input.rigidWater = True
+    model_input.hydrogenMass = None
+    model_input.timestep = 0.002
+    model_input.nonbonded_cutoff = 0.9
+    cv_input1 = common_cv.RMSD_cv_input()
+    cv_input1.group = list(range(147, 162))
+    pdb_filename = os.path.abspath(
+        "../data/hostguest_files/hostguest_at0.5.pdb")
+    cv_input1.ref_structure = pdb_filename
+    cv_input1.input_anchors = []
+    
+    rmsd_list = [0.0, 0.5, 1.0]
+    amber_prmtop_filename = os.path.abspath(
+        "../data/hostguest_files/hostguest.parm7")
+    for i, value in enumerate(rmsd_list):
+        input_anchor = common_cv.RMSD_cv_anchor()
+        input_anchor.value = value
+        if i == 0:
+            assign_amber_params(input_anchor, amber_prmtop_filename, 
+                                pdb_filename)
+        input_anchor.bound_state = False
+        input_anchor.bulk_anchor = False
+    
+        cv_input1.input_anchors.append(input_anchor)
+    
+    model_input.cv_inputs = [cv_input1]
+    model_input.browndye_settings_input = None
+    return model_input
+
 def create_toy_mmvt_model_input(root_dir):
     """
     Create a toy mmvt model input.
@@ -399,4 +489,81 @@ def create_toy_elber_model_input(root_dir):
     #model_input.cv_inputs[0].restraining_expression = "0.5*k*(y1-value)^2"
     model_input.cv_inputs[0].input_anchors[0].starting_positions = np.array(
         [[[0.0, -0.7, 0.0]]])
+    return model_input
+
+def create_toy_multi_model_input(root_dir):
+    """
+    Create a toy mmvt multidimensional model input.
+    
+    This is the Entropy barrier system.
+    """
+    os.chdir(TEST_DIRECTORY)
+    model_input = common_prepare.Model_input()
+    model_input.calculation_type = "mmvt"
+    model_input.calculation_settings = common_prepare.MMVT_input_settings()
+    model_input.calculation_settings.md_output_interval = 1000
+    model_input.calculation_settings.md_steps_per_anchor = 100000
+    model_input.temperature = 300.0
+    model_input.pressure = 1.0
+    model_input.ensemble = "nvt"
+    model_input.root_directory = root_dir
+    model_input.md_program = "openmm"
+    model_input.constraints = "none"
+    model_input.rigidWater = True
+    model_input.hydrogenMass = None
+    model_input.integrator_type = "langevin"
+    model_input.timestep = 0.002
+    model_input.nonbonded_cutoff = None
+    
+    combo = common_cv.Grid_combo()
+    
+    cv_input1 = common_cv.Toy_cv_input()
+    cv_input1.groups = [[0]]
+    cv_input1.variable_name = "value"
+    cv_input1.cv_expression = "x1"
+    cv_input1.openmm_expression = "step(k*(x1-value))"
+    cv_input1.input_anchors = []
+    
+    cv_input2 = common_cv.Toy_cv_input()
+    cv_input2.groups = [[0]]
+    cv_input2.variable_name = "value"
+    cv_input2.cv_expression = "y1"
+    cv_input2.openmm_expression = "step(k*(y1-value))"
+    cv_input2.input_anchors = []
+    
+    values_list = [-0.7, -0.5, -0.3, -0.1, 0.1, 0.3, 0.5, 0.7]
+    
+    for i, value in enumerate(values_list):
+        input_anchor = common_cv.Toy_cv_anchor()
+        input_anchor.value = value
+        input_anchor.starting_positions = None
+        input_anchor.bound_state = False
+        input_anchor.bulk_anchor = False    
+        cv_input1.input_anchors.append(input_anchor)
+        
+    for i, value in enumerate(values_list):
+        input_anchor = common_cv.Toy_cv_anchor()
+        input_anchor.value = value
+        input_anchor.starting_positions = None
+        input_anchor.bound_state = False
+        input_anchor.bulk_anchor = False    
+        cv_input2.input_anchors.append(input_anchor)
+    
+    combo.cv_inputs = [cv_input1, cv_input2]
+    stateA = common_cv.State_point()
+    stateA.name = "stateA"
+    stateA.location = [0.1, -0.7, 0.0]
+    stateB = common_cv.State_point()
+    stateB.name = "stateB"
+    stateB.location = [0.1, 0.7, 0.0]
+    combo.state_points = [stateA, stateB]
+    
+    model_input.cv_inputs = [combo]
+    model_input.browndye_settings_input = None
+    model_input.toy_settings_input = common_prepare.Toy_settings_input()
+    model_input.toy_settings_input.potential_energy_expression \
+        = "5*(x1^6+y1^6+exp(-(10*y1)^2)*(1-exp(-(10*x1)^2)))"
+    model_input.toy_settings_input.num_particles = 1
+    model_input.toy_settings_input.masses = np.array([10.0])
+    
     return model_input
