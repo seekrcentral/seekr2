@@ -450,7 +450,20 @@ def test_normal_restart_namd(host_guest_mmvt_model_namd):
     return
 
 def test_run_multidim(toy_multi_model):
+    check.check_pre_simulation_all(toy_multi_model)
     run.run(toy_multi_model, "0", min_total_simulation_length=1000)
+    check.check_post_simulation_all(toy_multi_model)
+    
+def test_run_elber(toy_elber_model):
+    check.check_pre_simulation_all(toy_elber_model)
+    run.run(toy_elber_model, "0", min_total_simulation_length=1000)
+    check.check_post_simulation_all(toy_elber_model)
+
+def test_run_tiwary(tiwary_mmvt_model):
+    check.check_pre_simulation_all(tiwary_mmvt_model)
+    run.run(tiwary_mmvt_model, "0", min_total_simulation_length=10,
+            force_overwrite=True)
+    check.check_post_simulation_all(tiwary_mmvt_model)
 
 def test_run_planar(planar_mmvt_model):
     check.check_pre_simulation_all(planar_mmvt_model)
