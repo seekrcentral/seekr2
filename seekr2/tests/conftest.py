@@ -248,6 +248,8 @@ def tiwary_mmvt_model_persistent(tiwary_mmvt_model_input_persistent):
         = prepare.prepare(tiwary_mmvt_model_input_persistent, 
                           force_overwrite=False)
     model_dir = os.path.dirname(model_xml_path)
+    tiwary_mmvt_model_obj.openmm_settings.cuda_platform_settings = None
+    tiwary_mmvt_model_obj.openmm_settings.reference_platform = True
     tiwary_mmvt_model_obj.anchor_rootdir = os.path.abspath(model_dir)
     return tiwary_mmvt_model_obj
 
