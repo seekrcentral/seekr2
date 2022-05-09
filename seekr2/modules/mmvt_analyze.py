@@ -55,6 +55,8 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
     Read the output files produced by the plugin (backend) of 
     SEEKR2 and extract transition statistics and times
     """
+    assert len(output_file_list) > 0, "No output files provided."
+    directory = os.path.dirname(output_file_list[0])
     MAX_ITER = 1000000000
     NEW_SWARM = "NEW_SWARM"
     swarm_index = 0
@@ -126,7 +128,8 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
                 counter = 0
                 
                 if file_lines[-1]==NEW_SWARM:
-                    file_lines.pop()
+                    lines.append(NEW_SWARM)
+                    file_lines.pop()                    
                 
                 if len(file_lines) == 0:
                     continue
@@ -137,6 +140,8 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
                         break
                     if file_lines[-1]==NEW_SWARM:
                         file_lines.pop()
+                        lines.append(NEW_SWARM)
+                        break
                         
                     counter += 1
                 
@@ -184,8 +189,8 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
             if not skip_restart_check:
                 assert time_diff >= 0.0, "incubation times cannot be "\
                     "negative. Has an output file been concatenated "\
-                    "incorrectly? file name(s): %s, line number: %d" % (
-                    ",".join(output_file_list), counter)
+                    "incorrectly? directory: %s, line number: %d" % (
+                    directory, counter)
             N_i_j_alpha[(src_boundary, dest_boundary)] += 1
             R_i_alpha_list[src_boundary].append(time_diff)
             src_boundary = dest_boundary
@@ -195,8 +200,8 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
         N_alpha_beta[dest_boundary] += 1
         assert dest_time - last_bounce_time >= 0.0, "times between bounces "\
             "cannot be negative. bounce index: "\
-            "{}, Dest_time: {}, last_bounce_time: {}".format(
-                bounce_index, dest_time, last_bounce_time)
+            "{}, Dest_time: {}, last_bounce_time: {}, directory: {}".format(
+                bounce_index, dest_time, last_bounce_time, directory)
         T_alpha_list.append(dest_time - last_bounce_time)
         last_bounce_time = dest_time
     
