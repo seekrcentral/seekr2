@@ -55,8 +55,6 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
     Read the output files produced by the plugin (backend) of 
     SEEKR2 and extract transition statistics and times
     """
-    assert len(output_file_list) > 0, "No output files provided."
-    directory = os.path.dirname(output_file_list[0])
     MAX_ITER = 1000000000
     NEW_SWARM = "NEW_SWARM"
     swarm_index = 0
@@ -184,6 +182,10 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
             last_bounce_time = dest_time
             continue
         
+        directory = None
+        if len(output_file_list) > 0:
+            directory = os.path.dirname(output_file_list[0])
+            
         if src_boundary != dest_boundary:
             time_diff = dest_time - src_time
             if not skip_restart_check:

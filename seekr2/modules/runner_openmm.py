@@ -579,6 +579,9 @@ class Runner_openmm():
             = calc_settings.fwd_energy_reporter_interval
         fwd_traj_reporter = self.sim_openmm.fwd_traj_reporter
         
+        print("calc_settings.fwd_rev_interval:", calc_settings.fwd_rev_interval)
+        print("calc_settings.num_umbrella_stage_steps:", calc_settings.num_umbrella_stage_steps)
+        
         assert calc_settings.fwd_rev_interval \
             < calc_settings.num_umbrella_stage_steps, \
             "The interval between reversal/forward trajectories must be less "\
