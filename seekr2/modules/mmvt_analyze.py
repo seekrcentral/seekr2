@@ -730,13 +730,15 @@ class MMVT_data_sample(common_analyze.Data_sample):
         # First, determine if there is a bulk anchor, and if so, use it as
         # the "pivot", if not, make our own pivot.
         # The "pivot" is the entry in the flux_matrix that 
+        
+        # TODO: replace with model.get_bulk_index() function
         bulk_index = None
         for alpha, anchor in enumerate(self.model.anchors):
             if anchor.bulkstate:
                 assert bulk_index is None, "Only one bulk state is allowed "\
                     "in model"
                 bulk_index = alpha
-                
+        
         if bulk_index is None:
             # Then we have a model without a bulk anchor: we need to make our
             # own pivot

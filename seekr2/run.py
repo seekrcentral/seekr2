@@ -593,7 +593,10 @@ def run(model, instruction, min_total_simulation_length=None,
                 elif isinstance(load_state_file, str):
                     load_state_file_instance = load_state_file
                 elif isinstance(load_state_file, list):
-                    load_state_file_instance = load_state_file[swarm_index]
+                    if swarm_index is None:
+                        load_state_file_instance = load_state_file[0]
+                    else:
+                        load_state_file_instance = load_state_file[swarm_index]
                 else:
                     raise Exception(
                         "load_state_file must be None, str, or list")

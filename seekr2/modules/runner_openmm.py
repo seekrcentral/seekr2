@@ -410,8 +410,6 @@ class Runner_openmm():
             self.restart_checkpoint_interval = calc_settings.fwd_rev_interval
 
         if restart:
-            assert load_state_file is None, "A state file may not be loaded "\
-                "for a restart."
             simulation.loadCheckpoint(self.restart_checkpoint_filename)
             currentStep = simulation.context.getState().getStepCount()
             self.start_chunk = int(

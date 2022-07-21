@@ -102,7 +102,12 @@ def test_model_get_timestep(host_guest_mmvt_model):
     """
     assert host_guest_mmvt_model.get_timestep() == 0.002
     return
-    
+
+def test_model_get_bulk_index(host_guest_mmvt_model, toy_multi_model):
+    assert host_guest_mmvt_model.get_bulk_index() == 13
+    assert toy_multi_model.get_bulk_index() == None
+    return
+
 def test_get_box_vectors_from_pdb():
     expected_box_vectors = unit.Quantity(
         [[40.142, 0.0, 0.0], 

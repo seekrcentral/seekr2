@@ -966,6 +966,19 @@ class Model(Serializer):
             raise Exception("No settings provided for available simulators.")
         return timestep
     
+    def get_bulk_index(self):
+        """
+        Get the anchor index of the bulk state. If there is no bulk state,
+        return None.
+        """
+        bulk_index = None
+        for alpha, anchor in enumerate(self.anchors):
+            if anchor.bulkstate:
+                assert bulk_index is None, "Only one bulk state is allowed "\
+                    "in model"
+                bulk_index = alpha
+        return bulk_index
+    
 def load_model(model_file, directory=None):
     """
     
