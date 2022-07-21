@@ -171,7 +171,6 @@ def copy_building_files_by_anchor(anchor, input_anchor, rootdir):
     
     amber = input_anchor.starting_amber_params
     new_prmtop_filename = None
-    
     if amber is not None:
         anchor.amber_params = base.Amber_params()
         if amber.prmtop_filename is not None and \

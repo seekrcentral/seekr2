@@ -103,7 +103,7 @@ class State_point(Serializer):
                 if isinstance(inner_cv_input, Toy_cv_input):
                     self.location.append([old_location])
                 else:
-                    self.location.append(old_location)
+                    self.location = old_location
         
         return
 
@@ -1193,6 +1193,21 @@ class Grid_combo(Combo):
                     starting_positions = input_anchor.starting_amber_params
                     if anchor.amber_params is None:
                         anchor.amber_params = starting_positions
+                    else:
+                        assert input_anchor.starting_amber_params is not None, \
+                            "All input_anchors that apply to the same anchor "\
+                            "must have matching amber_params."
+                        assert (anchor.amber_params.prmtop_filename \
+                            == input_anchor.starting_amber_params\
+                            .prmtop_filename) and (anchor.amber_params.\
+                            box_vectors == input_anchor.starting_amber_params.\
+                            box_vectors) and (anchor.amber_params.\
+                            pdb_coordinates_filename == input_anchor.\
+                            starting_amber_params.pdb_coordinates_filename), \
+                            "Multiple input anchors must have matching "\
+                            "starting_amber_params if they apply to the same "\
+                            "anchor."
+                            
                 
                 variable_name = "{}_{}".format(cv_input.variable_name, 
                                            cv_input.index)

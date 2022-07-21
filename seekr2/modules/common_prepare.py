@@ -785,10 +785,8 @@ def create_anchors(model, model_input):
                     anchor.milestones += milestones
                 input_anchor_index += 1
                 
-    
     if model.get_type() == "elber":
         milestone_index += 1
-        
         
     return anchors, milestone_index, connection_flag_dict, \
         associated_input_anchor

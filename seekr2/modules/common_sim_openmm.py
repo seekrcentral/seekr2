@@ -247,10 +247,10 @@ def create_openmm_system(sim_openmm, model, anchor, frame=0,
     
     
     if positions_obj is not None:
-        positions = positions_obj.getPositions(frame=frame)
         assert frame >= 0, "Cannot have negative frame index"
         assert frame < positions_obj.getNumFrames(), \
             "Frame index {} out of range.".format(frame)
+        positions = positions_obj.getPositions(frame=frame)
         num_frames = positions_obj.getNumFrames()
         
     return system, topology, positions, box_vectors, num_frames

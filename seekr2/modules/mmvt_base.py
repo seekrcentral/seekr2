@@ -1522,7 +1522,7 @@ class MMVT_anchor(Serializer):
     def id_from_alias(self, alias_id):
         """
         Accept the alias index of a milestone and return the model-wide
-        index.
+        index of the milestone.
         """
         id_key_alias_value_dict, alias_key_id_value_dict, \
             neighbor_id_key_alias_value_dict = self._make_milestone_collection()

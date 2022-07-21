@@ -118,7 +118,7 @@ class Solvent():
         assert self.kT > 0.0
         xmlSolventKT = ET.SubElement(xmlSolvent, 'kT')
         xmlSolventKT.text = str(self.kT)
-        assert self.desolvation_parameter > 0.0
+        assert self.desolvation_parameter >= 0.0
         xmlSolventDesolv = ET.SubElement(xmlSolvent, 'desolvation_parameter')
         xmlSolventDesolv.text = str(self.desolvation_parameter)
         if make_apbs_mode:
@@ -860,7 +860,8 @@ class Reaction_root():
         return
 
 def add_ghost_atom_to_pqr_from_atoms_center_of_mass(
-        pqr_filename, atom_index_list, new_pqr_filename=None):
+        pqr_filename, atom_index_list, new_pqr_filename=None,
+        center_molecule=True):
     """
     Add a ghost atom to a PQR file at the location of the center
     of mass of the atoms listed.
@@ -897,17 +898,18 @@ def add_ghost_atom_to_pqr_from_atoms_center_of_mass(
         total_mass += atom_mass
     center_of_mass = center_of_mass / total_mass
     
-    # Compute the center of mass of the entire molecule to be transposed
-    mol_center_of_mass = np.array([[0., 0., 0.]])
-    mol_total_mass = 0.0
-    for atom_index, atom in enumerate(pqr_struct.atoms):
-        atom_pos = pqr_struct.coordinates[atom_index,:]
-        atom_mass = atom.mass
-        if atom_mass == 0.0:
-            atom_mass = 0.0001
-        mol_center_of_mass += atom_mass * atom_pos
-        mol_total_mass += atom_mass
-    mol_center_of_mass = mol_center_of_mass / mol_total_mass
+    if center_molecule:
+        # Compute the center of mass of the entire molecule to be transposed
+        mol_center_of_mass = np.array([[0., 0., 0.]])
+        mol_total_mass = 0.0
+        for atom_index, atom in enumerate(pqr_struct.atoms):
+            atom_pos = pqr_struct.coordinates[atom_index,:]
+            atom_mass = atom.mass
+            if atom_mass == 0.0:
+                atom_mass = 0.0001
+            mol_center_of_mass += atom_mass * atom_pos
+            mol_total_mass += atom_mass
+        mol_center_of_mass = mol_center_of_mass / mol_total_mass
     
     ghost_atom = parmed.Atom(name="GHO", mass=0.0, charge=0.0, solvent_radius=0.0)
     ghost_structure = parmed.Structure()
@@ -917,14 +919,17 @@ def add_ghost_atom_to_pqr_from_atoms_center_of_mass(
     for residue in pqr_complex.residues:
         residue.chain = ""
     
-    new_coordinates = np.zeros(pqr_complex.coordinates.shape)
-    for atom_index in range(len(pqr_complex.atoms)):
-        new_coordinates[atom_index,:] = pqr_complex.coordinates[atom_index,:] \
-            - mol_center_of_mass[0,:]
+    if center_molecule:
+        new_coordinates = np.zeros(pqr_complex.coordinates.shape)
+        for atom_index in range(len(pqr_complex.atoms)):
+            new_coordinates[atom_index,:] = pqr_complex.coordinates[atom_index,:] \
+                - mol_center_of_mass[0,:]
+                
+        pqr_complex.coordinates = new_coordinates
     
-    pqr_complex.coordinates = new_coordinates
     pqr_complex.save(new_pqr_filename, overwrite=True)
     ghost_index = len(pqr_complex.atoms)
+    
     return ghost_index
 
 def make_pqrxml(input_pqr_filename, browndye2_bin="", 

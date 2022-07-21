@@ -143,8 +143,16 @@ def choose_next_simulation_openmm(
             num_swarm_frames = mmvt_sim_openmm.\
                         get_starting_structure_num_frames(model, anchor, 
                                                           dummy_file.name)
+            load_state_file_list = None
         else:
-            num_swarm_frames = 1
+            if isinstance(load_state_file, str):
+                num_swarm_frames = 1
+                load_state_file_list = [load_state_file]
+            elif isinstance(load_state_file, list):
+                num_swarm_frames = len(load_state_file)
+                load_state_file_list = load_state_file
+            else:
+                raise Exception("load_state_file must be None, str, or list")
             
         dummy_file.close()
         for swarm_frame in range(num_swarm_frames):
@@ -168,9 +176,15 @@ def choose_next_simulation_openmm(
                         frame = 0
                     else:
                         frame = swarm_frame
+                    
+                    if load_state_file_list is None:
+                        load_state_file_instance = None
+                    else:
+                        load_state_file_instance = load_state_file_list[frame]
+                    
                     sim_openmm_obj = mmvt_sim_openmm.create_sim_openmm(
                         model, anchor, dummy_file.name, frame=frame, 
-                        load_state_file=load_state_file)
+                        load_state_file=load_state_file_instance)
                     simulation = sim_openmm_obj.simulation
                 elif model.get_type() == "elber":
                     sim_openmm_obj = elber_sim_openmm.create_sim_openmm(
@@ -574,6 +588,16 @@ def run(model, instruction, min_total_simulation_length=None,
                   num_transitions, "swarm index:", swarm_index)
             if model.openmm_settings is not None:
                 # import OpenMM libraries only if it will be used
+                if load_state_file is None:
+                    load_state_file_instance = None
+                elif isinstance(load_state_file, str):
+                    load_state_file_instance = load_state_file
+                elif isinstance(load_state_file, list):
+                    load_state_file_instance = load_state_file[swarm_index]
+                else:
+                    raise Exception(
+                        "load_state_file must be None, str, or list")
+                
                 run_openmm(model, anchor_index, restart, 
                            total_simulation_length, 
                            cuda_device_index=cuda_device_index, 
@@ -583,11 +607,14 @@ def run(model, instruction, min_total_simulation_length=None,
                            num_rev_launches=num_rev_launches,
                            umbrella_restart_mode=umbrella_restart_mode,
                            swarm_index=swarm_index, 
-                           load_state_file=load_state_file)
+                           load_state_file=load_state_file_instance)
             elif model.namd_settings is not None:
                 assert swarm_index is None, \
                     "MMVT swarms not available for NAMD."
                 print("force_overwrite:", force_overwrite)
+                if load_state_file is not None:
+                    assert isinstance(load_state_file, str), \
+                        "NAMD may only load one state file."
                 run_namd(model, anchor_index, restart, 
                          total_simulation_length, 
                          cuda_device_index=cuda_device_index, 

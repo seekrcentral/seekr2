@@ -8,6 +8,7 @@ import pytest
 import os
 import shutil
 import pathlib
+import glob
 
 import seekr2.modules.mmvt_base as mmvt_base
 import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
@@ -162,6 +163,7 @@ def test_saveCheckpoint(host_guest_mmvt_model):
 
 def test_Runner_openmm_default(host_guest_mmvt_model):
     host_guest_mmvt_model.calculation_settings.num_production_steps = 10
+    host_guest_mmvt_model.calculation_settings.restart_checkpoint_interval = 10
     host_guest_mmvt_model.openmm_settings.cuda_platform_settings = None
     host_guest_mmvt_model.openmm_settings.reference_platform = True
     myanchor = host_guest_mmvt_model.anchors[1]
@@ -210,6 +212,7 @@ def test_Runner_openmm_default_cuda(host_guest_mmvt_model):
 
 def test_Runner_openmm_load_state(host_guest_mmvt_model):
     host_guest_mmvt_model.calculation_settings.num_production_steps = 10
+    host_guest_mmvt_model.calculation_settings.restart_checkpoint_interval = 10
     host_guest_mmvt_model.openmm_settings.cuda_platform_settings = None
     host_guest_mmvt_model.openmm_settings.reference_platform = True
     myanchor = host_guest_mmvt_model.anchors[1]

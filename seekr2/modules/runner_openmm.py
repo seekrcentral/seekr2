@@ -12,7 +12,9 @@ import argparse
 import glob
 import shutil
 import time
+from collections import defaultdict
 
+import numpy as np
 from parmed import unit
 
 import seekr2.modules.common_base as base
@@ -34,15 +36,18 @@ FWD_STAGE_STEPS_PER_BLOCK = 100
 assert "_" not in SAVE_STATE_PREFIX, "State files will not be properly "\
     "handled if they contain an underscore character: '_'"
 
-def all_boundaries_have_state(myglob, anchor):
+def min_number_of_states_per_boundary(myglob, anchor):
     """
-    Given a glob that should match all state files from bounces, 
-    check whether bounces have been made against all milestones
-    in this anchor.
+    Given a glob that should match all state files from bounces,
+    determine the minimum number of bounces against any of the
+    milestones.
     """
     all_milestone_aliases = []
+    milestone_state_count = {}
     for milestone in anchor.milestones:
         all_milestone_aliases.append(str(milestone.alias_index))
+        milestone_state_count[str(milestone.alias_index)] = 0
+        
     orig_all_milestoning_aliases = all_milestone_aliases[:]
     all_state_files = glob.glob(myglob)
     for state_file in all_state_files:
@@ -50,13 +55,23 @@ def all_boundaries_have_state(myglob, anchor):
         assert state_alias_index in orig_all_milestoning_aliases, \
             "Unknown boundary alias index found: "+state_alias_index\
             +" orig_all_milestoning_aliases: "+str(orig_all_milestoning_aliases)
-        if state_alias_index in all_milestone_aliases:
-            all_milestone_aliases.remove(state_alias_index)
-    if len(all_milestone_aliases) == 0:
-        return True
-    else:
-        return False
+        milestone_state_count[str(state_alias_index)] += 1
+    
+    min_state_count = min(milestone_state_count.values())
+    return min_state_count
 
+def all_boundaries_have_state(myglob, anchor):
+    """
+    Given a glob that should match all state files from bounces, 
+    check whether bounces have been made against all milestones
+    in this anchor.
+    """
+    min_state_count = min_number_of_states_per_boundary(myglob, anchor)
+    if min_state_count == 0:
+        return False
+    else:
+        return True
+    
 def elber_anchor_has_umbrella_files(model, anchor):
     """
     Determine whether umbrella files already exist, which can save time
@@ -395,6 +410,8 @@ class Runner_openmm():
             self.restart_checkpoint_interval = calc_settings.fwd_rev_interval
 
         if restart:
+            assert load_state_file is None, "A state file may not be loaded "\
+                "for a restart."
             simulation.loadCheckpoint(self.restart_checkpoint_filename)
             currentStep = simulation.context.getState().getStepCount()
             self.start_chunk = int(
@@ -578,9 +595,6 @@ class Runner_openmm():
         fwd_energy_reporter_interval \
             = calc_settings.fwd_energy_reporter_interval
         fwd_traj_reporter = self.sim_openmm.fwd_traj_reporter
-        
-        print("calc_settings.fwd_rev_interval:", calc_settings.fwd_rev_interval)
-        print("calc_settings.num_umbrella_stage_steps:", calc_settings.num_umbrella_stage_steps)
         
         assert calc_settings.fwd_rev_interval \
             < calc_settings.num_umbrella_stage_steps, \

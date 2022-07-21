@@ -69,7 +69,7 @@ if __name__ == "__main__":
     force_overwrite = args["force_overwrite"]
     skip_checks = args["skip_checks"]
     model_input = common_prepare.Model_input()
-    model_input.deserialize(model_input_filename, user_input = True)
+    model_input.deserialize(model_input_filename, user_input=True)
     model, xml_path = prepare(model_input, force_overwrite)
     if model.anchor_rootdir == ".":
         model_dir = os.path.dirname(xml_path)

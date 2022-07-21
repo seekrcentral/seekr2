@@ -121,6 +121,8 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
                         else:
                             if checkpoint_times[i] is not None:
                                 next_start_time = checkpoint_times[i]
+                            else:
+                                next_start_time = start_times[i+1]
                 else:
                     next_start_time = 1e99
                 counter = 0
