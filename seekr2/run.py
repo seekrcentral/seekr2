@@ -92,6 +92,58 @@ def choose_next_simulation_browndye2(
     
     return bd_milestone_info_to_run_unsorted
 
+def get_current_step_openmm(model, anchor, load_state_file_list=None, 
+                            swarm_frame=None):
+    """
+    Return the current simulation step of the given anchor in the model.
+    """
+    import seekr2.modules.runner_openmm as runner_openmm
+    import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
+    import seekr2.modules.elber_sim_openmm as elber_sim_openmm
+    if swarm_frame is None:
+        restart_checkpoint_basename \
+            = runner_openmm.RESTART_CHECKPOINT_FILENAME
+    else:
+        restart_checkpoint_basename \
+            = runner_openmm.RESTART_CHECKPOINT_FILENAME \
+            + ".swarm_{}".format(swarm_frame)
+    output_directory = os.path.join(
+        model.anchor_rootdir, anchor.directory, 
+        anchor.production_directory)
+    restart_checkpoint_filename = os.path.join(
+        output_directory, restart_checkpoint_basename)
+    if os.path.exists(restart_checkpoint_filename):
+        dummy_file = tempfile.NamedTemporaryFile()
+        if model.get_type() == "mmvt":
+            if swarm_frame is None:
+                frame = 0
+            else:
+                frame = swarm_frame
+            
+            if load_state_file_list is None:
+                load_state_file_instance = None
+            elif isinstance(load_state_file_list, list):
+                load_state_file_instance = load_state_file_list[frame]
+            else:
+                load_state_file_instance = load_state_file_list
+            
+            sim_openmm_obj = mmvt_sim_openmm.create_sim_openmm(
+                model, anchor, dummy_file.name, frame=frame, 
+                load_state_file=load_state_file_instance)
+            simulation = sim_openmm_obj.simulation
+        elif model.get_type() == "elber":
+            sim_openmm_obj = elber_sim_openmm.create_sim_openmm(
+                model, anchor, dummy_file.name)
+            simulation = sim_openmm_obj.umbrella_simulation
+        
+        simulation.loadCheckpoint(restart_checkpoint_filename)
+        currentStep = simulation.context.getState().getStepCount()
+        dummy_file.close()
+    else:
+        currentStep = 0
+        
+    return currentStep
+
 def choose_next_simulation_openmm(
         model, instruction, min_total_simulation_length, 
         max_total_simulation_length, convergence_cutoff, 
@@ -106,7 +158,7 @@ def choose_next_simulation_openmm(
     if (instruction in ["any_bd", "b_surface",]):
         return []
     
-    import seekr2.modules.runner_openmm as runner_openmm
+    #import seekr2.modules.runner_openmm as runner_openmm
     import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
     import seekr2.modules.elber_sim_openmm as elber_sim_openmm
     anchor_info_to_run_unsorted = []
@@ -134,10 +186,11 @@ def choose_next_simulation_openmm(
             elif model.get_type() == "elber":
                 min_total_simulation_length \
                     = model.calculation_settings.num_umbrella_stage_steps
-                
-        output_directory = os.path.join(
-            model.anchor_rootdir, anchor.directory, 
-            anchor.production_directory)
+        
+        # TODO: marked for removal
+        #output_directory = os.path.join(
+        #    model.anchor_rootdir, anchor.directory, 
+        #    anchor.production_directory)
         dummy_file = tempfile.NamedTemporaryFile()
         if load_state_file is None:
             num_swarm_frames = mmvt_sim_openmm.\
@@ -157,6 +210,11 @@ def choose_next_simulation_openmm(
         dummy_file.close()
         for swarm_frame in range(num_swarm_frames):
             if num_swarm_frames <= 1:
+                swarm_frame = None
+            currentStep = get_current_step_openmm(
+                model, anchor, load_state_file_list, swarm_frame)
+            """ # TODO: marked for removal
+            if num_swarm_frames <= 1:
                 restart_checkpoint_basename \
                     = runner_openmm.RESTART_CHECKPOINT_FILENAME
                 swarm_frame = None
@@ -164,7 +222,7 @@ def choose_next_simulation_openmm(
                 restart_checkpoint_basename \
                     = runner_openmm.RESTART_CHECKPOINT_FILENAME \
                     + ".swarm_{}".format(swarm_frame)
-        
+            
             restart_checkpoint_filename = os.path.join(
                 output_directory, restart_checkpoint_basename)
             if os.path.exists(restart_checkpoint_filename) \
@@ -198,6 +256,13 @@ def choose_next_simulation_openmm(
             else:
                 currentStep = 0
                 restart = False
+            
+            """
+            if currentStep == 0 or force_overwrite or umbrella_restart_mode:
+                restart = False
+                currentStep = 0
+            else:
+                restart = True
             
             if max_total_simulation_length is not None:
                 if currentStep > max_total_simulation_length:

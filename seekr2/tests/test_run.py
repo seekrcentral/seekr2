@@ -97,6 +97,46 @@ def test_choose_next_simulation_browndye2(host_guest_mmvt_model):
     
     return
 
+def test_get_current_step_openmm(toy_mmvt_model):
+    num_steps = 100000
+    toy_mmvt_model.calculation_settings.num_production_steps = num_steps
+    anchor = toy_mmvt_model.anchors[2]
+    run.run(toy_mmvt_model, "2", force_overwrite=True)
+    currentStep = run.get_current_step_openmm(toy_mmvt_model, anchor)
+    assert currentStep == num_steps
+    return
+
+def test_get_current_step_openmm_state(host_guest_mmvt_model):
+    num_steps = 20
+    host_guest_mmvt_model.calculation_settings.num_production_steps = num_steps
+    host_guest_mmvt_model.calculation_settings.restart_checkpoint_interval = 10
+    host_guest_mmvt_model.openmm_settings.cuda_platform_settings = None
+    host_guest_mmvt_model.openmm_settings.reference_platform = True
+    myanchor = host_guest_mmvt_model.anchors[1]
+    directory = os.path.join(
+        host_guest_mmvt_model.anchor_rootdir, myanchor.directory, "prod")
+    mmvt_output_filename = os.path.join(directory, 
+        "%s%d.%s" % (mmvt_base.OPENMMVT_BASENAME, 1, 
+                             mmvt_base.OPENMMVT_EXTENSION))
+    myglob = os.path.join(
+        host_guest_mmvt_model.anchor_rootdir, myanchor.directory, "prod", "*")
+    loading_state_filename = os.path.join(host_guest_mmvt_model.anchor_rootdir, 
+                                          "start.state")
+    runner = runner_openmm.Runner_openmm(host_guest_mmvt_model, myanchor)
+    default_output_file, state_file_prefix, restart_index = runner.prepare(
+        force_overwrite=True)
+    my_sim_openmm = mmvt_sim_openmm.create_sim_openmm(
+        host_guest_mmvt_model, myanchor, mmvt_output_filename)
+    my_sim_openmm.simulation.saveState(loading_state_filename)
+    myanchor.amber_params.pdb_coordinates_filename = None
+    run.run(host_guest_mmvt_model, "1", min_total_simulation_length=num_steps,
+            force_overwrite=True, load_state_file=loading_state_filename)
+    currentStep = run.get_current_step_openmm(
+        host_guest_mmvt_model, myanchor, loading_state_filename)
+    assert currentStep == num_steps
+    
+    return
+
 def test_choose_next_simulation_openmm(toy_mmvt_model):
     anchor_info_to_run = run.choose_next_simulation_openmm(
         toy_mmvt_model, "2", min_total_simulation_length=100000, 

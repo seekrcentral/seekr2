@@ -445,13 +445,13 @@ class Data_sample():
                 assert self.Q[i,j] >= 0.0, "self.Q[i,j]: {}".format(self.Q[i,j])
                     
         for i in range(self.model.num_milestones):
-            row_sum = np.sum(self.Q[i])
+            row_sum = np.sum(self.Q[i], dtype=np.longdouble)
             if row_sum == 0:
                 new_row_sum = np.longdouble(0.0)
                 for j in range(self.model.num_milestones):
                     self.Q[i,j] = self.Q[j,i]
                     new_row_sum += self.Q[j,i]
-                    
+                
                 self.Q[i,i] = -new_row_sum
             else:
                 self.Q[i,i] = -row_sum
@@ -535,6 +535,17 @@ class Data_sample():
                     #bulk_milestones.append(milestone_id)
                     bulk_milestone = milestone_id
 
+        if np.any(self.Q.sum(axis=1) > 1.E-10):
+            problem_milestone = np.argmin(self.Q.T.sum(axis=1))
+            error_msg = """The rate matrix Q has a numerically overflowed row 
+            sum placed into the main diagonal of milestone {}. This can be
+            caused by large discrepancies of rates between adjacent milestones.
+            You can try additional sampling of whichever anchor(s) have this 
+            milestone. If possible, you may consider adding more milestones in
+            this area, or omitting calculations in this portion of the CV(s). 
+            If this problem persists, please contact the developers.""".format(
+                problem_milestone)
+            raise Exception(error_msg)
         B, tau = PyGT.tools.load_CTMC(self.Q.T)
         assert len(bulk_milestones) <= 1, \
             "There cannot be more than one bulk milestone."
