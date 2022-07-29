@@ -9,6 +9,7 @@ the entire filetree.
 import os
 import argparse
 
+import seekr2.modules.common_base as base
 import seekr2.modules.common_prepare as common_prepare
 import seekr2.modules.filetree as filetree
 import seekr2.modules.check as check
@@ -39,7 +40,8 @@ def prepare(model_input, force_overwrite=False):
     filetree.generate_filetree_bd(model, root_directory)
     filetree.copy_bd_files(model, model_input, root_directory)
     common_prepare.generate_bd_files(model, root_directory)
-    model.serialize(xml_path)
+    #model.serialize(xml_path)
+    base.save_model(model, xml_path)
     os.chdir(curdir)
     return model, xml_path
 
