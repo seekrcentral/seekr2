@@ -143,7 +143,7 @@ def test_choose_next_simulation_openmm(toy_mmvt_model):
         max_total_simulation_length=1000000, convergence_cutoff=None, 
         minimum_anchor_transitions=None, force_overwrite=True, 
         umbrella_restart_mode=False, load_state_file=None)
-    host_guest_mmvt_model.calculation_settings.restart_checkpoint_interval = 100
+    toy_mmvt_model.calculation_settings.restart_checkpoint_interval = 100
     assert anchor_info_to_run[0][0] == 100000
     assert anchor_info_to_run[0][1] == 0
     assert anchor_info_to_run[0][2] == 2

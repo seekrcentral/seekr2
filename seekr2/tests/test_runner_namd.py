@@ -66,7 +66,7 @@ def test_Runner_namd_default(host_guest_mmvt_model):
     runner = runner_namd.Runner_namd(
         host_guest_mmvt_model, myanchor, namd_command, namd_arguments)
     default_output_file, output_basename, state_file_prefix, restart_index = \
-        runner.prepare()
+        runner.prepare(force_overwrite=True)
     mmvt_output_filename = os.path.join(
         host_guest_mmvt_model.anchor_rootdir, myanchor.directory, "prod", 
         "%s%d" % (mmvt_base.NAMDMMVT_BASENAME, 1))
@@ -89,7 +89,7 @@ def test_Runner_namd_load_state(host_guest_mmvt_model):
     runner = runner_namd.Runner_namd(
         host_guest_mmvt_model, myanchor, namd_command, namd_arguments)
     default_output_file, output_basename, state_file_prefix, restart_index = \
-        runner.prepare()
+        runner.prepare(force_overwrite=True)
     mmvt_output_filename = os.path.join(
         host_guest_mmvt_model.anchor_rootdir, myanchor.directory, "prod", 
         "%s%d" % (mmvt_base.NAMDMMVT_BASENAME, 1))

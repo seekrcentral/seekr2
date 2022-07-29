@@ -150,7 +150,9 @@ def test_saveCheckpoint(host_guest_mmvt_model):
         force_overwrite=True)
     my_sim_openmm = mmvt_sim_openmm.create_sim_openmm(
         host_guest_mmvt_model, myanchor, mmvt_output_filename)
-    assert not os.path.exists(runner.restart_checkpoint_filename)
+    #assert not os.path.exists(runner.restart_checkpoint_filename)
+    if os.path.exists(runner.restart_checkpoint_filename):
+        os.remove(runner.restart_checkpoint_filename)
     runner_openmm.saveCheckpoint(my_sim_openmm, 
                                  runner.restart_checkpoint_filename)
     assert os.path.exists(runner.restart_checkpoint_filename)
