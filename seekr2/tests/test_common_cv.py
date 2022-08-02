@@ -9,10 +9,10 @@ import seekr2.modules.common_cv as common_cv
 def test_assign_state_points_toy(toy_mmvt_model_input, toy_mmvt_model):
     stateA = common_cv.State_point()
     stateA.name = "stateA"
-    stateA.location = [0.0, -0.7, 0.0]
+    stateA.location = [[0.0, -0.7, 0.0]]
     stateB = common_cv.State_point()
     stateB.name = "stateB"
-    stateB.location = [0.0, 0.7, 0.0]
+    stateB.location = [[0.0, 0.7, 0.0]]
     toy_mmvt_model_input.cv_inputs[0].state_points = [stateA, stateB]
     common_cv.assign_state_points(toy_mmvt_model_input, toy_mmvt_model)
     assert toy_mmvt_model.anchors[0].name == "stateA"

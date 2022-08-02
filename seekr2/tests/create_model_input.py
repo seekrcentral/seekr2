@@ -552,10 +552,10 @@ def create_toy_multi_model_input(root_dir):
     combo.cv_inputs = [cv_input1, cv_input2]
     stateA = common_cv.State_point()
     stateA.name = "stateA"
-    stateA.location = [0.1, -0.7, 0.0]
+    stateA.location = [[0.1, -0.7, 0.0]]
     stateB = common_cv.State_point()
     stateB.name = "stateB"
-    stateB.location = [0.1, 0.7, 0.0]
+    stateB.location = [[0.1, 0.7, 0.0]]
     combo.state_points = [stateA, stateB]
     
     model_input.cv_inputs = [combo]
