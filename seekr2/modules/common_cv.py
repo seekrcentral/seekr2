@@ -1228,8 +1228,6 @@ class Grid_combo(Combo):
             # Handle the connection flags
             assert len(input_anchor.connection_flags) == 0, \
                 "Connection flags within combos not currently supported."
-            if input_anchor.bulk_anchor:
-                connection_flag_dict["bulk"].append(anchor)
             anchors.append(anchor)
             anchor_index += 1
         
@@ -1264,6 +1262,9 @@ class Grid_combo(Combo):
                             this_input_anchor, milestone_index)
                 
                 divider *= cv_widths[j]
+                
+            if anchor.bulkstate:
+                connection_flag_dict["bulk"].append(anchor)
             
         return anchors, anchor_index, milestone_index, connection_flag_dict,\
             associated_input_anchor

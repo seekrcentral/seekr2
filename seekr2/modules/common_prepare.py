@@ -607,14 +607,21 @@ def resolve_connections(connection_flag_dict, model, associated_input_anchor,
             anchors[new_index].name = "anchor_"+str(anchors[new_index].index)
             anchors[new_index].directory = anchors[new_index].name
             alias_index = 1
-            for milestone in anchors[new_index].milestones:
+            milestones_to_remove = []
+            for i, milestone in enumerate(anchors[new_index].milestones):
                 if (model.get_type() == "mmvt") \
                         and (new_index not in visited_new_indices):
                     # don't renumber the same anchor twice
                     neighbor_id = milestone.neighbor_anchor_index
                     milestone.neighbor_anchor_index = index_reference[neighbor_id]
                     milestone.alias_index = alias_index
+                    if milestone.neighbor_anchor_index \
+                            == anchors[new_index].index:
+                        milestones_to_remove.append(i)
                     alias_index += 1
+                    
+            for milestone_to_remove in sorted(milestones_to_remove, reverse=True):
+                anchors[new_index].milestones.pop(milestone_to_remove)
             
         visited_new_indices.append(new_index)
             
@@ -787,7 +794,7 @@ def create_anchors(model, model_input):
                 
     if model.get_type() == "elber":
         milestone_index += 1
-        
+    
     return anchors, milestone_index, connection_flag_dict, \
         associated_input_anchor
 
