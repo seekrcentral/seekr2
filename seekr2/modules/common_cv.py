@@ -93,7 +93,7 @@ class State_point(Serializer):
         
     def expand_state_point(self, cv_input):
         if isinstance(cv_input, Toy_cv_input):
-            self.location = [[self.location]]
+            self.location = [self.location]
         else:
             self.location = [self.location]
         if isinstance(cv_input, Combo):
@@ -101,7 +101,7 @@ class State_point(Serializer):
             self.location = []
             for inner_cv_input in cv_input.cv_inputs:
                 if isinstance(inner_cv_input, Toy_cv_input):
-                    self.location.append([old_location])
+                    self.location.append(old_location)
                 else:
                     self.location = old_location
         
