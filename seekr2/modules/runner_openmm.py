@@ -456,8 +456,6 @@ class Runner_openmm():
             * self.steps_per_chunk  * self.sim_openmm.timestep * 1e-3 \
             * 86400 / total_time
         print("Benchmark (ns/day):", ns_per_day)
-        #saveCheckpoint(self.sim_openmm, self.restart_checkpoint_filename)
-        #simulation.saveCheckpoint(self.restart_checkpoint_filename)
         return
     
     def run_mmvt(self, traj_filename):
@@ -541,6 +539,7 @@ class Runner_openmm():
     
     def run_elber(self, traj_filename):
         """Run the SEEKR2 Elber calculation."""
+        print("running Elber")
         openmm_settings = self.model.openmm_settings
         calc_settings = self.model.calculation_settings
         umbrella_simulation = self.sim_openmm.umbrella_simulation
@@ -605,6 +604,9 @@ class Runner_openmm():
         
         self.end_chunk = calc_settings.num_umbrella_stage_steps \
             // calc_settings.fwd_rev_interval
+        print("calc_settings.num_umbrella_stage_steps:", calc_settings.num_umbrella_stage_steps)
+        print("calc_settings.fwd_rev_interval:", calc_settings.fwd_rev_interval)
+        exit()
         self.steps_per_chunk = calc_settings.fwd_rev_interval
         rev_data_file_name = self.sim_openmm.rev_output_filename
         if os.path.exists(rev_data_file_name):
@@ -630,8 +632,9 @@ class Runner_openmm():
                 "{} frames.".format(self.end_chunk)
             assert openmm_settings.barostat is None, "Cannot use existing" \
                 "umbrella trajectories in constant pressure mode."
-        
+        print("starting chunks")
         for chunk in range(self.start_chunk, self.end_chunk):
+            print("chunk:", chunk)
             if self.umbrellas_already_exist_mode:
                 # extract frame from trajectory and load the coordinates
                 print("loading umbrella frame {}.".format(chunk))
@@ -715,6 +718,7 @@ class Runner_openmm():
                     rev_data_file_length = get_data_file_length(
                         rev_data_file_name)
                     try:
+                        print("running rev")
                         rev_simulation.step(REV_STAGE_STEPS_PER_BLOCK)
                     except Exception: 
                         # if there was a NAN error
@@ -768,6 +772,7 @@ class Runner_openmm():
                         fwd_data_file_length = get_data_file_length(
                             fwd_data_file_name)
                         try:
+                            print("running fwd")
                             fwd_simulation.step(FWD_STAGE_STEPS_PER_BLOCK)
                         except Exception: 
                             # if there was a NAN error

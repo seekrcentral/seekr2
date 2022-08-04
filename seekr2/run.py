@@ -13,7 +13,7 @@ import seekr2.converge as converge
 import seekr2.modules.common_converge as common_converge
 
 # run 20 ns between convergence checks
-CONVERGENCE_INTERVAL = 100000
+CONVERGENCE_INTERVAL = 10000000
 B_SURFACE_CONVERGENCE_INTERVAL = 10000
 #BD_MILESTONE_CONVERGENCE_INTERVAL = 100
 MAX_ITER = 999
@@ -112,6 +112,7 @@ def get_current_step_openmm(model, anchor, load_state_file_list=None,
         anchor.production_directory)
     restart_checkpoint_filename = os.path.join(
         output_directory, restart_checkpoint_basename)
+    print("restart_checkpoint_filename:", restart_checkpoint_filename)
     if os.path.exists(restart_checkpoint_filename):
         dummy_file = tempfile.NamedTemporaryFile()
         if model.get_type() == "mmvt":
@@ -138,9 +139,11 @@ def get_current_step_openmm(model, anchor, load_state_file_list=None,
         
         simulation.loadCheckpoint(restart_checkpoint_filename)
         currentStep = simulation.context.getState().getStepCount()
+        print(restart_checkpoint_filename, "is at step", currentStep)
         dummy_file.close()
     else:
         currentStep = 0
+        print("no checkpoint. Step: 0")
         
     return currentStep
 
