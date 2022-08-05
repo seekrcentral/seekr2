@@ -37,7 +37,6 @@ def choose_next_simulation_browndye2(
     if instruction not in ["any", "any_bd", "b_surface"]:
         return []
     
-    #import seekr2.modules.common_sim_browndye2 as sim_browndye2
     import seekr2.modules.runner_browndye2 as runner_browndye2
     
     if min_b_surface_simulation_length is None:
@@ -112,7 +111,6 @@ def get_current_step_openmm(model, anchor, load_state_file_list=None,
         anchor.production_directory)
     restart_checkpoint_filename = os.path.join(
         output_directory, restart_checkpoint_basename)
-    print("restart_checkpoint_filename:", restart_checkpoint_filename)
     if os.path.exists(restart_checkpoint_filename):
         dummy_file = tempfile.NamedTemporaryFile()
         if model.get_type() == "mmvt":
@@ -139,11 +137,9 @@ def get_current_step_openmm(model, anchor, load_state_file_list=None,
         
         simulation.loadCheckpoint(restart_checkpoint_filename)
         currentStep = simulation.context.getState().getStepCount()
-        print(restart_checkpoint_filename, "is at step", currentStep)
         dummy_file.close()
     else:
         currentStep = 0
-        print("no checkpoint. Step: 0")
         
     return currentStep
 
@@ -161,7 +157,6 @@ def choose_next_simulation_openmm(
     if (instruction in ["any_bd", "b_surface",]):
         return []
     
-    #import seekr2.modules.runner_openmm as runner_openmm
     import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
     import seekr2.modules.elber_sim_openmm as elber_sim_openmm
     anchor_info_to_run_unsorted = []
@@ -190,10 +185,6 @@ def choose_next_simulation_openmm(
                 min_total_simulation_length \
                     = model.calculation_settings.num_umbrella_stage_steps
         
-        # TODO: marked for removal
-        #output_directory = os.path.join(
-        #    model.anchor_rootdir, anchor.directory, 
-        #    anchor.production_directory)
         dummy_file = tempfile.NamedTemporaryFile()
         if load_state_file is None:
             num_swarm_frames = mmvt_sim_openmm.\
@@ -216,51 +207,7 @@ def choose_next_simulation_openmm(
                 swarm_frame = None
             currentStep = get_current_step_openmm(
                 model, anchor, load_state_file_list, swarm_frame)
-            """ # TODO: marked for removal
-            if num_swarm_frames <= 1:
-                restart_checkpoint_basename \
-                    = runner_openmm.RESTART_CHECKPOINT_FILENAME
-                swarm_frame = None
-            else:
-                restart_checkpoint_basename \
-                    = runner_openmm.RESTART_CHECKPOINT_FILENAME \
-                    + ".swarm_{}".format(swarm_frame)
             
-            restart_checkpoint_filename = os.path.join(
-                output_directory, restart_checkpoint_basename)
-            if os.path.exists(restart_checkpoint_filename) \
-                    and not force_overwrite\
-                    and not umbrella_restart_mode:
-                dummy_file = tempfile.NamedTemporaryFile()
-                if model.get_type() == "mmvt":
-                    if swarm_frame is None:
-                        frame = 0
-                    else:
-                        frame = swarm_frame
-                    
-                    if load_state_file_list is None:
-                        load_state_file_instance = None
-                    else:
-                        load_state_file_instance = load_state_file_list[frame]
-                    
-                    sim_openmm_obj = mmvt_sim_openmm.create_sim_openmm(
-                        model, anchor, dummy_file.name, frame=frame, 
-                        load_state_file=load_state_file_instance)
-                    simulation = sim_openmm_obj.simulation
-                elif model.get_type() == "elber":
-                    sim_openmm_obj = elber_sim_openmm.create_sim_openmm(
-                        model, anchor, dummy_file.name)
-                    simulation = sim_openmm_obj.umbrella_simulation
-                
-                simulation.loadCheckpoint(restart_checkpoint_filename)
-                currentStep = simulation.context.getState().getStepCount()
-                dummy_file.close()
-                restart = True
-            else:
-                currentStep = 0
-                restart = False
-            
-            """
             if currentStep == 0 or force_overwrite or umbrella_restart_mode:
                 restart = False
                 currentStep = 0
@@ -361,10 +308,6 @@ def choose_next_simulation_namd(
             try:
                 integer_instruction = int(instruction)
             except ValueError:
-                #print("Invalid argument for INSTRUCTION provided: "\
-                #      "'{}'. ".format(instruction)\
-                #      +"Allowed arguments: 'any', 'any_md', 'any_bd'.")
-                #exit()
                 return []
                 
             if alpha != integer_instruction:

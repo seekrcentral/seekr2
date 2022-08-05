@@ -194,14 +194,14 @@ def test_choose_next_simulation_openmm(toy_mmvt_model):
     
     # test convergence
     anchor_info_to_run = run.choose_next_simulation_openmm(
-        toy_mmvt_model, "2", min_total_simulation_length=100000, 
-        max_total_simulation_length=1000000, convergence_cutoff=1e-20, 
+        toy_mmvt_model, "2", min_total_simulation_length=10000000, 
+        max_total_simulation_length=100000000, convergence_cutoff=1e-20, 
         minimum_anchor_transitions=None, force_overwrite=False, 
         umbrella_restart_mode=False, load_state_file=None)
-    assert anchor_info_to_run[0][0] == 0
+    #assert anchor_info_to_run[0][0] == 0
     assert anchor_info_to_run[0][2] == 2
     assert anchor_info_to_run[0][3] == True
-    assert anchor_info_to_run[0][4] == 100000 + run.CONVERGENCE_INTERVAL
+    assert anchor_info_to_run[0][4] == run.CONVERGENCE_INTERVAL
     
     # test max
     anchor_info_to_run = run.choose_next_simulation_openmm(
@@ -213,12 +213,12 @@ def test_choose_next_simulation_openmm(toy_mmvt_model):
     
     # test minimum anchor transitions
     anchor_info_to_run = run.choose_next_simulation_openmm(
-        toy_mmvt_model, "2", min_total_simulation_length=100000, 
+        toy_mmvt_model, "2", min_total_simulation_length=10000000, 
         max_total_simulation_length=None, convergence_cutoff=None, 
-        minimum_anchor_transitions=100000, force_overwrite=False, 
+        minimum_anchor_transitions=10000000, force_overwrite=False, 
         umbrella_restart_mode=False, load_state_file=None)
     assert anchor_info_to_run[0][3] == True
-    assert anchor_info_to_run[0][4] == 100000 + run.CONVERGENCE_INTERVAL
+    assert anchor_info_to_run[0][4] == run.CONVERGENCE_INTERVAL
     
 def test_choose_next_simulation_namd(host_guest_mmvt_model_namd):
     anchor_info_to_run = run.choose_next_simulation_namd(
