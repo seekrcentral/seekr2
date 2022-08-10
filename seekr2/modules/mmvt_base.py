@@ -164,6 +164,7 @@ class MMVT_spherical_CV(MMVT_collective_variable):
         self.name = "mmvt_spherical"
         self.openmm_expression = "step(k*(distance(g1, g2)^2 - radius^2))"
         self.restraining_expression = "0.5*k*(distance(g1, g2) - radius)^2"
+        self.cv_expression = "distance(g1, g2)"
         self.num_groups = 2
         self.per_dof_variables = ["k", "radius"]
         self.global_variables = []
@@ -1399,8 +1400,13 @@ class MMVT_external_CV(MMVT_collective_variable):
         """
         
         """
+        #result = self.check_positions_within_boundary(
+        #    positions*openmm.unit.nanometer, milestone_variables)
+        new_positions = []
+        for position in positions:
+            new_positions.append(position*openmm.unit.nanometer)
         result = self.check_positions_within_boundary(
-            positions*openmm.unit.nanometer, milestone_variables)
+            new_positions, milestone_variables)
         return result
     
     def check_mdtraj_close_to_boundary(self, traj, milestone_variables, 
@@ -1415,6 +1421,245 @@ class MMVT_external_CV(MMVT_collective_variable):
         Return a list of this CV's atomic groups.
         """
         return self.groups
+            
+    def get_variable_values(self):
+        """
+        This type of CV has no extra variables, so an empty list is 
+        returned.
+        """
+        return []
+
+class MMVT_Voronoi_CV(MMVT_collective_variable):
+    """
+    A Voronoi collective variable which contains multidimensional functions
+    to produce a Voronoi Tesselation.
+    
+    """+MMVT_collective_variable.__doc__
+    
+    def __init__(self, index, groups):
+        self.index = index
+        self.groups = groups
+        self.ref_structure = ref_structure
+        self.name = "mmvt_voronoi"
+        self.openmm_expression = ""
+        self.restraining_expression = ""
+        self.num_groups = len(groups)
+        self.per_dof_variables = []
+        self.global_variables = []
+        self._mygroup_list = None
+        self.variable_names = []
+        return
+
+    def __name__(self):
+        return "MMVT_Voronoi_CV"
+    
+    def make_force_object(self):
+        """
+        Create an OpenMM force object which will be used to compute
+        the value of the CV's mathematical expression as the simulation
+        propagates. Each *milestone* in a cell, not each CV, will have
+        a force object created.
+        
+        In this implementation of MMVT in OpenMM, CustomForce objects
+        are used to provide the boundary definitions of the MMVT cell.
+        These 'forces' are designed to never affect atomic motions,
+        but are merely monitored by the plugin for bouncing event.
+        So while they are technically OpenMM force objects, we don't
+        refer to them as forces outside of this layer of the code,
+        preferring instead the term: boundary definitions.
+        """
+        try:
+            import openmm
+        except ImportError:
+            import simtk.openmm as openmm
+            
+        assert self.num_groups == 1
+        expression_w_bitcode = "bitcode*"+self.openmm_expression
+        return openmm.CustomCVForce(expression_w_bitcode)
+    
+    def make_restraining_force(self):
+        """
+        Create an OpenMM force object that will restrain the system to
+        a given value of this CV.
+        """
+        try:
+            import openmm
+        except ImportError:
+            import simtk.openmm as openmm
+        
+        assert self.num_groups == 1
+        return openmm.CustomCVForce(self.restraining_expression)
+    
+    def make_namd_colvar_string(self):
+        """
+        This string will be put into a NAMD colvar file for tracking
+        MMVT bounces.
+        """
+        raise Exception("MMVT RMSD CVs are not available in NAMD")
+        
+    def add_parameters(self, force):
+        """
+        An OpenMM custom force object needs a list of variables
+        provided to it that will occur within its expression. Both
+        the per-dof and global variables are combined within the
+        variable_names_list. The numerical values of these variables
+        will be provided at a later step.
+        """
+        
+        pdb_file = openmm_app.PDBFile(self.ref_structure)
+        rmsd_force = openmm.RMSDForce(pdb_file.positions, self.group)
+        force.addCollectiveVariable("RMSD", rmsd_force)
+        
+        return
+    
+    def add_groups_and_variables(self, force, variables):
+        """
+        Provide the custom force with additional information it needs,
+        which includes a list of the groups of atoms involved with the
+        CV, as well as a list of the variables' *values*.
+        """
+        force.addGlobalParameter("bitcode", variables[0])
+        force.addGlobalParameter("k", variables[1])
+        force.addGlobalParameter("value", variables[2])
+        return
+    
+    def get_variable_values_list(self, milestone):
+        """
+        Create the list of CV variables' values in the proper order
+        so they can be provided to the custom force object.
+        """
+        assert milestone.cv_index == self.index
+        values_list = []
+        bitcode = 2**(milestone.alias_index-1)
+        k = milestone.variables["k"] * unit.kilojoules_per_mole/unit.angstrom**2
+        value = milestone.variables["value"] * unit.nanometers
+        values_list.append(bitcode)
+        values_list.append(k)
+        values_list.append(value)
+        return values_list
+    
+    def get_namd_evaluation_string(self, milestone, cv_val_var="cv_val"):
+        """
+        For a given milestone, return a string that can be evaluated
+        my NAMD to monitor for a crossing event. Essentially, if the 
+        function defined by the string ever returns True, then a
+        bounce will occur
+        """
+        raise Exception("MMVT RMSD CVs are not available in NAMD")
+    
+    def get_mdtraj_cv_value(self, traj, frame_index):
+        """
+        Determine the current CV value for an mdtraj object.
+        """
+        traj1 = traj.atom_slice(self.group)
+        ref_traj = mdtraj.load(self.ref_structure)
+        ref_traj1 = ref_traj.atom_slice(self.group)
+        traj1.superpose(ref_traj1)
+        value = float(mdtraj.rmsd(traj1, ref_traj1, frame=frame_index))
+        return value
+    
+    def check_mdtraj_within_boundary(self, traj, milestone_variables, 
+                                     verbose=False):
+        """
+        Check if an mdtraj Trajectory describes a system that remains
+        within the expected anchor. Return True if passed, return
+        False if failed.
+        """
+        TOL = 0.001
+        for frame_index in range(traj.n_frames):
+            value = self.get_mdtraj_cv_value(traj, frame_index)
+            result = self.check_value_within_boundary(
+                value, milestone_variables, verbose=verbose, tolerance=TOL)
+            if not result:
+                return False
+            
+        return True
+    
+    # TODO: Should be working, just needs tests
+    def get_openmm_context_cv_value(
+            self, context, milestone_variables, positions=None, 
+            ref_positions=None, verbose=False, tolerance=0.0):
+        """
+        
+        """
+        system = context.getSystem()
+        if positions is None:
+            state = context.getState(getPositions=True)
+            positions = state.getPositions()
+            
+        if ref_positions is None:
+            pdb_filename = self.ref_structure
+            pdb_file = openmm_app.PDBFile(pdb_filename)
+            ref_positions = pdb_file.positions
+        
+        pos_subset = []
+        ref_subset = []
+        for atom_index in self.group:
+            pos_subset.append(positions[atom_index].value_in_unit(unit.nanometers))
+            ref_subset.append(ref_positions[atom_index].value_in_unit(unit.nanometers))
+        
+        pos_subset = np.array(pos_subset)
+        ref_subset = np.array(ref_subset)
+        
+        avg_pos = np.array([float(np.mean(pos_subset[:,0])), 
+                            float(np.mean(pos_subset[:,1])), 
+                            float(np.mean(pos_subset[:,2]))])
+        avg_ref = np.array([np.mean(ref_subset[:,0]), 
+                            np.mean(ref_subset[:,1]), 
+                            np.mean(ref_subset[:,2])])        
+        pos_subset_centered = pos_subset - avg_pos
+        ref_subset_centered = ref_subset - avg_ref
+        rotation, value = transform.Rotation.align_vectors(
+            pos_subset_centered, ref_subset_centered)
+        rmsd = value / np.sqrt(len(self.group))
+        return rmsd
+    
+    def check_openmm_context_within_boundary(
+            self, context, milestone_variables, positions=None, 
+            ref_positions=None, verbose=False, tolerance=0.0):
+        """
+        Check if an OpenMM context describes a system that remains
+        within the expected anchor. Return True if passed, return
+        False if failed.
+        """
+        
+        value = self.get_openmm_context_cv_value(
+            context, milestone_variables, positions, 
+            ref_positions, verbose, tolerance)
+        result = self.check_value_within_boundary(
+            value, milestone_variables, verbose=verbose, tolerance=tolerance)
+        return result
+    
+    
+    def check_value_within_boundary(self, value, milestone_variables, 
+                                    verbose=False, tolerance=0.0):
+        milestone_k = milestone_variables["k"]
+        milestone_value = milestone_variables["value"]
+        if milestone_k*(value - milestone_value) > tolerance:
+            if verbose:
+                warnstr = """The RMSD value of atom group 
+was found to be {:.4f} nm apart.
+This distance falls outside of the milestone
+boundary at {:.4f} nm.""".format(value, milestone_value)
+                print(warnstr)
+            return False
+        return True
+    
+    def check_mdtraj_close_to_boundary(self, traj, milestone_variables, 
+                                     verbose=False, max_avg=0.03, max_std=0.05):
+        """
+        Given an mdtraj Trajectory, check if the system lies close
+        to the MMVT boundary. Return True if passed, return False if 
+        failed.
+        """
+        print("check_mdtraj_close_to_boundary not yet implemented for RMSD CVs")
+        return True
+    
+    def get_atom_groups(self):
+        """
+        Return a 1-list of this CV's atomic group.
+        """
+        return [self.group]
             
     def get_variable_values(self):
         """

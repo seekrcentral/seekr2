@@ -19,6 +19,7 @@ DEFAULT_R_I = 1.0
 DEFAULT_Q_IJ = 1.0
 LOW_Q_IJ = 1e-15
 HIGH_FLUX = 1e10
+LOW_PROBABILITY = 1e-25
 
 def flux_matrix_to_K(M):
     """Given a flux matrix M, compute probability transition matrix K."""
@@ -805,6 +806,12 @@ class MMVT_data_sample(common_analyze.Data_sample):
         stationary_dist = K_inf.T @ pi_alpha_slice
         for i in range(flux_matrix_dimension-1):
             self.pi_alpha[i,0] = -stationary_dist[i,0] / flux_matrix[i,i]
+        for alpha, anchor1 in enumerate(self.model.anchors):
+            # Set low probabilities to anchors with no transitions observed.
+            if alpha not in self.N_alpha:
+                continue
+            if self.N_alpha[alpha] == 0:
+                self.pi_alpha[alpha,0] = LOW_PROBABILITY
         self.pi_alpha[-1,0] = 0.0
         self.pi_alpha = self.pi_alpha / np.sum(self.pi_alpha)
         return
@@ -1031,7 +1038,7 @@ def find_nonzero_matrix_entries(M):
     return nonzero_matrix_indices
 
 def monte_carlo_milestoning_error(
-        main_data_sample, num=1000, stride=None, skip=None, verbose=False):
+        main_data_sample, num=100, stride=None, skip=None, verbose=False):
     """
     Calculates an error estimate by sampling a distribution of rate 
     matrices assumming a Poisson (gamma) distribution with 

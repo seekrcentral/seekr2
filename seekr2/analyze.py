@@ -21,7 +21,7 @@ import seekr2.modules.elber_analyze as elber_analyze
 import seekr2.modules.check as check
 
 LOW_FLUX = 1e-10
-FAST_FLUX = 1e3
+FAST_FLUX = 1e6
 
 def check_graph_connected(graph, state_index1, state_index2):
     """
@@ -714,9 +714,9 @@ if __name__ == "__main__":
         action="store_true")
     argparser.add_argument(
         "-n", "--num_error_samples", dest="num_error_samples", 
-        default=1000, type=int, help="Specify the number of error samples" \
+        default=100, type=int, help="Specify the number of error samples" \
         " to generate for estimating error/uncertainty of computed "\
-        "values. Default: 1000")
+        "values. Default: 100")
     argparser.add_argument(
         "-S", "--stride_error_samples", dest="stride_error_samples", 
         default=None, type=int, help="Specify the number of strides between" \

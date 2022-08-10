@@ -1184,7 +1184,9 @@ class Grid_combo(Combo):
                 #  that the assignment is arbitrary
                 associated_input_anchor[anchor.index] = input_anchor
                 # Grid objects with assigned starting positions are meaningless
-                if anchor.__class__.__name__ == "MMVT_toy_anchor":
+                if anchor.bulkstate or input_anchor.bulk_anchor:
+                    anchor.amber_params = None
+                elif anchor.__class__.__name__ == "MMVT_toy_anchor":
                     starting_positions = input_anchor.starting_positions
                     assert starting_positions is None, \
                         "Grid combo cv's with anchors cannot have starting "\
@@ -1196,7 +1198,9 @@ class Grid_combo(Combo):
                     else:
                         assert input_anchor.starting_amber_params is not None, \
                             "All input_anchors that apply to the same anchor "\
-                            "must have matching amber_params."
+                            "must have matching amber_params. Problem is at "\
+                            "cv_input {}, input_anchor {}.".format(
+                                j, input_anchor_index)
                         assert (anchor.amber_params.prmtop_filename \
                             == input_anchor.starting_amber_params\
                             .prmtop_filename) and (anchor.amber_params.\
@@ -1206,7 +1210,9 @@ class Grid_combo(Combo):
                             starting_amber_params.pdb_coordinates_filename), \
                             "Multiple input anchors must have matching "\
                             "starting_amber_params if they apply to the same "\
-                            "anchor."
+                            "anchor. Problem is at cv_input "\
+                            "{}, input_anchor {}.".format(
+                                j, input_anchor_index)
                             
                 
                 variable_name = "{}_{}".format(cv_input.variable_name, 
@@ -1269,4 +1275,141 @@ class Grid_combo(Combo):
         return anchors, anchor_index, milestone_index, connection_flag_dict,\
             associated_input_anchor
         
+class Voronoi_combo(Combo):
+    """
+    An object for the input to define when input CVs should be combined to
+    make a Voronoi tesselation from multiple CVs.
+    """
+    def __init__(self):
+        super(Voronoi_combo, self).__init__()
+        self.input_anchors = []
+        return
+    
+    def make_anchors(self, model, anchor_index, milestone_index, 
+                     connection_flag_dict, associated_input_anchor):
+        assert model.get_type() == "mmvt", \
+            "Only MMVT models may use combos."
+        anchors = []
+        num_anchors = 1
+        cv_widths = []
+        for cv_input in self.cv_inputs:
+            cv_width = len(cv_input.input_anchors)
+            cv_widths.append(cv_width)
+            num_anchors *= cv_width
+            for j, input_anchor in enumerate(cv_input.input_anchors):
+                input_anchor.check(j, cv_input)
+        
+        for i in range(num_anchors):
+            anchor = create_anchor(model, anchor_index)
+            input_anchor_index_list = []
+            input_anchor_list = []
+            
+            divider = 1
+            bulkstate = False
+            endstate = False
+            for j, cv_input in enumerate(self.cv_inputs):
+                input_anchor_index = (i // divider) % cv_widths[j]
+                input_anchor_index_list.append(input_anchor_index)
+                divider *= cv_widths[j]
+                input_anchor = cv_input.input_anchors[input_anchor_index]
+                input_anchor_list.append(input_anchor)
+                if input_anchor.bulk_anchor:
+                    bulkstate = True
+                if input_anchor.bound_state:
+                    endstate = True                
+                # TODO: is there a better way to assign the 
+                #  associated_input_anchor object? For now, we are assuming
+                #  that the assignment is arbitrary
+                associated_input_anchor[anchor.index] = input_anchor
+                # Grid objects with assigned starting positions are meaningless
+                if anchor.bulkstate or input_anchor.bulk_anchor:
+                    anchor.amber_params = None
+                elif anchor.__class__.__name__ == "MMVT_toy_anchor":
+                    starting_positions = input_anchor.starting_positions
+                    assert starting_positions is None, \
+                        "Grid combo cv's with anchors cannot have starting "\
+                        "positions. Use HIDR to assign starting positions."
+                else:
+                    starting_positions = input_anchor.starting_amber_params
+                    if anchor.amber_params is None:
+                        anchor.amber_params = starting_positions
+                    else:
+                        assert input_anchor.starting_amber_params is not None, \
+                            "All input_anchors that apply to the same anchor "\
+                            "must have matching amber_params. Problem is at "\
+                            "cv_input {}, input_anchor {}.".format(
+                                j, input_anchor_index)
+                        assert (anchor.amber_params.prmtop_filename \
+                            == input_anchor.starting_amber_params\
+                            .prmtop_filename) and (anchor.amber_params.\
+                            box_vectors == input_anchor.starting_amber_params.\
+                            box_vectors) and (anchor.amber_params.\
+                            pdb_coordinates_filename == input_anchor.\
+                            starting_amber_params.pdb_coordinates_filename), \
+                            "Multiple input anchors must have matching "\
+                            "starting_amber_params if they apply to the same "\
+                            "anchor. Problem is at cv_input "\
+                            "{}, input_anchor {}.".format(
+                                j, input_anchor_index)
+                            
+                
+                variable_name = "{}_{}".format(cv_input.variable_name, 
+                                           cv_input.index)
+                variable_value = input_anchor.get_variable_value()
+                anchor.variables[variable_name] = variable_value
+                
+            # Assign md, bulkstate, and endstate
+            if not bulkstate:
+                anchor.md = True
+            else:
+                anchor.md = False
+                anchor.bulkstate = True
+                
+            if endstate:
+                anchor.endstate = True
+            # Make the variable names
+            
+            # Handle the connection flags
+            assert len(input_anchor.connection_flags) == 0, \
+                "Connection flags within combos not currently supported."
+            anchors.append(anchor)
+            anchor_index += 1
+        
+        for i, anchor in enumerate(anchors):
+            input_anchor_index_list = []
+            input_anchor_list = []
+            divider = 1
+            for j, cv_input in enumerate(self.cv_inputs):
+                input_anchor_index = (i // divider) % cv_widths[j]
+                input_anchor_index_list.append(input_anchor_index)
+                input_anchor = cv_input.input_anchors[input_anchor_index]
+                this_input_anchor = cv_input.input_anchors[input_anchor_index]
+                
+                if input_anchor_index < len(cv_input.input_anchors)-1:
+                    upper_anchor_index = i + divider
+                    upper_anchor = anchors[upper_anchor_index]
+                    upper_input_anchor = cv_input.input_anchors[
+                        input_anchor_index+1]
+                    milestone_index \
+                        = cv_input.make_mmvt_milestone_between_two_anchors(
+                            anchor, upper_anchor, this_input_anchor, 
+                            upper_input_anchor, milestone_index)
+                        
+                if input_anchor_index > 0:
+                    lower_anchor_index = i - divider
+                    lower_anchor = anchors[lower_anchor_index]
+                    lower_input_anchor = cv_input.input_anchors[
+                        input_anchor_index-1]
+                    milestone_index \
+                        = cv_input.make_mmvt_milestone_between_two_anchors(
+                            lower_anchor, anchor, lower_input_anchor, 
+                            this_input_anchor, milestone_index)
+                
+                divider *= cv_widths[j]
+                
+            if anchor.bulkstate:
+                connection_flag_dict["bulk"].append(anchor)
+            
+        return anchors, anchor_index, milestone_index, connection_flag_dict,\
+            associated_input_anchor
         
