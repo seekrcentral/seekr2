@@ -910,7 +910,6 @@ def check_xml_boundary_states(model):
             if len(state_files) == 0:
                 continue
             for i, state_file in enumerate(state_files):
-                print("loading state_file:", state_file)
                 traj = load_structure_with_mdtraj(
                     model, anchor, mode="state_xml", coords_filename=state_file)
                 cv = model.collective_variables[milestone.cv_index]
