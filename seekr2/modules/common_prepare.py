@@ -685,6 +685,9 @@ def create_cvs(model, collective_variable_inputs, root_directory):
                     cv_input, index=i, root_directory=root_directory)
             elif isinstance(cv_input, common_cv.Toy_cv_input):
                 cv = mmvt_cv.make_mmvt_external_cv_object(cv_input, index=i)
+            elif isinstance(cv_input, common_cv.Voronoi_cv_input):
+                cv = mmvt_cv.make_mmvt_voronoi_cv_object(
+                    cv_input, index=i, root_directory=root_directory)
             else:
                 raise Exception("CV type not implemented in MMVT: %s" \
                                 % type(cv_input))
@@ -720,6 +723,12 @@ def create_anchors(model, model_input):
     
     for cv_input in model_input.cv_inputs:
         if isinstance(cv_input, common_cv.Combo):
+            this_anchors, anchor_index, milestone_index, connection_flag_dict,\
+                associated_input_anchor = cv_input.make_anchors(
+                model, anchor_index, milestone_index, connection_flag_dict,
+                associated_input_anchor)
+            anchors += this_anchors
+        elif isinstance(cv_input, common_cv.Voronoi_cv_input):
             this_anchors, anchor_index, milestone_index, connection_flag_dict,\
                 associated_input_anchor = cv_input.make_anchors(
                 model, anchor_index, milestone_index, connection_flag_dict,

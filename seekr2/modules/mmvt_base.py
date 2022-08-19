@@ -6,6 +6,7 @@ MMVT calculations.
 """
 import math
 import os
+import re
 
 import numpy as np
 from scipy.spatial import transform
@@ -121,10 +122,18 @@ class MMVT_collective_variable(Serializer):
         raise Exception("This base class cannot be used for creating a "\
                         "collective variable boundary definition.")
     
+    def make_voronoi_cv_sub_forces(self):
+        raise Exception("This base class cannot be used for creating a "\
+                        "collective variable boundary definition.")
+    
     def make_namd_colvar_string(self):
         raise Exception("This base class cannot be used for creating a "\
                         "collective variable boundary definition.")
-        
+    
+    def add_groups(self):
+        raise Exception("This base class cannot be used for creating a "\
+                        "collective variable boundary definition.")
+    
     def add_parameters(self):
         raise Exception("This base class cannot be used for creating a "\
                         "collective variable boundary definition.")
@@ -175,7 +184,7 @@ class MMVT_spherical_CV(MMVT_collective_variable):
     def __name__(self):
         return "MMVT_spherical_CV"
     
-    def make_force_object(self):
+    def make_force_object(self, alias_id):
         """
         Create an OpenMM force object which will be used to compute
         the value of the CV's mathematical expression as the simulation
@@ -214,6 +223,28 @@ class MMVT_spherical_CV(MMVT_collective_variable):
         return openmm.CustomCentroidBondForce(
             self.num_groups, self.restraining_expression)
     
+    def make_voronoi_cv_sub_forces(self, me_val, neighbor_val, alias_id):
+        """
+        
+        """
+        me_expr = "(me_val - {})^2".format(self.cv_expression)
+        me_force = openmm.CustomCentroidBondForce(
+            self.num_groups, me_expr)
+        megroup1 = me_force.addGroup(self.group1)
+        megroup2 = me_force.addGroup(self.group2)
+        me_force.addPerBondParameter("me_val")
+        me_force.addBond([megroup1, megroup2], [me_val])
+        
+        neighbor_expr = "(neighbor_val - {})^2".format(self.cv_expression)
+        neighbor_force = openmm.CustomCentroidBondForce(
+            self.num_groups, neighbor_expr)
+        neighborgroup1 = neighbor_force.addGroup(self.group1)
+        neighborgroup2 = neighbor_force.addGroup(self.group2)
+        neighbor_force.addPerBondParameter("neighbor_val")
+        neighbor_force.addBond([neighborgroup1, neighborgroup2], [neighbor_val])
+        
+        return me_force, neighbor_force
+    
     def make_namd_colvar_string(self):
         """
         This string will be put into a NAMD colvar file for tracking
@@ -234,7 +265,18 @@ colvar {{
 }}
 """.format(self.index, serial_group1_str, serial_group2_str)
         return namd_colvar_string
+    
+    def add_groups(self, force):
+        """
         
+        """
+        self._mygroup_list = []
+        mygroup1 = force.addGroup(self.group1)
+        self._mygroup_list.append(mygroup1)
+        mygroup2 = force.addGroup(self.group2)
+        self._mygroup_list.append(mygroup2)
+        return
+    
     def add_parameters(self, force):
         """
         An OpenMM custom force object needs a list of variables
@@ -243,13 +285,8 @@ colvar {{
         variable_names_list. The numerical values of these variables
         will be provided at a later step.
         """
-        self._mygroup_list = []
-        mygroup1 = force.addGroup(self.group1)
-        self._mygroup_list.append(mygroup1)
-        mygroup2 = force.addGroup(self.group2)
-        self._mygroup_list.append(mygroup2)
+        self.add_groups(force)
         variable_names_list = []
-        
         variable_names_list.append("bitcode")
         force.addPerBondParameter("bitcode")
         if self.per_dof_variables is not None:
@@ -264,7 +301,7 @@ colvar {{
         
         return variable_names_list
     
-    def add_groups_and_variables(self, force, variables):
+    def add_groups_and_variables(self, force, variables, alias_id):
         """
         Provide the custom force with additional information it needs,
         which includes a list of the groups of atoms involved with the
@@ -438,6 +475,7 @@ class MMVT_tiwary_CV(MMVT_collective_variable):
         self.num_groups = 0
         self.openmm_expression = None
         self.restraining_expression = None
+        self.cv_expression = None
         self.assign_expressions_and_variables()
         self._mygroup_list = None
         self.variable_name = "v"
@@ -453,7 +491,8 @@ class MMVT_tiwary_CV(MMVT_collective_variable):
                 self.order_parameters, self.order_parameter_weights)):
             weight_var = "c{}".format(i)
             this_expr = weight_var + "*" \
-                + order_parameter.get_openmm_expression(group_index=self.num_groups+1)
+                + order_parameter.get_openmm_expression(
+                    group_index=self.num_groups+1)
             
             self.per_dof_variables.append(weight_var)
             openmm_expression_list.append(this_expr)
@@ -469,7 +508,7 @@ class MMVT_tiwary_CV(MMVT_collective_variable):
         #print("self.per_dof_variables:", self.per_dof_variables)
         return
     
-    def make_force_object(self):
+    def make_force_object(self, alias_id):
         """
         Create an OpenMM force object which will be used to compute
         the value of the CV's mathematical expression as the simulation
@@ -508,13 +547,55 @@ class MMVT_tiwary_CV(MMVT_collective_variable):
         return openmm.CustomCentroidBondForce(
             self.num_groups, self.restraining_expression)
     
+    def make_voronoi_cv_sub_forces(self, me_val, neighbor_val, alias_id):
+        """
+        
+        """
+        me_expr = "(me_val - {})^2".format(self.cv_expression)
+        me_force = openmm.CustomCentroidBondForce(
+            self.num_groups, me_expr)
+        me_group_list = []
+        for order_parameter in self.order_parameters:
+            for i in range(order_parameter.get_num_groups()):
+                group = order_parameter.get_group(i)
+                mygroup = me_force.addGroup(group)
+                me_group_list.append(mygroup)
+        me_force.addPerBondParameter("me_val")
+        me_force.addBond(me_group_list, [me_val])
+        
+        neighbor_expr = "(neighbor_val - {})^2".format(self.cv_expression)
+        neighbor_force = openmm.CustomCentroidBondForce(
+            self.num_groups, neighbor_expr)
+        neighbor_group_list = []
+        for order_parameter in self.order_parameters:
+            for i in range(order_parameter.get_num_groups()):
+                group = order_parameter.get_group(i)
+                mygroup = neighbor_force.addGroup(group)
+                neighbor_group_list.append(mygroup)
+        neighbor_force.addGlobalParameter("neighbor_val")
+        neighbor_force.addBond(neighbor_group_list, [neighbor_val])
+        
+        return me_force, neighbor_force
+    
     def make_namd_colvar_string(self):
         """
         This string will be put into a NAMD colvar file for tracking
         MMVT bounces.
         """
         raise Exception("MMVT Tiwary CVs are not available in NAMD")
+    
+    def add_groups(self, force):
+        """
         
+        """
+        self._mygroup_list = []
+        for order_parameter in self.order_parameters:
+            for i in range(order_parameter.get_num_groups()):
+                group = order_parameter.get_group(i)
+                mygroup = force.addGroup(group)
+                self._mygroup_list.append(mygroup)
+        return
+    
     def add_parameters(self, force):
         """
         An OpenMM custom force object needs a list of variables
@@ -523,15 +604,8 @@ class MMVT_tiwary_CV(MMVT_collective_variable):
         variable_names_list. The numerical values of these variables
         will be provided at a later step.
         """
-        
-        self._mygroup_list = []
+        self.add_groups(force)
         variable_names_list = []
-        for order_parameter in self.order_parameters:
-            for i in range(order_parameter.get_num_groups()):
-                group = order_parameter.get_group(i)
-                mygroup = force.addGroup(group)
-                self._mygroup_list.append(mygroup)
-        
         variable_names_list.append("bitcode")
         force.addPerBondParameter("bitcode")
         if self.per_dof_variables is not None:
@@ -546,7 +620,7 @@ class MMVT_tiwary_CV(MMVT_collective_variable):
         
         return variable_names_list
     
-    def add_groups_and_variables(self, force, variables):
+    def add_groups_and_variables(self, force, variables, alias_id):
         """
         Provide the custom force with additional information it needs,
         which includes a list of the groups of atoms involved with the
@@ -693,7 +767,8 @@ the boundaries.""".format(op_value, milestone_value)
         to the MMVT boundary. Return True if passed, return False if 
         failed.
         """
-        print("check_mdtraj_close_to_boundary not yet implemented for Tiwary CVs")
+        print("check_mdtraj_close_to_boundary not yet implemented for "\
+              "Tiwary CVs")
         return True
     
     def get_atom_groups(self):
@@ -733,6 +808,9 @@ class MMVT_planar_CV(MMVT_collective_variable):
         self.restraining_expression = "k*("\
             "((x2-x1)*(x3-x1) + (y2-y1)*(y3-y1) + (z2-z1)*(z3-z1))"\
             "/ (distance(g1, g3)) - value*distance(g1, g2))^2"
+        self.cv_expression \
+            = "((x2-x1)*(x3-x1) + (y2-y1)*(y3-y1) + (z2-z1)*(z3-z1))"\
+            "/ (distance(g1, g2)*distance(g1, g3))"
         self.num_groups = 3
         self.per_dof_variables = ["k", "value"]
         self.global_variables = []
@@ -743,7 +821,7 @@ class MMVT_planar_CV(MMVT_collective_variable):
     def __name__(self):
         return "MMVT_planar_CV"
     
-    def make_force_object(self):
+    def make_force_object(self, alias_id):
         """
         Create an OpenMM force object which will be used to compute
         the value of the CV's mathematical expression as the simulation
@@ -782,20 +860,41 @@ class MMVT_planar_CV(MMVT_collective_variable):
         return openmm.CustomCentroidBondForce(
             self.num_groups, self.restraining_expression)
     
+    def make_voronoi_cv_sub_forces(self, me_val, neighbor_val, alias_id):
+        """
+        
+        """
+        me_expr = "(me_val - {})^2".format(self.cv_expression)
+        me_force = openmm.CustomCentroidBondForce(
+            self.num_groups, me_expr)
+        megroup1 = me_force.addGroup(self.start_group)
+        megroup2 = me_force.addGroup(self.end_group)
+        megroup3 = me_force.addGroup(self.mobile_group)
+        me_force.addGlobalParameter("me_val")
+        me_force.addBond([megroup1, megroup2, megroup3], [me_val])
+        
+        neighbor_expr = "(neighbor_val - {})^2".format(self.cv_expression)
+        neighbor_force = openmm.CustomCentroidBondForce(
+            self.num_groups, neighbor_expr)
+        neighborgroup1 = neighbor_force.addGroup(self.start_group)
+        neighborgroup2 = neighbor_force.addGroup(self.end_group)
+        neighborgroup3 = neighbor_force.addGroup(self.mobile_group)
+        neighbor_force.addPerBondParameter("neighbor_val")
+        neighbor_force.addBond(
+            [neighborgroup1, neighborgroup2, neighborgroup3], [neighbor_val])
+        
+        return me_force, neighbor_force
+    
     def make_namd_colvar_string(self):
         """
         This string will be put into a NAMD colvar file for tracking
         MMVT bounces.
         """
         raise Exception("MMVT Planar CVs are not available in NAMD")
-        
-    def add_parameters(self, force):
+    
+    def add_groups(self, force):
         """
-        An OpenMM custom force object needs a list of variables
-        provided to it that will occur within its expression. Both
-        the per-dof and global variables are combined within the
-        variable_names_list. The numerical values of these variables
-        will be provided at a later step.
+        
         """
         self._mygroup_list = []
         mygroup1 = force.addGroup(self.start_group)
@@ -804,8 +903,18 @@ class MMVT_planar_CV(MMVT_collective_variable):
         self._mygroup_list.append(mygroup2)
         mygroup3 = force.addGroup(self.mobile_group)
         self._mygroup_list.append(mygroup3)
+        return
+    
+    def add_parameters(self, force):
+        """
+        An OpenMM custom force object needs a list of variables
+        provided to it that will occur within its expression. Both
+        the per-dof and global variables are combined within the
+        variable_names_list. The numerical values of these variables
+        will be provided at a later step.
+        """
+        self.add_groups(force)
         variable_names_list = []
-        
         variable_names_list.append("bitcode")
         force.addPerBondParameter("bitcode")
         if self.per_dof_variables is not None:
@@ -820,7 +929,7 @@ class MMVT_planar_CV(MMVT_collective_variable):
         
         return variable_names_list
     
-    def add_groups_and_variables(self, force, variables):
+    def add_groups_and_variables(self, force, variables, alias_id):
         """
         Provide the custom force with additional information it needs,
         which includes a list of the groups of atoms involved with the
@@ -954,11 +1063,12 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
         self.group = group
         self.ref_structure = ref_structure
         self.name = "mmvt_rmsd"
-        self.openmm_expression = "step(k*(RMSD - value))"
-        self.restraining_expression = "0.5*k*(RMSD - value)^2"
+        self.openmm_expression = None
+        self.restraining_expression = None
+        self.cv_expression = "RMSD"
         self.num_groups = 1
         self.per_dof_variables = []
-        self.global_variables = ["k", "value"]
+        self.global_variables = [] #["k", "value"]
         self._mygroup_list = None
         self.variable_name = "v"
         return
@@ -966,7 +1076,7 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
     def __name__(self):
         return "MMVT_RMSD_CV"
     
-    def make_force_object(self):
+    def make_force_object(self, alias_id):
         """
         Create an OpenMM force object which will be used to compute
         the value of the CV's mathematical expression as the simulation
@@ -987,7 +1097,9 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
             import simtk.openmm as openmm
             
         assert self.num_groups == 1
-        expression_w_bitcode = "bitcode*"+self.openmm_expression
+        self.openmm_expression = "step(k_{}*(RMSD - value_{}))".format(alias_id, alias_id)
+        self.restraining_expression = "0.5*k_{}*(RMSD - value_{})^2".format(alias_id, alias_id)
+        expression_w_bitcode = "bitcode_{}*".format(alias_id)+self.openmm_expression
         return openmm.CustomCVForce(expression_w_bitcode)
     
     def make_restraining_force(self):
@@ -1003,13 +1115,39 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
         assert self.num_groups == 1
         return openmm.CustomCVForce(self.restraining_expression)
     
+    def make_voronoi_cv_sub_forces(self, me_val, neighbor_val, alias_id):
+        """
+        
+        """
+        pdb_file = openmm_app.PDBFile(self.ref_structure)
+        rmsd_me_force = openmm.RMSDForce(pdb_file.positions, self.group)
+        rmsd_neighbor_force = openmm.RMSDForce(pdb_file.positions, self.group)
+        
+        me_expr = "(me_val_{}_alias_{} - {})^2".format(self.index, alias_id, self.cv_expression)
+        me_force = openmm.CustomCVForce(me_expr)
+        me_force.addGlobalParameter("me_val_{}_alias_{}".format(self.index, alias_id), me_val)
+        me_force.addCollectiveVariable("RMSD", rmsd_me_force)
+        
+        neighbor_expr = "(neighbor_val_{}_alias_{} - {})^2".format(self.index, alias_id, self.cv_expression)
+        neighbor_force = openmm.CustomCVForce(neighbor_expr)
+        neighbor_force.addGlobalParameter("neighbor_val_{}_alias_{}".format(self.index, alias_id), neighbor_val)
+        neighbor_force.addCollectiveVariable("RMSD", rmsd_neighbor_force)
+        
+        return me_force, neighbor_force
+    
     def make_namd_colvar_string(self):
         """
         This string will be put into a NAMD colvar file for tracking
         MMVT bounces.
         """
         raise Exception("MMVT RMSD CVs are not available in NAMD")
+    
+    def add_groups(self, force):
+        """
         
+        """
+        return
+    
     def add_parameters(self, force):
         """
         An OpenMM custom force object needs a list of variables
@@ -1025,15 +1163,15 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
         
         return
     
-    def add_groups_and_variables(self, force, variables):
+    def add_groups_and_variables(self, force, variables, alias_id):
         """
         Provide the custom force with additional information it needs,
         which includes a list of the groups of atoms involved with the
         CV, as well as a list of the variables' *values*.
         """
-        force.addGlobalParameter("bitcode", variables[0])
-        force.addGlobalParameter("k", variables[1])
-        force.addGlobalParameter("value", variables[2])
+        force.addGlobalParameter("bitcode_{}".format(alias_id), variables[0])
+        force.addGlobalParameter("k_{}".format(alias_id), variables[1])
+        force.addGlobalParameter("value_{}".format(alias_id), variables[2])
         return
     
     def get_variable_values_list(self, milestone):
@@ -1068,7 +1206,8 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
         ref_traj = mdtraj.load(self.ref_structure)
         ref_traj1 = ref_traj.atom_slice(self.group)
         traj1.superpose(ref_traj1)
-        value = float(mdtraj.rmsd(traj1, ref_traj1, frame=frame_index))
+        my_rmsd = mdtraj.rmsd(traj1, ref_traj1)
+        value = float(my_rmsd[frame_index])
         return value
     
     def check_mdtraj_within_boundary(self, traj, milestone_variables, 
@@ -1165,7 +1304,25 @@ boundary at {:.4f} nm.""".format(value, milestone_value)
         to the MMVT boundary. Return True if passed, return False if 
         failed.
         """
-        print("check_mdtraj_close_to_boundary not yet implemented for RMSD CVs")
+        
+        TOL = 0.001
+        diffs = []
+        for frame_index in range(traj.n_frames):
+            value = self.get_mdtraj_cv_value(traj, frame_index)
+            milestone_value = milestone_variables["value"]
+            diff = value - milestone_value
+            diffs.append(diff)
+            
+        avg_diff = np.mean(diffs)
+        std_diff = np.std(diffs)
+        if abs(avg_diff) > max_avg or std_diff > max_std:
+            if verbose:
+                warnstr = """The distance between the system and central 
+    milestone were found on average to be {:.4f} nm apart.
+    The standard deviation was {:.4f} nm.""".format(avg_diff, std_diff)
+                print(warnstr)
+            return False
+            
         return True
     
     def get_atom_groups(self):
@@ -1194,6 +1351,7 @@ class MMVT_external_CV(MMVT_collective_variable):
         self.cv_expression = None
         self.openmm_expression = None
         self.restraining_expression = None
+        self.cv_expression = None
         self.num_groups = len(groups)
         self.per_dof_variables = ["k", "value"]
         self.global_variables = []
@@ -1204,7 +1362,7 @@ class MMVT_external_CV(MMVT_collective_variable):
     def __name__(self):
         return "MMVT_external_CV"
     
-    def make_force_object(self):
+    def make_force_object(self, alias_id):
         """
         Create an OpenMM force object which will be used to compute
         the value of the CV's mathematical expression as the simulation
@@ -1240,13 +1398,48 @@ class MMVT_external_CV(MMVT_collective_variable):
         return openmm.CustomCentroidBondForce(
             self.num_groups, self.restraining_expression)
     
+    def make_voronoi_cv_sub_forces(self, me_val, neighbor_val, alias_id):
+        """
+        
+        """
+        me_expr = "(me_val - {})^2".format(self.cv_expression)
+        me_force = openmm.CustomCentroidBondForce(self.num_groups, me_expr)
+        me_group_list = []
+        for group in self.groups:
+            mygroup = me_force.addGroup(group)
+            me_group_list.append(mygroup)
+        me_force.addPerBondParameter("me_val")
+        me_force.addBond(me_group_list, [me_val])
+        
+        neighbor_expr = "(neighbor_val - {})^2".format(self.cv_expression)
+        neighbor_force = openmm.CustomCentroidBondForce(
+            self.num_groups, neighbor_expr)
+        neighbor_group_list = []
+        for group in self.groups:
+            mygroup = neighbor_force.addGroup(group)
+            neighbor_group_list.append(mygroup)
+        neighbor_force.addPerBondParameter("neighbor_val")
+        neighbor_force.addBond(neighbor_group_list, [neighbor_val])
+        
+        return me_force, neighbor_force
+    
     def make_namd_colvar_string(self):
         """
         This string will be put into a NAMD colvar file for tracking
         MMVT bounces.
         """
         raise Exception("MMVT External CVs are not available in NAMD")
+    
+    def add_groups(self, force):
+        """
         
+        """
+        self._mygroup_list = []
+        for group in self.groups:
+            mygroup = force.addGroup(group)
+            self._mygroup_list.append(mygroup)
+        return
+    
     def add_parameters(self, force):
         """
         An OpenMM custom force object needs a list of variables
@@ -1255,13 +1448,8 @@ class MMVT_external_CV(MMVT_collective_variable):
         variable_names_list. The numerical values of these variables
         will be provided at a later step.
         """
-        self._mygroup_list = []
-        for group in self.groups:
-            mygroup = force.addGroup(group)
-            self._mygroup_list.append(mygroup)
-        
+        self.add_groups(force)
         variable_names_list = []
-        
         variable_names_list.append("bitcode")
         force.addPerBondParameter("bitcode")
         if self.per_dof_variables is not None:
@@ -1276,7 +1464,7 @@ class MMVT_external_CV(MMVT_collective_variable):
         
         return variable_names_list
     
-    def add_groups_and_variables(self, force, variables):
+    def add_groups_and_variables(self, force, variables, alias_id):
         """
         Provide the custom force with additional information it needs,
         which includes a list of the groups of atoms involved with the
@@ -1317,8 +1505,8 @@ class MMVT_external_CV(MMVT_collective_variable):
         """
         return True
     
-    def get_openmm_context_cv_value(self, context, positions,
-                                    milestone_variables):
+    def get_openmm_context_cv_value(self, context, milestone_variables, 
+                                    positions):
         """
         Determine the current CV value for an openmm context.
         """
@@ -1436,24 +1624,41 @@ class MMVT_Voronoi_CV(MMVT_collective_variable):
     
     """+MMVT_collective_variable.__doc__
     
-    def __init__(self, index, groups):
+    def __init__(self, index):
         self.index = index
-        self.groups = groups
-        self.ref_structure = ref_structure
+        self.child_cvs = []
         self.name = "mmvt_voronoi"
-        self.openmm_expression = ""
-        self.restraining_expression = ""
-        self.num_groups = len(groups)
-        self.per_dof_variables = []
-        self.global_variables = []
+        self.openmm_expression = None
+        self.restraining_expression = None
+        self.cv_expression = None
         self._mygroup_list = None
-        self.variable_names = []
+        self.num_groups = 0
         return
 
     def __name__(self):
         return "MMVT_Voronoi_CV"
     
-    def make_force_object(self):
+    def make_cv_expr(self, alias_id):
+        """
+        
+        """
+        me_expr_list = []
+        neighbor_expr_list = []
+        num_groups = 0
+        for i, child_cv in enumerate(self.child_cvs):
+            me_cv_expr = "me_cv_{}_alias_{}".format(i, alias_id)
+            me_expr_list.append(me_cv_expr)
+            neighbor_cv_expr = "neighbor_cv_{}_alias_{}".format(i, alias_id)
+            neighbor_expr_list.append(neighbor_cv_expr)
+            num_groups += child_cv.num_groups
+        
+        me_expr = " + ".join(me_expr_list)
+        neighbor_expr = " + ".join(neighbor_expr_list)
+        cv_expr = "(" + me_expr + ") - (" + neighbor_expr + ")"
+        self.cv_expression = cv_expr
+        return cv_expr
+    
+    def make_force_object(self, alias_id):
         """
         Create an OpenMM force object which will be used to compute
         the value of the CV's mathematical expression as the simulation
@@ -1472,12 +1677,13 @@ class MMVT_Voronoi_CV(MMVT_collective_variable):
             import openmm
         except ImportError:
             import simtk.openmm as openmm
-            
-        assert self.num_groups == 1
-        expression_w_bitcode = "bitcode*"+self.openmm_expression
+        
+        cv_expression = self.make_cv_expr(alias_id)
+        self.openmm_expression = "step(" + cv_expression + ")"
+        expression_w_bitcode = "bitcode_{}*".format(alias_id)+self.openmm_expression
         return openmm.CustomCVForce(expression_w_bitcode)
     
-    def make_restraining_force(self):
+    def make_restraining_force(self, alias_id):
         """
         Create an OpenMM force object that will restrain the system to
         a given value of this CV.
@@ -1487,7 +1693,9 @@ class MMVT_Voronoi_CV(MMVT_collective_variable):
         except ImportError:
             import simtk.openmm as openmm
         
-        assert self.num_groups == 1
+        cv_expression = self.make_cv_expr()
+        self.restraining_expression = "0.5*k_{}*(".format(alias_id) + cv_expression + ")^2"
+        
         return openmm.CustomCVForce(self.restraining_expression)
     
     def make_namd_colvar_string(self):
@@ -1495,8 +1703,14 @@ class MMVT_Voronoi_CV(MMVT_collective_variable):
         This string will be put into a NAMD colvar file for tracking
         MMVT bounces.
         """
-        raise Exception("MMVT RMSD CVs are not available in NAMD")
+        raise Exception("MMVT Voronoi CVs are not available in NAMD")
+    
+    def add_groups(self, force):
+        """
         
+        """
+        return
+    
     def add_parameters(self, force):
         """
         An OpenMM custom force object needs a list of variables
@@ -1505,22 +1719,22 @@ class MMVT_Voronoi_CV(MMVT_collective_variable):
         variable_names_list. The numerical values of these variables
         will be provided at a later step.
         """
-        
-        pdb_file = openmm_app.PDBFile(self.ref_structure)
-        rmsd_force = openmm.RMSDForce(pdb_file.positions, self.group)
-        force.addCollectiveVariable("RMSD", rmsd_force)
-        
         return
     
-    def add_groups_and_variables(self, force, variables):
+    def add_groups_and_variables(self, force, variables, alias_id):
         """
         Provide the custom force with additional information it needs,
         which includes a list of the groups of atoms involved with the
         CV, as well as a list of the variables' *values*.
         """
-        force.addGlobalParameter("bitcode", variables[0])
-        force.addGlobalParameter("k", variables[1])
-        force.addGlobalParameter("value", variables[2])
+        force.addGlobalParameter("bitcode_{}".format(alias_id), variables[0])
+        force.addGlobalParameter("k_{}".format(alias_id), variables[1])
+        for i, child_cv in enumerate(self.child_cvs):
+            me_force, neighbor_force = child_cv.make_voronoi_cv_sub_forces(
+                variables[2*(i+1)], variables[2*(i+1)+1], alias_id)
+            force.addCollectiveVariable("me_cv_{}_alias_{}".format(i, alias_id), me_force)
+            force.addCollectiveVariable("neighbor_cv_{}_alias_{}".format(i, alias_id), neighbor_force)
+            
         return
     
     def get_variable_values_list(self, milestone):
@@ -1532,10 +1746,14 @@ class MMVT_Voronoi_CV(MMVT_collective_variable):
         values_list = []
         bitcode = 2**(milestone.alias_index-1)
         k = milestone.variables["k"] * unit.kilojoules_per_mole/unit.angstrom**2
-        value = milestone.variables["value"] * unit.nanometers
         values_list.append(bitcode)
         values_list.append(k)
-        values_list.append(value)
+        for i, child_cv in enumerate(self.child_cvs):
+            me_i_value = milestone.variables["me_{}".format(i)]
+            neighbor_i_value = milestone.variables["neighbor_{}".format(i)]
+            values_list.append(me_i_value)
+            values_list.append(neighbor_i_value)
+            
         return values_list
     
     def get_namd_evaluation_string(self, milestone, cv_val_var="cv_val"):
@@ -1551,12 +1769,12 @@ class MMVT_Voronoi_CV(MMVT_collective_variable):
         """
         Determine the current CV value for an mdtraj object.
         """
-        traj1 = traj.atom_slice(self.group)
-        ref_traj = mdtraj.load(self.ref_structure)
-        ref_traj1 = ref_traj.atom_slice(self.group)
-        traj1.superpose(ref_traj1)
-        value = float(mdtraj.rmsd(traj1, ref_traj1, frame=frame_index))
-        return value
+        values = []
+        for i, child_cv in enumerate(self.child_cvs):
+            cv_value = child_cv.get_mdtraj_cv_value(traj, frame_index)
+            values.append(cv_value)
+        
+        return values
     
     def check_mdtraj_within_boundary(self, traj, milestone_variables, 
                                      verbose=False):
@@ -1569,7 +1787,7 @@ class MMVT_Voronoi_CV(MMVT_collective_variable):
         for frame_index in range(traj.n_frames):
             value = self.get_mdtraj_cv_value(traj, frame_index)
             result = self.check_value_within_boundary(
-                value, milestone_variables, verbose=verbose, tolerance=TOL)
+                value, milestone_variables, tolerance=TOL)
             if not result:
                 return False
             
@@ -1577,74 +1795,53 @@ class MMVT_Voronoi_CV(MMVT_collective_variable):
     
     # TODO: Should be working, just needs tests
     def get_openmm_context_cv_value(
-            self, context, milestone_variables, positions=None, 
-            ref_positions=None, verbose=False, tolerance=0.0):
+            self, context, milestone_variables, positions=None):
         """
         
         """
-        system = context.getSystem()
-        if positions is None:
-            state = context.getState(getPositions=True)
-            positions = state.getPositions()
+        values = []
+        for i, child_cv in enumerate(self.child_cvs):
+            cv_value = child_cv.get_openmm_context_cv_value(
+                context, milestone_variables=milestone_variables, 
+                positions=positions)
+            values.append(cv_value)
             
-        if ref_positions is None:
-            pdb_filename = self.ref_structure
-            pdb_file = openmm_app.PDBFile(pdb_filename)
-            ref_positions = pdb_file.positions
-        
-        pos_subset = []
-        ref_subset = []
-        for atom_index in self.group:
-            pos_subset.append(positions[atom_index].value_in_unit(unit.nanometers))
-            ref_subset.append(ref_positions[atom_index].value_in_unit(unit.nanometers))
-        
-        pos_subset = np.array(pos_subset)
-        ref_subset = np.array(ref_subset)
-        
-        avg_pos = np.array([float(np.mean(pos_subset[:,0])), 
-                            float(np.mean(pos_subset[:,1])), 
-                            float(np.mean(pos_subset[:,2]))])
-        avg_ref = np.array([np.mean(ref_subset[:,0]), 
-                            np.mean(ref_subset[:,1]), 
-                            np.mean(ref_subset[:,2])])        
-        pos_subset_centered = pos_subset - avg_pos
-        ref_subset_centered = ref_subset - avg_ref
-        rotation, value = transform.Rotation.align_vectors(
-            pos_subset_centered, ref_subset_centered)
-        rmsd = value / np.sqrt(len(self.group))
-        return rmsd
+        return values
     
     def check_openmm_context_within_boundary(
             self, context, milestone_variables, positions=None, 
-            ref_positions=None, verbose=False, tolerance=0.0):
+            verbose=False, tolerance=0.0):
         """
         Check if an OpenMM context describes a system that remains
         within the expected anchor. Return True if passed, return
         False if failed.
         """
         
-        value = self.get_openmm_context_cv_value(
-            context, milestone_variables, positions, 
-            ref_positions, verbose, tolerance)
+        values = self.get_openmm_context_cv_value(
+            context, milestone_variables, positions)
         result = self.check_value_within_boundary(
-            value, milestone_variables, verbose=verbose, tolerance=tolerance)
+            values, milestone_variables, tolerance=tolerance)
         return result
     
     
     def check_value_within_boundary(self, value, milestone_variables, 
-                                    verbose=False, tolerance=0.0):
-        milestone_k = milestone_variables["k"]
-        milestone_value = milestone_variables["value"]
-        if milestone_k*(value - milestone_value) > tolerance:
-            if verbose:
-                warnstr = """The RMSD value of atom group 
-was found to be {:.4f} nm apart.
-This distance falls outside of the milestone
-boundary at {:.4f} nm.""".format(value, milestone_value)
-                print(warnstr)
-            return False
+                                    tolerance=0.0):
+        me_total_value = 0.0
+        neighbor_total_value = 0.0
+        for i, child_cv in enumerate(self.child_cvs):
+            cv_value = value[i]
+            me_i_value = milestone_variables["me_{}".format(i)]
+            neighbor_i_value = milestone_variables["neighbor_{}".format(i)]
+            me_this_value = (me_i_value - cv_value)**2
+            neighbor_this_value = (neighbor_i_value - cv_value)**2
+            me_total_value += me_this_value
+            neighbor_total_value += neighbor_this_value
+            distance = me_total_value - neighbor_total_value
+            if (distance-tolerance) > 0.0: 
+                return False
+        
         return True
-    
+        
     def check_mdtraj_close_to_boundary(self, traj, milestone_variables, 
                                      verbose=False, max_avg=0.03, max_std=0.05):
         """
@@ -1652,14 +1849,38 @@ boundary at {:.4f} nm.""".format(value, milestone_value)
         to the MMVT boundary. Return True if passed, return False if 
         failed.
         """
-        print("check_mdtraj_close_to_boundary not yet implemented for RMSD CVs")
+        TOL = 0.001
+        diffs = []
+        for frame_index in range(traj.n_frames):
+            values = self.get_mdtraj_cv_value(traj, frame_index)
+            me_dist = 0.0
+            neighbor_dist = 0.0
+            for i, child_cv in enumerate(self.child_cvs):
+                me_val = milestone_variables["me_{}".format(i)]
+                neighbor_val = milestone_variables["neighbor_{}".format(i)]
+                me_dist += (me_val - values[i])**2
+                neighbor_dist += (neighbor_val - values[i])**2
+            
+            diff = me_dist - neighbor_dist
+            diffs.append(diff)
+            
+        avg_diff = np.mean(diffs)
+        std_diff = np.std(diffs)
+        if abs(avg_diff) > max_avg or std_diff > max_std:
+            if verbose:
+                warnstr = """The distance between the system and central 
+    milestone were found on average to be {:.4f} nm apart.
+    The standard deviation was {:.4f} nm.""".format(avg_diff, std_diff)
+                print(warnstr)
+            return False
+            
         return True
     
     def get_atom_groups(self):
         """
         Return a 1-list of this CV's atomic group.
         """
-        return [self.group]
+        return []
             
     def get_variable_values(self):
         """

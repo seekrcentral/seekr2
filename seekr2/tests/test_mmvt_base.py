@@ -7,6 +7,7 @@ import shutil
 
 import numpy as np
 
+from seekr2.modules import mmvt_base
 from seekr2.modules import mmvt_sim_openmm
 
 def test_MMVT_anchor_id_from_alias(host_guest_mmvt_model):

@@ -483,6 +483,51 @@ def toy_multi_model(toy_multi_model_persistent):
     toy_multi_model = copy.deepcopy(toy_multi_model_persistent)
     return toy_multi_model
 
+@pytest.fixture(scope="session")
+def toy_voronoi_model_input_persistent(tmpdir_factory):
+    """
+    Create a model object that is persistent across the tests in this file.
+    """
+    rootdir = tmpdir_factory.mktemp("toy_voronoi")
+    toy_voronoi_model_input_persisent_obj \
+        = create_model_input.create_toy_voronoi_model_input(rootdir)
+    return toy_voronoi_model_input_persisent_obj
+
+@pytest.fixture()
+def toy_voronoi_model_input(toy_voronoi_model_input_persistent):
+    """
+    Create a copy of the model input that is not persistent. But this 
+    at least doesn't require us to generate an entirely new model 
+    input.
+    """
+    toy_voronoi_model_input_obj = copy.deepcopy(
+        toy_voronoi_model_input_persistent)
+    return toy_voronoi_model_input_obj
+
+@pytest.fixture(scope="session")
+def toy_voronoi_model_persistent(toy_voronoi_model_input_persistent):
+    """
+    Create a model object that is persistent across the tests in this file.
+    """
+    os.chdir(TEST_DIRECTORY)
+    toy_voronoi_model_obj, model_xml_path \
+        = prepare.prepare(toy_voronoi_model_input_persistent, 
+                          force_overwrite=False)
+    model_dir = os.path.dirname(model_xml_path)
+    toy_voronoi_model_obj.anchor_rootdir = os.path.abspath(model_dir)
+    toy_voronoi_model_obj.anchors[0].starting_positions = np.array(
+        [[[0.5, 0.5, 0.0]]])
+    
+    return toy_voronoi_model_obj
+
+@pytest.fixture
+def toy_voronoi_model(toy_voronoi_model_persistent):
+    """
+    Create a copy of the model that is not persistent. But this at least
+    doesn't require us to generate an entirely new model
+    """
+    toy_voronoi_model = copy.deepcopy(toy_voronoi_model_persistent)
+    return toy_voronoi_model
 
 def compare_dicts(dict1, dict2):
     """

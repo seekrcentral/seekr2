@@ -567,3 +567,90 @@ def create_toy_multi_model_input(root_dir):
     model_input.toy_settings_input.masses = np.array([10.0])
     
     return model_input
+
+def create_toy_voronoi_model_input(root_dir):
+    """
+    Create a toy mmvt voronoi model input.
+    
+    This is the Entropy barrier system.
+    """
+    os.chdir(TEST_DIRECTORY)
+    model_input = common_prepare.Model_input()
+    model_input.calculation_type = "mmvt"
+    model_input.calculation_settings = common_prepare.MMVT_input_settings()
+    model_input.calculation_settings.md_output_interval = 1000
+    model_input.calculation_settings.md_steps_per_anchor = 100000
+    model_input.temperature = 300.0
+    model_input.pressure = 1.0
+    model_input.ensemble = "nvt"
+    model_input.root_directory = root_dir
+    model_input.md_program = "openmm"
+    model_input.constraints = "none"
+    model_input.rigidWater = True
+    model_input.hydrogenMass = None
+    model_input.integrator_type = "langevin"
+    model_input.timestep = 0.002
+    model_input.nonbonded_cutoff = None
+    
+    voronoi_cv = common_cv.Voronoi_cv_input()
+    
+    cv_input1 = common_cv.Toy_cv_input()
+    cv_input1.groups = [[0]]
+    cv_input1.variable_name = "value"
+    cv_input1.cv_expression = "x1"
+    cv_input1.openmm_expression = "step(k*(x1-value))"
+    cv_input1.input_anchors = []
+    
+    cv_input2 = common_cv.Toy_cv_input()
+    cv_input2.groups = [[0]]
+    cv_input2.variable_name = "value"
+    cv_input2.cv_expression = "y1"
+    cv_input2.openmm_expression = "step(k*(y1-value))"
+    cv_input2.input_anchors = []
+    
+    voronoi_cv.cv_inputs = [cv_input1, cv_input2]
+    
+    input_anchor1 = common_cv.Voronoi_cv_toy_anchor()
+    input_anchor1.values = [0.5, 0.5]
+    input_anchor1.starting_positions = np.array([[[0.5, 0.5, 0.0]]])
+    input_anchor1.bound_state = False
+    input_anchor1.bulk_state = False
+    
+    input_anchor2 = common_cv.Voronoi_cv_toy_anchor()
+    input_anchor2.values = [-0.2, 0.2]
+    input_anchor2.starting_positions = np.array([[[-0.2, 0.2, 0.0]]])
+    input_anchor2.bound_state = False
+    input_anchor2.bulk_state = False
+    
+    input_anchor3 = common_cv.Voronoi_cv_toy_anchor()
+    input_anchor3.values = [0.0, 0.0]
+    input_anchor3.starting_positions = np.array([[[0.0, 0.0, 0.0]]])
+    input_anchor3.bound_state = False
+    input_anchor3.bulk_state = False
+    
+    input_anchor4 = common_cv.Voronoi_cv_toy_anchor()
+    input_anchor4.values = [0.2, -0.7]
+    input_anchor4.starting_positions = np.array([[[0.2, -0.7, 0.0]]])
+    input_anchor4.bound_state = False
+    input_anchor4.bulk_state = False
+    
+    voronoi_cv.input_anchors = [input_anchor1, input_anchor2, input_anchor3, 
+                                input_anchor4]
+    
+    stateA = common_cv.State_point()
+    stateA.name = "stateA"
+    stateA.location = [0.5, 0.5]
+    stateB = common_cv.State_point()
+    stateB.name = "stateB"
+    stateB.location = [0.2, -0.7]
+    voronoi_cv.state_points = [stateA, stateB]
+    
+    model_input.cv_inputs = [voronoi_cv]
+    model_input.browndye_settings_input = None
+    model_input.toy_settings_input = common_prepare.Toy_settings_input()
+    model_input.toy_settings_input.potential_energy_expression \
+        = "5*(x1^6+y1^6+exp(-(10*y1)^2)*(1-exp(-(10*x1)^2)))"
+    model_input.toy_settings_input.num_particles = 1
+    model_input.toy_settings_input.masses = np.array([10.0])
+    
+    return model_input

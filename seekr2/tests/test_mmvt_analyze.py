@@ -389,6 +389,8 @@ def test_MMVT_data_sample_calculate_pi_alpha():
             model, N_alpha_beta, k_alpha_beta, N_i_j_alpha, 
             R_i_alpha_total, T_alpha_total)
     main_data_sample.calculate_pi_alpha()
+    print("main_data_sample.pi_alpha[:-1]:", main_data_sample.pi_alpha[:-1])
+    print("main_data_sample.pi_alpha[0]:", main_data_sample.pi_alpha[0])
     assert np.all(np.isclose(main_data_sample.pi_alpha[:-1], 
                              main_data_sample.pi_alpha[0]))
     assert np.isclose(main_data_sample.pi_alpha[-1], 0.0)

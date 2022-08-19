@@ -893,7 +893,6 @@ def check_xml_boundary_states(model):
     boundaries are encountered. Ensure that these boundary encounters
     are properly accounted and that they exist where expected.
     """
-    
     warnstr = """CHECK FAILURE: Saved boundary states in anchor {} were not
     saved close to the expected milestone(s). File name: {}. 
     This could be caused if the model.xml file was improperly 
@@ -911,6 +910,7 @@ def check_xml_boundary_states(model):
             if len(state_files) == 0:
                 continue
             for i, state_file in enumerate(state_files):
+                print("loading state_file:", state_file)
                 traj = load_structure_with_mdtraj(
                     model, anchor, mode="state_xml", coords_filename=state_file)
                 cv = model.collective_variables[milestone.cv_index]

@@ -6,8 +6,10 @@ shapes) that might be used in SEEKR2 calculations.
 """
 
 from abc import abstractmethod
+from collections import defaultdict
 
 import numpy as np
+from scipy.spatial import Delaunay
 from abserdes import Serializer
 
 import seekr2.modules.common_base as base
@@ -270,6 +272,13 @@ class Spherical_cv_input(CV_input):
         
         last_radius = -1e9
         found_bulk_anchor = False
+        
+        if self.input_anchors is None:
+            return
+        
+        assert len(self.group1) > 0, "Any input CV groups must contain atoms."
+        assert len(self.group2) > 0, "Any input CV groups must contain atoms."
+        
         for i, input_anchor in enumerate(self.input_anchors):
             assert input_anchor.__class__.__name__ == "Spherical_cv_anchor"
             radius = input_anchor.radius
@@ -305,8 +314,6 @@ class Spherical_cv_input(CV_input):
             assert len(self.input_anchors) > 1, "A CV must contain "\
                 "more than one anchor."
         
-        assert len(self.group1) > 0, "Any input CV groups must contain atoms."
-        assert len(self.group2) > 0, "Any input CV groups must contain atoms."
         return
     
     def make_mmvt_milestone_between_two_anchors(
@@ -609,6 +616,13 @@ class Tiwary_cv_input(CV_input):
         
         last_value = -1e9
         num_bulk_anchors = 0
+        
+        if self.input_anchors is None:
+            return
+        
+        assert num_bulk_anchors <= 1, "There cannot be more than one bulk "\
+            "anchor."
+        
         for i, input_anchor in enumerate(self.input_anchors):
             assert input_anchor.__class__.__name__ == "Tiwary_cv_anchor"
             value = input_anchor.value
@@ -634,8 +648,6 @@ class Tiwary_cv_input(CV_input):
             assert len(self.input_anchors) > 1, "A CV must contain "\
                 "more than one anchor."
         
-        assert num_bulk_anchors <= 1, "There cannot be more than one bulk "\
-            "anchor."
         return
     
     def make_mmvt_milestone_between_two_anchors(
@@ -770,6 +782,16 @@ class Planar_cv_input(CV_input):
         
         last_value = -1e9
         num_bulk_anchors = 0
+        
+        assert num_bulk_anchors <= 1, "There cannot be more than one bulk "\
+            "anchor."
+        assert len(self.start_group) > 0, "Any input CV groups must contain atoms."
+        assert len(self.end_group) > 0, "Any input CV groups must contain atoms."
+        assert len(self.mobile_group) > 0, "Any input CV groups must contain atoms."
+        
+        if self.input_anchors is None:
+            return
+        
         for i, input_anchor in enumerate(self.input_anchors):
             assert input_anchor.__class__.__name__ == "Planar_cv_anchor"
             value = input_anchor.value
@@ -794,12 +816,7 @@ class Planar_cv_input(CV_input):
                     
             assert len(self.input_anchors) > 1, "A CV must contain "\
                 "more than one anchor."
-        assert num_bulk_anchors <= 1, "There cannot be more than one bulk "\
-            "anchor."
         
-        assert len(self.start_group) > 0, "Any input CV groups must contain atoms."
-        assert len(self.end_group) > 0, "Any input CV groups must contain atoms."
-        assert len(self.mobile_group) > 0, "Any input CV groups must contain atoms."
         return
     
     def make_mmvt_milestone_between_two_anchors(
@@ -924,6 +941,11 @@ class RMSD_cv_input(CV_input):
         
         last_value = -1e9
         found_bulk_anchor = False
+        assert len(self.group) > 0, "Any input CV groups must contain atoms."
+        
+        if self.input_anchors is None:
+            return
+        
         for i, input_anchor in enumerate(self.input_anchors):
             assert input_anchor.__class__.__name__ == "RMSD_cv_anchor"
             value = input_anchor.value
@@ -950,7 +972,6 @@ class RMSD_cv_input(CV_input):
             assert len(self.input_anchors) > 1, "A CV must contain "\
                 "more than one anchor."
         
-        assert len(self.group) > 0, "Any input CV groups must contain atoms."
         return
     
     def make_mmvt_milestone_between_two_anchors(
@@ -1076,6 +1097,14 @@ class Toy_cv_input(CV_input):
         
         last_value = -1e9
         found_bulk_anchor = False
+        
+        for group in self.groups:
+            assert len(group) > 0, \
+                "Any input CV groups must contain atoms."
+        
+        if self.input_anchors is None:
+            return
+        
         for i, input_anchor in enumerate(self.input_anchors):
             assert input_anchor.__class__.__name__ == "Toy_cv_anchor"
             value = input_anchor.value
@@ -1109,9 +1138,7 @@ class Toy_cv_input(CV_input):
             assert len(self.input_anchors) > 1, "A CV must contain "\
                 "more than one anchor."
         
-        for group in self.groups:
-            assert len(group) > 0, \
-                "Any input CV groups must contain atoms."
+        
         return
     
     def make_mmvt_milestone_between_two_anchors(
@@ -1185,6 +1212,7 @@ class Grid_combo(Combo):
                 associated_input_anchor[anchor.index] = input_anchor
                 # Grid objects with assigned starting positions are meaningless
                 if anchor.bulkstate or input_anchor.bulk_anchor:
+                    # TODO: is this valid for a Toy anchor?
                     anchor.amber_params = None
                 elif anchor.__class__.__name__ == "MMVT_toy_anchor":
                     starting_positions = input_anchor.starting_positions
@@ -1274,88 +1302,128 @@ class Grid_combo(Combo):
             
         return anchors, anchor_index, milestone_index, connection_flag_dict,\
             associated_input_anchor
+
+class Voronoi_cv_anchor(CV_anchor):
+    """
+    This object represents an anchor within a Voronoi
+    CV. Used for input purposes only.
+    
+    Attributes:
+    -----------
+    
+    """
+    
+    def __init__(self):
+        self.name = None
+        self.values = []
+        self.starting_amber_params = None
+        self.starting_forcefield_params = None
+        self.bound_state = False
+        self.bulk_anchor = False
+        self.connection_flags = []
+        return
         
-class Voronoi_combo(Combo):
+    def check(self, j, cv_input):
+        return
+    
+    def get_variable_value(self, index):
+        return self.values[index]
+
+class Voronoi_cv_toy_anchor(CV_anchor):
+    """
+    This object represents an anchor within a Voronoi
+    CV. Used for input purposes only.
+    
+    Attributes:
+    -----------
+    
+    """
+    
+    def __init__(self):
+        self.name = None
+        self.values = []
+        self.starting_positions = None
+        self.bound_state = False
+        self.bulk_anchor = False
+        self.connection_flags = []
+        return
+        
+    def check(self, j, cv_input):
+        return
+    
+    def get_variable_value(self, index):
+        return self.values[index]
+
+def find_voronoi_anchor_neighbors(anchors):
+    """
+    
+    """
+    n_points = len(anchors)
+    assert n_points > 0, "No anchors in CV"
+    n_dimensions = len(anchors[0].variables)
+    points = np.zeros((n_points, n_dimensions))
+    neighbor_anchors = defaultdict(set)
+    for alpha, anchor in enumerate(anchors):
+        assert n_dimensions == len(anchor.variables), \
+            "all anchors within a Voronoi CV must have the same dimensions."
+        variables_sorted_by_cv_index = sorted(
+            anchor.variables.keys(), key=lambda name: name.split("_")[2])
+        for i, variable_name in enumerate(variables_sorted_by_cv_index):
+            points[alpha, i] = anchor.variables[variable_name]
+    
+    triangulation = Delaunay(points)
+    for simplex in triangulation.simplices:
+        for anchor_index1 in simplex:
+            for anchor_index2 in simplex:
+                if anchor_index1 == anchor_index2:
+                    continue
+                neighbor_anchors[anchor_index1].add(anchor_index2)
+        
+    return neighbor_anchors
+    
+class Voronoi_cv_input(CV_input):
     """
     An object for the input to define when input CVs should be combined to
     make a Voronoi tesselation from multiple CVs.
     """
     def __init__(self):
-        super(Voronoi_combo, self).__init__()
+        self.index = None
+        self.cv_inputs = []
+        self.state_points = []
         self.input_anchors = []
         return
     
     def make_anchors(self, model, anchor_index, milestone_index, 
                      connection_flag_dict, associated_input_anchor):
         assert model.get_type() == "mmvt", \
-            "Only MMVT models may use combos."
+            "Only MMVT models may use Voronoi Tesselation CVs."
         anchors = []
         num_anchors = 1
-        cv_widths = []
-        for cv_input in self.cv_inputs:
-            cv_width = len(cv_input.input_anchors)
-            cv_widths.append(cv_width)
-            num_anchors *= cv_width
-            for j, input_anchor in enumerate(cv_input.input_anchors):
-                input_anchor.check(j, cv_input)
+        bulkstate = False
+        endstate = False
         
-        for i in range(num_anchors):
-            anchor = create_anchor(model, anchor_index)
-            input_anchor_index_list = []
-            input_anchor_list = []
+        for input_anchor_index, input_anchor in enumerate(self.input_anchors):
+            input_anchor.check(input_anchor_index, self)
+            if isinstance(input_anchor, Voronoi_cv_toy_anchor):
+                anchor = mmvt_base.MMVT_toy_anchor()
+            else:
+                anchor = mmvt_base.MMVT_anchor()
+            anchor.index = anchor_index
+            anchor.name = "anchor_"+str(anchor_index)
+            anchor.directory = anchor.name
+            associated_input_anchor[anchor.index] = input_anchor
+            if input_anchor.bulk_anchor:
+                bulkstate = True
+            if input_anchor.bound_state:
+                endstate = True
+            if anchor.bulkstate or input_anchor.bulk_anchor:
+                anchor.amber_params = None
             
-            divider = 1
-            bulkstate = False
-            endstate = False
-            for j, cv_input in enumerate(self.cv_inputs):
-                input_anchor_index = (i // divider) % cv_widths[j]
-                input_anchor_index_list.append(input_anchor_index)
-                divider *= cv_widths[j]
-                input_anchor = cv_input.input_anchors[input_anchor_index]
-                input_anchor_list.append(input_anchor)
-                if input_anchor.bulk_anchor:
-                    bulkstate = True
-                if input_anchor.bound_state:
-                    endstate = True                
-                # TODO: is there a better way to assign the 
-                #  associated_input_anchor object? For now, we are assuming
-                #  that the assignment is arbitrary
-                associated_input_anchor[anchor.index] = input_anchor
-                # Grid objects with assigned starting positions are meaningless
-                if anchor.bulkstate or input_anchor.bulk_anchor:
-                    anchor.amber_params = None
-                elif anchor.__class__.__name__ == "MMVT_toy_anchor":
-                    starting_positions = input_anchor.starting_positions
-                    assert starting_positions is None, \
-                        "Grid combo cv's with anchors cannot have starting "\
-                        "positions. Use HIDR to assign starting positions."
-                else:
-                    starting_positions = input_anchor.starting_amber_params
-                    if anchor.amber_params is None:
-                        anchor.amber_params = starting_positions
-                    else:
-                        assert input_anchor.starting_amber_params is not None, \
-                            "All input_anchors that apply to the same anchor "\
-                            "must have matching amber_params. Problem is at "\
-                            "cv_input {}, input_anchor {}.".format(
-                                j, input_anchor_index)
-                        assert (anchor.amber_params.prmtop_filename \
-                            == input_anchor.starting_amber_params\
-                            .prmtop_filename) and (anchor.amber_params.\
-                            box_vectors == input_anchor.starting_amber_params.\
-                            box_vectors) and (anchor.amber_params.\
-                            pdb_coordinates_filename == input_anchor.\
-                            starting_amber_params.pdb_coordinates_filename), \
-                            "Multiple input anchors must have matching "\
-                            "starting_amber_params if they apply to the same "\
-                            "anchor. Problem is at cv_input "\
-                            "{}, input_anchor {}.".format(
-                                j, input_anchor_index)
-                            
-                
-                variable_name = "{}_{}".format(cv_input.variable_name, 
-                                           cv_input.index)
-                variable_value = input_anchor.get_variable_value()
+            # Make the variable names
+            for i, cv_input in enumerate(self.cv_inputs):
+                variable_name = "{}_{}_{}".format(cv_input.variable_name, 
+                                                  self.index, i)
+                variable_value = input_anchor.get_variable_value(i)
                 anchor.variables[variable_name] = variable_value
                 
             # Assign md, bulkstate, and endstate
@@ -1367,49 +1435,66 @@ class Voronoi_combo(Combo):
                 
             if endstate:
                 anchor.endstate = True
-            # Make the variable names
-            
+                
             # Handle the connection flags
             assert len(input_anchor.connection_flags) == 0, \
-                "Connection flags within combos not currently supported."
+                "Connection flags within Voronoi CVs not currently supported."
             anchors.append(anchor)
             anchor_index += 1
         
-        for i, anchor in enumerate(anchors):
-            input_anchor_index_list = []
-            input_anchor_list = []
-            divider = 1
-            for j, cv_input in enumerate(self.cv_inputs):
-                input_anchor_index = (i // divider) % cv_widths[j]
-                input_anchor_index_list.append(input_anchor_index)
-                input_anchor = cv_input.input_anchors[input_anchor_index]
-                this_input_anchor = cv_input.input_anchors[input_anchor_index]
+        neighbor_anchor_indices = find_voronoi_anchor_neighbors(anchors)
+        for alpha, anchor in enumerate(anchors):
+            neighbor_anchor_alphas = neighbor_anchor_indices[alpha]
+            for neighbor_anchor_alpha in neighbor_anchor_alphas:
+                neighbor_anchor = anchors[neighbor_anchor_alpha]
                 
-                if input_anchor_index < len(cv_input.input_anchors)-1:
-                    upper_anchor_index = i + divider
-                    upper_anchor = anchors[upper_anchor_index]
-                    upper_input_anchor = cv_input.input_anchors[
-                        input_anchor_index+1]
-                    milestone_index \
-                        = cv_input.make_mmvt_milestone_between_two_anchors(
-                            anchor, upper_anchor, this_input_anchor, 
-                            upper_input_anchor, milestone_index)
-                        
-                if input_anchor_index > 0:
-                    lower_anchor_index = i - divider
-                    lower_anchor = anchors[lower_anchor_index]
-                    lower_input_anchor = cv_input.input_anchors[
-                        input_anchor_index-1]
-                    milestone_index \
-                        = cv_input.make_mmvt_milestone_between_two_anchors(
-                            lower_anchor, anchor, lower_input_anchor, 
-                            this_input_anchor, milestone_index)
-                
-                divider *= cv_widths[j]
-                
+                milestone_index = self.make_mmvt_milestone_between_two_anchors(
+                    anchor, alpha, neighbor_anchor, neighbor_anchor_alpha, milestone_index)
+                    
             if anchor.bulkstate:
                 connection_flag_dict["bulk"].append(anchor)
             
         return anchors, anchor_index, milestone_index, connection_flag_dict,\
             associated_input_anchor
         
+    def make_mmvt_milestone_between_two_anchors(
+            self, anchor, alpha, neighbor_anchor, neighbor_anchor_alpha,
+            milestone_index):
+        neighbor_index = neighbor_anchor.index
+        input_anchor = self.input_anchors[alpha]
+        neighbor_input_anchor = self.input_anchors[neighbor_anchor_alpha]
+        assert anchor.index != neighbor_anchor.index
+        for milestone in anchor.milestones:
+            if milestone.neighbor_anchor_index == neighbor_anchor.index:
+                return milestone_index
+        
+        milestone1 = base.Milestone()
+        milestone1.index = milestone_index
+        milestone1.neighbor_anchor_index = neighbor_index
+        milestone1.alias_index = len(anchor.milestones)+1
+        milestone1.cv_index = self.index
+        milestone1.variables = {"k": 1.0}
+        milestone2 = base.Milestone()
+        milestone2.index = milestone_index
+        milestone2.neighbor_anchor_index = anchor.index
+        milestone2.alias_index = len(neighbor_anchor.milestones)+1
+        milestone2.cv_index = self.index
+        milestone2.variables = {"k": 1.0}
+        for i, cv_input in enumerate(self.cv_inputs):
+            me_key = "me_{}".format(i)
+            neighbor_key = "neighbor_{}".format(i)
+            me_value = input_anchor.values[i]
+            neighbor_value = neighbor_input_anchor.values[i]
+            milestone1.variables[me_key] = me_value
+            milestone1.variables[neighbor_key] = neighbor_value
+            milestone2.variables[me_key] = neighbor_value
+            milestone2.variables[neighbor_key] = me_value
+            
+        anchor.milestones.append(milestone1)
+        neighbor_anchor.milestones.append(milestone2)
+        milestone_index += 1
+        return milestone_index
+    
+    def check(self):
+        return
+    

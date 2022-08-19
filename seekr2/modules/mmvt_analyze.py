@@ -674,7 +674,7 @@ class MMVT_data_sample(common_analyze.Data_sample):
         self.model = model
         self.N_alpha_beta = N_alpha_beta
         self.k_alpha_beta = k_alpha_beta
-        self.k_alpha = [] # TODO: marked for removal?
+        self.k_alpha = []
         self.N_i_j_alpha = N_i_j_alpha
         self.N_alpha = []
         self.R_i_alpha = R_i_alpha
@@ -807,10 +807,10 @@ class MMVT_data_sample(common_analyze.Data_sample):
         for i in range(flux_matrix_dimension-1):
             self.pi_alpha[i,0] = -stationary_dist[i,0] / flux_matrix[i,i]
         for alpha, anchor1 in enumerate(self.model.anchors):
-            # Set low probabilities to anchors with no transitions observed.
-            if alpha not in self.N_alpha:
+            if anchor1.bulkstate:
                 continue
-            if self.N_alpha[alpha] == 0:
+            # Set low probabilities to anchors with no transitions observed.
+            if self.k_alpha[alpha] == 0:
                 self.pi_alpha[alpha,0] = LOW_PROBABILITY
         self.pi_alpha[-1,0] = 0.0
         self.pi_alpha = self.pi_alpha / np.sum(self.pi_alpha)
@@ -981,14 +981,20 @@ class MMVT_data_sample(common_analyze.Data_sample):
         """
         n_anchors = self.model.num_anchors
         self.k_alpha_beta = defaultdict(float)
+        self.k_alpha = []
         for alpha in range(n_anchors):
             if self.model.anchors[alpha].bulkstate:
                 continue
+            
+            k_alpha = 0.0
             for beta in range(n_anchors):
                 if alpha == beta: continue
                 if k_alpha_beta_matrix[alpha,beta] > 0.0:
                     self.k_alpha_beta[(alpha,beta)] \
                         = k_alpha_beta_matrix[alpha,beta]
+                    k_alpha += self.k_alpha_beta[(alpha,beta)]
+                self.k_alpha.append(k_alpha)
+            
         return
     
     def fill_N_R_alpha_from_matrices(self, mmvt_Nij_alpha_list, 

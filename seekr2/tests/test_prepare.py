@@ -13,3 +13,6 @@ def test_prepare_planar(planar_mmvt_model):
 
 def test_prepare_rmsd(rmsd_mmvt_model):
     pass
+
+def test_prepare_voronoi(toy_voronoi_model):
+    pass

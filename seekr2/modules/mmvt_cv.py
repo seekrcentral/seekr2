@@ -8,6 +8,7 @@ import os
 import shutil
 
 import seekr2.modules.mmvt_base as mmvt_base
+import seekr2.modules.common_cv as common_cv
 
 def make_mmvt_spherical_cv_object(spherical_cv_input, index):
     """
@@ -71,3 +72,28 @@ def make_mmvt_external_cv_object(external_cv_input, index):
         cv.restraining_expression = external_cv_input.restraining_expression
     return cv
     
+def make_mmvt_voronoi_cv_object(voronoi_cv_input, index, root_directory):
+    """
+    Create a RMSD CV object to be placed into the Model.
+    """
+    cv = mmvt_base.MMVT_Voronoi_CV(index)
+    for i, cv_input in enumerate(voronoi_cv_input.cv_inputs):
+        cv_input.check()
+        if isinstance(cv_input, common_cv.Spherical_cv_input):
+            child_cv = make_mmvt_spherical_cv_object(cv_input, index=i)
+        elif isinstance(cv_input, common_cv.Tiwary_cv_input):
+            child_cv = make_mmvt_tiwary_cv_object(cv_input, index=i)
+        elif isinstance(cv_input, common_cv.Planar_cv_input):
+            child_cv = make_mmvt_planar_cv_object(cv_input, index=i)
+        elif isinstance(cv_input, common_cv.RMSD_cv_input):
+            child_cv = make_mmvt_RMSD_cv_object(
+                cv_input, index=i, root_directory=root_directory)
+        elif isinstance(cv_input, common_cv.Toy_cv_input):
+            child_cv = make_mmvt_external_cv_object(cv_input, index=i)
+        else:
+            raise Exception("CV type not available for Voronoi CV: %s" \
+                            % type(cv_input))
+        
+        cv.child_cvs.append(child_cv)
+    
+    return cv

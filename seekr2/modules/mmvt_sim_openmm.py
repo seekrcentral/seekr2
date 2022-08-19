@@ -124,6 +124,7 @@ def add_simulation(sim_openmm, model, topology, positions, box_vectors,
         sim_openmm.simulation.context.setPositions(positions)
     
     if load_state_file is not None:
+        # TODO: remove print statement?
         print("loading state file")
         sim_openmm.simulation.loadState(load_state_file)
         state = sim_openmm.simulation.context.getState(getPositions=True)
@@ -230,11 +231,11 @@ def make_mmvt_boundary_definitions(cv, milestone):
         allows us to conveniently monitor a function of atomic 
         position.
     """
-    myforce = cv.make_force_object()
+    myforce = cv.make_force_object(milestone.alias_index)
     myforce.setForceGroup(1)
     variable_names_list = cv.add_parameters(myforce)
     cv.add_groups_and_variables(myforce, cv.get_variable_values_list(
-                                    milestone))
+                                    milestone), milestone.alias_index)
     return myforce
 
 def get_starting_structure_num_frames(model, anchor, dummy_outfile, 
