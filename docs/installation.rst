@@ -217,7 +217,7 @@ Next, build, install, and test OpenMM::
   make
   make install
   make PythonInstall
-  make test # Optional
+  python -m openmm.testInstallation
 
 If the PythonInstall step fails, then make sure you have upgraded cython
 
@@ -229,12 +229,6 @@ several or all fail, then you'll need to be sure that you fix whatever
 problem caused those failures. If the CUDA tests failed, then you either do
 not have a working CUDA installation, or the proper environmental variables
 such as OPENMM_CUDA_COMPILER have not been set.
-
-Try to see if the python interface works. Inside a python shell, try:
-
-from simtk import openmm
-
-If you see no errors, then your OpenMM installation was probably successful.
 
 You'll need to install the SEEKR2 Plugin on top of this version of OpenMM::
 

@@ -1836,9 +1836,10 @@ class MMVT_Voronoi_CV(MMVT_collective_variable):
             neighbor_this_value = (neighbor_i_value - cv_value)**2
             me_total_value += me_this_value
             neighbor_total_value += neighbor_this_value
-            distance = me_total_value - neighbor_total_value
-            if (distance-tolerance) > 0.0: 
-                return False
+            
+        distance = me_total_value - neighbor_total_value
+        if (distance-tolerance) > 0.0: 
+            return False
         
         return True
         
