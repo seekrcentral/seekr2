@@ -731,16 +731,16 @@ class MMVT_tiwary_CV(MMVT_collective_variable):
         return op_value
     
     def check_openmm_context_within_boundary(
-            self, context, milestone_variables, positions=None, verbose=False):
+            self, context, milestone_variables, positions=None, verbose=False,
+            tolerance=0.0):
         """
         Check if an mdtraj Trajectory describes a system that remains
         within the expected anchor. Return True if passed, return
         False if failed.
         """
-        TOL = 0.001
         op_value = self.get_openmm_context_cv_value(context, positions)
         result = self.check_value_within_boundary(op_value, milestone_variables, 
-                                    verbose=verbose, tolerance=TOL)
+                                    verbose=verbose, tolerance=tolerance)
         return result
     
     def check_value_within_boundary(self, op_value, milestone_variables, 
@@ -1518,7 +1518,8 @@ class MMVT_external_CV(MMVT_collective_variable):
         return value
     
     def check_openmm_context_within_boundary(
-            self, context, milestone_variables, positions=None, verbose=False):
+            self, context, milestone_variables, positions=None, verbose=False, 
+            tolerance=0.0):
         """
         For now, this will just always return True.
         """
@@ -1528,7 +1529,7 @@ class MMVT_external_CV(MMVT_collective_variable):
             positions = state.getPositions()
         
         return self.check_positions_within_boundary(
-            positions, milestone_variables)
+            positions, milestone_variables, tolerance)
     
     def get_cv_value(self, positions, milestone_variables):
         """
@@ -1574,10 +1575,11 @@ class MMVT_external_CV(MMVT_collective_variable):
         return result
     
     def check_positions_within_boundary(
-            self, positions, milestone_variables):
+            self, positions, milestone_variables, tolerance=0.0):
         step = lambda x : 0 if x < 0 else 1
         value = self.get_cv_value(positions, milestone_variables)
-        result = step(milestone_variables["k"]*(value-milestone_variables["value"]))
+        result = step(milestone_variables["k"] \
+                      * (value-milestone_variables["value"]) + tolerance)
         if result <= 0:
             return True
         else:
