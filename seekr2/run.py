@@ -95,6 +95,7 @@ def get_checkpoint_name(model, anchor, swarm_frame):
     """
     Return the name of the checkpoint file for this anchor.
     """
+    import seekr2.modules.runner_openmm as runner_openmm
     if swarm_frame is None:
         restart_checkpoint_basename \
             = runner_openmm.RESTART_CHECKPOINT_FILENAME
