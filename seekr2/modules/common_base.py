@@ -1003,3 +1003,34 @@ def save_model(model, model_file):
         "re-run prepare.py."
     model.serialize(model_file, xml_header=dont_modify_warning)
     return
+
+def parse_xml_list(variable):
+    """
+    Take 'variable', and if it's a list, then return as-is, but if it's
+    an argument representing a command, like range(), then execute
+    the command to produce a list.
+    """
+    if isinstance(variable, list):
+        return variable
+    elif isinstance(variable, str):
+        # Match the range() command
+        m = re.match(r"range\((\d+),?(\d+)?,?(\d+)?\)", variable)
+        if m:
+            groups = m.groups()
+            if groups[2] is None:
+                if groups[1] is None:
+                    # one argument
+                    return list(range(0,int(m[1])))
+                else:
+                    # two arguments
+                    return list(range(int(m[1]),int(m[2])))
+            else:
+                return list(range(int(m[1]), int(m[2]), int(m[3])))
+            
+        else:
+            raise Exception("Invalid XML input: {}. ".format(variable) \
+                            +"Available command(s): range(a[,b][,c]).")
+    else:
+        raise Exception("Invalid XML input: {}".format(variable))
+    
+    

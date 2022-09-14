@@ -850,16 +850,20 @@ def create_bd_milestones(model, model_input):
             cv_index = bd_milestone.outer_milestone.cv_index
             cv_input = model_input.cv_inputs[cv_index]
             if len(cv_input.bd_group1)>0:
-                bd_milestone.receptor_indices = cv_input.bd_group1
+                bd_milestone.receptor_indices \
+                    = base.parse_xml_list(cv_input.bd_group1)
             else:
-                bd_milestone.receptor_indices = \
-                    model_input.browndye_settings_input.receptor_indices
+                bd_milestone.receptor_indices  \
+                    = base.parse_xml_list(
+                        model_input.browndye_settings_input.receptor_indices)
             
             if len(cv_input.bd_group2)>0:
-                bd_milestone.ligand_indices = cv_input.bd_group2
+                bd_milestone.ligand_indices \
+                    = base.parse_xml_list(cv_input.bd_group2)
             else:
-                bd_milestone.ligand_indices = \
-                    model_input.browndye_settings_input.ligand_indices
+                bd_milestone.ligand_indices \
+                    = base.parse_xml_list(
+                        model_input.browndye_settings_input.ligand_indices)
             
             model.k_on_info.bd_milestones.append(bd_milestone)
             bd_milestone_counter += 1

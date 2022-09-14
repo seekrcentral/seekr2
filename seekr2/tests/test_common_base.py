@@ -120,4 +120,18 @@ def test_get_box_vectors_from_pdb():
     result = base.get_box_vectors_from_pdb(test_pdb_filename)
     assert np.isclose(expected_box_vectors.value_in_unit(unit.angstroms), 
                       result.value_in_unit(unit.angstroms)).all()
-    
+                      
+def test_parse_xml_list():
+    input_list1 = [3,4,5,6]
+    assert base.parse_xml_list(input_list1) == input_list1
+    input_range1 = "range(5)"
+    assert base.parse_xml_list(input_range1) == [0,1,2,3,4]
+    input_range1 = "range(2,7)"
+    assert base.parse_xml_list(input_range1) == [2,3,4,5,6]
+    input_range1 = "range(3,9,2)"
+    assert base.parse_xml_list(input_range1) == [3,5,7]
+    with pytest.raises(Exception):
+        base.parse_xml_list(2)
+    with pytest.raises(Exception):
+        base.parse_xml_list("balderdash")
+    return

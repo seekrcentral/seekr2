@@ -7,6 +7,7 @@ be used in an MMVT calculation.
 import os
 import shutil
 
+import seekr2.modules.common_base as base
 import seekr2.modules.mmvt_base as mmvt_base
 import seekr2.modules.common_cv as common_cv
 
@@ -14,8 +15,9 @@ def make_mmvt_spherical_cv_object(spherical_cv_input, index):
     """
     Create a SphericalCV object to be placed into the Model.
     """
-    
-    groups = [spherical_cv_input.group1, spherical_cv_input.group2]
+    group1 = base.parse_xml_list(spherical_cv_input.group1)
+    group2 = base.parse_xml_list(spherical_cv_input.group2)
+    groups = [group1, group2]
     cv = mmvt_base.MMVT_spherical_CV(index, groups)
     return cv
     
@@ -33,9 +35,10 @@ def make_mmvt_planar_cv_object(planar_cv_input, index):
     """
     Create a PlanarCV object to be placed into the Model.
     """
-    cv = mmvt_base.MMVT_planar_CV(
-        index, planar_cv_input.start_group, planar_cv_input.end_group, 
-              planar_cv_input.mobile_group)
+    start_group = base.parse_xml_list(planar_cv_input.start_group)
+    end_group = base.parse_xml_list(planar_cv_input.end_group)
+    mobile_group = base.parse_xml_list(planar_cv_input.mobile_group)
+    cv = mmvt_base.MMVT_planar_CV(index, start_group, end_group, mobile_group)
     return cv
 
 def make_mmvt_RMSD_cv_object(RMSD_cv_input, index, root_directory):
@@ -43,9 +46,10 @@ def make_mmvt_RMSD_cv_object(RMSD_cv_input, index, root_directory):
     Create a RMSD CV object to be placed into the Model.
     """
     RMSD_ref_pdb = "rmsd_reference_cv_{}.pdb".format(index)
+    group = base.parse_xml_list(RMSD_cv_input.group)
     absolute_RMSD_ref_pdb = os.path.join(root_directory, RMSD_ref_pdb)
     shutil.copyfile(RMSD_cv_input.ref_structure, absolute_RMSD_ref_pdb)
-    cv = mmvt_base.MMVT_RMSD_CV(index, RMSD_cv_input.group, RMSD_ref_pdb)
+    cv = mmvt_base.MMVT_RMSD_CV(index, group, RMSD_ref_pdb)
     return cv
 
 def make_mmvt_external_cv_object(external_cv_input, index):
@@ -55,7 +59,7 @@ def make_mmvt_external_cv_object(external_cv_input, index):
     
     groups = []
     for group in external_cv_input.groups:
-        groups.append(group)
+        groups.append(base.parse_xml_list(group))
     
     cv = mmvt_base.MMVT_external_CV(index, groups)
     cv.cv_expression = external_cv_input.cv_expression
