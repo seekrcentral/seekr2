@@ -91,14 +91,10 @@ def choose_next_simulation_browndye2(
     
     return bd_milestone_info_to_run_unsorted
 
-def get_current_step_openmm(model, anchor, load_state_file_list=None, 
-                            swarm_frame=None):
+def get_checkpoint_name(model, anchor, swarm_frame):
     """
-    Return the current simulation step of the given anchor in the model.
+    Return the name of the checkpoint file for this anchor.
     """
-    import seekr2.modules.runner_openmm as runner_openmm
-    import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
-    import seekr2.modules.elber_sim_openmm as elber_sim_openmm
     if swarm_frame is None:
         restart_checkpoint_basename \
             = runner_openmm.RESTART_CHECKPOINT_FILENAME
@@ -111,6 +107,32 @@ def get_current_step_openmm(model, anchor, load_state_file_list=None,
         anchor.production_directory)
     restart_checkpoint_filename = os.path.join(
         output_directory, restart_checkpoint_basename)
+    return restart_checkpoint_filename
+
+def get_current_step_openmm(model, anchor, load_state_file_list=None, 
+                            swarm_frame=None):
+    """
+    Return the current simulation step of the given anchor in the model.
+    """
+    import seekr2.modules.runner_openmm as runner_openmm
+    import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
+    import seekr2.modules.elber_sim_openmm as elber_sim_openmm
+    """ # TODO: remove
+    if swarm_frame is None:
+        restart_checkpoint_basename \
+            = runner_openmm.RESTART_CHECKPOINT_FILENAME
+    else:
+        restart_checkpoint_basename \
+            = runner_openmm.RESTART_CHECKPOINT_FILENAME \
+            + ".swarm_{}".format(swarm_frame)
+    output_directory = os.path.join(
+        model.anchor_rootdir, anchor.directory, 
+        anchor.production_directory)
+    restart_checkpoint_filename = os.path.join(
+        output_directory, restart_checkpoint_basename)
+    """
+    restart_checkpoint_filename = get_checkpoint_name(
+        model, anchor, swarm_frame)
     if os.path.exists(restart_checkpoint_filename):
         dummy_file = tempfile.NamedTemporaryFile()
         if model.get_type() == "mmvt":
@@ -208,7 +230,17 @@ def choose_next_simulation_openmm(
             currentStep = get_current_step_openmm(
                 model, anchor, load_state_file_list, swarm_frame)
             
+            """ # TODO: remove
             if currentStep == 0 or force_overwrite or umbrella_restart_mode:
+                restart = False
+                currentStep = 0
+            else:
+                restart = True
+            """
+            restart_checkpoint_filename = get_checkpoint_name(
+                model, anchor, swarm_frame)
+            if (not os.path.exists(restart_checkpoint_filename)) \
+                    or force_overwrite or umbrella_restart_mode:
                 restart = False
                 currentStep = 0
             else:

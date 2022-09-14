@@ -268,6 +268,16 @@ At this point, its a good idea to run the SEEKR2 tests. Navigate to where the
 
 ``python setup.py test``
 
+If you get an error like "ImportError: libOpenMM.so.7.7: cannot open shared 
+object file: No such file or directory", you will need to point your
+LD_LIBRARY_PATH to the installed OpenMM library location::
+
+  export LD_LIBRARY_PATH="/home/USERNAME/bin/openmm/lib:$LD_LIBRARY_PATH"
+  export LD_LIBRARY_PATH="/home/USERNAME/bin/openmm/lib/plugins:$LD_LIBRARY_PATH"
+  
+Of course, change your path to be the actual location where CMAKE_INSTALL_PREFIX
+was pointing.
+
 OpenMM Installation from Source on Cluster or Shared Resource
 -------------------------------------------------------------
 

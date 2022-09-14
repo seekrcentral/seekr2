@@ -395,6 +395,7 @@ colvar {{
         False if failed.
         """
         radius = self.get_openmm_context_cv_value(context, positions)
+        print("radius:", radius, "milestone_variables:", milestone_variables)
         result = self.check_value_within_boundary(
             radius, milestone_variables, verbose, tolerance)
         return result
@@ -1278,6 +1279,7 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
         value = self.get_openmm_context_cv_value(
             context, milestone_variables, positions, 
             ref_positions, verbose, tolerance)
+        print("RMSD value:", value, "milestone_variables:", milestone_variables)
         result = self.check_value_within_boundary(
             value, milestone_variables, verbose=verbose, tolerance=tolerance)
         return result
