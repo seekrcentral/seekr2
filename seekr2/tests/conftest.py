@@ -353,6 +353,52 @@ def rmsd_mmvt_model(rmsd_mmvt_model_persistent):
     return rmsd_mmvt_model
 
 @pytest.fixture(scope="session")
+def closest_pair_mmvt_model_input_persistent(tmpdir_factory):
+    """
+    Create a model object that is persistent across the tests in this file.
+    """
+    rootdir = tmpdir_factory.mktemp("closest_pair_mmvt")
+    closest_pair_mmvt_model_input_persisent_obj \
+        = create_model_input.create_closest_pair_mmvt_model_input(rootdir)
+    return closest_pair_mmvt_model_input_persisent_obj
+
+@pytest.fixture()
+def closest_pair_mmvt_model_input(closest_pair_mmvt_model_input_persistent):
+    """
+    Create a copy of the model input that is not persistent. But this 
+    at least doesn't require us to generate an entirely new model 
+    input.
+    """
+    closest_pair_mmvt_model_input_obj = copy.deepcopy(
+        closest_pair_mmvt_model_input_persistent)
+    return closest_pair_mmvt_model_input_obj
+
+@pytest.fixture(scope="session")
+def closest_pair_mmvt_model_persistent(
+        closest_pair_mmvt_model_input_persistent):
+    """
+    Create a model object that is persistent across the tests in this file.
+    """
+    os.chdir(TEST_DIRECTORY)
+    closest_pair_mmvt_model_obj, model_xml_path \
+        = prepare.prepare(closest_pair_mmvt_model_input_persistent, 
+                          force_overwrite=False)
+    model_dir = os.path.dirname(model_xml_path)
+    closest_pair_mmvt_model_obj.anchor_rootdir = os.path.abspath(model_dir)
+    closest_pair_mmvt_model_obj.openmm_settings.cuda_platform_settings = None
+    closest_pair_mmvt_model_obj.openmm_settings.reference_platform = True
+    return closest_pair_mmvt_model_obj
+
+@pytest.fixture
+def closest_pair_mmvt_model(closest_pair_mmvt_model_persistent):
+    """
+    Create a copy of the model that is not persistent. But this at least
+    doesn't require us to generate an entirely new model
+    """
+    closest_pair_mmvt_model = copy.deepcopy(closest_pair_mmvt_model_persistent)
+    return closest_pair_mmvt_model
+
+@pytest.fixture(scope="session")
 def toy_mmvt_model_input_persistent(tmpdir_factory):
     """
     Create a model object that is persistent across the tests in this file.

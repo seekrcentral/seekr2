@@ -209,7 +209,7 @@ class MMVT_spherical_CV(MMVT_collective_variable):
         return openmm.CustomCentroidBondForce(
             self.num_groups, expression_w_bitcode)
     
-    def make_restraining_force(self):
+    def make_restraining_force(self, alias_id):
         """
         Create an OpenMM force object that will restrain the system to
         a given value of this CV.
@@ -395,7 +395,6 @@ colvar {{
         False if failed.
         """
         radius = self.get_openmm_context_cv_value(context, positions)
-        print("radius:", radius, "milestone_variables:", milestone_variables)
         result = self.check_value_within_boundary(
             radius, milestone_variables, verbose, tolerance)
         return result
@@ -534,7 +533,7 @@ class MMVT_tiwary_CV(MMVT_collective_variable):
         return openmm.CustomCentroidBondForce(
             self.num_groups, expression_w_bitcode)
     
-    def make_restraining_force(self):
+    def make_restraining_force(self, alias_id):
         """
         Create an OpenMM force object that will restrain the system to
         a given value of this CV.
@@ -847,7 +846,7 @@ class MMVT_planar_CV(MMVT_collective_variable):
         return openmm.CustomCentroidBondForce(
             self.num_groups, expression_w_bitcode)
     
-    def make_restraining_force(self):
+    def make_restraining_force(self, alias_id):
         """
         Create an OpenMM force object that will restrain the system to
         a given value of this CV.
@@ -1099,11 +1098,10 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
             
         assert self.num_groups == 1
         self.openmm_expression = "step(k_{}*(RMSD - value_{}))".format(alias_id, alias_id)
-        self.restraining_expression = "0.5*k_{}*(RMSD - value_{})^2".format(alias_id, alias_id)
         expression_w_bitcode = "bitcode_{}*".format(alias_id)+self.openmm_expression
         return openmm.CustomCVForce(expression_w_bitcode)
     
-    def make_restraining_force(self):
+    def make_restraining_force(self, alias_id):
         """
         Create an OpenMM force object that will restrain the system to
         a given value of this CV.
@@ -1114,6 +1112,7 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
             import simtk.openmm as openmm
         
         assert self.num_groups == 1
+        self.restraining_expression = "0.5*k_{}*(RMSD - value_{})^2".format(alias_id, alias_id)
         return openmm.CustomCVForce(self.restraining_expression)
     
     def make_voronoi_cv_sub_forces(self, me_val, neighbor_val, alias_id):
@@ -1279,7 +1278,6 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
         value = self.get_openmm_context_cv_value(
             context, milestone_variables, positions, 
             ref_positions, verbose, tolerance)
-        print("RMSD value:", value, "milestone_variables:", milestone_variables)
         result = self.check_value_within_boundary(
             value, milestone_variables, verbose=verbose, tolerance=tolerance)
         return result
@@ -1340,6 +1338,331 @@ boundary at {:.4f} nm.""".format(value, milestone_value)
         """
         return []
 
+class MMVT_closest_pair_CV(MMVT_collective_variable):
+    """
+    A collective variable represents the closest distance between a pair
+    of atoms out of two sets of atoms.
+    
+    """+MMVT_collective_variable.__doc__
+    
+    def __init__(self, index, groups):
+        self.index = index
+        self.group1 = groups[0]
+        self.group2 = groups[1]
+        self.name = "mmvt_closest_pair"
+        self.openmm_expression = None #"step(k*((1/value)^exponent - (1/r)^exponent))"
+        self.restraining_expression = None #"0.5*k*((1/value)^exponent - (1/r)^exponent)^2"
+        self.cv_expression = "closest" # "(1/r)^exponent"
+        self.num_groups = 2
+        self.per_dof_variables = [] #["k", "value"]
+        self.global_variables = [] #["exponent"]
+        self._mygroup_list = None
+        self.variable_name = "v"
+        self.exponent = 50.0
+        self.num_system_particles = 0
+        self.exclusion_pairs = []
+        self.cutoff_distance = 10.0
+        return
+
+    def __name__(self):
+        return "MMVT_closest_pair_CV"
+    
+    def make_force_object(self, alias_id):
+        """
+        Create an OpenMM force object which will be used to compute
+        the value of the CV's mathematical expression as the simulation
+        propagates. Each *milestone* in a cell, not each CV, will have
+        a force object created.
+        
+        In this implementation of MMVT in OpenMM, CustomForce objects
+        are used to provide the boundary definitions of the MMVT cell.
+        These 'forces' are designed to never affect atomic motions,
+        but are merely monitored by the plugin for bouncing event.
+        So while they are technically OpenMM force objects, we don't
+        refer to them as forces outside of this layer of the code,
+        preferring instead the term: boundary definitions.
+        """
+        try:
+            import openmm
+        except ImportError:
+            import simtk.openmm as openmm
+            
+        assert self.num_groups == 2
+        #expression_w_bitcode = "bitcode_{}*".format(alias_id)+self.openmm_expression
+        self.openmm_expression \
+            = "step(k_{}*((1/value_{})^exponent - closest))".format(
+                alias_id, alias_id) #"step(k_{}*(RMSD - value_{}))".format(alias_id, alias_id)
+        #self.openmm_expression \
+        #    = "k_{}*((1/value_{})^exponent - closest)".format(
+        #        alias_id, alias_id) #"step(k_{}*(RMSD - value_{}))".format(alias_id, alias_id)
+        expression_w_bitcode = "bitcode_{}*".format(alias_id)+self.openmm_expression
+        force = openmm.CustomCVForce(expression_w_bitcode)
+        """
+        force = openmm.CustomNonbondedForce(expression_w_bitcode)
+        force.setUseSwitchingFunction(False)
+        force.setNonbondedMethod(openmm.CustomNonbondedForce.NoCutoff)
+        force.setUseLongRangeCorrection(False)
+        """
+        return force
+    
+    def make_restraining_force(self, alias_id):
+        """
+        Create an OpenMM force object that will restrain the system to
+        a given value of this CV.
+        """
+        try:
+            import openmm
+        except ImportError:
+            import simtk.openmm as openmm
+            
+        assert self.num_groups == 2
+        self.restraining_expression \
+            = "0.5*k_{}*(((1/value_{})^exponent - closest)^(-1.0/exponent))^2"\
+                .format(alias_id, alias_id) #"0.5*k_{}*(RMSD - value_{})^2".format(alias_id, alias_id)
+        force = openmm.CustomCVForce(self.restraining_expression)
+        """
+        force = openmm.CustomNonbondedForce(self.restraining_expression)
+        force.setUseSwitchingFunction(False)
+        force.setNonbondedMethod(openmm.CustomNonbondedForce.NoCutoff)
+        force.setUseLongRangeCorrection(False)
+        """
+        return force
+    
+    def make_voronoi_cv_sub_forces(self, me_val, neighbor_val, alias_id):
+        """
+        
+        """
+        me_expr = "((1/me_val)^exponent - {})^2".format(self.cv_expression)
+        me_force = openmm.CustomCVForce(me_expr)
+        """
+        me_force.addInteractionGroup(self.group1, self.group2)
+        me_force.addGlobalParameter("exponent", self.exponent)
+        me_force.setUseSwitchingFunction(False)
+        me_force.setNonbondedMethod(openmm.CustomNonbondedForce.NoCutoff)
+        me_force.setUseLongRangeCorrection(False)
+        """
+        
+        neighbor_expr = "((1/neighbor_val)^exponent - {})^2".format(
+            self.cv_expression)
+        neighbor_force = openmm.CustomCVForce(neighbor_expr)
+        """
+        neighbor_force.addInteractionGroup(self.group1, self.group2)
+        neighbor_force.addGlobalParameter("exponent", self.exponent)
+        neighbor_force.setUseSwitchingFunction(False)
+        neighbor_force.setNonbondedMethod(openmm.CustomNonbondedForce.NoCutoff)
+        neighbor_force.setUseLongRangeCorrection(False)
+        """
+        
+        return me_force, neighbor_force
+    
+    def make_namd_colvar_string(self):
+        """
+        This string will be put into a NAMD colvar file for tracking
+        MMVT bounces.
+        """
+        raise Exception("MMVT closest pair CVs are not available in NAMD")
+    
+    def add_groups(self, force):
+        """
+        
+        """
+        #self._mygroup_list = []
+        #mygroup1 = force.addGroup(self.group1)
+        #self._mygroup_list.append(mygroup1)
+        #mygroup2 = force.addGroup(self.group2)
+        #self._mygroup_list.append(mygroup2)
+        
+        return
+    
+    def add_parameters(self, force):
+        """
+        An OpenMM custom force object needs a list of variables
+        provided to it that will occur within its expression. Both
+        the per-dof and global variables are combined within the
+        variable_names_list. The numerical values of these variables
+        will be provided at a later step.
+        """
+        closest_force = openmm.CustomNonbondedForce("(1/r)^exponent")
+        closest_force.addGlobalParameter("exponent", self.exponent)
+        closest_force.addInteractionGroup(self.group1, self.group2)
+        closest_force.setUseSwitchingFunction(False)
+        closest_force.setNonbondedMethod(openmm.CustomNonbondedForce.CutoffPeriodic)
+        closest_force.setCutoffDistance(self.cutoff_distance*unit.nanometers)
+        closest_force.setUseLongRangeCorrection(False)
+        for i in range(self.num_system_particles):
+            closest_force.addParticle([])
+        for (iatom, jatom) in self.exclusion_pairs:
+            closest_force.addExclusion(iatom, jatom)
+        
+        force.addCollectiveVariable("closest", closest_force)
+        
+        self.add_groups(force)
+        variable_names_list = []
+        return variable_names_list
+    
+    def add_groups_and_variables(self, force, variables, alias_id):
+        """
+        Provide the custom force with additional information it needs,
+        which includes a list of the groups of atoms involved with the
+        CV, as well as a list of the variables' *values*.
+        """
+        force.addGlobalParameter("bitcode_{}".format(alias_id), variables[0])
+        force.addGlobalParameter("k_{}".format(alias_id), variables[1])
+        force.addGlobalParameter("value_{}".format(alias_id), variables[2])
+        force.addGlobalParameter("exponent", self.exponent)
+        return
+    
+    def get_variable_values_list(self, milestone):
+        """
+        Create the list of CV variables' values in the proper order
+        so they can be provided to the custom force object.
+        """
+        assert milestone.cv_index == self.index
+        values_list = []
+        bitcode = 2**(milestone.alias_index-1)
+        k = milestone.variables["k"] * unit.kilojoules_per_mole/unit.angstrom**2
+        value = milestone.variables["value"] * unit.nanometers
+        values_list.append(bitcode)
+        values_list.append(k)
+        values_list.append(value)
+        return values_list
+    
+    def get_namd_evaluation_string(self, milestone, cv_val_var="cv_val"):
+        """
+        For a given milestone, return a string that can be evaluated
+        my NAMD to monitor for a crossing event. Essentially, if the 
+        function defined by the string ever returns True, then a
+        bounce will occur
+        """
+        raise Exception("MMVT Closest pair CVs are not available in NAMD")
+    
+    def get_mdtraj_cv_value(self, traj, frame_index):
+        """
+        Determine the current CV value for an mdtraj object.
+        """
+        # TODO: replace with the same function used in the simulations
+        sum = 0.0
+        for atom_index1 in self.group1:
+            for atom_index2 in self.group2:
+                com1 = traj.xyz[frame_index, atom_index1,:]
+                com2 = traj.xyz[frame_index, atom_index2,:]
+                sum += np.linalg.norm(com2-com1) ** self.exponent
+                
+        min_value = sum ** (-1.0/self.exponent)
+        return min_value
+    
+    def check_mdtraj_within_boundary(self, traj, milestone_variables, 
+                                     verbose=False):
+        """
+        Check if an mdtraj Trajectory describes a system that remains
+        within the expected anchor. Return True if passed, return
+        False if failed.
+        """
+        TOL = 0.001
+        for frame_index in range(traj.n_frames):
+            value = self.get_mdtraj_cv_value(traj, frame_index)
+            result = self.check_value_within_boundary(
+                value, milestone_variables, verbose, tolerance=TOL)
+            if not result:
+                return False
+            
+        return True
+        
+    def get_openmm_context_cv_value(self, context, positions=None, system=None):
+        """
+        Determine the current CV value for an openmm context.
+        """
+        # TODO: replace with the same function used in the simulations
+        if system is None:
+            system = context.getSystem()
+        if positions is None:
+            state = context.getState(getPositions=True)
+            positions = state.getPositions()
+        sum = 0.0
+        for atom_index1 in self.group1:
+            for atom_index2 in self.group2:
+                com1 = positions[atom_index1]
+                com2 = positions[atom_index2]
+                sum += np.linalg.norm(com2-com1) ** self.exponent
+        
+        min_value = sum ** (-1.0/self.exponent)
+        return min_value
+        
+    def check_openmm_context_within_boundary(
+            self, context, milestone_variables, positions=None, verbose=False,
+            tolerance=0.0):
+        """
+        Check if an OpenMM context describes a system that remains
+        within the expected anchor. Return True if passed, return
+        False if failed.
+        """
+        value = self.get_openmm_context_cv_value(context, positions)
+        result = self.check_value_within_boundary(
+            value, milestone_variables, verbose, tolerance)
+        return result
+        
+    def check_value_within_boundary(self, value, milestone_variables, 
+                                    verbose=False, tolerance=0.0):
+        """
+        Check if the given CV value is within the milestone's boundaries.
+        """
+        milestone_k = milestone_variables["k"]
+        milestone_value = milestone_variables["value"]
+        if milestone_k*((1.0/milestone_value)**self.exponent - (1.0/value)**self.exponent) > tolerance:
+            if verbose:
+                warnstr = """The pair distance of atom group1 and atom
+group2 were found to be {:.4f} nm apart.
+This distance falls outside of the milestone
+boundary at {:.4f} nm.""".format(value, milestone_value)
+                print(warnstr)
+            return False
+        return True
+    
+    def check_mdtraj_close_to_boundary(self, traj, milestone_variables, 
+                                     verbose=False, max_avg=0.03, max_std=0.05):
+        """
+        Given an mdtraj Trajectory, check if the system lies close
+        to the MMVT boundary. Return True if passed, return False if 
+        failed.
+        """
+        distances = []
+        for frame_index in range(traj.n_frames):
+            min_value = 9e9
+            for atom_index1 in self.group1:
+                for atom_index2 in self.group2:
+                    com1 = traj.xyz[frame_index, atom_index1,:]
+                    com2 = traj.xyz[frame_index, atom_index2,:]
+                    value = np.linalg.norm(com2-com1)
+                    if value < min_value:
+                        min_value = value
+            milestone_value = milestone_variables["value"]
+            distances.append(min_value - milestone_value)
+            
+        avg_distance = np.mean(distances)
+        std_distance = np.std(distances)
+        if abs(avg_distance) > max_avg or std_distance > max_std:
+            if verbose:
+                warnstr = """The distance between the system and central 
+    milestone were found on average to be {:.4f} nm apart.
+    The standard deviation was {:.4f} nm.""".format(avg_distance, std_distance)
+                print(warnstr)
+            return False
+            
+        return True
+    
+    def get_atom_groups(self):
+        """
+        Return a 2-list of this CV's atomic groups.
+        """
+        return [self.group1, self.group2]
+            
+    def get_variable_values(self):
+        """
+        This type of CV has no extra variables, so an empty list is 
+        returned.
+        """
+        return []
+
 class MMVT_external_CV(MMVT_collective_variable):
     """
     A collective variable that depends on external coordinates.
@@ -1388,7 +1711,7 @@ class MMVT_external_CV(MMVT_collective_variable):
         return openmm.CustomCentroidBondForce(
             self.num_groups, expression_w_bitcode)
     
-    def make_restraining_force(self):
+    def make_restraining_force(self, alias_id):
         """
         Create an OpenMM force object that will restrain the system to
         a given value of this CV.

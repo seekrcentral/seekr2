@@ -248,6 +248,16 @@ class Box_vectors(Serializer):
         C = np.array([self.cx, self.cy, self.cz])
         volume = abs(np.dot(A, np.cross(B, C)))
         return volume
+    
+    def get_min_length(self):
+        """
+        Get the dimension of largest magnitude.
+        """
+        lengths = []
+        lengths.append(np.linalg.norm(np.array([self.ax, self.ay, self.az]))) 
+        lengths.append(np.linalg.norm(np.array([self.bx, self.by, self.bz])))
+        lengths.append(np.linalg.norm(np.array([self.cx, self.cy, self.cz])))
+        return min(lengths)
         
 class Langevin_integrator_settings(Serializer):
     """

@@ -190,6 +190,7 @@ def choose_next_simulation_openmm(
         data_sample_list = converge.converge(model)
         
     for alpha, anchor in enumerate(model.anchors):
+        print("alpha:", alpha)
         if anchor.bulkstate:
             continue
         if instruction not in ["any", "any_md"]:
@@ -209,6 +210,7 @@ def choose_next_simulation_openmm(
                     = model.calculation_settings.num_umbrella_stage_steps
         
         dummy_file = tempfile.NamedTemporaryFile()
+        print("load_state_file:", load_state_file)
         if load_state_file is None:
             num_swarm_frames = mmvt_sim_openmm.\
                         get_starting_structure_num_frames(model, anchor, 
@@ -223,9 +225,11 @@ def choose_next_simulation_openmm(
                 load_state_file_list = load_state_file
             else:
                 raise Exception("load_state_file must be None, str, or list")
-            
+        
         dummy_file.close()
+        print("num_swarm_frames:", num_swarm_frames)
         for swarm_frame in range(num_swarm_frames):
+            print("swarm_frame:", swarm_frame)
             if num_swarm_frames <= 1:
                 swarm_frame = None
             currentStep = get_current_step_openmm(
@@ -255,6 +259,7 @@ def choose_next_simulation_openmm(
             # make sure that all simulations reach minimum number of steps
             # before sorting by convergence
             steps_to_go_to_minimum = min_total_simulation_length - currentStep
+            print("steps_to_go_to_minimum:", steps_to_go_to_minimum)
             if steps_to_go_to_minimum <= STEP_TOLERANCE:
                 if using_convergence:
                     steps_to_go_to_minimum = 0
@@ -721,7 +726,9 @@ def run(model, instruction, min_total_simulation_length=None,
     
     os.chdir(curdir)
     if ran_nothing:
-        print("Nothing was run because all criteria are satisfied.")
+        print("Nothing was run because all criteria are satisfied. "\
+              "If this is unexpected, make sure that all relevant anchors "\
+              "have assigned starting coordinates (ex: PDB file).")
     return
 
 def catch_erroneous_instruction(instruction):

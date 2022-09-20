@@ -52,6 +52,16 @@ def make_mmvt_RMSD_cv_object(RMSD_cv_input, index, root_directory):
     cv = mmvt_base.MMVT_RMSD_CV(index, group, RMSD_ref_pdb)
     return cv
 
+def make_mmvt_closest_pair_cv_object(closest_pair_cv_input, index, root_directory):
+    """
+    Create a closest pair CV object to be placed into the Model.
+    """
+    group1 = base.parse_xml_list(closest_pair_cv_input.group1)
+    group2 = base.parse_xml_list(closest_pair_cv_input.group2)
+    groups = [group1, group2]
+    cv = mmvt_base.MMVT_closest_pair_CV(index, groups)
+    return cv
+
 def make_mmvt_external_cv_object(external_cv_input, index):
     """
     Create a SphericalCV object to be placed into the Model.
@@ -92,6 +102,8 @@ def make_mmvt_voronoi_cv_object(voronoi_cv_input, index, root_directory):
         elif isinstance(cv_input, common_cv.RMSD_cv_input):
             child_cv = make_mmvt_RMSD_cv_object(
                 cv_input, index=i, root_directory=root_directory)
+        if isinstance(cv_input, common_cv.Closest_pair_cv_input):
+            child_cv = make_mmvt_closest_pair_cv_object(cv_input, index=i)
         elif isinstance(cv_input, common_cv.Toy_cv_input):
             child_cv = make_mmvt_external_cv_object(cv_input, index=i)
         else:

@@ -16,6 +16,7 @@ except ImportError:
 from parmed import unit
 
 import seekr2plugin
+import seekr2.modules.mmvt_base as mmvt_base
 import seekr2.modules.common_sim_openmm as common_sim_openmm
 
 class MMVT_sim_openmm(common_sim_openmm.Common_sim_openmm):
@@ -94,7 +95,7 @@ def add_integrator(sim_openmm, model, state_prefix=None):
                         "integrator type(s).")
     return
 
-def add_forces(sim_openmm, model, anchor):
+def add_forces(sim_openmm, model, anchor, box_vectors):
     """
     Add the proper forces for this MMVT simulation.
     """
@@ -102,8 +103,20 @@ def add_forces(sim_openmm, model, anchor):
     os.chdir(model.anchor_rootdir)
     for milestone in anchor.milestones:
         cv = milestone.get_CV(model)
+        if isinstance(cv, mmvt_base.MMVT_closest_pair_CV):
+            cv.num_system_particles = sim_openmm.system.getNumParticles()
+            forces = { force.__class__.__name__ : force for force in sim_openmm.system.getForces() }
+            reference_force = forces['NonbondedForce']
+            cv.exclusion_pairs = []
+            for index in range(reference_force.getNumExceptions()):
+                [iatom, jatom, chargeprod, sigma, epsilon] = reference_force.getExceptionParameters(index)
+                cv.exclusion_pairs.append((iatom, jatom))
+
+            cv.cutoff_distance = 0.4 * box_vectors.get_min_length()
+            
         myforce = make_mmvt_boundary_definitions(
             cv, milestone)
+        
         sim_openmm.integrator.addMilestoneGroup(milestone.alias_index)
         forcenum = sim_openmm.system.addForce(myforce)
         
@@ -192,7 +205,7 @@ def create_sim_openmm(model, anchor, output_filename, state_prefix=None,
     add_integrator(sim_openmm, model, state_prefix=state_prefix)
     common_sim_openmm.add_barostat(system, model)
     common_sim_openmm.add_platform(sim_openmm, model)
-    add_forces(sim_openmm, model, anchor)
+    add_forces(sim_openmm, model, anchor, box_vectors)
     positions = add_simulation(
         sim_openmm, model, topology, positions, box_vectors, load_state_file)
     if anchor.__class__.__name__ == "MMVT_toy_anchor":

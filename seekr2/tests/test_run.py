@@ -522,6 +522,13 @@ def test_run_rmsd(rmsd_mmvt_model):
     check.check_post_simulation_all(rmsd_mmvt_model)
     pass
 
+def test_run_closest_pair(closest_pair_mmvt_model):
+    check.check_pre_simulation_all(closest_pair_mmvt_model)
+    run.run(closest_pair_mmvt_model, "0", min_total_simulation_length=10,
+            force_overwrite=True)
+    check.check_post_simulation_all(closest_pair_mmvt_model)
+    pass
+
 def test_run_load_state(host_guest_mmvt_model):
     host_guest_mmvt_model.calculation_settings.num_production_steps = 10
     host_guest_mmvt_model.calculation_settings.restart_checkpoint_interval = 10
