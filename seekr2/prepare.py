@@ -21,7 +21,8 @@ from seekr2.modules.common_base import Ion, Amber_params, Forcefield_params, \
 from seekr2.modules.common_cv import Spherical_cv_anchor, Spherical_cv_input, \
     RMSD_cv_input, RMSD_cv_anchor, Toy_cv_input, Toy_cv_anchor, Grid_combo, \
     State_point, Voronoi_cv_input, Voronoi_cv_anchor, Voronoi_cv_toy_anchor, \
-    Closest_pair_cv_input, Closest_pair_cv_anchor
+    Closest_pair_cv_input, Closest_pair_cv_anchor, Count_contacts_cv_input, \
+    Count_contacts_cv_anchor
 
 def prepare(model_input, force_overwrite=False):
     """

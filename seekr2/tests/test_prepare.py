@@ -17,5 +17,8 @@ def test_prepare_rmsd(rmsd_mmvt_model):
 def test_prepare_closest_pair(closest_pair_mmvt_model):
     pass
 
+def test_prepare_count_contacts(count_contacts_mmvt_model):
+    pass
+
 def test_prepare_voronoi(toy_voronoi_model):
     pass

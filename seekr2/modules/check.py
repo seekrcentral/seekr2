@@ -562,8 +562,9 @@ def check_atom_selections_on_same_molecule(model):
             if not cv_in_anchor:
                 continue
             
-            if isinstance(cv, mmvt_base.MMVT_closest_pair_CV):
-                # Closest pair CVs use nonbonded pairs.
+            if isinstance(cv, mmvt_base.MMVT_closest_pair_CV) \
+                    or isinstance(cv, mmvt_base.MMVT_count_contacts_CV):
+                # Closest pair and count contacts CVs use nonbonded pairs.
                 continue
             
             atom_groups = cv.get_atom_groups()

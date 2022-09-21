@@ -426,6 +426,7 @@ def create_closest_pair_mmvt_model_input(root_dir):
     cv_input1 = common_cv.Closest_pair_cv_input()
     cv_input1.group1 = [150]
     cv_input1.group2 = list(range(162, 5358, 3))
+    cv_input1.exponent = 50
     pdb_filename = os.path.abspath(
         "../data/hostguest_files/hostguest_at0.5.pdb")
     cv_input1.input_anchors = []
@@ -435,6 +436,52 @@ def create_closest_pair_mmvt_model_input(root_dir):
         "../data/hostguest_files/hostguest.parm7")
     for i, value in enumerate(closest_list):
         input_anchor = common_cv.Closest_pair_cv_anchor()
+        input_anchor.value = value
+        if i == 0:
+            assign_amber_params(input_anchor, amber_prmtop_filename, 
+                                pdb_filename)
+        input_anchor.bound_state = False
+        input_anchor.bulk_anchor = False
+    
+        cv_input1.input_anchors.append(input_anchor)
+    
+    model_input.cv_inputs = [cv_input1]
+    model_input.browndye_settings_input = None
+    return model_input
+
+def create_count_contacts_mmvt_model_input(root_dir):
+    """
+    Create a generic host-guest model input object.
+    """
+    os.chdir(TEST_DIRECTORY)
+    model_input = common_prepare.Model_input()
+    model_input.calculation_type = "mmvt"
+    model_input.calculation_settings = common_prepare.MMVT_input_settings()
+    model_input.calculation_settings.md_output_interval = 10000
+    model_input.calculation_settings.md_steps_per_anchor = 100000 #1000000
+    model_input.temperature = 298.15
+    model_input.pressure = 1.0
+    model_input.ensemble = "nvt"
+    model_input.root_directory = root_dir
+    model_input.md_program = "openmm"
+    model_input.constraints = "HBonds"
+    model_input.rigidWater = True
+    model_input.hydrogenMass = None
+    model_input.timestep = 0.002
+    model_input.nonbonded_cutoff = 0.9
+    cv_input1 = common_cv.Count_contacts_cv_input()
+    cv_input1.group1 = [150]
+    cv_input1.group2 = list(range(162, 5358, 3))
+    cv_input1.cutoff_distance = 0.3
+    pdb_filename = os.path.abspath(
+        "../data/hostguest_files/hostguest_at0.5.pdb")
+    cv_input1.input_anchors = []
+    
+    closest_list = [2, 3, 4]
+    amber_prmtop_filename = os.path.abspath(
+        "../data/hostguest_files/hostguest.parm7")
+    for i, value in enumerate(closest_list):
+        input_anchor = common_cv.Count_contacts_cv_anchor()
         input_anchor.value = value
         if i == 0:
             assign_amber_params(input_anchor, amber_prmtop_filename, 

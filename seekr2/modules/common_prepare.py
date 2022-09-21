@@ -686,6 +686,9 @@ def create_cvs(model, collective_variable_inputs, root_directory):
             elif isinstance(cv_input, common_cv.Closest_pair_cv_input):
                 cv = mmvt_cv.make_mmvt_closest_pair_cv_object(
                     cv_input, index=i, root_directory=root_directory)
+            elif isinstance(cv_input, common_cv.Count_contacts_cv_input):
+                cv = mmvt_cv.make_mmvt_count_contacts_cv_object(
+                    cv_input, index=i, root_directory=root_directory)
             elif isinstance(cv_input, common_cv.Toy_cv_input):
                 cv = mmvt_cv.make_mmvt_external_cv_object(cv_input, index=i)
             elif isinstance(cv_input, common_cv.Voronoi_cv_input):

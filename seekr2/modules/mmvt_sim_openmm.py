@@ -103,7 +103,8 @@ def add_forces(sim_openmm, model, anchor, box_vectors):
     os.chdir(model.anchor_rootdir)
     for milestone in anchor.milestones:
         cv = milestone.get_CV(model)
-        if isinstance(cv, mmvt_base.MMVT_closest_pair_CV):
+        if isinstance(cv, mmvt_base.MMVT_closest_pair_CV) \
+                or isinstance(cv, mmvt_base.MMVT_count_contacts_CV):
             cv.num_system_particles = sim_openmm.system.getNumParticles()
             forces = { force.__class__.__name__ : force for force in sim_openmm.system.getForces() }
             reference_force = forces['NonbondedForce']
@@ -111,8 +112,9 @@ def add_forces(sim_openmm, model, anchor, box_vectors):
             for index in range(reference_force.getNumExceptions()):
                 [iatom, jatom, chargeprod, sigma, epsilon] = reference_force.getExceptionParameters(index)
                 cv.exclusion_pairs.append((iatom, jatom))
-
-            cv.cutoff_distance = 0.4 * box_vectors.get_min_length()
+            
+            if isinstance(cv, mmvt_base.MMVT_closest_pair_CV):
+                cv.cutoff_distance = 0.4 * box_vectors.get_min_length()
             
         myforce = make_mmvt_boundary_definitions(
             cv, milestone)

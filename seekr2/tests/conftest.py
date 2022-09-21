@@ -399,6 +399,53 @@ def closest_pair_mmvt_model(closest_pair_mmvt_model_persistent):
     return closest_pair_mmvt_model
 
 @pytest.fixture(scope="session")
+def count_contacts_mmvt_model_input_persistent(tmpdir_factory):
+    """
+    Create a model object that is persistent across the tests in this file.
+    """
+    rootdir = tmpdir_factory.mktemp("count_contacts_mmvt")
+    count_contacts_mmvt_model_input_persisent_obj \
+        = create_model_input.create_count_contacts_mmvt_model_input(rootdir)
+    return count_contacts_mmvt_model_input_persisent_obj
+
+@pytest.fixture()
+def count_contacts_mmvt_model_input(count_contacts_mmvt_model_input_persistent):
+    """
+    Create a copy of the model input that is not persistent. But this 
+    at least doesn't require us to generate an entirely new model 
+    input.
+    """
+    count_contacts_mmvt_model_input_obj = copy.deepcopy(
+        count_contacts_mmvt_model_input_persistent)
+    return count_contacts_mmvt_model_input_obj
+
+@pytest.fixture(scope="session")
+def count_contacts_mmvt_model_persistent(
+        count_contacts_mmvt_model_input_persistent):
+    """
+    Create a model object that is persistent across the tests in this file.
+    """
+    os.chdir(TEST_DIRECTORY)
+    count_contacts_mmvt_model_obj, model_xml_path \
+        = prepare.prepare(count_contacts_mmvt_model_input_persistent, 
+                          force_overwrite=False)
+    model_dir = os.path.dirname(model_xml_path)
+    count_contacts_mmvt_model_obj.anchor_rootdir = os.path.abspath(model_dir)
+    count_contacts_mmvt_model_obj.openmm_settings.cuda_platform_settings = None
+    count_contacts_mmvt_model_obj.openmm_settings.reference_platform = True
+    return count_contacts_mmvt_model_obj
+
+@pytest.fixture
+def count_contacts_mmvt_model(count_contacts_mmvt_model_persistent):
+    """
+    Create a copy of the model that is not persistent. But this at least
+    doesn't require us to generate an entirely new model
+    """
+    count_contacts_mmvt_model = copy.deepcopy(
+        count_contacts_mmvt_model_persistent)
+    return count_contacts_mmvt_model
+
+@pytest.fixture(scope="session")
 def toy_mmvt_model_input_persistent(tmpdir_factory):
     """
     Create a model object that is persistent across the tests in this file.

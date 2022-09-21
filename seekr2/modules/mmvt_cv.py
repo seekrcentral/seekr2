@@ -60,6 +60,18 @@ def make_mmvt_closest_pair_cv_object(closest_pair_cv_input, index, root_director
     group2 = base.parse_xml_list(closest_pair_cv_input.group2)
     groups = [group1, group2]
     cv = mmvt_base.MMVT_closest_pair_CV(index, groups)
+    cv.exponent = closest_pair_cv_input.exponent
+    return cv
+
+def make_mmvt_count_contacts_cv_object(count_contacts_cv_input, index, root_directory):
+    """
+    Create a closest pair CV object to be placed into the Model.
+    """
+    group1 = base.parse_xml_list(count_contacts_cv_input.group1)
+    group2 = base.parse_xml_list(count_contacts_cv_input.group2)
+    groups = [group1, group2]
+    cv = mmvt_base.MMVT_count_contacts_CV(index, groups)
+    cv.cutoff_distance = count_contacts_cv_input.cutoff_distance
     return cv
 
 def make_mmvt_external_cv_object(external_cv_input, index):
