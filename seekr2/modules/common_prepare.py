@@ -236,7 +236,8 @@ class Model_input(Serializer):
     ensemble : str, default "nvt"
         Which ensemble to use for the MMVT simulations. Options include
         "npt" (constant T and P), "nvt" (Constant T and V), or "nve"
-        (constant E and V).
+        (constant E and V), "npt_membrane" (Constant T and P with 
+        a membrane barostat).
         
     root_directory : str
         A path to the location where the model XML file will be written, 
@@ -398,7 +399,7 @@ def model_factory(model_input, use_absolute_directory=False):
         model.anchor_rootdir = "."
     if model_input.ensemble.lower() == "nvt":
         pressure = None
-    elif model_input.ensemble.lower() == "npt":
+    elif model_input.ensemble.lower() in ["npt", "npt_membrane"]:
         pressure = model_input.pressure
     elif model_input.ensemble.lower() == "nve":
         raise Exception("NVE ensemble not yet implemented. Options must be"\
@@ -413,6 +414,8 @@ def model_factory(model_input, use_absolute_directory=False):
             mm_settings.barostat = base.Barostat_settings_openmm()
             mm_settings.barostat.target_temperature = temperature
             mm_settings.barostat.target_pressure = pressure
+            if model_input.ensemble.lower() == "npt_membrane":
+                mm_settings.barostat.membrane = True
         mm_settings.initial_temperature = temperature
         if model_input.nonbonded_cutoff is None:
             mm_settings.nonbonded_method = "nocutoff"

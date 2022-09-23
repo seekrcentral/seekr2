@@ -286,8 +286,8 @@ class Spherical_cv_input(CV_input):
             radius = input_anchor.radius
             assert radius >= 0.0, "A radius must be greater than "\
                 "or equal to zero."
-            assert radius > last_radius, "Each subsequent radius "\
-                "argument must be greater than the last (sorted)."
+            assert radius > last_radius, "Each subsequent anchor "\
+                "radius must be greater than the last (sorted)."
             
             if input_anchor.bound_state is None:
                 input_anchor.bound_state = False
@@ -315,6 +315,8 @@ class Spherical_cv_input(CV_input):
                     
             assert len(self.input_anchors) > 1, "A CV must contain "\
                 "more than one anchor."
+                
+            last_radius = radius
         
         return
     
@@ -628,8 +630,8 @@ class Tiwary_cv_input(CV_input):
         for i, input_anchor in enumerate(self.input_anchors):
             assert input_anchor.__class__.__name__ == "Tiwary_cv_anchor"
             value = input_anchor.value
-            assert value > last_value, "Each subsequent value "\
-                "argument must be greater than the last (sorted)."
+            assert value > last_value, "Each subsequent anchor "\
+                "value must be greater than the last (sorted)."
             
             if input_anchor.bound_state is None:
                 input_anchor.bound_state = False
@@ -649,6 +651,8 @@ class Tiwary_cv_input(CV_input):
                     
             assert len(self.input_anchors) > 1, "A CV must contain "\
                 "more than one anchor."
+            
+            last_value = value
         
         return
     
@@ -797,8 +801,8 @@ class Planar_cv_input(CV_input):
         for i, input_anchor in enumerate(self.input_anchors):
             assert input_anchor.__class__.__name__ == "Planar_cv_anchor"
             value = input_anchor.value
-            assert value > last_value, "Each subsequent value "\
-                "argument must be greater than the last (sorted)."
+            assert value > last_value, "Each subsequent anchor "\
+                "value must be greater than the last (sorted)."
             
             if input_anchor.bound_state is None:
                 input_anchor.bound_state = False
@@ -818,6 +822,8 @@ class Planar_cv_input(CV_input):
                     
             assert len(self.input_anchors) > 1, "A CV must contain "\
                 "more than one anchor."
+                
+            last_value = value
         
         return
     
@@ -953,8 +959,8 @@ class RMSD_cv_input(CV_input):
             value = input_anchor.value
             assert value >= 0.0, "A value must be greater than "\
                 "or equal to zero."
-            assert value > last_value, "Each subsequent value "\
-                "argument must be greater than the last (sorted)."
+            assert value > last_value, "Each subsequent anchor "\
+                "value must be greater than the last (sorted)."
             
             if input_anchor.bound_state is None:
                 input_anchor.bound_state = False
@@ -973,6 +979,8 @@ class RMSD_cv_input(CV_input):
                     
             assert len(self.input_anchors) > 1, "A CV must contain "\
                 "more than one anchor."
+                
+            last_value = value
         
         return
     
@@ -1096,7 +1104,6 @@ class Closest_pair_cv_input(CV_input):
         """
         Check user inputs to ensure they have been entered properly.
         """
-        
         last_value = -1e9
         found_bulk_anchor = False
         assert len(self.group1) > 0, "Any input CV groups must contain atoms."
@@ -1110,8 +1117,8 @@ class Closest_pair_cv_input(CV_input):
             value = input_anchor.value
             assert value >= 0.0, "A value must be greater than "\
                 "or equal to zero."
-            assert value > last_value, "Each subsequent value "\
-                "argument must be greater than the last (sorted)."
+            assert value > last_value, "Each subsequent anchor "\
+                "value must be greater than the last (sorted)."
             
             if input_anchor.bound_state is None:
                 input_anchor.bound_state = False
@@ -1130,6 +1137,7 @@ class Closest_pair_cv_input(CV_input):
                     
             assert len(self.input_anchors) > 1, "A CV must contain "\
                 "more than one anchor."
+            last_value = value
         
         return
     
@@ -1267,8 +1275,8 @@ class Count_contacts_cv_input(CV_input):
             value = input_anchor.value
             assert value >= 0.0, "A value must be greater than "\
                 "or equal to zero."
-            assert value > last_value, "Each subsequent value "\
-                "argument must be greater than the last (sorted)."
+            assert value > last_value, "Each subsequent anchor "\
+                "value must be greater than the last (sorted)."
             
             if input_anchor.bound_state is None:
                 input_anchor.bound_state = False
@@ -1425,8 +1433,8 @@ class Toy_cv_input(CV_input):
         for i, input_anchor in enumerate(self.input_anchors):
             assert input_anchor.__class__.__name__ == "Toy_cv_anchor"
             value = input_anchor.value
-            assert value > last_value, "Each subsequent value "\
-                "argument must be greater than the last (sorted)."
+            assert value > last_value, "Each subsequent anchor "\
+                "value must be greater than the last (sorted)."
             
             if input_anchor.bound_state is None:
                 input_anchor.bound_state = False

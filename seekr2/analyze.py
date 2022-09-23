@@ -777,5 +777,6 @@ if __name__ == "__main__":
             skip_error_samples=skip_error_samples, 
             skip_checks=skip_checks, min_time=min_time, max_time=max_time)
     analysis.print_results()
+        
     print("All plots being saved to:", image_directory)
     analysis.save_plots(image_directory)

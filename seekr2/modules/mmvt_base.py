@@ -1389,7 +1389,7 @@ class MMVT_closest_pair_CV(MMVT_collective_variable):
             
         assert self.num_groups == 2
         self.openmm_expression \
-            = "step(k_{}*((1/value_{})^exponent - closest))".format(
+            = "step(k_{}*(closest^(-1.0/exponent) - value_{}))".format(
                 alias_id, alias_id)
         expression_w_bitcode = "bitcode_{}*".format(alias_id)\
             +self.openmm_expression
@@ -1408,7 +1408,7 @@ class MMVT_closest_pair_CV(MMVT_collective_variable):
             
         assert self.num_groups == 2
         self.restraining_expression \
-            = "0.5*k_{}*(((1/value_{})^exponent - closest)^(-1.0/exponent))^2"\
+            = "0.5*k_{}*(closest^(-1.0/exponent) - value_{})^2"\
                 .format(alias_id, alias_id)
         force = openmm.CustomCVForce(self.restraining_expression)
         return force
@@ -1512,7 +1512,6 @@ class MMVT_closest_pair_CV(MMVT_collective_variable):
             closest_force.addExclusion(iatom, jatom)
         
         force.addCollectiveVariable("closest", closest_force)
-        
         self.add_groups(force)
         variable_names_list = []
         return variable_names_list
@@ -1563,8 +1562,9 @@ class MMVT_closest_pair_CV(MMVT_collective_variable):
             for atom_index2 in self.group2:
                 com1 = traj.xyz[frame_index, atom_index1,:]
                 com2 = traj.xyz[frame_index, atom_index2,:]
-                sum += np.linalg.norm(com2-com1) ** self.exponent
-                
+                dist = np.linalg.norm(com2-com1)
+                sum += (1.0/dist) ** self.exponent
+        
         min_value = sum ** (-1.0/self.exponent)
         return min_value
     
@@ -1599,7 +1599,8 @@ class MMVT_closest_pair_CV(MMVT_collective_variable):
             for atom_index2 in self.group2:
                 com1 = positions[atom_index1]
                 com2 = positions[atom_index2]
-                sum += np.linalg.norm(com2-com1) ** self.exponent
+                dist = np.linalg.norm(com2-com1)
+                sum += (1.0/dist) ** self.exponent
         
         min_value = sum ** (-1.0/self.exponent)
         return min_value

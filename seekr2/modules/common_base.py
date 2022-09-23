@@ -231,11 +231,30 @@ class Box_vectors(Serializer):
             self.cy = float(box_6_vector[2] * (
                 math.cos(box_6_vector[3]*math.pi/180.0) \
                 - math.cos(box_6_vector[4]*math.pi/180.0) \
-                * math.cos(box_6_vector[5]*math.pi/180.0) \
-                / math.sin(box_6_vector[5]*math.pi/180.0)))
+                * math.cos(box_6_vector[5]*math.pi/180.0)) \
+                / math.sin(box_6_vector[5]*math.pi/180.0))
         self.cz = float(math.sqrt(box_6_vector[2]**2 - self.cx**2 \
             - self.cy**2))
         return
+    
+    def to_6_vector(self):
+        """
+        Sometimes box vectors are represented using 6 numbers, of which
+        the first three are vector lengths, and the next three are the
+        angles between them. Use this object's full 3x3 box_vectors and 
+        return the equivalent 6-vector.
+        """
+        a = np.array([self.ax, self.ay, self.az])
+        b = np.array([self.bx, self.by, self.bz])
+        c = np.array([self.cx, self.cy, self.cz])
+        a_length = np.linalg.norm(a)
+        b_length = np.linalg.norm(b)
+        c_length = np.linalg.norm(c)
+        alpha = (180.0/math.pi) * math.acos(np.dot(b, c) / (b_length * c_length))
+        beta = (180.0/math.pi) * math.acos(np.dot(c, a) / (c_length * a_length))
+        gamma = (180.0/math.pi) * math.acos(np.dot(a, b) / (a_length * b_length))
+        six_vector = [a_length, b_length, c_length, alpha, beta, gamma]
+        return six_vector
     
     def get_volume(self):
         """
@@ -325,6 +344,7 @@ class Barostat_settings_openmm(Serializer):
         self.target_pressure = 1.0
         self.target_temperature = 298.15
         self.frequency = 25
+        self.membrane = False
         return
     
 class Barostat_settings_namd(Serializer):
@@ -592,18 +612,14 @@ class Amber_params(Serializer):
     prmtop_filename : str
         The AMBER parameter/topology file for the system
         
-    inpcrd_filename : str
-        The AMBER input coordinates file for the system
-        
     box_vectors : None or Box_vectors
         The 3 vectors which describe the shape of the simulation box.
-        If None, then the box vectors are taken from the 
-        inpcrd file defined by the inpcrd_filename argument.
+        If empty, the box vectors are taken from the CRYST line of the 
+        PDB file.
         
     pdb_coordinates_filename : str
         The path to the PDB file from which to obtain the atomic
-        coordinates. If it's an empty string or None, then the
-        coordinates are taken from the inpcrd file.
+        coordinates. 
     """
     
     def __init__(self):
@@ -665,6 +681,56 @@ class Forcefield_params(Serializer):
         self.pdb_coordinates_filename = ""
         self.box_vectors = None
         return
+
+class Charmm_params(Serializer):
+    """
+    Contains parameters for a CHARMM simulation.
+    
+    Attributes:
+    -----------
+    psf_filename : str
+        The CHARMM psf file for the system
+        
+    charmm_ff_files : list
+        The CHARMM forcefield files for the system
+        
+    box_vectors : None or Box_vectors
+        The 3 vectors which describe the shape of the simulation box.
+        
+    pdb_coordinates_filename : str
+        The path to the PDB file from which to obtain the atomic
+        coordinates.
+    """
+    
+    def __init__(self):
+        self.psf_filename = ""
+        self.charmm_ff_files = []
+        self.box_vectors = None
+        self.pdb_coordinates_filename = ""
+        return
+
+def same_charmm_params(charmm_params1, charmm_params2):
+    """
+    Returns True if both charmm_params objects are the same
+    """
+    if charmm_params1 is None:
+        if charmm_params2 is None:
+            return True
+        else:
+            return False
+    if charmm_params2 is None:
+        return False
+    
+    if charmm_params1.psf_filename != charmm_params2.psf_filename:
+        return False
+    if charmm_params1.charmm_ff_files != charmm_params2.charmm_ff_files:
+        return False
+    if charmm_params1.box_vectors != charmm_params2.box_vectors:
+        return False
+    if charmm_params1.pdb_coordinates_filename \
+            != charmm_params2.pdb_coordinates_filename:
+        return False
+    return True
 
 class Ion(Serializer):
     """

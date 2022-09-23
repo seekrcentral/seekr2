@@ -241,6 +241,53 @@ def copy_building_files_by_anchor(anchor, input_anchor, rootdir):
                 box_vectors = base.get_box_vectors_from_pdb(new_pdb_filename)
                 anchor.forcefield_params.box_vectors.from_quantity(
                     box_vectors)
+                
+    charmm = input_anchor.starting_charmm_params
+    new_psf_filename = None
+    if charmm is not None:
+        anchor.charmm_params = base.Charmm_params()
+        if charmm.psf_filename is not None and \
+                charmm.psf_filename != "":
+            charmm.psf_filename = os.path.expanduser(
+                charmm.psf_filename)
+            assert os.path.exists(charmm.psf_filename), \
+                "Provided file does not exist: {}".format(
+                    charmm.psf_filename)
+            psf_filename = os.path.basename(charmm.psf_filename)
+            new_psf_filename = os.path.join(anchor_building_dir, 
+                                               psf_filename)
+            copyfile(charmm.psf_filename, new_psf_filename)
+            anchor.charmm_params.psf_filename = psf_filename
+            
+        if charmm.charmm_ff_files is not None \
+               and len(charmm.charmm_ff_files) > 0:
+            anchor.charmm_params.charmm_ff_files = []
+            for input_charmm_ff_filename in charmm.charmm_ff_files:
+                input_charmm_ff_filename = os.path.expanduser(
+                    input_charmm_ff_filename)
+                assert os.path.exists(input_charmm_ff_filename), \
+                    "Provided file does not exist: {}".format(
+                        input_charmm_ff_filename)
+                charmm_ff_filename = os.path.basename(input_charmm_ff_filename)
+                new_ff_filename = os.path.join(anchor_building_dir, 
+                                                   charmm_ff_filename)
+                copyfile(input_charmm_ff_filename, new_ff_filename)
+                anchor.charmm_params.charmm_ff_files.append(new_ff_filename)
+            
+        if charmm.pdb_coordinates_filename is not None and \
+                charmm.pdb_coordinates_filename != "":
+            pdb_filename = os.path.basename(charmm.pdb_coordinates_filename)
+            new_pdb_filename = os.path.join(anchor_building_dir, 
+                                            pdb_filename)
+            copyfile(os.path.expanduser(charmm.pdb_coordinates_filename), 
+                     new_pdb_filename)
+            anchor.charmm_params.pdb_coordinates_filename = pdb_filename
+            anchor.charmm_params.box_vectors = charmm.box_vectors
+            if anchor.charmm_params.box_vectors is None:
+                anchor.charmm_params.box_vectors = base.Box_vectors()
+                box_vectors = base.get_box_vectors_from_pdb(new_pdb_filename)
+                anchor.charmm_params.box_vectors.from_quantity(
+                    box_vectors)
     
     return
     

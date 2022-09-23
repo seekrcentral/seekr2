@@ -139,8 +139,6 @@ def add_simulation(sim_openmm, model, topology, positions, box_vectors,
         sim_openmm.simulation.context.setPositions(positions)
     
     if load_state_file is not None:
-        # TODO: remove print statement?
-        print("loading state file")
         sim_openmm.simulation.loadState(load_state_file)
         state = sim_openmm.simulation.context.getState(getPositions=True)
         positions = state.getPositions(positions)

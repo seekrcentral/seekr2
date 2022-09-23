@@ -9,6 +9,12 @@ objects and routines are common to both Elber and MMVT milestoning.
 import os
 
 import numpy as np
+
+try:
+    import openmm.unit as unit
+except ImportError:
+    import simtk.unit as unit
+
 try:
     import openmm
 except ImportError:
@@ -109,6 +115,7 @@ def create_openmm_system(sim_openmm, model, anchor, frame=0,
     box_vectors = None
     num_frames = 0
     positions_obj = None
+    params = None
     if anchor.__class__.__name__ in ["MMVT_toy_anchor", "Elber_toy_anchor"]:
         if load_state_file is not None:
             positions = None
@@ -165,10 +172,46 @@ def create_openmm_system(sim_openmm, model, anchor, frame=0,
             positions = None
         
         elif anchor.charmm_params is not None:
-            raise Exception("Charmm systems not yet implemented")
+            psf_filename = os.path.join(
+                building_directory, anchor.charmm_params.psf_filename)
+            psf = openmm_app.CharmmPsfFile(psf_filename)
+            
+            charmm_ff_filenames = []
+            for charmm_ff_basename in anchor.charmm_params.charmm_ff_files:
+                charmm_ff_filename = os.path.join(
+                    building_directory, charmm_ff_basename)
+                charmm_ff_filenames.append(charmm_ff_filename)
+                
+            params = openmm_app.CharmmParameterSet(*charmm_ff_filenames)
+            
+            if anchor.charmm_params.pdb_coordinates_filename is None \
+                    or anchor.charmm_params.pdb_coordinates_filename == "":
+                positions_obj = None
+                positions = None
+                sim_openmm.try_to_load_state = True
+            else:
+                pdb_coordinates_filename = os.path.join(
+                    building_directory, 
+                    anchor.charmm_params.pdb_coordinates_filename)
+                positions_obj = openmm_app.PDBFile(pdb_coordinates_filename)
+                
+            box_vectors = anchor.charmm_params.box_vectors
+            if box_vectors is not None:
+                box_6_vector = box_vectors.to_6_vector()
+                psf.setBox(box_6_vector[0]*unit.nanometers, 
+                           box_6_vector[1]*unit.nanometers,
+                           box_6_vector[2]*unit.nanometers,
+                           box_6_vector[3]*unit.degrees, 
+                           box_6_vector[4]*unit.degrees,
+                           box_6_vector[5]*unit.degrees)
+            else:
+                psf.setBox(2*unit.nanometers, 2*unit.nanometers, 
+                           2*unit.nanometers)
+            topology = psf.topology
         
         else:
-            raise Exception("No Amber or Charmm input settings detected.")
+            raise Exception("No Amber, Forcefield, or Charmm input settings "\
+                            "detected.")
     
     #assert box_vectors is not None, "No source of box vectors provided."
     nonbonded_method = model.openmm_settings.nonbonded_method.lower()
@@ -240,10 +283,15 @@ def create_openmm_system(sim_openmm, model, anchor, frame=0,
                 rigidWater=rigidWater)
         
         elif anchor.charmm_params is not None:
-            raise Exception("Charmm input settings not yet implemented")
+            system = psf.createSystem(
+                params=params, nonbondedMethod=nonbondedMethod, 
+                nonbondedCutoff=model.openmm_settings.nonbonded_cutoff, 
+                constraints=constraints, hydrogenMass=hydrogenMass, 
+                rigidWater=rigidWater)
             
         else:
-            print("Settings for Amber or Charmm simulations not found")
+            print("Settings for Amber, Forcefield, or Charmm simulations "\
+                  "not found")
     
     
     if positions_obj is not None:
@@ -252,6 +300,10 @@ def create_openmm_system(sim_openmm, model, anchor, frame=0,
             "Frame index {} out of range.".format(frame)
         positions = positions_obj.getPositions(frame=frame)
         num_frames = positions_obj.getNumFrames()
+    
+    # set all non-milestoning force groups to zero
+    for force in system.getForces():
+        force.setForceGroup(0)
         
     return system, topology, positions, box_vectors, num_frames
 
