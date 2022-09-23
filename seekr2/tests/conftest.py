@@ -622,6 +622,57 @@ def toy_voronoi_model(toy_voronoi_model_persistent):
     toy_voronoi_model = copy.deepcopy(toy_voronoi_model_persistent)
     return toy_voronoi_model
 
+@pytest.fixture(scope="session")
+def ala_ala_ala_mmvt_model_input_persistent_charmm(tmpdir_factory):
+    """
+    Create a model object that is persistent across the tests in this file.
+    Uses an OpenMM forcefield input.
+    """
+    rootdir = tmpdir_factory.mktemp("ala_ala_ala_mmvt_charmm")
+    ala_ala_ala_mmvt_model_input_persisent_obj \
+        = create_model_input.create_ala_ala_mmvt_model_input(
+            rootdir, ff="charmm")
+    return ala_ala_ala_mmvt_model_input_persisent_obj
+
+@pytest.fixture()
+def ala_ala_ala_mmvt_model_input_charmm(
+        ala_ala_ala_mmvt_model_input_persistent_charmm):
+    """
+    Create a copy of the model input that is not persistent. But this 
+    at least doesn't require us to generate an entirely new model 
+    input. Uses an OpenMM forcefield input.
+    """
+    ala_ala_ala_mmvt_model_input_obj = copy.deepcopy(
+        ala_ala_ala_mmvt_model_input_persistent_charmm)
+    return ala_ala_ala_mmvt_model_input_obj
+
+@pytest.fixture(scope="session")
+def ala_ala_ala_mmvt_model_persistent_charmm(
+        ala_ala_ala_mmvt_model_input_persistent_charmm):
+    """
+    Create a model object that is persistent across the tests in this file.
+    Uses an OpenMM forcefield input.
+    """
+    os.chdir(TEST_DIRECTORY)
+    ala_ala_ala_mmvt_model_obj, model_xml_path \
+        = prepare.prepare(ala_ala_ala_mmvt_model_input_persistent_charmm, 
+                          force_overwrite=False)
+    model_dir = os.path.dirname(model_xml_path)
+    ala_ala_ala_mmvt_model_obj.anchor_rootdir = os.path.abspath(model_dir)
+    return ala_ala_ala_mmvt_model_obj
+
+@pytest.fixture
+def ala_ala_ala_mmvt_model_charmm(
+        ala_ala_ala_mmvt_model_persistent_charmm):
+    """
+    Create a copy of the model that is not persistent. But this at least
+    doesn't require us to generate an entirely new model. 
+    Uses an OpenMM forcefield input.
+    """
+    ala_ala_ala_mmvt_model = copy.deepcopy(
+        ala_ala_ala_mmvt_model_persistent_charmm)
+    return ala_ala_ala_mmvt_model
+
 def compare_dicts(dict1, dict2):
     """
     Compare the values within two dictionaries and assert they are

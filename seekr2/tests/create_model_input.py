@@ -31,6 +31,14 @@ def assign_forcefield_params(input_anchor, built_in_ff_list, custom_ff_list,
         = pdb_filename
     return
 
+def assign_charmm_params(input_anchor, psf_filename, charmm_ff_filenames, 
+                         pdb_filename):
+    input_anchor.starting_charmm_params = base.Charmm_params()
+    input_anchor.starting_charmm_params.psf_filename = psf_filename
+    input_anchor.starting_charmm_params.charmm_ff_files = charmm_ff_filenames
+    input_anchor.starting_charmm_params.pdb_coordinates_filename = pdb_filename
+    return
+
 def create_host_guest_mmvt_model_input(root_dir, bd=True, ff="amber"):
     """
     Create a generic host-guest model input object.
@@ -745,4 +753,51 @@ def create_toy_voronoi_model_input(root_dir):
     model_input.toy_settings_input.num_particles = 1
     model_input.toy_settings_input.masses = np.array([10.0])
     
+    return model_input
+
+def create_ala_ala_mmvt_model_input(root_dir, ff="charmm"):
+    """
+    Create a generic host-guest model input object.
+    """
+    os.chdir(TEST_DIRECTORY)
+    model_input = common_prepare.Model_input()
+    model_input.calculation_type = "mmvt"
+    model_input.calculation_settings = common_prepare.MMVT_input_settings()
+    model_input.calculation_settings.md_output_interval = 10000
+    model_input.calculation_settings.md_steps_per_anchor = 100000 #1000000
+    model_input.temperature = 298.15
+    model_input.pressure = 1.0
+    model_input.ensemble = "nvt"
+    model_input.root_directory = root_dir
+    model_input.md_program = "openmm"
+    model_input.constraints = "HBonds"
+    model_input.rigidWater = True
+    model_input.hydrogenMass = None
+    model_input.timestep = 0.002
+    model_input.nonbonded_cutoff = 0.9
+    cv_input1 = common_cv.Spherical_cv_input()
+    cv_input1.group1 = [6]
+    cv_input1.group2 = [26]
+    cv_input1.input_anchors = []
+    
+    radius_list = [0.7, 0.8, 0.9]
+    charmm_psf_filename = os.path.abspath("data/ala_ala_ala.psf")
+    charmm_param_filenames = [os.path.abspath("data/charmm22.par"),
+                              os.path.abspath("data/charmm22.rtf")]
+    pdb_filenames = [os.path.abspath("data/ala_ala_ala.pdb"), "", ""]
+    for i, (radius, pdb_filename) in enumerate(zip(radius_list, pdb_filenames)):
+        input_anchor = common_cv.Spherical_cv_anchor()
+        input_anchor.radius = radius
+        if ff == "charmm":
+            assign_charmm_params(input_anchor, charmm_psf_filename, 
+                                charmm_param_filenames, pdb_filename)
+        else:
+            raise Exception("ff type not supported: {}".format(ff))
+        
+        input_anchor.bound_state = False
+        input_anchor.bulk_anchor = False
+        cv_input1.input_anchors.append(input_anchor)
+    
+    model_input.cv_inputs = [cv_input1] 
+    model_input.browndye_settings_input = None
     return model_input
