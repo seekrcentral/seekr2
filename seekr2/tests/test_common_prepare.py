@@ -226,7 +226,7 @@ def test_modify_model(tmp_path, host_guest_mmvt_model_input):
     check.check_systems_within_Voronoi_cells(model2)
     
     # Force modification of BD milestone
-    host_guest_mmvt_model_input.cv_inputs[0].input_anchors[0].radius = 1.37
+    host_guest_mmvt_model_input.cv_inputs[0].input_anchors[-1].radius = 1.38
     os.chdir(TEST_DIRECTORY)
     model2, model2_xml_path \
         = prepare.prepare(host_guest_mmvt_model_input, force_overwrite=True)

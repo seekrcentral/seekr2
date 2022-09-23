@@ -200,6 +200,7 @@ class Spherical_cv_anchor(CV_anchor):
         self.upper_milestone_radius = None
         self.starting_amber_params = None
         self.starting_forcefield_params = None
+        self.starting_charmm_params = None
         self.bound_state = False
         self.bulk_anchor = False
         self.connection_flags = []
@@ -398,6 +399,7 @@ class Tiwary_cv_anchor(CV_anchor):
         self.upper_milestone_value = None
         self.starting_amber_params = None
         self.starting_forcefield_params = None
+        self.starting_charmm_params = None
         self.bound_state = False
         self.bulk_anchor = False
         self.connection_flags = []
@@ -715,6 +717,7 @@ class Planar_cv_anchor(CV_anchor):
         self.upper_milestone_value = None
         self.starting_amber_params = None
         self.starting_forcefield_params = None
+        self.starting_charmm_params = None
         self.bound_state = False
         self.bulk_anchor = False
         self.connection_flags = []
@@ -877,6 +880,7 @@ class RMSD_cv_anchor(CV_anchor):
         self.upper_milestone_value = None
         self.starting_amber_params = None
         self.starting_forcefield_params = None
+        self.starting_charmm_params = None
         self.bound_state = False
         self.bulk_anchor = False
         self.connection_flags = []
@@ -1034,6 +1038,7 @@ class Closest_pair_cv_anchor(CV_anchor):
         self.upper_milestone_value = None
         self.starting_amber_params = None
         self.starting_forcefield_params = None
+        self.starting_charmm_params = None
         self.bound_state = False
         self.bulk_anchor = False
         self.connection_flags = []
@@ -1191,6 +1196,7 @@ class Count_contacts_cv_anchor(CV_anchor):
         self.upper_milestone_value = None
         self.starting_amber_params = None
         self.starting_forcefield_params = None
+        self.starting_charmm_params = None
         self.bound_state = False
         self.bulk_anchor = False
         self.connection_flags = []
@@ -1643,6 +1649,7 @@ class Voronoi_cv_anchor(CV_anchor):
         self.values = []
         self.starting_amber_params = None
         self.starting_forcefield_params = None
+        self.starting_charmm_params = None
         self.bound_state = False
         self.bulk_anchor = False
         self.connection_flags = []

@@ -42,7 +42,7 @@ def test_add_forces(tmp_path, toy_mmvt_model):
     old_force_len = len(forces)
     assert my_sim_openmm.integrator.getNumMilestoneGroups() \
         == len(anchor.milestones)
-    mmvt_sim_openmm.add_forces(my_sim_openmm, toy_mmvt_model, anchor)
+    mmvt_sim_openmm.add_forces(my_sim_openmm, toy_mmvt_model, anchor, None)
     forces2 = my_sim_openmm.system.getForces()
     assert len(forces2) == old_force_len + len(anchor.milestones)
     return
