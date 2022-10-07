@@ -10,6 +10,7 @@ from collections import defaultdict
 
 import numpy as np
 from scipy.spatial import Delaunay
+from scipy.spatial import qhull
 from abserdes import Serializer
 
 import seekr2.modules.common_base as base
@@ -1703,16 +1704,60 @@ def find_voronoi_anchor_neighbors(anchors):
         for i, variable_name in enumerate(variables_sorted_by_cv_index):
             points[alpha, i] = anchor.variables[variable_name]
     
-    triangulation = Delaunay(points)
-    for simplex in triangulation.simplices:
-        for anchor_index1 in simplex:
-            for anchor_index2 in simplex:
-                if anchor_index1 == anchor_index2:
-                    continue
-                neighbor_anchors[anchor_index1].add(anchor_index2)
+    try:
+        triangulation = Delaunay(points)
+        for simplex in triangulation.simplices:
+            for anchor_index1 in simplex:
+                for anchor_index2 in simplex:
+                    if anchor_index1 == anchor_index2:
+                        continue
+                    neighbor_anchors[anchor_index1].add(anchor_index2)
+    except qhull.QhullError:
+        for alpha, anchor in enumerate(anchors):
+            if alpha > 0:
+                neighbor_anchors[alpha].add(alpha-1)
+            if alpha < n_points-1:
+                neighbor_anchors[alpha].add(alpha+1)
         
     return neighbor_anchors
-    
+
+def make_mmvt_milestone_between_two_voronoi_anchors(
+            anchor, alpha, neighbor_anchor, neighbor_anchor_alpha,
+            milestone_index, cv_index, num_children):
+        neighbor_index = neighbor_anchor.index
+        assert anchor.index != neighbor_anchor.index
+        for milestone in anchor.milestones:
+            if milestone.neighbor_anchor_index == neighbor_anchor.index:
+                return milestone_index
+        
+        milestone1 = base.Milestone()
+        milestone1.index = milestone_index
+        milestone1.neighbor_anchor_index = neighbor_index
+        milestone1.alias_index = len(anchor.milestones)+1
+        milestone1.cv_index = cv_index
+        milestone1.variables = {"k": 1.0}
+        milestone2 = base.Milestone()
+        milestone2.index = milestone_index
+        milestone2.neighbor_anchor_index = anchor.index
+        milestone2.alias_index = len(neighbor_anchor.milestones)+1
+        milestone2.cv_index = cv_index
+        milestone2.variables = {"k": 1.0}
+        for i in range(num_children):
+            me_key = "me_{}".format(i)
+            neighbor_key = "neighbor_{}".format(i)
+            variable_key = "value_{}_{}".format(cv_index, i)
+            me_value = anchor.variables[variable_key]
+            neighbor_value = neighbor_anchor.variables[variable_key]
+            milestone1.variables[me_key] = me_value
+            milestone1.variables[neighbor_key] = neighbor_value
+            milestone2.variables[me_key] = neighbor_value
+            milestone2.variables[neighbor_key] = me_value
+            
+        anchor.milestones.append(milestone1)
+        neighbor_anchor.milestones.append(milestone2)
+        milestone_index += 1
+        return milestone_index
+
 class Voronoi_cv_input(CV_input):
     """
     An object for the input to define when input CVs should be combined to
@@ -1780,52 +1825,18 @@ class Voronoi_cv_input(CV_input):
             for neighbor_anchor_alpha in neighbor_anchor_alphas:
                 neighbor_anchor = anchors[neighbor_anchor_alpha]
                 
-                milestone_index = self.make_mmvt_milestone_between_two_anchors(
-                    anchor, alpha, neighbor_anchor, neighbor_anchor_alpha, milestone_index)
+                #milestone_index = self.make_mmvt_milestone_between_two_anchors(
+                #    anchor, alpha, neighbor_anchor, neighbor_anchor_alpha, milestone_index)
+                milestone_index \
+                    = make_mmvt_milestone_between_two_voronoi_anchors(
+                        anchor, alpha, neighbor_anchor, neighbor_anchor_alpha, 
+                        milestone_index, self.index, len(self.cv_inputs))
                     
             if anchor.bulkstate:
                 connection_flag_dict["bulk"].append(anchor)
             
         return anchors, anchor_index, milestone_index, connection_flag_dict,\
             associated_input_anchor
-        
-    def make_mmvt_milestone_between_two_anchors(
-            self, anchor, alpha, neighbor_anchor, neighbor_anchor_alpha,
-            milestone_index):
-        neighbor_index = neighbor_anchor.index
-        input_anchor = self.input_anchors[alpha]
-        neighbor_input_anchor = self.input_anchors[neighbor_anchor_alpha]
-        assert anchor.index != neighbor_anchor.index
-        for milestone in anchor.milestones:
-            if milestone.neighbor_anchor_index == neighbor_anchor.index:
-                return milestone_index
-        
-        milestone1 = base.Milestone()
-        milestone1.index = milestone_index
-        milestone1.neighbor_anchor_index = neighbor_index
-        milestone1.alias_index = len(anchor.milestones)+1
-        milestone1.cv_index = self.index
-        milestone1.variables = {"k": 1.0}
-        milestone2 = base.Milestone()
-        milestone2.index = milestone_index
-        milestone2.neighbor_anchor_index = anchor.index
-        milestone2.alias_index = len(neighbor_anchor.milestones)+1
-        milestone2.cv_index = self.index
-        milestone2.variables = {"k": 1.0}
-        for i, cv_input in enumerate(self.cv_inputs):
-            me_key = "me_{}".format(i)
-            neighbor_key = "neighbor_{}".format(i)
-            me_value = input_anchor.values[i]
-            neighbor_value = neighbor_input_anchor.values[i]
-            milestone1.variables[me_key] = me_value
-            milestone1.variables[neighbor_key] = neighbor_value
-            milestone2.variables[me_key] = neighbor_value
-            milestone2.variables[neighbor_key] = me_value
-            
-        anchor.milestones.append(milestone1)
-        neighbor_anchor.milestones.append(milestone2)
-        milestone_index += 1
-        return milestone_index
     
     def check(self):
         return

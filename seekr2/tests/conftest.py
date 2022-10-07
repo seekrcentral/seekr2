@@ -658,6 +658,8 @@ def ala_ala_ala_mmvt_model_persistent_charmm(
         = prepare.prepare(ala_ala_ala_mmvt_model_input_persistent_charmm, 
                           force_overwrite=False)
     model_dir = os.path.dirname(model_xml_path)
+    ala_ala_ala_mmvt_model_obj.openmm_settings.cuda_platform_settings = None
+    ala_ala_ala_mmvt_model_obj.openmm_settings.reference_platform = True
     ala_ala_ala_mmvt_model_obj.anchor_rootdir = os.path.abspath(model_dir)
     return ala_ala_ala_mmvt_model_obj
 

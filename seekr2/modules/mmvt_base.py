@@ -2144,11 +2144,27 @@ class MMVT_external_CV(MMVT_collective_variable):
         """
         raise Exception("MMVT External CVs are not available in NAMD")
     
+    def get_mdtraj_cv_value(self, traj, frame_index):
+        """
+        Determine the current CV value for an mdtraj object.
+        """
+        positions = traj.xyz[frame_index, :,:] * unit.nanometers
+        value = self.get_cv_value(positions)
+        return value
+    
     def check_mdtraj_within_boundary(self, traj, milestone_variables, 
                                      verbose=False):
         """
         For now, this will just always return True.
         """
+        TOL = 0.001
+        for frame_index in range(traj.n_frames):
+            value = self.get_mdtraj_cv_value(traj, frame_index)
+            result = self.check_value_within_boundary(
+                value, milestone_variables, tolerance=TOL)
+            if not result:
+                return False
+            
         return True
     
     def get_openmm_context_cv_value(self, context, milestone_variables, 
@@ -2160,7 +2176,7 @@ class MMVT_external_CV(MMVT_collective_variable):
             state = context.getState(getPositions=True)
             positions = state.getPositions()
         
-        value = self.get_cv_value(positions, milestone_variables)
+        value = self.get_cv_value(positions)
         return value
     
     def check_openmm_context_within_boundary(
@@ -2177,7 +2193,7 @@ class MMVT_external_CV(MMVT_collective_variable):
         return self.check_positions_within_boundary(
             positions, milestone_variables, tolerance)
     
-    def get_cv_value(self, positions, milestone_variables):
+    def get_cv_value(self, positions): #, milestone_variables):
         """
         Get the value of the cv for the set of positions.
         """
@@ -2210,9 +2226,11 @@ class MMVT_external_CV(MMVT_collective_variable):
                 openmm.unit.nanometer))
             expr += expr_x + expr_y + expr_z
             
+        """
         for variable in milestone_variables:
             expr_var = "{}={};".format(variable, milestone_variables[variable])
             expr += expr_var
+        """
             
         expr += base.convert_openmm_to_python_expr("result="+self.cv_expression)
         mylocals = locals()

@@ -203,7 +203,32 @@ def load_structure_with_mdtraj(model, anchor, mode="pdb", coords_filename=None):
     else:
         raise Exception("Check mode not implemented: {}".format(mode))
         
-    if anchor.amber_params is not None:
+    if model.using_toy():
+        pdb_filename = os.path.join(building_directory, "toy.pdb")
+        if mode == "pdb":
+            traj = mdtraj.load(pdb_filename)
+            
+        elif mode == "elber_umbrella":
+            assert len(umbrella_traj_filenames) > 0, "Only empty umbrella " \
+                "trajectories were found. You can force SEEKR to skip these "\
+                "checks by using the --skip_checks (-s) argument. Anchor: {}"\
+                .format(anchor.index)
+            traj = mdtraj.load(umbrella_traj_filenames, top=pdb_filename)
+            
+        elif mode == "state_xml":
+            traj = mdtraj.load_xml(coords_filename, top=pdb_filename)
+        
+        elif mode == "mmvt_traj":
+            if not len(mmvt_traj_filenames) > 0:
+                warnings.warn("Empty mmvt trajectories were found in "\
+                      "anchor: {}.".format(anchor.index))
+                return None
+                
+            traj = mdtraj.load(mmvt_traj_filenames, top=pdb_filename)
+            
+        return traj
+    
+    elif anchor.amber_params is not None:
         
         if anchor.amber_params.prmtop_filename is not None:
             prmtop_filename = os.path.join(

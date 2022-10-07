@@ -145,12 +145,13 @@ if __name__ == "__main__":
     argparser.add_argument(
         "-c", "--cutoff", dest="cutoff", default=0.1, type=float, 
         help="The minimum convergence that must be achieved before concluding "\
-        "that the calculations have converged for a given anchor.")
+        "that the calculations have converged for a given anchor. "\
+        "Default: 0.1.")
     argparser.add_argument(
         "-m", "--minimum_anchor_transitions", dest="minimum_anchor_transitions",
         default=100, type=int, help="Enter a minimum number of transitions "\
         "that must be observed per milestone in a given anchor as a criteria "\
-        "for the simulations.")
+        "for the simulations. Default: 100")
     
     args = argparser.parse_args() # parse the args into a dictionary
     args = vars(args)
