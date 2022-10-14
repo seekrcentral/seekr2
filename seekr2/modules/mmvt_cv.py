@@ -114,7 +114,7 @@ def make_mmvt_voronoi_cv_object(voronoi_cv_input, index, root_directory):
         elif isinstance(cv_input, common_cv.RMSD_cv_input):
             child_cv = make_mmvt_RMSD_cv_object(
                 cv_input, index=i, root_directory=root_directory)
-        if isinstance(cv_input, common_cv.Closest_pair_cv_input):
+        elif isinstance(cv_input, common_cv.Closest_pair_cv_input):
             child_cv = make_mmvt_closest_pair_cv_object(cv_input, index=i)
         elif isinstance(cv_input, common_cv.Toy_cv_input):
             child_cv = make_mmvt_external_cv_object(cv_input, index=i)

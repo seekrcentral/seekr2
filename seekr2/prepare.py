@@ -19,6 +19,8 @@ from seekr2.modules.common_prepare import Browndye_settings_input, \
 from seekr2.modules.common_base import Ion, Amber_params, Forcefield_params, \
     Charmm_params, Box_vectors
 from seekr2.modules.common_cv import Spherical_cv_anchor, Spherical_cv_input, \
+    Tiwary_cv_anchor, Tiwary_cv_input, Tiwary_cv_distance_order_parameter, \
+    Tiwary_cv_angle_order_parameter, Tiwary_cv_torsion_order_parameter, \
     RMSD_cv_input, RMSD_cv_anchor, Toy_cv_input, Toy_cv_anchor, Grid_combo, \
     State_point, Voronoi_cv_input, Voronoi_cv_anchor, Voronoi_cv_toy_anchor, \
     Closest_pair_cv_input, Closest_pair_cv_anchor, Count_contacts_cv_input, \

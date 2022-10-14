@@ -470,6 +470,8 @@ class MMVT_tiwary_CV(MMVT_collective_variable):
     def __init__(self, index, order_parameters, order_parameter_weights):
         self.index = index
         self.order_parameters = order_parameters
+        for order_parameter in self.order_parameters:
+            order_parameter.initialize_groups()
         self.order_parameter_weights = order_parameter_weights
         self.name = "mmvt_tiwary"
         self.num_groups = 0
@@ -501,11 +503,10 @@ class MMVT_tiwary_CV(MMVT_collective_variable):
             + " - value))"
         self.restraining_expression = "0.5*k*(" \
             + " + ".join(openmm_expression_list) + " - value)^2"
+        self.cv_expression = " + ".join(openmm_expression_list)
         self.per_dof_variables.append("k")
         self.per_dof_variables.append("value")
         self.global_variables = []
-        #print("self.openmm_expression:", self.openmm_expression)
-        #print("self.per_dof_variables:", self.per_dof_variables)
         return
     
     def make_force_object(self, alias_id):
@@ -551,29 +552,39 @@ class MMVT_tiwary_CV(MMVT_collective_variable):
         """
         
         """
+        # Handle me force
         me_expr = "(me_val - {})^2".format(self.cv_expression)
         me_force = openmm.CustomCentroidBondForce(
             self.num_groups, me_expr)
         me_group_list = []
-        for order_parameter in self.order_parameters:
-            for i in range(order_parameter.get_num_groups()):
-                group = order_parameter.get_group(i)
+        me_values = [me_val]
+        me_force.addPerBondParameter("me_val")
+        for i, order_parameter in enumerate(self.order_parameters):
+            for j in range(order_parameter.get_num_groups()):
+                group = order_parameter.get_group(j)
                 mygroup = me_force.addGroup(group)
                 me_group_list.append(mygroup)
-        me_force.addPerBondParameter("me_val")
-        me_force.addBond(me_group_list, [me_val])
+            me_force.addPerBondParameter("c{}".format(i))
+            me_values.append(self.order_parameter_weights[i])
         
+        me_force.addBond(me_group_list, me_values)
+        
+        # Handle neighbor force
         neighbor_expr = "(neighbor_val - {})^2".format(self.cv_expression)
         neighbor_force = openmm.CustomCentroidBondForce(
             self.num_groups, neighbor_expr)
         neighbor_group_list = []
-        for order_parameter in self.order_parameters:
-            for i in range(order_parameter.get_num_groups()):
-                group = order_parameter.get_group(i)
+        neighbor_values = [neighbor_val]
+        neighbor_force.addPerBondParameter("neighbor_val")
+        for i, order_parameter in enumerate(self.order_parameters):
+            for j in range(order_parameter.get_num_groups()):
+                group = order_parameter.get_group(j)
                 mygroup = neighbor_force.addGroup(group)
                 neighbor_group_list.append(mygroup)
-        neighbor_force.addGlobalParameter("neighbor_val")
-        neighbor_force.addBond(neighbor_group_list, [neighbor_val])
+            neighbor_force.addPerBondParameter("c{}".format(i))
+            neighbor_values.append(self.order_parameter_weights[i])
+        
+        neighbor_force.addBond(neighbor_group_list, neighbor_values)
         
         return me_force, neighbor_force
     
@@ -870,7 +881,7 @@ class MMVT_planar_CV(MMVT_collective_variable):
         megroup1 = me_force.addGroup(self.start_group)
         megroup2 = me_force.addGroup(self.end_group)
         megroup3 = me_force.addGroup(self.mobile_group)
-        me_force.addGlobalParameter("me_val")
+        me_force.addPerBondParameter("me_val")
         me_force.addBond([megroup1, megroup2, megroup3], [me_val])
         
         neighbor_expr = "(neighbor_val - {})^2".format(self.cv_expression)

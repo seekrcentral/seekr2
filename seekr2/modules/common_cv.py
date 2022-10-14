@@ -446,6 +446,14 @@ class Tiwary_cv_distance_order_parameter(Serializer):
         self.group2 = []
         return
     
+    def initialize_groups(self):
+        """
+        Make sure that group range() functions are properly parsed.
+        """
+        self.group1 = base.parse_xml_list(self.group1)
+        self.group2 = base.parse_xml_list(self.group2)
+        return
+    
     def get_openmm_expression(self, group_index):
         """
         
@@ -489,6 +497,15 @@ class Tiwary_cv_angle_order_parameter(Serializer):
         self.group1 = []
         self.group2 = []
         self.group3 = []
+        return
+    
+    def initialize_groups(self):
+        """
+        Make sure that group range() functions are properly parsed.
+        """
+        self.group1 = base.parse_xml_list(self.group1)
+        self.group2 = base.parse_xml_list(self.group2)
+        self.group3 = base.parse_xml_list(self.group3)
         return
     
     def get_openmm_expression(self, group_index):
@@ -540,6 +557,16 @@ class Tiwary_cv_torsion_order_parameter(Serializer):
         self.group2 = []
         self.group3 = []
         self.group4 = []
+        return
+    
+    def initialize_groups(self):
+        """
+        Make sure that group range() functions are properly parsed.
+        """
+        self.group1 = base.parse_xml_list(self.group1)
+        self.group2 = base.parse_xml_list(self.group2)
+        self.group3 = base.parse_xml_list(self.group3)
+        self.group4 = base.parse_xml_list(self.group4)
         return
     
     def get_openmm_expression(self, group_index):
@@ -1798,7 +1825,9 @@ class Voronoi_cv_input(CV_input):
             
             # Make the variable names
             for i, cv_input in enumerate(self.cv_inputs):
-                variable_name = "{}_{}_{}".format(cv_input.variable_name, 
+                #variable_name = "{}_{}_{}".format(cv_input.variable_name, 
+                #                                  self.index, i)
+                variable_name = "{}_{}_{}".format("value", 
                                                   self.index, i)
                 variable_value = input_anchor.get_variable_value(i)
                 anchor.variables[variable_name] = variable_value
