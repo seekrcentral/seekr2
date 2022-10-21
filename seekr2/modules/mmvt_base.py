@@ -2252,7 +2252,7 @@ class MMVT_external_CV(MMVT_collective_variable):
     def check_positions_within_boundary(
             self, positions, milestone_variables, tolerance=0.0):
         step = lambda x : 0 if x < 0 else 1
-        value = self.get_cv_value(positions, milestone_variables)
+        value = self.get_cv_value(positions)
         result = step(milestone_variables["k"] \
                       * (value-milestone_variables["value"]) + tolerance)
         if result <= 0:
@@ -2513,6 +2513,25 @@ class MMVT_Voronoi_CV(MMVT_collective_variable):
             neighbor_this_value = (neighbor_i_value - cv_value)**2
             me_total_value += me_this_value
             neighbor_total_value += neighbor_this_value
+                
+        distance = me_total_value - neighbor_total_value
+        if (distance-tolerance) > 0.0: 
+            return False
+        
+        return True
+    
+    def check_positions_within_boundary(self, positions, milestone_variables, 
+                                        tolerance=0.0):
+        me_total_value = 0.0
+        neighbor_total_value = 0.0
+        for i, child_cv in enumerate(self.child_cvs):
+            cv_value = child_cv.get_cv_value(positions)
+            me_i_value = milestone_variables["me_{}".format(i)]
+            neighbor_i_value = milestone_variables["neighbor_{}".format(i)]
+            me_this_value = (me_i_value - cv_value)**2
+            neighbor_this_value = (neighbor_i_value - cv_value)**2
+            me_total_value += me_this_value
+            neighbor_total_value += neighbor_this_value
             
         distance = me_total_value - neighbor_total_value
         if (distance-tolerance) > 0.0: 
@@ -2558,7 +2577,11 @@ class MMVT_Voronoi_CV(MMVT_collective_variable):
         """
         Return a 1-list of this CV's atomic group.
         """
-        return []
+        groups = []
+        for i, child_cv in enumerate(self.child_cvs):
+            groups_cv = child_cv.get_atom_groups()
+            groups += groups_cv
+        return groups
             
     def get_variable_values(self):
         """

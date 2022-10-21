@@ -828,8 +828,8 @@ def check_mutual_neighbor_anchors(model):
     Make sure that every anchor's neighbor recognizes the anchor itself
     as a neighbor
     """
-    anchors_missing_neighbors = []
-    double_booked_neighbors = []
+    anchors_missing_neighbors = set()
+    double_booked_neighbors = set()
     for anchor in model.anchors:
         for milestone in anchor.milestones:
             anchor2 = model.anchors[milestone.neighbor_anchor_index]
@@ -838,11 +838,11 @@ def check_mutual_neighbor_anchors(model):
             for milestone2 in anchor2.milestones:
                 if anchor.index == milestone2.neighbor_anchor_index:
                     if has_me_as_neighbor:
-                        double_booked_neighbors.append(anchor.index)
+                        double_booked_neighbors.add(anchor.index)
                     has_me_as_neighbor = True
             
             if not has_me_as_neighbor:
-                anchors_missing_neighbors.append(anchor.index)
+                anchors_missing_neighbors.add(anchor.index)
     
     success = True
     if len(anchors_missing_neighbors) > 0:

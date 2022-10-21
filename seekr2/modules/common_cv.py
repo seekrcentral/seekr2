@@ -1780,9 +1780,24 @@ def make_mmvt_milestone_between_two_voronoi_anchors(
             milestone2.variables[me_key] = neighbor_value
             milestone2.variables[neighbor_key] = me_value
             
-        anchor.milestones.append(milestone1)
-        neighbor_anchor.milestones.append(milestone2)
-        milestone_index += 1
+        # don't add the milestone if it already exists here or there
+        already_here = False
+        for me_milestone in anchor.milestones:
+            if me_milestone.neighbor_anchor_index == neighbor_index:
+                already_here = True
+                assert me_milestone.variables == milestone1.variables
+        if not already_here:
+            anchor.milestones.append(milestone1)
+            for neighbor_milestone in neighbor_anchor.milestones:
+                assert neighbor_milestone.neighbor_anchor_index != anchor.index, \
+                    "Neighbor anchor {} already ".format(neighbor_index) \
+                    +"has milestone, but anchor {} doesn't".format(anchor.index)
+                
+            neighbor_anchor.milestones.append(milestone2)
+            milestone_index += 1
+        else:
+            print("found milestone already at anchor:", alpha, "with neighbor:", neighbor_index)
+        
         return milestone_index
 
 class Voronoi_cv_input(CV_input):
