@@ -468,7 +468,8 @@ class Runner_openmm():
         traj_reporter = self.sim_openmm.traj_reporter
         if trajectory_reporter_interval is not None:
             simulation.reporters.append(traj_reporter(
-                traj_filename, trajectory_reporter_interval))
+                traj_filename, trajectory_reporter_interval, 
+                enforcePeriodicBox=False))
             if self.restart_checkpoint_interval is not None:
                 assert trajectory_reporter_interval >= \
                     self.restart_checkpoint_interval
@@ -555,7 +556,8 @@ class Runner_openmm():
         if umbrella_trajectory_reporter_interval is not None \
                 and not self.umbrellas_already_exist_mode:
             umbrella_simulation.reporters.append(umbrella_traj_reporter(
-                umbrella_traj_filename, umbrella_trajectory_reporter_interval))
+                umbrella_traj_filename, umbrella_trajectory_reporter_interval, 
+                enforcePeriodicBox=False))
             if calc_settings.num_umbrella_stage_steps \
                     < umbrella_trajectory_reporter_interval:
                 umbrella_trajectory_reporter_interval \
@@ -751,7 +753,8 @@ class Runner_openmm():
                             self.output_directory, 
                             "forward_%d.dcd" % crossing_counter)
                         fwd_simulation.reporters = [fwd_traj_reporter(
-                            fwd_traj_filename, fwd_trajectory_reporter_interval)]
+                            fwd_traj_filename, fwd_trajectory_reporter_interval, 
+                            enforcePeriodicBox=False)]
                     if fwd_energy_reporter_interval is not None:
                         fwd_simulation.reporters.append(
                             self.sim_openmm.fwd_energy_reporter(

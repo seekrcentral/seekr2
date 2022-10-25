@@ -464,7 +464,7 @@ def run_browndye2(model, bd_milestone_index, restart, n_trajectories,
     return
 
 def run_openmm(model, anchor_index, restart, total_simulation_length, 
-               cuda_device_index=False, force_overwrite=False,
+               cuda_device_index=None, force_overwrite=False,
                save_state_file=False, save_state_boundaries=False,
                num_rev_launches=1, umbrella_restart_mode=False,
                swarm_index=None, load_state_file=None):
@@ -644,7 +644,9 @@ def run(model, instruction, min_total_simulation_length=None,
                 else:
                     raise Exception(
                         "load_state_file must be None, str, or list")
-                
+                assert (cuda_device_index is None) \
+                    or (isinstance(cuda_device_index, str)), \
+                    "The cuda_device_index argument must be a string or None."
                 run_openmm(model, anchor_index, restart, 
                            total_simulation_length, 
                            cuda_device_index=cuda_device_index, 
@@ -661,6 +663,9 @@ def run(model, instruction, min_total_simulation_length=None,
                 if load_state_file is not None:
                     assert isinstance(load_state_file, str), \
                         "NAMD may only load one state file."
+                assert (cuda_device_index is None) \
+                    or (isinstance(cuda_device_index, str)), \
+                    "The cuda_device_index argument must be a string or None."
                 run_namd(model, anchor_index, restart, 
                          total_simulation_length, 
                          cuda_device_index=cuda_device_index, 
