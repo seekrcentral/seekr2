@@ -33,7 +33,7 @@ def strBool(bool_str):
         raise Exception(
             "argument for strBool must be string either 'True' or 'False'.")
 
-def order_files_numerically(file_list):
+def order_files_numerically(file_list, func=int):
     """
     If there is a list of files, order them numerically, not
     alphabetically and return the sorted list of files.
@@ -54,8 +54,9 @@ def order_files_numerically(file_list):
     sorted_file_list = []
     numerical_dict = {}
     for i, file_name in enumerate(file_list):
-        numbers = re.findall(r"\d+", file_name)
-        numbers = tuple([int(j) for j in numbers])
+        base_name = os.path.splitext(file_name)[0]
+        numbers = re.findall(r"[-\d\.]+", base_name)
+        numbers = tuple([func(j) for j in numbers])
         numerical_dict[numbers] = i
         
     numerical_list = sorted(numerical_dict.keys())

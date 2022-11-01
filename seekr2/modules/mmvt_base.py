@@ -2178,8 +2178,7 @@ class MMVT_external_CV(MMVT_collective_variable):
             
         return True
     
-    def get_openmm_context_cv_value(self, context, milestone_variables, 
-                                    positions):
+    def get_openmm_context_cv_value(self, context, positions):
         """
         Determine the current CV value for an openmm context.
         """
@@ -2479,8 +2478,7 @@ class MMVT_Voronoi_CV(MMVT_collective_variable):
         values = []
         for i, child_cv in enumerate(self.child_cvs):
             cv_value = child_cv.get_openmm_context_cv_value(
-                context, milestone_variables=milestone_variables, 
-                positions=positions)
+                context, positions=positions)
             values.append(cv_value)
             
         return values
@@ -2494,8 +2492,7 @@ class MMVT_Voronoi_CV(MMVT_collective_variable):
         False if failed.
         """
         
-        values = self.get_openmm_context_cv_value(
-            context, milestone_variables, positions)
+        values = self.get_openmm_context_cv_value(context, positions)
         result = self.check_value_within_boundary(
             values, milestone_variables, tolerance=tolerance)
         return result

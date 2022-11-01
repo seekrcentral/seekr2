@@ -52,7 +52,7 @@ def make_mmvt_RMSD_cv_object(RMSD_cv_input, index, root_directory):
     cv = mmvt_base.MMVT_RMSD_CV(index, group, RMSD_ref_pdb)
     return cv
 
-def make_mmvt_closest_pair_cv_object(closest_pair_cv_input, index, root_directory):
+def make_mmvt_closest_pair_cv_object(closest_pair_cv_input, index):
     """
     Create a closest pair CV object to be placed into the Model.
     """
@@ -63,7 +63,7 @@ def make_mmvt_closest_pair_cv_object(closest_pair_cv_input, index, root_director
     cv.exponent = closest_pair_cv_input.exponent
     return cv
 
-def make_mmvt_count_contacts_cv_object(count_contacts_cv_input, index, root_directory):
+def make_mmvt_count_contacts_cv_object(count_contacts_cv_input, index):
     """
     Create a closest pair CV object to be placed into the Model.
     """

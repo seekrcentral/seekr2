@@ -272,7 +272,7 @@ def copy_building_files_by_anchor(anchor, input_anchor, rootdir):
                 new_ff_filename = os.path.join(anchor_building_dir, 
                                                    charmm_ff_filename)
                 copyfile(input_charmm_ff_filename, new_ff_filename)
-                anchor.charmm_params.charmm_ff_files.append(new_ff_filename)
+                anchor.charmm_params.charmm_ff_files.append(charmm_ff_filename)
             
         if charmm.pdb_coordinates_filename is not None and \
                 charmm.pdb_coordinates_filename != "":

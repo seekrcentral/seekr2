@@ -35,7 +35,13 @@ def test_order_files_numerically():
     
     for item1, item2 in zip(ordered_list, desired_list):
         assert item1==item2
-        
+    
+    scrambled_list = ["me2.345.pdb", "me1.234.pdb", "me3.456.pdb"]
+    correct_list = ["me1.234.pdb", "me2.345.pdb", "me3.456.pdb"]
+    ordered_list = base.order_files_numerically(scrambled_list, func=float)
+    for item1, item2 in zip(ordered_list, correct_list):
+        assert item1==item2
+    
     return
 
 def test_box_vectors():
