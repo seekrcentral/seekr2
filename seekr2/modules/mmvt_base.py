@@ -2369,7 +2369,7 @@ class MMVT_Voronoi_CV(MMVT_collective_variable):
         except ImportError:
             import simtk.openmm as openmm
         
-        cv_expression = self.make_cv_expr()
+        cv_expression = self.make_cv_expr(alias_id)
         self.restraining_expression = "0.5*k_{}*(".format(alias_id) + cv_expression + ")^2"
         
         return openmm.CustomCVForce(self.restraining_expression)
@@ -2403,6 +2403,7 @@ class MMVT_Voronoi_CV(MMVT_collective_variable):
         which includes a list of the groups of atoms involved with the
         CV, as well as a list of the variables' *values*.
         """
+        print("variables:", variables)
         force.addGlobalParameter("bitcode_{}".format(alias_id), variables[0])
         force.addGlobalParameter("k_{}".format(alias_id), variables[1])
         for i, child_cv in enumerate(self.child_cvs):
@@ -2471,14 +2472,14 @@ class MMVT_Voronoi_CV(MMVT_collective_variable):
     
     # TODO: Should be working, just needs tests
     def get_openmm_context_cv_value(
-            self, context, milestone_variables, positions=None):
+            self, context, positions=None, system=None):
         """
         
         """
         values = []
         for i, child_cv in enumerate(self.child_cvs):
             cv_value = child_cv.get_openmm_context_cv_value(
-                context, positions=positions)
+                context, positions=positions, system=system)
             values.append(cv_value)
             
         return values
@@ -2582,8 +2583,7 @@ class MMVT_Voronoi_CV(MMVT_collective_variable):
             
     def get_variable_values(self):
         """
-        This type of CV has no extra variables, so an empty list is 
-        returned.
+        Return the child variable values.
         """
         return []
 

@@ -95,6 +95,24 @@ def add_integrator(sim_openmm, model, state_prefix=None):
                         "integrator type(s).")
     return
 
+def assign_nonbonded_cv_info(cv, system, box_vectors):
+    """
+    Update the cv with the correct nonbonded information.
+    """
+    cv.num_system_particles = sim_openmm.system.getNumParticles()
+    forces = { force.__class__.__name__ : force for force in sim_openmm.system.getForces() }
+    reference_force = forces['NonbondedForce']
+    cv.exclusion_pairs = []
+    for index in range(reference_force.getNumExceptions()):
+        [iatom, jatom, chargeprod, sigma, epsilon] \
+            = reference_force.getExceptionParameters(index)
+        cv.exclusion_pairs.append((iatom, jatom))
+    
+    if isinstance(cv, mmvt_base.MMVT_closest_pair_CV):
+        cv.cutoff_distance = 0.4 * box_vectors.get_min_length()
+    
+    return
+
 def add_forces(sim_openmm, model, anchor, box_vectors):
     """
     Add the proper forces for this MMVT simulation.
@@ -105,22 +123,24 @@ def add_forces(sim_openmm, model, anchor, box_vectors):
         cv = milestone.get_CV(model)
         if isinstance(cv, mmvt_base.MMVT_closest_pair_CV) \
                 or isinstance(cv, mmvt_base.MMVT_count_contacts_CV):
-            cv.num_system_particles = sim_openmm.system.getNumParticles()
-            forces = { force.__class__.__name__ : force for force in sim_openmm.system.getForces() }
-            reference_force = forces['NonbondedForce']
-            cv.exclusion_pairs = []
-            for index in range(reference_force.getNumExceptions()):
-                [iatom, jatom, chargeprod, sigma, epsilon] = reference_force.getExceptionParameters(index)
-                cv.exclusion_pairs.append((iatom, jatom))
+            assign_nonbonded_cv_info(cv, sim_openmm.system, box_vectors)
+            myforce = make_mmvt_boundary_definitions(
+                cv, milestone)
+            forcenum = sim_openmm.system.addForce(myforce)
             
-            if isinstance(cv, mmvt_base.MMVT_closest_pair_CV):
-                cv.cutoff_distance = 0.4 * box_vectors.get_min_length()
-            
-        myforce = make_mmvt_boundary_definitions(
-            cv, milestone)
+        elif isinstance(cv, mmvt_base.MMVT_Voronoi_CV):
+            for child_cv in cv.child_cvs:
+                if isinstance(cv, mmvt_base.MMVT_closest_pair_CV) \
+                        or isinstance(cv, mmvt_base.MMVT_count_contacts_CV):
+                    assign_nonbonded_cv_info(child_cv, sim_openmm.system, 
+                                             box_vectors)
+                    myforce = make_mmvt_boundary_definitions(
+                        child_cv, milestone)
+                    forcenum = sim_openmm.system.addForce(myforce)
+        
         
         sim_openmm.integrator.addMilestoneGroup(milestone.alias_index)
-        forcenum = sim_openmm.system.addForce(myforce)
+        
         
     os.chdir(curdir)
     return
