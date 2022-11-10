@@ -1242,11 +1242,12 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
     # TODO: Should be working, just needs tests
     def get_openmm_context_cv_value(
             self, context, milestone_variables, positions=None, 
-            ref_positions=None, verbose=False, tolerance=0.0):
+            ref_positions=None, verbose=False, system=None, tolerance=0.0):
         """
         
         """
-        system = context.getSystem()
+        if system is None:
+            system = context.getSystem()
         if positions is None:
             state = context.getState(getPositions=True)
             positions = state.getPositions()
