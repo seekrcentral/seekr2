@@ -1241,8 +1241,8 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
     
     # TODO: Should be working, just needs tests
     def get_openmm_context_cv_value(
-            self, context, milestone_variables, positions=None, 
-            ref_positions=None, verbose=False, system=None, tolerance=0.0):
+            self, context, positions=None, ref_positions=None, verbose=False, 
+            system=None, tolerance=0.0):
         """
         
         """
