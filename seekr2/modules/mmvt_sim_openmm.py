@@ -127,8 +127,8 @@ def add_forces(sim_openmm, model, anchor, box_vectors):
             
         elif isinstance(cv, mmvt_base.MMVT_Voronoi_CV):
             for child_cv in cv.child_cvs:
-                if isinstance(cv, mmvt_base.MMVT_closest_pair_CV) \
-                        or isinstance(cv, mmvt_base.MMVT_count_contacts_CV):
+                if isinstance(child_cv, mmvt_base.MMVT_closest_pair_CV) \
+                        or isinstance(child_cv, mmvt_base.MMVT_count_contacts_CV):
                     assign_nonbonded_cv_info(child_cv, sim_openmm.system, 
                                              box_vectors)
                 #myforce = make_mmvt_boundary_definitions(
