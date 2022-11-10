@@ -942,6 +942,7 @@ def make_pqrxml(input_pqr_filename, browndye2_bin="",
     pqr2xml_binary = os.path.join(browndye2_bin, "pqr2xml")
     pqr2xml_command = pqr2xml_binary + " < " + input_pqr_filename + " > " \
         + output_xml_filename
+    print("running command:", pqr2xml_command)
     os.system(pqr2xml_command)
     assert os.path.exists(output_xml_filename), "Problem generating XML from "\
         "PQR file: file not created: %s" % output_xml_filename
@@ -967,6 +968,7 @@ def make_and_run_apbs(root, input_apbs_xml, browndye2_bin="",
     run_apbs_binary = os.path.join(browndye2_bin, "run_apbs_inputs")
     make_apbs_command = make_apbs_binary + " " + input_apbs_xml + " > " \
         + new_input_xml
+    print("running command:", make_apbs_command)
     os.system(make_apbs_command)
     assert os.path.exists(new_input_xml), "Problem running make_apbs_input - "\
         "Output file not found: " + new_input_xml
@@ -985,6 +987,7 @@ def make_and_run_apbs(root, input_apbs_xml, browndye2_bin="",
     assert float(debye_length) > 0.0, "Problem: debye_length not generated."
     run_apbs_command = run_apbs_binary + " " + new_input_xml \
         + " > run_apbs_input.out"
+    print("running command:", run_apbs_command)
     os.system(run_apbs_command)
     for mol_name in mol_name_list:
         apbs_dx_glob = mol_name + "*.dx"

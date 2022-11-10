@@ -42,6 +42,14 @@ def test_order_files_numerically():
     for item1, item2 in zip(ordered_list, correct_list):
         assert item1==item2
     
+    string_list = ["mmvt.restart1.out", "mmvt.restart2.out"]
+    desired_list = string_list[:]
+    random.shuffle(string_list)
+    ordered_list = base.order_files_numerically(string_list)
+    
+    for item1, item2 in zip(ordered_list, desired_list):
+        assert item1==item2
+    
     return
 
 def test_box_vectors():

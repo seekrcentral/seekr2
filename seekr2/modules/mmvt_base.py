@@ -275,6 +275,7 @@ colvar {{
         self._mygroup_list.append(mygroup1)
         mygroup2 = force.addGroup(self.group2)
         self._mygroup_list.append(mygroup2)
+        print("making force between group:", self.group1, "and", self.group2)
         return
     
     def add_parameters(self, force):
@@ -2403,7 +2404,6 @@ class MMVT_Voronoi_CV(MMVT_collective_variable):
         which includes a list of the groups of atoms involved with the
         CV, as well as a list of the variables' *values*.
         """
-        print("variables:", variables)
         force.addGlobalParameter("bitcode_{}".format(alias_id), variables[0])
         force.addGlobalParameter("k_{}".format(alias_id), variables[1])
         for i, child_cv in enumerate(self.child_cvs):
