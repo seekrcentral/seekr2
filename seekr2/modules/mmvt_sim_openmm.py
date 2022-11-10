@@ -99,7 +99,7 @@ def assign_nonbonded_cv_info(cv, system, box_vectors):
     """
     Update the cv with the correct nonbonded information.
     """
-    cv.num_system_particles = sim_openmm.system.getNumParticles()
+    cv.num_system_particles = system.getNumParticles()
     forces = { force.__class__.__name__ : force for force in sim_openmm.system.getForces() }
     reference_force = forces['NonbondedForce']
     cv.exclusion_pairs = []
