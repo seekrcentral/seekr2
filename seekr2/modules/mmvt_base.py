@@ -1215,6 +1215,10 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
         Determine the current CV value for an mdtraj object.
         """
         traj1 = traj.atom_slice(self.group)
+        assert os.path.exists(self.ref_structure), \
+            "File {} does not exist. Make sure ".format(self.ref_structure) \
+            +"that any programs using the get_mdtraj_cv_value() method " \
+            "within an API is performed in the model directory."
         ref_traj = mdtraj.load(self.ref_structure)
         ref_traj1 = ref_traj.atom_slice(self.group)
         traj1.superpose(ref_traj1)

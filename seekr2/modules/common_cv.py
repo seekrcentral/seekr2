@@ -9,7 +9,7 @@ from abc import abstractmethod
 from collections import defaultdict
 
 import numpy as np
-from scipy.spatial import Delaunay
+from scipy.spatial import Delaunay, Voronoi
 from scipy.spatial import qhull
 from abserdes import Serializer
 
@@ -1733,12 +1733,21 @@ def find_voronoi_anchor_neighbors(anchors):
     
     try:
         triangulation = Delaunay(points)
+        vor = Voronoi(points)
+        #print("vor.ridge_vertices:", vor.ridge_vertices)
+        print("vor.ridge_points:", vor.ridge_points)
+        
+        # TODO: need a way to find the closest point to every Voronoi
+        # ridge
+        
         for simplex in triangulation.simplices:
             for anchor_index1 in simplex:
                 for anchor_index2 in simplex:
                     if anchor_index1 == anchor_index2:
                         continue
                     neighbor_anchors[anchor_index1].add(anchor_index2)
+                    
+        
     except qhull.QhullError:
         for alpha, anchor in enumerate(anchors):
             if alpha > 0:
