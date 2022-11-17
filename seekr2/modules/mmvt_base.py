@@ -356,7 +356,7 @@ colvar {{
         return radius
     
     def check_mdtraj_within_boundary(self, traj, milestone_variables, 
-                                     verbose=False):
+                                     verbose=False, TOL=0.001):
         """
         Check if an mdtraj Trajectory describes a system that remains
         within the expected anchor. Return True if passed, return
@@ -696,13 +696,12 @@ class MMVT_tiwary_CV(MMVT_collective_variable):
         return op_value
     
     def check_mdtraj_within_boundary(self, traj, milestone_variables, 
-                                     verbose=False):
+                                     verbose=False, TOL=0.001):
         """
         Check if an mdtraj Trajectory describes a system that remains
         within the expected anchor. Return True if passed, return
         False if failed.
         """
-        TOL = 0.001
         for frame_index in range(traj.n_frames):
             op_value = self.get_mdtraj_cv_value(traj, frame_index)
             result = self.check_value_within_boundary(
@@ -996,13 +995,12 @@ class MMVT_planar_CV(MMVT_collective_variable):
         return value
     
     def check_mdtraj_within_boundary(self, traj, milestone_variables, 
-                                     verbose=False):
+                                     verbose=False, TOL=0.001):
         """
         Check if an mdtraj Trajectory describes a system that remains
         within the expected anchor. Return True if passed, return
         False if failed.
         """
-        TOL = 0.001
         for frame_index in range(traj.n_frames):
             value = self.get_mdtraj_cv_value(traj, frame_index)
             result = self.check_value_within_boundary(
@@ -1227,13 +1225,12 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
         return value
     
     def check_mdtraj_within_boundary(self, traj, milestone_variables, 
-                                     verbose=False):
+                                     verbose=False, TOL=0.001):
         """
         Check if an mdtraj Trajectory describes a system that remains
         within the expected anchor. Return True if passed, return
         False if failed.
         """
-        TOL = 0.001
         for frame_index in range(traj.n_frames):
             value = self.get_mdtraj_cv_value(traj, frame_index)
             result = self.check_value_within_boundary(
@@ -1586,13 +1583,12 @@ class MMVT_closest_pair_CV(MMVT_collective_variable):
         return min_value
     
     def check_mdtraj_within_boundary(self, traj, milestone_variables, 
-                                     verbose=False):
+                                     verbose=False, TOL=0.001):
         """
         Check if an mdtraj Trajectory describes a system that remains
         within the expected anchor. Return True if passed, return
         False if failed.
         """
-        TOL = 0.001
         for frame_index in range(traj.n_frames):
             value = self.get_mdtraj_cv_value(traj, frame_index)
             result = self.check_value_within_boundary(
@@ -1891,13 +1887,12 @@ class MMVT_count_contacts_CV(MMVT_collective_variable):
         return count
     
     def check_mdtraj_within_boundary(self, traj, milestone_variables, 
-                                     verbose=False):
+                                     verbose=False, TOL=0.0):
         """
         Check if an mdtraj Trajectory describes a system that remains
         within the expected anchor. Return True if passed, return
         False if failed.
         """
-        TOL = 0.0
         for frame_index in range(traj.n_frames):
             value = self.get_mdtraj_cv_value(traj, frame_index)
             result = self.check_value_within_boundary(
@@ -2170,11 +2165,10 @@ class MMVT_external_CV(MMVT_collective_variable):
         return value
     
     def check_mdtraj_within_boundary(self, traj, milestone_variables, 
-                                     verbose=False):
+                                     verbose=False, TOL=0.001):
         """
         For now, this will just always return True.
         """
-        TOL = 0.001
         for frame_index in range(traj.n_frames):
             value = self.get_mdtraj_cv_value(traj, frame_index)
             result = self.check_value_within_boundary(
@@ -2184,7 +2178,7 @@ class MMVT_external_CV(MMVT_collective_variable):
             
         return True
     
-    def get_openmm_context_cv_value(self, context, positions):
+    def get_openmm_context_cv_value(self, context, positions, system=None):
         """
         Determine the current CV value for an openmm context.
         """
@@ -2459,13 +2453,12 @@ class MMVT_Voronoi_CV(MMVT_collective_variable):
         return values
     
     def check_mdtraj_within_boundary(self, traj, milestone_variables, 
-                                     verbose=False):
+                                     verbose=False, TOL=0.001):
         """
         Check if an mdtraj Trajectory describes a system that remains
         within the expected anchor. Return True if passed, return
         False if failed.
         """
-        TOL = 0.001
         for frame_index in range(traj.n_frames):
             value = self.get_mdtraj_cv_value(traj, frame_index)
             result = self.check_value_within_boundary(

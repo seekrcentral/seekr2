@@ -64,6 +64,15 @@ or use the base environment. Install the SEEKR2 OpenMM Plugin:
 
 OpenMM will be installed automatically alongside the plugin.
 
+One can test the installation by opening a Python terminal and typing:
+
+``import seekr2plugin``
+
+If you get an error such as "No module named seekr2plugin", you might
+need to install with CUDA Toolkit version 10.2:
+
+``conda install -c conda-forge seekr2_openmm_plugin cudatoolkit=10.2``
+
 Installation of SEEKR2 itself begins with cloning and installing the SEEKR2 
 python API::
 

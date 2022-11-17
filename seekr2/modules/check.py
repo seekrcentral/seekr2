@@ -527,7 +527,7 @@ def check_systems_within_Voronoi_cells(model):
                 
             else:
                 result = cv.check_mdtraj_within_boundary(
-                    traj, milestone.variables, verbose=True)
+                    traj, milestone.variables, verbose=True, TOL=0.0)
                 
             if result == False:
                 correct_anchor = None
@@ -541,7 +541,7 @@ def check_systems_within_Voronoi_cells(model):
                             
                         else:
                             result2 = cv.check_mdtraj_within_boundary(
-                                traj, milestone.variables)
+                                traj, milestone.variables, TOL=0.0)
                         if not result2:
                             within_milestones = False
                             break
@@ -888,11 +888,11 @@ def check_pre_simulation_all(model):
     else:
         # Checks for toy systems
         pass
-    
+
     check_passed_list.append(check_systems_within_Voronoi_cells(model))
     check_passed_list.append(check_for_one_bulk_anchor(model))
     check_passed_list.append(check_mutual_neighbor_anchors(model))
-    
+
     no_failures = True
     for check_passed in check_passed_list:
         if not check_passed:
@@ -1224,5 +1224,5 @@ if __name__ == "__main__":
         model_dir = os.path.dirname(xmlfile)
         model.anchor_rootdir = os.path.abspath(model_dir)
     check_pre_simulation_all(model)
-    check_post_simulation_all(model, long_check=True)
+    #check_post_simulation_all(model, long_check=True)
     

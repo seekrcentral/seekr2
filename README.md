@@ -59,7 +59,7 @@ fill out the prompts.
 With Conda working, install the SEEKR2 OpenMM Plugin:
 
 ```
-conda install -c conda-forge seekr2_openmm_plugin
+conda install -c conda-forge seekr2_openmm_plugin cudatoolkit=10.2
 ```
 
 Alternatively, NAMD2 may be used for MD if desired. See the NAMD2 section
