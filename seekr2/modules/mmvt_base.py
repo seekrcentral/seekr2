@@ -275,7 +275,6 @@ colvar {{
         self._mygroup_list.append(mygroup1)
         mygroup2 = force.addGroup(self.group2)
         self._mygroup_list.append(mygroup2)
-        print("making force between group:", self.group1, "and", self.group2)
         return
     
     def add_parameters(self, force):
