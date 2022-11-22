@@ -110,7 +110,7 @@ def assign_nonbonded_cv_info(cv, system, box_vectors):
     
     if isinstance(cv, mmvt_base.MMVT_closest_pair_CV):
         cv.cutoff_distance = 0.4 * box_vectors.get_min_length()
-    
+        
     return
 
 def add_forces(sim_openmm, model, anchor, box_vectors):

@@ -311,6 +311,13 @@ colvar {{
         force.addBond(self._mygroup_list, variables)
         return
     
+    def update_groups_and_variables(self, force, variables, alias_id):
+        """
+        Update the force's variables with a list of new values.
+        """
+        force.setBondParameters(0, self._mygroup_list, variables)
+        return
+    
     def get_variable_values_list(self, milestone):
         """
         Create the list of CV variables' values in the proper order
@@ -641,6 +648,13 @@ class MMVT_tiwary_CV(MMVT_collective_variable):
         force.addBond(self._mygroup_list, variables)
         return
     
+    def update_groups_and_variables(self, force, variables, alias_id):
+        """
+        Update the force's variables with a list of new values.
+        """
+        force.setBondParameters(0, self._mygroup_list, variables)
+        return
+    
     def get_variable_values_list(self, milestone):
         """
         Create the list of CV variables' values in the proper order
@@ -949,6 +963,13 @@ class MMVT_planar_CV(MMVT_collective_variable):
         force.addBond(self._mygroup_list, variables)
         return
     
+    def update_groups_and_variables(self, force, variables, alias_id):
+        """
+        Update the force's variables with a list of new values.
+        """
+        force.setBondParameters(0, self._mygroup_list, variables)
+        return
+    
     def get_variable_values_list(self, milestone):
         """
         Create the list of CV variables' values in the proper order
@@ -1183,6 +1204,15 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
         force.addGlobalParameter("value_{}".format(alias_id), variables[2])
         return
     
+    def update_groups_and_variables(self, force, variables, alias_id):
+        """
+        Update the force's variables with a list of new values.
+        """
+        force.setGlobalParameter(0, "bitcode_{}".format(alias_id), variables[0])
+        force.setGlobalParameter(1, "k_{}".format(alias_id), variables[1])
+        force.setGlobalParameter(2, "value_{}".format(alias_id), variables[2])
+        return
+    
     def get_variable_values_list(self, milestone):
         """
         Create the list of CV variables' values in the proper order
@@ -1402,8 +1432,8 @@ class MMVT_closest_pair_CV(MMVT_collective_variable):
             
         assert self.num_groups == 2
         self.openmm_expression \
-            = "step(k_{}*(closest^(-1.0/exponent) - value_{}))".format(
-                alias_id, alias_id)
+            = "step(k_{}*((closest + (1/{})^exponent)^(-1.0/exponent) - value_{}))".format(
+                self.cutoff_distance, alias_id, alias_id)
         expression_w_bitcode = "bitcode_{}*".format(alias_id)\
             +self.openmm_expression
         force = openmm.CustomCVForce(expression_w_bitcode)
@@ -1421,8 +1451,8 @@ class MMVT_closest_pair_CV(MMVT_collective_variable):
             
         assert self.num_groups == 2
         self.restraining_expression \
-            = "0.5*k_{}*(closest^(-1.0/exponent) - value_{})^2"\
-                .format(alias_id, alias_id)
+            = "0.5*k_{}*((closest + (1/{})^exponent)^(-1.0/exponent) - value_{})^2"\
+                .format(self.cutoff_distance, alias_id, alias_id)
         force = openmm.CustomCVForce(self.restraining_expression)
         return force
     
@@ -1450,7 +1480,8 @@ class MMVT_closest_pair_CV(MMVT_collective_variable):
         closest_force_neighbor.addGlobalParameter("exponent", self.exponent)
         closest_force_neighbor.addInteractionGroup(self.group1, self.group2)
         closest_force_neighbor.setUseSwitchingFunction(False)
-        closest_force_neighbor.setNonbondedMethod(openmm.CustomNonbondedForce.CutoffPeriodic)
+        closest_force_neighbor.setNonbondedMethod(
+            openmm.CustomNonbondedForce.CutoffPeriodic)
         closest_force_neighbor.setCutoffDistance(self.cutoff_distance*unit.nanometers)
         closest_force_neighbor.setUseLongRangeCorrection(False)
         for i in range(self.num_system_particles):
@@ -1458,36 +1489,23 @@ class MMVT_closest_pair_CV(MMVT_collective_variable):
         for (iatom, jatom) in self.exclusion_pairs:
             closest_force_neighbor.addExclusion(iatom, jatom)
         
-        me_expr = "((1/me_val_{}_alias_{})^exponent - {})^2".format(self.index, alias_id, self.cv_expression)
+        me_expr = "(({} + (1/{})^exponent)^(-1.0/exponent) - me_val_{}_alias_{})^2".format(
+            self.cv_expression, self.cutoff_distance, self.index, alias_id)
         me_force = openmm.CustomCVForce(me_expr)
-        me_force.addGlobalParameter("me_val_{}_alias_{}".format(self.index, alias_id), me_val)
+        me_force.addGlobalParameter("me_val_{}_alias_{}".format(
+            self.index, alias_id), me_val)
         me_force.addGlobalParameter("exponent", self.exponent)
         me_force.addCollectiveVariable(self.cv_expression, closest_force_me)
         
-        neighbor_expr = "((1/neighbor_val_{}_alias_{})^exponent - {})^2".format(self.index, alias_id, self.cv_expression)
+        neighbor_expr \
+            = "(({} + (1/{})^exponent)^(-1.0/exponent) - neighbor_val_{}_alias_{})^2".format(
+            self.cv_expression, self.cutoff_distance, self.index, alias_id)
         neighbor_force = openmm.CustomCVForce(neighbor_expr)
-        neighbor_force.addGlobalParameter("neighbor_val_{}_alias_{}".format(self.index, alias_id), neighbor_val)
+        neighbor_force.addGlobalParameter("neighbor_val_{}_alias_{}".format(
+            self.index, alias_id), neighbor_val)
         neighbor_force.addGlobalParameter("exponent", self.exponent)
-        neighbor_force.addCollectiveVariable(self.cv_expression, closest_force_neighbor)
-        
-        """
-        me_expr = "((1/me_val)^exponent - {})^2".format(self.cv_expression)
-        me_force = openmm.CustomCVForce(me_expr)
-        me_force.addInteractionGroup(self.group1, self.group2)
-        me_force.addGlobalParameter("exponent", self.exponent)
-        me_force.setUseSwitchingFunction(False)
-        me_force.setNonbondedMethod(openmm.CustomNonbondedForce.NoCutoff)
-        me_force.setUseLongRangeCorrection(False)
-        
-        neighbor_expr = "((1/neighbor_val)^exponent - {})^2".format(
-            self.cv_expression)
-        neighbor_force = openmm.CustomCVForce(neighbor_expr)
-        neighbor_force.addInteractionGroup(self.group1, self.group2)
-        neighbor_force.addGlobalParameter("exponent", self.exponent)
-        neighbor_force.setUseSwitchingFunction(False)
-        neighbor_force.setNonbondedMethod(openmm.CustomNonbondedForce.NoCutoff)
-        neighbor_force.setUseLongRangeCorrection(False)
-        """
+        neighbor_force.addCollectiveVariable(
+            self.cv_expression, closest_force_neighbor)
         
         return me_force, neighbor_force
     
@@ -1541,6 +1559,16 @@ class MMVT_closest_pair_CV(MMVT_collective_variable):
         force.addGlobalParameter("exponent", self.exponent)
         return
     
+    def update_groups_and_variables(self, force, variables, alias_id):
+        """
+        Update the force's variables with a list of new values.
+        """
+        force.setGlobalParameter(0, "bitcode_{}".format(alias_id), variables[0])
+        force.setGlobalParameter(1, "k_{}".format(alias_id), variables[1])
+        force.setGlobalParameter(2, "value_{}".format(alias_id), variables[2])
+        force.setGlobalParameter(3, "exponent".format(alias_id), variables[3])
+        return
+    
     def get_variable_values_list(self, milestone):
         """
         Create the list of CV variables' values in the proper order
@@ -1569,14 +1597,15 @@ class MMVT_closest_pair_CV(MMVT_collective_variable):
         """
         Determine the current CV value for an mdtraj object.
         """
-        # TODO: replace with the same function used in the simulations
-        sum = 0.0
+        traj.image_molecules(inplace=True, anchors=self.group1)
+        sum = (1.0 / self.cutoff_distance) ** self.exponent
         for atom_index1 in self.group1:
             for atom_index2 in self.group2:
                 com1 = traj.xyz[frame_index, atom_index1,:]
                 com2 = traj.xyz[frame_index, atom_index2,:]
                 dist = np.linalg.norm(com2-com1)
-                sum += (1.0/dist) ** self.exponent
+                if dist < self.cutoff_distance:
+                    sum += (1.0/dist) ** self.exponent
         
         min_value = sum ** (-1.0/self.exponent)
         return min_value
@@ -1588,6 +1617,7 @@ class MMVT_closest_pair_CV(MMVT_collective_variable):
         within the expected anchor. Return True if passed, return
         False if failed.
         """
+        traj.image_molecules(inplace=True, anchors=self.group1)
         for frame_index in range(traj.n_frames):
             value = self.get_mdtraj_cv_value(traj, frame_index)
             result = self.check_value_within_boundary(
@@ -1601,18 +1631,20 @@ class MMVT_closest_pair_CV(MMVT_collective_variable):
         """
         Determine the current CV value for an openmm context.
         """
+        # TODO: this system will not be properly imaged
         if system is None:
             system = context.getSystem()
         if positions is None:
             state = context.getState(getPositions=True)
             positions = state.getPositions()
-        sum = 0.0
+        sum = (1.0 / self.cutoff_distance) ** self.exponent
         for atom_index1 in self.group1:
             for atom_index2 in self.group2:
                 com1 = positions[atom_index1]
                 com2 = positions[atom_index2]
                 dist = np.linalg.norm(com2-com1)
-                sum += (1.0/dist) ** self.exponent
+                if dist < self.cutoff_distance:
+                    sum += (1.0/dist) ** self.exponent
         
         min_value = sum ** (-1.0/self.exponent)
         return min_value
@@ -1654,17 +1686,20 @@ boundary at {:.4f} nm.""".format(value, milestone_value)
         to the MMVT boundary. Return True if passed, return False if 
         failed.
         """
+        traj.image_molecules(inplace=True, anchors=self.group1)
         distances = []
         for frame_index in range(traj.n_frames):
-            min_value = 9e9
+            sum = (1.0 / self.cutoff_distance) ** self.exponent
             for atom_index1 in self.group1:
                 for atom_index2 in self.group2:
                     com1 = traj.xyz[frame_index, atom_index1,:]
                     com2 = traj.xyz[frame_index, atom_index2,:]
                     value = np.linalg.norm(com2-com1)
-                    if value < min_value:
-                        min_value = value
+                    if value < self.cutoff_distance:
+                        sum += (1.0/value) ** self.exponent
+                    
             milestone_value = milestone_variables["value"]
+            min_value = sum ** (-1.0/self.exponent)
             distances.append(min_value - milestone_value)
             
         avg_distance = np.mean(distances)
@@ -1798,6 +1833,15 @@ class MMVT_count_contacts_CV(MMVT_collective_variable):
         
         return me_force, neighbor_force
     
+    def update_voronoi_cv_sub_forces(self, me_force, neighbor_force, me_val, 
+                                     neighbor_val, alias_id):
+        """
+        
+        """
+        me_force.setBondParameters([me_val])
+        me_force.setBondParameters([neighbor_val])
+        return
+    
     def make_namd_colvar_string(self):
         """
         This string will be put into a NAMD colvar file for tracking
@@ -1847,6 +1891,15 @@ class MMVT_count_contacts_CV(MMVT_collective_variable):
         force.addGlobalParameter("value_{}".format(alias_id), variables[2])
         return
     
+    def update_groups_and_variables(self, force, variables, alias_id):
+        """
+        Update the force's variables with a list of new values.
+        """
+        force.setGlobalParameter(0, "bitcode_{}".format(alias_id), variables[0])
+        force.setGlobalParameter(1, "k_{}".format(alias_id), variables[1])
+        force.setGlobalParameter(2, "value_{}".format(alias_id), variables[2])
+        return
+    
     def get_variable_values_list(self, milestone):
         """
         Create the list of CV variables' values in the proper order
@@ -1875,6 +1928,7 @@ class MMVT_count_contacts_CV(MMVT_collective_variable):
         """
         Determine the current CV value for an mdtraj object.
         """
+        traj.image_molecules(inplace=True, anchors=self.group1)
         count = 0
         for atom_index1 in self.group1:
             for atom_index2 in self.group2:
@@ -1892,6 +1946,7 @@ class MMVT_count_contacts_CV(MMVT_collective_variable):
         within the expected anchor. Return True if passed, return
         False if failed.
         """
+        traj.image_molecules(inplace=True, anchors=self.group1)
         for frame_index in range(traj.n_frames):
             value = self.get_mdtraj_cv_value(traj, frame_index)
             result = self.check_value_within_boundary(
@@ -1958,6 +2013,7 @@ boundary at {:.4f} in number.""".format(value, milestone_value)
         to the MMVT boundary. Return True if passed, return False if 
         failed.
         """
+        traj.image_molecules(inplace=True, anchors=self.group1)
         for frame_index in range(traj.n_frames):
             count = 0
             for atom_index1 in self.group1:
@@ -2080,6 +2136,15 @@ class MMVT_external_CV(MMVT_collective_variable):
         
         return me_force, neighbor_force
     
+    def update_voronoi_cv_sub_forces(self, me_force, neighbor_force, me_val, 
+                                     neighbor_val, alias_id):
+        """
+        
+        """
+        me_force.setBondParameters([me_val])
+        me_force.setBondParameters([neighbor_val])
+        return
+    
     def make_namd_colvar_string(self):
         """
         This string will be put into a NAMD colvar file for tracking
@@ -2129,6 +2194,13 @@ class MMVT_external_CV(MMVT_collective_variable):
         """
         assert len(self._mygroup_list) == self.num_groups
         force.addBond(self._mygroup_list, variables)
+        return
+    
+    def update_groups_and_variables(self, force, variables, alias_id):
+        """
+        Update the force's variables with a list of new values.
+        """
+        force.setBondParameters(0, self._mygroup_list, variables)
         return
     
     def get_variable_values_list(self, milestone):
@@ -2412,6 +2484,22 @@ class MMVT_Voronoi_CV(MMVT_collective_variable):
             
         return
     
+    #TODO: finish this CV force update
+    def update_groups_and_variables(self, force, variables, alias_id):
+        """
+        Update the force's variables with a list of new values.
+        """
+        force.setGlobalParameter(0, "bitcode_{}".format(alias_id), variables[0])
+        force.setGlobalParameter(1, "k_{}".format(alias_id), variables[1])
+        for i, child_cv in enumerate(self.child_cvs):
+            me_force = force.getCollectiveVariable(2*i)
+            neighbor_force = force.getCollectiveVariable(2*i+1)
+            child_cv.update_voronoi_cv_sub_forces(
+                me_force, neighbor_force, variables[(2*(i+1))], 
+                variables[(2*(i+1)+1)], alias_id)
+            
+        return
+    
     def get_variable_values_list(self, milestone):
         """
         Create the list of CV variables' values in the proper order
@@ -2462,6 +2550,7 @@ class MMVT_Voronoi_CV(MMVT_collective_variable):
             value = self.get_mdtraj_cv_value(traj, frame_index)
             result = self.check_value_within_boundary(
                 value, milestone_variables, tolerance=TOL)
+            print("value:", value, "result:", result)
             if not result:
                 return False
             

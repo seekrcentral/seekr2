@@ -497,6 +497,9 @@ def check_systems_within_Voronoi_cells(model):
     os.chdir(model.anchor_rootdir)
     
     for anchor in model.anchors:
+        if anchor.index != 13:
+            continue
+        
         if model.using_toy():
             if anchor.starting_positions is None: continue
             if len(anchor.starting_positions) == 0: continue
@@ -877,6 +880,7 @@ def check_pre_simulation_all(model):
     """
     curdir = os.getcwd()
     check_passed_list = []
+    """ # DEBUG
     #check_passed_list.append(check_pre_sim_bubbles(model))
     if not model.using_toy():
         # Skipping MD/BD salt conc. check because the best results seem to 
@@ -888,10 +892,12 @@ def check_pre_simulation_all(model):
     else:
         # Checks for toy systems
         pass
-
+    """
     check_passed_list.append(check_systems_within_Voronoi_cells(model))
+    """ # DEBUG
     check_passed_list.append(check_for_one_bulk_anchor(model))
     check_passed_list.append(check_mutual_neighbor_anchors(model))
+    """
 
     no_failures = True
     for check_passed in check_passed_list:
@@ -1224,5 +1230,5 @@ if __name__ == "__main__":
         model_dir = os.path.dirname(xmlfile)
         model.anchor_rootdir = os.path.abspath(model_dir)
     check_pre_simulation_all(model)
-    #check_post_simulation_all(model, long_check=True)
+    check_post_simulation_all(model, long_check=True)
     
