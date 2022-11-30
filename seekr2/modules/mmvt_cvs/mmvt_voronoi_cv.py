@@ -138,7 +138,7 @@ class MMVT_Voronoi_CV(MMVT_collective_variable):
             
         return
     
-    def update_groups_and_variables(self, force, variables, alias_id):
+    def update_groups_and_variables(self, force, variables, alias_id, context):
         """
         Update the force's variables with a list of new values.
         """

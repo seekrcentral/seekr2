@@ -221,7 +221,7 @@ class MMVT_tiwary_CV(MMVT_collective_variable):
         force.addBond(self._mygroup_list, variables)
         return
     
-    def update_groups_and_variables(self, force, variables, alias_id):
+    def update_groups_and_variables(self, force, variables, alias_id, context):
         """
         Update the force's variables with a list of new values.
         """
