@@ -10,7 +10,7 @@ import signal
 
 import mdtraj
 
-import seekr2.modules.mmvt_base as mmvt_base
+import seekr2.modules.mmvt_cvs.mmvt_cv_base as mmvt_cv_base
 import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
 import seekr2.modules.common_converge as common_converge
 import seekr2.modules.runner_openmm as runner_openmm
@@ -116,8 +116,8 @@ def test_get_current_step_openmm_state(host_guest_mmvt_model):
     directory = os.path.join(
         host_guest_mmvt_model.anchor_rootdir, myanchor.directory, "prod")
     mmvt_output_filename = os.path.join(directory, 
-        "%s%d.%s" % (mmvt_base.OPENMMVT_BASENAME, 1, 
-                             mmvt_base.OPENMMVT_EXTENSION))
+        "%s%d.%s" % (mmvt_cv_base.OPENMMVT_BASENAME, 1, 
+                             mmvt_cv_base.OPENMMVT_EXTENSION))
     myglob = os.path.join(
         host_guest_mmvt_model.anchor_rootdir, myanchor.directory, "prod", "*")
     loading_state_filename = os.path.join(host_guest_mmvt_model.anchor_rootdir, 
@@ -552,8 +552,8 @@ def test_run_load_state(host_guest_mmvt_model):
     directory = os.path.join(
         host_guest_mmvt_model.anchor_rootdir, myanchor.directory, "prod")
     mmvt_output_filename = os.path.join(directory, 
-        "%s%d.%s" % (mmvt_base.OPENMMVT_BASENAME, 1, 
-                             mmvt_base.OPENMMVT_EXTENSION))
+        "%s%d.%s" % (mmvt_cv_base.OPENMMVT_BASENAME, 1, 
+                             mmvt_cv_base.OPENMMVT_EXTENSION))
     myglob = os.path.join(
         host_guest_mmvt_model.anchor_rootdir, myanchor.directory, "prod", "*")
     loading_state_filename = os.path.join(host_guest_mmvt_model.anchor_rootdir, 

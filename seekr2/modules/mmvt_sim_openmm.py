@@ -16,7 +16,9 @@ except ImportError:
 from parmed import unit
 
 import seekr2plugin
-import seekr2.modules.mmvt_base as mmvt_base
+import seekr2.modules.mmvt_cvs.mmvt_closest_pair_cv as mmvt_closest_pair_cv
+import seekr2.modules.mmvt_cvs.mmvt_count_contacts_cv as mmvt_count_contacts_cv
+import seekr2.modules.mmvt_cvs.mmvt_voronoi_cv as mmvt_voronoi_cv
 import seekr2.modules.common_sim_openmm as common_sim_openmm
 
 class MMVT_sim_openmm(common_sim_openmm.Common_sim_openmm):
@@ -108,7 +110,7 @@ def assign_nonbonded_cv_info(cv, system, box_vectors):
             = reference_force.getExceptionParameters(index)
         cv.exclusion_pairs.append((iatom, jatom))
     
-    if isinstance(cv, mmvt_base.MMVT_closest_pair_CV):
+    if isinstance(cv, mmvt_closest_pair_cv.MMVT_closest_pair_CV):
         cv.cutoff_distance = 0.4 * box_vectors.get_min_length()
         
     return
@@ -121,14 +123,14 @@ def add_forces(sim_openmm, model, anchor, box_vectors):
     os.chdir(model.anchor_rootdir)
     for milestone in anchor.milestones:
         cv = milestone.get_CV(model)
-        if isinstance(cv, mmvt_base.MMVT_closest_pair_CV) \
-                or isinstance(cv, mmvt_base.MMVT_count_contacts_CV):
+        if isinstance(cv, mmvt_closest_pair_cv.MMVT_closest_pair_CV) \
+                or isinstance(cv, mmvt_count_contacts_cv.MMVT_count_contacts_CV):
             assign_nonbonded_cv_info(cv, sim_openmm.system, box_vectors)
             
-        elif isinstance(cv, mmvt_base.MMVT_Voronoi_CV):
+        elif isinstance(cv, mmvt_voronoi_cv.MMVT_Voronoi_CV):
             for child_cv in cv.child_cvs:
-                if isinstance(child_cv, mmvt_base.MMVT_closest_pair_CV) \
-                        or isinstance(child_cv, mmvt_base.MMVT_count_contacts_CV):
+                if isinstance(child_cv, mmvt_closest_pair_cv.MMVT_closest_pair_CV) \
+                        or isinstance(child_cv, mmvt_count_contacts_cv.MMVT_count_contacts_CV):
                     assign_nonbonded_cv_info(child_cv, sim_openmm.system, 
                                              box_vectors)
                 #myforce = make_mmvt_boundary_definitions(
@@ -139,7 +141,6 @@ def add_forces(sim_openmm, model, anchor, box_vectors):
             cv, milestone)
         forcenum = sim_openmm.system.addForce(myforce)
         sim_openmm.integrator.addMilestoneGroup(milestone.alias_index)
-        
         
     os.chdir(curdir)
     return
@@ -263,7 +264,7 @@ def make_mmvt_boundary_definitions(cv, milestone):
         allows us to conveniently monitor a function of atomic 
         position.
     """
-    myforce = cv.make_force_object(milestone.alias_index)
+    myforce = cv.make_boundary_force(milestone.alias_index)
     myforce.setForceGroup(1)
     variable_names_list = cv.add_parameters(myforce)
     cv.add_groups_and_variables(myforce, cv.get_variable_values_list(

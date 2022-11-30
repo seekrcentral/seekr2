@@ -11,10 +11,9 @@ import glob
 import shutil
 
 import seekr2.modules.common_base as base
-import seekr2.modules.mmvt_base as mmvt_base
+import seekr2.modules.mmvt_cvs.mmvt_cv_base as mmvt_cv_base
 import seekr2.modules.common_sim_namd as common_sim_namd
 import seekr2.modules.mmvt_sim_namd as mmvt_sim_namd
-#import seekr2.modules.elber_sim_namd as elber_sim_namd
 
 RESTART_CHECKPOINT_FILENAME = "backup_checkpoint"
 SAVE_STATE_DIRECTORY = "states/"
@@ -64,11 +63,8 @@ def cleanse_anchor_outputs(model, anchor):
     for new outputs.
     """
     if model.get_type() == "mmvt":
-        basename = mmvt_base.NAMDMMVT_BASENAME
+        basename = mmvt_cv_base.NAMDMMVT_BASENAME
     # Elber not supported in NAMD
-    #elif model.get_type() == "elber":
-    #    basename = elber_base.OPENMM_ELBER_BASENAME
-    #    extension = elber_base.OPENMM_ELBER_EXTENSION
     output_directory = os.path.join(
         model.anchor_rootdir, anchor.directory, anchor.production_directory)
     output_files_glob = os.path.join(output_directory, anchor.md_output_glob)
@@ -171,21 +167,15 @@ class Runner_namd():
         self.extension = ""
         
         if model.get_type() == "mmvt":
-            self.glob = mmvt_base.NAMDMMVT_GLOB
-            self.basename = mmvt_base.NAMDMMVT_BASENAME
-            self.extension = mmvt_base.NAMDMMVT_EXTENSION
+            self.glob = mmvt_cv_base.NAMDMMVT_GLOB
+            self.basename = mmvt_cv_base.NAMDMMVT_BASENAME
+            self.extension = mmvt_cv_base.NAMDMMVT_EXTENSION
             self.output_directory = os.path.join(
                 self.model.anchor_rootdir, self.anchor.directory, 
                 self.anchor.production_directory)
             self.header = mmvt_sim_namd.SEEKR_MMVT_PROD_HEADER
         elif model.get_type() == "elber":
             raise Exception("Elber milestoning not available in NAMD.")
-            #self.glob = elber_base.OPENMM_ELBER_GLOB
-            #self.basename = elber_base.OPENMM_ELBER_BASENAME
-            #self.extension = elber_base.OPENMM_ELBER_EXTENSION
-            #self.output_directory = os.path.join(
-            #    self.model.anchor_rootdir, self.anchor.directory)
-            #self.header = elber_sim_namd.SEEKR_ELBER_PROD_HEADER
         self.save_one_state_for_all_boundaries = False
         self.check_state_interval = 1000
     
@@ -206,7 +196,7 @@ class Runner_namd():
             restart_index = len(mmvt_output_restarts_list) + 1
             default_output_filename = "%s.restart%d.%s" \
                     % (self.basename, restart_index, self.extension)
-            output_basename = "%s%d" % (mmvt_base.NAMDMMVT_BASENAME, 
+            output_basename = "%s%d" % (mmvt_cv_base.NAMDMMVT_BASENAME, 
                                         restart_index)
         else:
             if len(mmvt_output_restarts_list) > 0:

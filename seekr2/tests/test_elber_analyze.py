@@ -11,7 +11,7 @@ import pytest
 from shutil import copyfile
 
 import seekr2.modules.common_base as base
-import seekr2.modules.elber_base as elber_base
+import seekr2.modules.elber_cvs.elber_cv_base as elber_cv_base
 import seekr2.modules.common_analyze as common_analyze
 import seekr2.modules.elber_analyze as elber_analyze
 from seekr2.tests.conftest import compare_dicts
@@ -74,7 +74,7 @@ def make_simple_model():
     model.calculation_type = "elber"
     model.num_milestones = n_milestones
     model.num_anchors = n_anchors
-    anchor0 = elber_base.Elber_toy_anchor()
+    anchor0 = elber_cv_base.Elber_toy_anchor()
     anchor0.index = 0
     anchor0.endstate = True
     milestone_0_0 = base.Milestone()
@@ -87,7 +87,7 @@ def make_simple_model():
     milestone_0_1.alias_index = 3
     anchor0.milestones = [milestone_0_0, milestone_0_1]
     
-    anchor1 = elber_base.Elber_toy_anchor()
+    anchor1 = elber_cv_base.Elber_toy_anchor()
     anchor1.index = 1
     milestone_1_0 = base.Milestone()
     milestone_1_0.index = 0
@@ -103,7 +103,7 @@ def make_simple_model():
     milestone_1_2.alias_index = 3
     anchor1.milestones = [milestone_1_0, milestone_1_1, milestone_1_2]
     
-    anchor2 = elber_base.Elber_toy_anchor()
+    anchor2 = elber_cv_base.Elber_toy_anchor()
     anchor2.index = 2
     milestone_2_0 = base.Milestone()
     milestone_2_0.index = 1

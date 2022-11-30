@@ -1,5 +1,5 @@
 """
-test_mmvt_base.py
+test_mmvt_cv_base.py
 """
 
 import os
@@ -7,8 +7,9 @@ import shutil
 
 import numpy as np
 
-from seekr2.modules import mmvt_base
 from seekr2.modules import mmvt_sim_openmm
+
+# TODO: move tests to appropriate test files and remove this test file
 
 def test_MMVT_anchor_id_from_alias(host_guest_mmvt_model):
     """

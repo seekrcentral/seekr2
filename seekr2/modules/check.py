@@ -54,8 +54,10 @@ import parmed
 import mdtraj
 
 import seekr2.modules.common_base as base
-import seekr2.modules.elber_base as elber_base
-import seekr2.modules.mmvt_base as mmvt_base
+import seekr2.modules.elber_cvs.elber_cv_base as elber_cv_base
+import seekr2.modules.mmvt_cvs.mmvt_cv_base as mmvt_cv_base
+import seekr2.modules.mmvt_cvs.mmvt_closest_pair_cv as mmvt_closest_pair_cv
+import seekr2.modules.mmvt_cvs.mmvt_count_contacts_cv as mmvt_count_contacts_cv
 import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
 import seekr2.modules.elber_sim_openmm as elber_sim_openmm
 import seekr2.modules.common_converge as common_converge
@@ -163,7 +165,7 @@ def load_structure_with_mdtraj(model, anchor, mode="pdb", coords_filename=None):
         pass
     elif mode == "elber_umbrella":
         umbrella_dcd_path = os.path.join(prod_directory)
-        umbrella_basename = elber_base.ELBER_UMBRELLA_BASENAME+"*.dcd"
+        umbrella_basename = elber_cv_base.ELBER_UMBRELLA_BASENAME+"*.dcd"
         umbrella_traj_glob = os.path.join(umbrella_dcd_path, umbrella_basename)
         umbrella_traj_filenames = glob.glob(umbrella_traj_glob)
         if len(umbrella_traj_filenames) == 0:
@@ -186,7 +188,7 @@ def load_structure_with_mdtraj(model, anchor, mode="pdb", coords_filename=None):
         assert coords_filename is not None
         
     elif mode == "mmvt_traj":
-        mmvt_traj_basename = mmvt_base.OPENMMVT_BASENAME+"*.dcd"
+        mmvt_traj_basename = mmvt_cv_base.OPENMMVT_BASENAME+"*.dcd"
         mmvt_traj_glob = os.path.join(prod_directory, mmvt_traj_basename)
         mmvt_traj_filenames = glob.glob(mmvt_traj_glob)
         if len(mmvt_traj_filenames) == 0:
@@ -621,8 +623,8 @@ def check_atom_selections_on_same_molecule(model):
             if not cv_in_anchor:
                 continue
             
-            if isinstance(cv, mmvt_base.MMVT_closest_pair_CV) \
-                    or isinstance(cv, mmvt_base.MMVT_count_contacts_CV):
+            if isinstance(cv, mmvt_closest_pair_cv.MMVT_closest_pair_CV) \
+                    or isinstance(cv, mmvt_count_contacts_cv.MMVT_count_contacts_CV):
                 # Closest pair and count contacts CVs use nonbonded pairs.
                 continue
             

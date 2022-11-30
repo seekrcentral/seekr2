@@ -8,7 +8,6 @@ import glob
 import pytest
 
 import seekr2.modules.common_base as base
-import seekr2.modules.mmvt_base as mmvt_base
 import seekr2.prepare as prepare
 from seekr2.modules import common_prepare
 import seekr2.modules.common_cv as common_cv 

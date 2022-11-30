@@ -1,5 +1,5 @@
 """
-test_elber_base.py
+test_elber_cv_base.py
 
 Testing elber base objects
 """

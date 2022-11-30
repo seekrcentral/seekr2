@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 
 import seekr2.modules.common_base as base
-import seekr2.modules.mmvt_base as mmvt_base
+import seekr2.modules.mmvt_cvs.mmvt_cv_base as mmvt_cv_base
 import seekr2.modules.runner_openmm as runner_openmm
 import seekr2.modules.mmvt_analyze as mmvt_analyze
 from seekr2.tests.conftest import compare_dicts
@@ -321,7 +321,7 @@ def make_simple_model():
     model = base.Model()
     model.num_milestones = n_milestones
     model.num_anchors = n_anchors
-    anchor0 = mmvt_base.MMVT_toy_anchor()
+    anchor0 = mmvt_cv_base.MMVT_toy_anchor()
     anchor0.index = 0
     milestone_0_0 = base.Milestone()
     milestone_0_0.index = 0
@@ -329,7 +329,7 @@ def make_simple_model():
     milestone_0_0.alias_index = 1
     anchor0.milestones = [milestone_0_0]
     
-    anchor1 = mmvt_base.MMVT_toy_anchor()
+    anchor1 = mmvt_cv_base.MMVT_toy_anchor()
     anchor1.index = 1
     milestone_1_0 = base.Milestone()
     milestone_1_0.index = 0
@@ -341,7 +341,7 @@ def make_simple_model():
     milestone_1_1.alias_index = 2
     anchor1.milestones = [milestone_1_0, milestone_1_1]
     
-    anchor2 = mmvt_base.MMVT_toy_anchor()
+    anchor2 = mmvt_cv_base.MMVT_toy_anchor()
     anchor2.index = 2
     milestone_2_0 = base.Milestone()
     milestone_2_0.index = 1
@@ -353,7 +353,7 @@ def make_simple_model():
     milestone_2_1.alias_index = 2
     anchor2.milestones = [milestone_2_0, milestone_2_1]
     
-    anchor3 = mmvt_base.MMVT_toy_anchor()
+    anchor3 = mmvt_cv_base.MMVT_toy_anchor()
     anchor3.index = 3
     milestone_3_0 = base.Milestone()
     milestone_3_0.index = 2

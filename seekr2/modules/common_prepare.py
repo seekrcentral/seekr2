@@ -14,11 +14,19 @@ import shutil
 from collections import defaultdict
 
 import seekr2.modules.common_base as base
-import seekr2.modules.mmvt_base as mmvt_base
-import seekr2.modules.elber_base as elber_base
+import seekr2.modules.mmvt_cvs.mmvt_cv_base as mmvt_cv_base
+import seekr2.modules.mmvt_cvs.mmvt_spherical_cv as mmvt_spherical_cv
+import seekr2.modules.mmvt_cvs.mmvt_tiwary_cv as mmvt_tiwary_cv
+import seekr2.modules.mmvt_cvs.mmvt_planar_cv as mmvt_planar_cv
+import seekr2.modules.mmvt_cvs.mmvt_rmsd_cv as mmvt_rmsd_cv
+import seekr2.modules.mmvt_cvs.mmvt_closest_pair_cv as mmvt_closest_pair_cv
+import seekr2.modules.mmvt_cvs.mmvt_count_contacts_cv as mmvt_count_contacts_cv
+import seekr2.modules.mmvt_cvs.mmvt_external_cv as mmvt_external_cv
+import seekr2.modules.mmvt_cvs.mmvt_voronoi_cv as mmvt_voronoi_cv
+import seekr2.modules.elber_cvs.elber_cv_base as elber_cv_base
+import seekr2.modules.elber_cvs.elber_spherical_cv as elber_spherical_cv
+import seekr2.modules.elber_cvs.elber_external_cv as elber_external_cv
 import seekr2.modules.common_cv as common_cv
-import seekr2.modules.mmvt_cv as mmvt_cv
-import seekr2.modules.elber_cv as elber_cv
 import seekr2.modules.filetree as filetree
 import seekr2.modules.common_sim_browndye2 as sim_browndye2
 import seekr2.modules.runner_browndye2 as runner_browndye2
@@ -353,7 +361,7 @@ def model_factory(model_input, use_absolute_directory=False):
     model = base.Model()
     calc_settings = model_input.calculation_settings
     if model_input.calculation_type.lower() == "mmvt":
-        model.calculation_settings = mmvt_base.MMVT_settings()
+        model.calculation_settings = mmvt_cv_base.MMVT_settings()
         model.calculation_settings.num_production_steps = \
             calc_settings.md_steps_per_anchor
         model.calculation_settings.energy_reporter_interval = \
@@ -363,7 +371,7 @@ def model_factory(model_input, use_absolute_directory=False):
         model.calculation_settings.trajectory_reporter_interval = \
             calc_settings.md_output_interval
     elif model_input.calculation_type.lower() == "elber":
-        model.calculation_settings = elber_base.Elber_settings()
+        model.calculation_settings = elber_cv_base.Elber_settings()
         model.calculation_settings.temperature_equil_progression = \
             calc_settings.temperature_equil_progression
         model.calculation_settings.num_temperature_equil_steps = \
@@ -678,24 +686,24 @@ def create_cvs(model, collective_variable_inputs, root_directory):
         cv_input.check()
         if model.get_type() == "mmvt":
             if isinstance(cv_input, common_cv.Spherical_cv_input):
-                cv = mmvt_cv.make_mmvt_spherical_cv_object(cv_input, index=i)
+                cv = mmvt_spherical_cv.make_mmvt_spherical_cv_object(cv_input, index=i)
             elif isinstance(cv_input, common_cv.Tiwary_cv_input):
-                cv = mmvt_cv.make_mmvt_tiwary_cv_object(cv_input, index=i)
+                cv = mmvt_tiwary_cv.make_mmvt_tiwary_cv_object(cv_input, index=i)
             elif isinstance(cv_input, common_cv.Planar_cv_input):
-                cv = mmvt_cv.make_mmvt_planar_cv_object(cv_input, index=i)
+                cv = mmvt_planar_cv.make_mmvt_planar_cv_object(cv_input, index=i)
             elif isinstance(cv_input, common_cv.RMSD_cv_input):
-                cv = mmvt_cv.make_mmvt_RMSD_cv_object(
+                cv = mmvt_rmsd_cv.make_mmvt_RMSD_cv_object(
                     cv_input, index=i, root_directory=root_directory)
             elif isinstance(cv_input, common_cv.Closest_pair_cv_input):
-                cv = mmvt_cv.make_mmvt_closest_pair_cv_object(
+                cv = mmvt_closest_pair_cv.make_mmvt_closest_pair_cv_object(
                     cv_input, index=i)
             elif isinstance(cv_input, common_cv.Count_contacts_cv_input):
-                cv = mmvt_cv.make_mmvt_count_contacts_cv_object(
+                cv = mmvt_count_contacts_cv.make_mmvt_count_contacts_cv_object(
                     cv_input, index=i)
             elif isinstance(cv_input, common_cv.Toy_cv_input):
-                cv = mmvt_cv.make_mmvt_external_cv_object(cv_input, index=i)
+                cv = mmvt_external_cv.make_mmvt_external_cv_object(cv_input, index=i)
             elif isinstance(cv_input, common_cv.Voronoi_cv_input):
-                cv = mmvt_cv.make_mmvt_voronoi_cv_object(
+                cv = mmvt_voronoi_cv.make_mmvt_voronoi_cv_object(
                     cv_input, index=i, root_directory=root_directory)
             else:
                 raise Exception("CV type not implemented in MMVT: %s" \
@@ -703,9 +711,9 @@ def create_cvs(model, collective_variable_inputs, root_directory):
             
         elif model.get_type() == "elber":
             if isinstance(cv_input, common_cv.Spherical_cv_input):
-                cv = elber_cv.make_elber_spherical_cv_object(cv_input, index=i)
+                cv = elber_spherical_cv.make_elber_spherical_cv_object(cv_input, index=i)
             elif isinstance(cv_input, common_cv.Toy_cv_input):
-                cv = elber_cv.make_elber_external_cv_object(cv_input, index=i)
+                cv = elber_external_cv.make_elber_external_cv_object(cv_input, index=i)
             else:
                 raise Exception("CV type not implemented in Elber: %s" \
                                 % type(cv_input))
@@ -796,13 +804,13 @@ def create_anchors(model, model_input):
                     milestone_alias = 1
                     if isinstance(cv_input, common_cv.Spherical_cv_input):
                         milestones, milestone_alias, milestone_index = \
-                            elber_cv.make_elber_milestoning_objects_spherical(
+                            elber_spherical_cv.make_elber_milestoning_objects_spherical(
                             cv_input, milestone_alias, milestone_index, 
                             input_anchor_index, anchor.index, cv_input.input_anchors, 
                             model.calculation_settings.umbrella_force_constant)
                     elif isinstance(cv_input, common_cv.Toy_cv_input):
                         milestones, milestone_alias, milestone_index = \
-                            elber_cv.make_elber_milestoning_objects_external(
+                            elber_external_cv.make_elber_milestoning_objects_external(
                             cv_input, milestone_alias, milestone_index, 
                             input_anchor_index, anchor.index, cv_input.input_anchors, 
                             model.calculation_settings.umbrella_force_constant)
@@ -897,19 +905,19 @@ def prepare_model_cvs_and_anchors(model, model_input, force_overwrite):
     if model.get_type() == "mmvt":
         if model_input.md_program.lower() == "openmm":
             for anchor in model.anchors:
-                anchor.md_output_glob = mmvt_base.OPENMMVT_GLOB
+                anchor.md_output_glob = mmvt_cv_base.OPENMMVT_GLOB
         elif model_input.md_program.lower() == "namd":
             for anchor in model.anchors:
-                anchor.md_output_glob = mmvt_base.NAMDMMVT_GLOB
+                anchor.md_output_glob = mmvt_cv_base.NAMDMMVT_GLOB
         model.num_milestones = num_milestones
         
     elif model.get_type() == "elber":
         if model_input.md_program.lower() == "openmm":
             for anchor in model.anchors:
-                anchor.md_output_glob = elber_base.OPENMM_ELBER_GLOB
+                anchor.md_output_glob = elber_cv_base.OPENMM_ELBER_GLOB
         elif model_input.md_program.lower() == "namd":
             for anchor in model.anchors:
-                anchor.md_output_glob = elber_base.NAMD_ELBER_GLOB
+                anchor.md_output_glob = elber_cv_base.NAMD_ELBER_GLOB
         model.num_milestones = num_milestones-1
         
     if model_input.browndye_settings_input is not None:

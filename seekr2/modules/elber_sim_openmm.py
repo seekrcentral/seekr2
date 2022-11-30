@@ -25,7 +25,7 @@ except ImportError:
 from parmed import unit
 
 import seekr2plugin
-import seekr2.modules.elber_base as elber_base
+import seekr2.modules.elber_cvs.elber_cv_base as elber_cv_base
 import seekr2.modules.common_sim_openmm as common_sim_openmm
 
 class Elber_sim_openmm(common_sim_openmm.Common_sim_openmm):
@@ -240,8 +240,8 @@ def create_sim_openmm(model, anchor, output_filename, state_prefix=None):
     fwd_output_filename = output_filename
     directory = os.path.dirname(output_filename)
     basename = os.path.basename(output_filename)
-    suffix = re.sub(elber_base.OPENMM_ELBER_BASENAME, "", basename)
-    rev_basename = elber_base.ELBER_REV_BASENAME+suffix
+    suffix = re.sub(elber_cv_base.OPENMM_ELBER_BASENAME, "", basename)
+    rev_basename = elber_cv_base.ELBER_REV_BASENAME+suffix
     rev_output_filename = os.path.join(directory, rev_basename)
     sim_openmm.rev_output_filename = rev_output_filename
     sim_openmm.fwd_output_filename = fwd_output_filename

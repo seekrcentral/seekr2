@@ -9,7 +9,7 @@ import glob
 import pathlib
 
 import seekr2.modules.common_base as base
-import seekr2.modules.mmvt_base as mmvt_base
+import seekr2.modules.mmvt_cvs.mmvt_cv_base as mmvt_cv_base
 import seekr2.modules.mmvt_sim_namd as mmvt_sim_namd
 import seekr2.modules.runner_namd as runner_namd
 import seekr2.run as run
@@ -69,7 +69,7 @@ def test_Runner_namd_default(host_guest_mmvt_model):
         runner.prepare(force_overwrite=True)
     mmvt_output_filename = os.path.join(
         host_guest_mmvt_model.anchor_rootdir, myanchor.directory, "prod", 
-        "%s%d" % (mmvt_base.NAMDMMVT_BASENAME, 1))
+        "%s%d" % (mmvt_cv_base.NAMDMMVT_BASENAME, 1))
     my_sim_namd = mmvt_sim_namd.create_sim_namd(
         host_guest_mmvt_model, myanchor, mmvt_output_filename)
     my_sim_namd.namd_root.periodic_boundary_conditions.PMEGridSpacing = None
@@ -92,7 +92,7 @@ def test_Runner_namd_load_state(host_guest_mmvt_model):
         runner.prepare(force_overwrite=True)
     mmvt_output_filename = os.path.join(
         host_guest_mmvt_model.anchor_rootdir, myanchor.directory, "prod", 
-        "%s%d" % (mmvt_base.NAMDMMVT_BASENAME, 1))
+        "%s%d" % (mmvt_cv_base.NAMDMMVT_BASENAME, 1))
     loading_state_filename = os.path.join(host_guest_mmvt_model.anchor_rootdir, 
                                           "start.state")
     my_sim_namd = mmvt_sim_namd.create_sim_namd(
@@ -117,7 +117,7 @@ def test_Runner_namd_save_states(host_guest_mmvt_model):
         runner.prepare(force_overwrite=True, save_state_file=True)
     mmvt_output_filename = os.path.join(
         host_guest_mmvt_model.anchor_rootdir, myanchor.directory, "prod", 
-        "%s%d" % (mmvt_base.NAMDMMVT_BASENAME, 1))
+        "%s%d" % (mmvt_cv_base.NAMDMMVT_BASENAME, 1))
     my_sim_namd = mmvt_sim_namd.create_sim_namd(
         host_guest_mmvt_model, myanchor, mmvt_output_filename)
     my_sim_namd.namd_root.periodic_boundary_conditions.PMEGridSpacing = None
@@ -140,7 +140,7 @@ def test_Runner_namd_save_states_until_all_bounds(host_guest_mmvt_model):
         runner.prepare(force_overwrite=True, save_state_boundaries=True)
     mmvt_output_filename = os.path.join(
         host_guest_mmvt_model.anchor_rootdir, myanchor.directory, "prod", 
-        "%s%d" % (mmvt_base.NAMDMMVT_BASENAME, 1))
+        "%s%d" % (mmvt_cv_base.NAMDMMVT_BASENAME, 1))
     my_sim_namd = mmvt_sim_namd.create_sim_namd(
         host_guest_mmvt_model, myanchor, mmvt_output_filename)
     my_sim_namd.namd_root.periodic_boundary_conditions.PMEGridSpacing = None

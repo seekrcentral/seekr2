@@ -7,6 +7,8 @@ import numpy as np
 import seekr2.modules.common_cv as common_cv
 import seekr2.modules.check as check
 
+# TODO: move tests to appropriate file and remove this test file
+
 def test_tiwary_input_and_model(tiwary_mmvt_model_input, tiwary_mmvt_model):
     """
     

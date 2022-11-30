@@ -18,8 +18,8 @@ import numpy as np
 from parmed import unit
 
 import seekr2.modules.common_base as base
-import seekr2.modules.mmvt_base as mmvt_base
-import seekr2.modules.elber_base as elber_base
+import seekr2.modules.mmvt_cvs.mmvt_cv_base as mmvt_cv_base
+import seekr2.modules.elber_cvs.elber_cv_base as elber_cv_base
 import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
 import seekr2.modules.elber_sim_openmm as elber_sim_openmm
 import seekr2.modules.check as check
@@ -77,7 +77,7 @@ def elber_anchor_has_umbrella_files(model, anchor):
     Determine whether umbrella files already exist, which can save time
     by skipping the Elber umbrella stage.
     """
-    umbrella_glob = elber_base.ELBER_UMBRELLA_BASENAME+"*.dcd"
+    umbrella_glob = elber_cv_base.ELBER_UMBRELLA_BASENAME+"*.dcd"
     anchor_prod_directory = os.path.join(
         model.anchor_rootdir, anchor.directory, anchor.production_directory)
     umbrella_files_glob = os.path.join(anchor_prod_directory, umbrella_glob)
@@ -193,12 +193,12 @@ def cleanse_anchor_outputs(model, anchor, skip_umbrella_files=False):
         shutil.rmtree(states_dir)
     
     elber_rev_glob = os.path.join(
-        output_directory, elber_base.ELBER_REV_GLOB)
+        output_directory, elber_cv_base.ELBER_REV_GLOB)
     for elber_rev_file in glob.glob(elber_rev_glob):
         os.remove(elber_rev_file)
         
     elber_fwd_glob = os.path.join(
-        output_directory, elber_base.ELBER_FWD_GLOB)
+        output_directory, elber_cv_base.ELBER_FWD_GLOB)
     for elber_fwd_file in glob.glob(elber_fwd_glob):
         os.remove(elber_fwd_file)
     return
@@ -277,14 +277,14 @@ class Runner_openmm():
                 self.model.anchor_rootdir, self.anchor.directory, 
                 self.anchor.production_directory)
         if model.get_type() == "mmvt":
-            self.glob = mmvt_base.OPENMMVT_GLOB
-            self.basename = mmvt_base.OPENMMVT_BASENAME
-            self.extension = mmvt_base.OPENMMVT_EXTENSION
+            self.glob = mmvt_cv_base.OPENMMVT_GLOB
+            self.basename = mmvt_cv_base.OPENMMVT_BASENAME
+            self.extension = mmvt_cv_base.OPENMMVT_EXTENSION
             
         elif model.get_type() == "elber":
-            self.glob = elber_base.ELBER_REV_GLOB
-            self.basename = elber_base.OPENMM_ELBER_BASENAME
-            self.extension = elber_base.OPENMM_ELBER_EXTENSION
+            self.glob = elber_cv_base.ELBER_REV_GLOB
+            self.basename = elber_cv_base.OPENMM_ELBER_BASENAME
+            self.extension = elber_cv_base.OPENMM_ELBER_EXTENSION
             
         self.state_prefix = None
         self.save_one_state_for_all_boundaries=False
@@ -313,9 +313,9 @@ class Runner_openmm():
             self.swarm_string = ""
         else:
             self.swarm_string = ".swarm_{}".format(swarm_index)
-            self.glob = "%s%s*.%s" % (mmvt_base.OPENMMVT_BASENAME, 
+            self.glob = "%s%s*.%s" % (mmvt_cv_base.OPENMMVT_BASENAME, 
                                       self.swarm_string, 
-                                      mmvt_base.OPENMMVT_EXTENSION)
+                                      mmvt_cv_base.OPENMMVT_EXTENSION)
         
         output_files_glob = os.path.join(
             self.output_directory, self.glob)
@@ -550,8 +550,8 @@ class Runner_openmm():
         umbrella_traj_reporter = self.sim_openmm.umbrella_traj_reporter
         directory = os.path.dirname(traj_filename)
         basename = os.path.basename(traj_filename)
-        suffix = re.sub(elber_base.OPENMM_ELBER_BASENAME, "", basename)
-        umbrella_basename = elber_base.ELBER_UMBRELLA_BASENAME+suffix
+        suffix = re.sub(elber_cv_base.OPENMM_ELBER_BASENAME, "", basename)
+        umbrella_basename = elber_cv_base.ELBER_UMBRELLA_BASENAME+suffix
         umbrella_traj_filename = os.path.join(directory, umbrella_basename)
         if umbrella_trajectory_reporter_interval is not None \
                 and not self.umbrellas_already_exist_mode:
