@@ -315,10 +315,19 @@ def add_barostat(system, model):
     simulation pressure.
     """
     if model.openmm_settings.barostat:
-        barostat = openmm.MonteCarloBarostat(
-            model.openmm_settings.barostat.target_pressure, 
-            model.openmm_settings.barostat.target_temperature,
-            model.openmm_settings.barostat.frequency)
+        if model.openmm_settings.barostat.membrane:
+            barostat = openmm.MonteCarloMembraneBarostat(
+                model.openmm_settings.barostat.target_pressure, 
+                0.0*unit.bar*unit.nanometers, 
+                model.openmm_settings.barostat.target_temperature, 
+                openmm.MonteCarloMembraneBarostat.XYIsotropic, 
+                openmm.MonteCarloMembraneBarostat.ZFixed)
+        else:
+            barostat = openmm.MonteCarloBarostat(
+                model.openmm_settings.barostat.target_pressure, 
+                model.openmm_settings.barostat.target_temperature,
+                model.openmm_settings.barostat.frequency)
+            
         system.addForce(barostat)
     return
 
