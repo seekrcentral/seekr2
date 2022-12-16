@@ -270,7 +270,7 @@ class MMVT_count_contacts_CV(MMVT_collective_variable):
                 com1 = positions[atom_index1]
                 com2 = positions[atom_index2]
                 dist = np.linalg.norm(com2-com1)
-                if dist.value_in_unit(unit.nanometers) <= self.cutoff_distance:
+                if dist <= self.cutoff_distance:
                     count += 1
         
         return count

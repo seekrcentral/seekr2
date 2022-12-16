@@ -255,8 +255,8 @@ class MMVT_closest_pair_CV(MMVT_collective_variable):
         atom_set_list = []
         for index in self.group1:
             atom_set_list.append(set([traj.topology.atom(index)]))
-        for index in self.group2:
-            atom_set_list.append(set([traj.topology.atom(index)]))
+        #for index in self.group2:
+        #    atom_set_list.append(set([traj.topology.atom(index)]))
         traj.image_molecules(inplace=True, anchor_molecules=atom_set_list)
         sum = (1.0 / self.cutoff_distance) ** self.exponent
         for atom_index1 in self.group1:
@@ -266,7 +266,7 @@ class MMVT_closest_pair_CV(MMVT_collective_variable):
                 dist = np.linalg.norm(com2-com1)
                 if dist < self.cutoff_distance:
                     sum += (1.0/dist) ** self.exponent
-        
+                
         min_value = sum ** (-1.0/self.exponent)
         return min_value
     
@@ -280,8 +280,8 @@ class MMVT_closest_pair_CV(MMVT_collective_variable):
         atom_set_list = []
         for index in self.group1:
             atom_set_list.append(set([traj.topology.atom(index)]))
-        for index in self.group2:
-            atom_set_list.append(set([traj.topology.atom(index)]))
+        #for index in self.group2:
+        #    atom_set_list.append(set([traj.topology.atom(index)]))
         traj.image_molecules(inplace=True, anchor_molecules=atom_set_list)
         #traj.image_molecules(inplace=True, anchor_molecules=[self.group1])
         for frame_index in range(traj.n_frames):
@@ -309,10 +309,9 @@ class MMVT_closest_pair_CV(MMVT_collective_variable):
                 com1 = positions[atom_index1]
                 com2 = positions[atom_index2]
                 dist = np.linalg.norm(com2-com1)
-                dist = dist.value_in_unit(unit.nanometers)
                 if dist < self.cutoff_distance:
                     sum += (1.0/dist) ** self.exponent
-        
+                
         min_value = sum ** (-1.0/self.exponent)
         return min_value
         

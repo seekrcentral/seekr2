@@ -243,7 +243,7 @@ def load_structure_with_mdtraj(model, anchor, mode="pdb", coords_filename=None):
                 pdb_filename = os.path.join(
                     building_directory, 
                     anchor.amber_params.pdb_coordinates_filename)
-                traj = mdtraj.load(pdb_filename) #, top=prmtop_filename)
+                traj = mdtraj.load(pdb_filename, top=prmtop_filename)
             else:
                 # anchor has no structure files
                 return None
@@ -310,7 +310,7 @@ def load_structure_with_mdtraj(model, anchor, mode="pdb", coords_filename=None):
                 pdb_filename = os.path.join(
                     building_directory, 
                     anchor.charmm_params.pdb_coordinates_filename)
-                traj = mdtraj.load(pdb_filename) #, top=prmtop_filename)
+                traj = mdtraj.load(pdb_filename, top=psf_filename)
             else:
                 # anchor has no structure files
                 return None

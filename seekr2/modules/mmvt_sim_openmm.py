@@ -101,14 +101,15 @@ def assign_nonbonded_cv_info(cv, system, box_vectors):
     """
     Update the cv with the correct nonbonded information.
     """
-    cv.num_system_particles = system.getNumParticles()
-    forces = { force.__class__.__name__ : force for force in system.getForces() }
-    reference_force = forces['NonbondedForce']
-    cv.exclusion_pairs = []
-    for index in range(reference_force.getNumExceptions()):
-        [iatom, jatom, chargeprod, sigma, epsilon] \
-            = reference_force.getExceptionParameters(index)
-        cv.exclusion_pairs.append((iatom, jatom))
+    if system is not None:
+        cv.num_system_particles = system.getNumParticles()
+        forces = { force.__class__.__name__ : force for force in system.getForces() }
+        reference_force = forces['NonbondedForce']
+        cv.exclusion_pairs = []
+        for index in range(reference_force.getNumExceptions()):
+            [iatom, jatom, chargeprod, sigma, epsilon] \
+                = reference_force.getExceptionParameters(index)
+            cv.exclusion_pairs.append((iatom, jatom))
     
     if isinstance(cv, mmvt_closest_pair_cv.MMVT_closest_pair_CV):
         cv.cutoff_distance = 0.4 * box_vectors.get_min_length()
