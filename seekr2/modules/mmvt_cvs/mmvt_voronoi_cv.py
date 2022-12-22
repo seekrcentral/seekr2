@@ -215,6 +215,16 @@ class MMVT_Voronoi_CV(MMVT_collective_variable):
             
         return values
     
+    def get_cv_value(self, positions):
+        # Only works if the children are all External_CVs used in
+        # toy systems
+        values = []
+        for i, child_cv in enumerate(self.child_cvs):
+            cv_value = child_cv.get_cv_value(positions=positions)
+            values.append(cv_value)
+            
+        return values
+    
     def check_openmm_context_within_boundary(
             self, context, milestone_variables, positions=None, 
             verbose=False, tolerance=0.0):
