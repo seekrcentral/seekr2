@@ -34,7 +34,8 @@ def prepare(model_input, force_overwrite=False):
     """
     curdir = os.getcwd()
     model = common_prepare.model_factory(model_input)
-    root_directory = os.path.expanduser(model_input.root_directory)
+    root_directory = os.path.abspath(
+        os.path.expanduser(model_input.root_directory))
     model_input.root_directory = root_directory
     filetree.generate_filetree_root(model, root_directory)
     

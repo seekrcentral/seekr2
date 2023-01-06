@@ -270,6 +270,8 @@ colvar {{
         if system is None:
             system = context.getSystem()
         if positions is None:
+            assert context is not None, \
+                "If positions is None, context must not be None"
             state = context.getState(getPositions=True)
             positions = state.getPositions()
         com1 = base.get_openmm_center_of_mass_com(
