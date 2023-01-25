@@ -499,40 +499,41 @@ def check_systems_within_Voronoi_cells(model):
     os.chdir(model.anchor_rootdir)
     
     for anchor in model.anchors:
-        if anchor.index != 13:
-            continue
         
         if model.using_toy():
             if anchor.starting_positions is None: continue
             if len(anchor.starting_positions) == 0: continue
-            tmp_path = tempfile.NamedTemporaryFile()
-            output_file = tmp_path.name
             model.openmm_settings.cuda_platform_settings = None
             model.openmm_settings.reference_platform = True
-            if model.get_type() == "mmvt":
-                my_sim_openmm = mmvt_sim_openmm.create_sim_openmm(
-                    model, anchor, output_file)
-                context = my_sim_openmm.simulation.context
-            else:
-                my_sim_openmm = elber_sim_openmm.create_sim_openmm(
-                    model, anchor, output_file)
-                context = my_sim_openmm.umbrella_simulation.context
-            
             
         else:
+            # TOOD: remove the need for this inefficient step
+            #   checking for the existence of a starting structure
             traj = load_structure_with_mdtraj(model, anchor)
             if traj is None:
                 continue
-            
+            pass
+        
+        tmp_path = tempfile.NamedTemporaryFile()
+        output_file = tmp_path.name
+        if model.get_type() == "mmvt":
+            my_sim_openmm = mmvt_sim_openmm.create_sim_openmm(
+                model, anchor, output_file, use_only_reference=True)
+            context = my_sim_openmm.simulation.context
+        else:
+            my_sim_openmm = elber_sim_openmm.create_sim_openmm(
+                model, anchor, output_file, use_only_reference=True)
+            context = my_sim_openmm.umbrella_simulation.context
+        
         for milestone in anchor.milestones:
             cv = model.collective_variables[milestone.cv_index]
-            if model.using_toy():
-                result = cv.check_openmm_context_within_boundary(
-                    context, milestone.variables, verbose=True)
+            #if model.using_toy():
+            result = cv.check_openmm_context_within_boundary(
+                context, milestone.variables, verbose=True)
                 
-            else:
-                result = cv.check_mdtraj_within_boundary(
-                    traj, milestone.variables, verbose=True, TOL=0.0)
+            #else:
+            #    result = cv.check_mdtraj_within_boundary(
+            #        traj, milestone.variables, verbose=True, TOL=0.0)
                 
             if result == False:
                 correct_anchor = None
@@ -545,8 +546,10 @@ def check_systems_within_Voronoi_cells(model):
                                 context, milestone.variables, verbose=True)
                             
                         else:
-                            result2 = cv.check_mdtraj_within_boundary(
-                                traj, milestone.variables, TOL=0.0)
+                            result2 = cv.check_openmm_context_within_boundary(
+                                context, milestone.variables, verbose=True)
+                            #result2 = cv.check_mdtraj_within_boundary(
+                            #    traj, milestone.variables, TOL=0.0)
                         if not result2:
                             within_milestones = False
                             break

@@ -183,7 +183,7 @@ def add_simulation(sim_openmm, model, topology, positions, box_vectors,
     return positions
 
 def create_sim_openmm(model, anchor, output_filename, state_prefix=None, 
-                      frame=0, load_state_file=None):
+                      frame=0, load_state_file=None, use_only_reference=False):
     """
     Take all relevant model and anchor information and generate
     the necessary OpenMM objects to run the simulation.
@@ -225,7 +225,7 @@ def create_sim_openmm(model, anchor, output_filename, state_prefix=None,
     sim_openmm.system = system
     add_integrator(sim_openmm, model, state_prefix=state_prefix)
     common_sim_openmm.add_barostat(system, model)
-    common_sim_openmm.add_platform(sim_openmm, model)
+    common_sim_openmm.add_platform(sim_openmm, model, use_only_reference)
     add_forces(sim_openmm, model, anchor, box_vectors)
     positions = add_simulation(
         sim_openmm, model, topology, positions, box_vectors, load_state_file)

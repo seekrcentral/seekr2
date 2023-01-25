@@ -205,7 +205,8 @@ def add_simulations(sim_openmm, model, topology, positions, box_vectors):
     assert sim_openmm.timestep is not None
     return
 
-def create_sim_openmm(model, anchor, output_filename, state_prefix=None):
+def create_sim_openmm(model, anchor, output_filename, state_prefix=None,
+                      use_only_reference=False):
     """
     Take all relevant model and anchor information and generate
     the necessary OpenMM objects to run the simulation.
@@ -260,7 +261,7 @@ def create_sim_openmm(model, anchor, output_filename, state_prefix=None):
     common_sim_openmm.add_barostat(umbrella_system, model)
     common_sim_openmm.add_barostat(rev_system, model)
     common_sim_openmm.add_barostat(fwd_system, model)
-    common_sim_openmm.add_platform(sim_openmm, model)
+    common_sim_openmm.add_platform(sim_openmm, model, use_only_reference)
     add_forces(sim_openmm, model, anchor)
     add_simulations(sim_openmm, model, umbrella_topology, umbrella_positions, 
                          umbrella_box_vectors)
