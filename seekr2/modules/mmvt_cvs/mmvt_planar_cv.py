@@ -267,8 +267,8 @@ class MMVT_planar_CV(MMVT_collective_variable):
         value = ((com2[0]-com1[0])*(com3[0]-com1[0]) \
                + (com2[1]-com1[1])*(com3[1]-com1[1]) \
                + (com2[2]-com1[2])*(com3[2]-com1[2]))/(dist1_2*dist1_2)
-        #return value.value_in_unit(unit.nanometers**2)
-        return value
+        return value.value_in_unit(unit.nanometers**2)
+        #return value
         
     def check_openmm_context_within_boundary(
             self, context, milestone_variables, positions=None, verbose=False,

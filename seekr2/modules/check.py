@@ -547,7 +547,7 @@ def check_systems_within_Voronoi_cells(model):
                             
                         else:
                             result2 = cv.check_openmm_context_within_boundary(
-                                context, milestone.variables, verbose=True)
+                                context, milestone.variables, verbose=False)
                             #result2 = cv.check_mdtraj_within_boundary(
                             #    traj, milestone.variables, TOL=0.0)
                         if not result2:

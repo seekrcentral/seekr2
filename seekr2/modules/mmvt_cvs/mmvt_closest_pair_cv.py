@@ -303,17 +303,17 @@ class MMVT_closest_pair_CV(MMVT_collective_variable):
         if positions is None:
             state = context.getState(getPositions=True)
             positions = state.getPositions()
-        sum = (1.0 / self.cutoff_distance) ** self.exponent
+        sum = (1.0 / (self.cutoff_distance * unit.nanometer)) ** self.exponent
         for atom_index1 in self.group1:
             for atom_index2 in self.group2:
                 com1 = positions[atom_index1]
                 com2 = positions[atom_index2]
                 dist = np.linalg.norm(com2-com1)
-                if dist < self.cutoff_distance:
+                if dist < self.cutoff_distance * unit.nanometer:
                     sum += (1.0/dist) ** self.exponent
                 
         min_value = sum ** (-1.0/self.exponent)
-        return min_value
+        return min_value.value_in_unit(unit.nanometers)
         
     def check_openmm_context_within_boundary(
             self, context, milestone_variables, positions=None, verbose=False,

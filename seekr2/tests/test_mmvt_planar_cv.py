@@ -76,7 +76,7 @@ def test_mmvt_planar_boundary(tmp_path):
     milestone_variables = {"k":-1.0, "value":0.1}
     new_variables = [1.0, -1.0, 0.1]
     my_cv.update_groups_and_variables(
-        force=boundary_force1, variables=new_variables, alias_id=1)
+        force=boundary_force1, variables=new_variables, alias_id=1, context=None)
     toy_simulation.context.reinitialize(preserveState=True)
     
     # Check that the particle is within the new boundary
@@ -146,7 +146,7 @@ def test_mmvt_spherical_restraint(tmp_path):
     
     # Move system and re-simulate at a different radius
     my_cv.update_groups_and_variables(
-        force=restraint_force1, variables=my_variables2, alias_id=1)
+        force=restraint_force1, variables=my_variables2, alias_id=1, context=None)
     toy_simulation.context.reinitialize(preserveState=True)
     toy_simulation.context.setPositions(positions2)
     trajectory_filename2 = os.path.join(tmp_path, "planar_mmvt_toy2.dcd")

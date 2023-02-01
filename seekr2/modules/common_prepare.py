@@ -9,6 +9,7 @@ calculation.
 """
 
 import os
+import re
 import glob
 import shutil
 from collections import defaultdict
@@ -32,9 +33,11 @@ import seekr2.modules.common_sim_browndye2 as sim_browndye2
 import seekr2.modules.runner_browndye2 as runner_browndye2
 from abserdes import Serializer
 
+KEEP_ANCHOR_RE = "hidr*|string*"
+
 def anchor_has_files(model, anchor):
     """
-    Returns True if simulations have already been run in this anchor.
+    Returns True if seekr simulations have already been run in this anchor.
     """
     
     output_directory = os.path.join(
@@ -42,6 +45,20 @@ def anchor_has_files(model, anchor):
     output_files_glob = os.path.join(output_directory, anchor.md_output_glob)
     output_restarts_list = glob.glob(output_files_glob)
     if len(output_restarts_list) > 0:
+        return True
+    else:
+        return False
+    
+def anchor_has_hidr_files(model, anchor):
+    """
+    Returns True if HIDR has already been run in this anchor.
+    """
+    
+    building_directory = os.path.join(
+        model.anchor_rootdir, anchor.directory, anchor.building_directory)
+    input_files_glob = os.path.join(building_directory, "hidr*")
+    input_files_list = glob.glob(input_files_glob)
+    if len(input_files_list) > 0:
         return True
     else:
         return False
@@ -642,8 +659,10 @@ def resolve_connections(connection_flag_dict, model, associated_input_anchor,
         # the anchor directories.
         old_model = base.Model()
         old_model.deserialize(xml_path)
-        modify_model(old_model, model, root_directory,
-                                    force_overwrite)
+        new_anchors_with_starting_pdbs_to_keep = modify_model(
+            old_model, model, root_directory, force_overwrite)
+    else:
+        new_anchors_with_starting_pdbs_to_keep = None
     
     for old_index in index_reference:
         new_index = index_reference[old_index]
@@ -651,9 +670,13 @@ def resolve_connections(connection_flag_dict, model, associated_input_anchor,
             input_anchor = associated_input_anchor[old_index]
             filetree.generate_filetree_by_anchor(
                 anchors[new_index], root_directory)
-            filetree.copy_building_files_by_anchor(
-                anchors[new_index], input_anchor, root_directory)
-                
+            if (new_anchors_with_starting_pdbs_to_keep is not None) \
+                    and (new_index in new_anchors_with_starting_pdbs_to_keep):
+                print("Keeping starting structure for anchor:", new_index)
+            else:
+                filetree.copy_building_files_by_anchor(
+                    anchors[new_index], input_anchor, root_directory)
+                                
     return anchors
 
 def create_cvs(model, collective_variable_inputs, root_directory):
@@ -1029,6 +1052,7 @@ def modify_model(old_model, new_model, root_directory, force_overwrite=False):
     # Now check all the paired anchors to see if anyone's milestones
     # have changed
     old_anchors_with_changed_milestones = []
+    old_anchors_with_starting_pdbs_to_keep = []
     for pair in anchor_pairs:
         (alpha, beta) = pair
         anchor1 = new_model.anchors[alpha]
@@ -1054,13 +1078,33 @@ def modify_model(old_model, new_model, root_directory, force_overwrite=False):
                 milestones_changed = True
         if milestones_changed:
             old_anchors_with_changed_milestones.append(beta)
+            
+        # See whether the starting structures have changed
+        if not new_model.using_toy():
+            old_anchor_starting = base.get_anchor_pdb_filename(anchor2)
+            if re.match(KEEP_ANCHOR_RE, old_anchor_starting):
+                old_anchors_with_starting_pdbs_to_keep.append(beta)
+    
+    warning_msg = ""
+    # check whether any anchors have been given new starting structures
+    if len(old_anchors_with_starting_pdbs_to_keep) > 0:
+        warning_msg+="The anchor(s) {} ".format(
+                old_anchors_with_starting_pdbs_to_keep)\
+            +"have been given new starting structures (from HIDR or elsewhere) "\
+            "and the entered command mismatches the new structure file names. "\
+            "If you desire to ignore this  message, then use the "\
+            "--force_overwrite (-f) option, and the existing structures from HIDR "\
+            "will be kept in the new model. If you wish to overwrite these, you "\
+            "will need to change the model.xml file or write the root directory "\
+            "to a new location.\n\n"
+    
     # check whether deleting directories contain simulation files
     deleting_directories_with_files = []
     for del_anchor_index in old_anchors_to_delete:
         del_anchor = old_model.anchors[del_anchor_index]
         if anchor_has_files(old_model, del_anchor):
             deleting_directories_with_files.append(del_anchor.directory)
-    warning_msg = ""
+    
     if len(deleting_directories_with_files) > 0 :
         warning_msg+="The anchor(s) {} ".format(
                 deleting_directories_with_files)\
@@ -1068,7 +1112,8 @@ def modify_model(old_model, new_model, root_directory, force_overwrite=False):
             "and the entered command would overwrite them. If you desire "\
             "to overwrite the existing files, then use the "\
             "--force_overwrite (-f) option, and these anchors will be "\
-            "deleted in directory: " + root_directory + "\n"
+            "deleted in directory: " + root_directory + "\n\n"
+    
     # Check whether directories with changed milestones already contain
     # simulation files
     cleansing_anchors = []
@@ -1086,10 +1131,27 @@ def modify_model(old_model, new_model, root_directory, force_overwrite=False):
             "will be changed if this command proceeds. If you desire "\
             "to overwrite the existing files, then use the "\
             "--force_overwrite (-f) option, and these outputs will be "\
-            "deleted in directory: " + root_directory + "\n"
+            "deleted in directory: " + root_directory + "\n\n"
+    
+    # Check whether deleting directories may contain HIDR starting structures
+    deleting_directories_with_hidr = []
+    for del_anchor_index in old_anchors_to_delete:
+        del_anchor = old_model.anchors[del_anchor_index]
+        if anchor_has_hidr_files(old_model, del_anchor):
+            deleting_directories_with_hidr.append(del_anchor.directory)
+            
+    if len(deleting_directories_with_hidr) > 0 :
+        warning_msg+="The anchor(s) {} ".format(
+                deleting_directories_with_hidr)\
+            +"already have existing HIDR files "\
+            "and the entered command would delete them. If you desire "\
+            "to override this warning, then use the "\
+            "--force_overwrite (-f) option, and these anchors will be "\
+            "deleted in directory: " + root_directory + "\n\n"
+    
     if warning_msg and not force_overwrite:
         print(warning_msg)
-        raise Exception("Cannot overwrite existing outputs.")
+        raise Exception("Cannot overwrite existing files.")
     
     for del_anchor_index in old_anchors_to_delete:
         del_anchor = old_model.anchors[del_anchor_index]
@@ -1104,6 +1166,8 @@ def modify_model(old_model, new_model, root_directory, force_overwrite=False):
     # Now that the equivalent anchors are known, we know which ones will
     # be deleted, and which ones are being changed, with or without
     # simulation data, 
+    
+    new_anchors_with_starting_pdbs_to_keep = []
     for pair in anchor_pairs:
         (alpha, beta) = pair
         anchor1 = old_model.anchors[beta]
@@ -1137,6 +1201,16 @@ def modify_model(old_model, new_model, root_directory, force_overwrite=False):
                 shutil.rmtree(full_path2)
                 
             os.rename(full_path1, full_path2)
+        
+        if new_model.using_toy():
+            anchor2.starting_positions = anchor1.starting_positions
+        else:
+            anchor2.amber_params = anchor1.amber_params
+            anchor2.forcefield_params = anchor1.forcefield_params
+            anchor2.charmm_params = anchor1.charmm_params
+            
+        if anchor1.index in old_anchors_with_starting_pdbs_to_keep:
+            new_anchors_with_starting_pdbs_to_keep.append(anchor2.index)
     
     for new_anchor_index_to_create in new_anchors_to_create:
         print("creating new anchor {}".format(new_anchor_index_to_create))
@@ -1164,7 +1238,7 @@ def modify_model(old_model, new_model, root_directory, force_overwrite=False):
             print("Deleting folder:", b_surface_directory)
             shutil.rmtree(b_surface_directory)
             force_overwrite = False
-            return
+            return new_anchors_with_starting_pdbs_to_keep
         
         if len(old_model.k_on_info.bd_milestones) \
                 != len(new_model.k_on_info.bd_milestones):
@@ -1214,5 +1288,5 @@ def modify_model(old_model, new_model, root_directory, force_overwrite=False):
             runner_browndye2.cleanse_bd_outputs(b_surface_directory, 
                                                 check_mode=False)
         
-    return
+    return new_anchors_with_starting_pdbs_to_keep
     
