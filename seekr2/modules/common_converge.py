@@ -238,7 +238,8 @@ def get_elber_max_steps(model):
         conv_intervals = conv_intervals + DEFAULT_SKIP
     return conv_intervals
     
-def check_milestone_convergence(model, k_on_state=None, verbose=False):
+def check_milestone_convergence(model, k_on_state=None, verbose=False,
+                                long_converge=True):
     """
     Calculates the key MMVT quantities N, R, and Q as a function of 
     simulation time to estimate which milestones have been 
@@ -302,7 +303,13 @@ def check_milestone_convergence(model, k_on_state=None, verbose=False):
     N_ij_conv = defaultdict(functools.partial(np.zeros, DEFAULT_NUM_POINTS))
     R_i_conv = defaultdict(functools.partial(np.zeros, DEFAULT_NUM_POINTS))
     analysis = analyze.Analysis(model, force_warning=False)
-    for interval_index in range(DEFAULT_NUM_POINTS):
+    
+    if long_converge:
+        interval_span = range(DEFAULT_NUM_POINTS)
+    else:
+        interval_span = [DEFAULT_NUM_POINTS-1]
+    
+    for interval_index in interval_span:
         if verbose and (interval_index % PROGRESS_UPDATE_INTERVAL == 0):
             print("Processing interval {} of {}".format(interval_index, 
                                                         DEFAULT_NUM_POINTS))

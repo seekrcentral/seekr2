@@ -163,7 +163,7 @@ def add_simulation(sim_openmm, model, topology, positions, box_vectors,
         sim_openmm.simulation.loadState(load_state_file)
         state = sim_openmm.simulation.context.getState(getPositions=True)
         positions = state.getPositions(positions)
-    else:
+    elif positions is not None:
         sim_openmm.simulation.context.setVelocitiesToTemperature(
             model.openmm_settings.initial_temperature * unit.kelvin)
         

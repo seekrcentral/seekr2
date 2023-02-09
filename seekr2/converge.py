@@ -14,7 +14,8 @@ import seekr2.modules.common_converge as common_converge
 
 AVG_TRANSITION_TIME_MINIMUM = 0.1 # ps
 
-def converge(model, k_on_state=None, image_directory=None, verbose=False):
+def converge(model, k_on_state=None, image_directory=None, verbose=False,
+             long_converge=True):
     """
     Perform all convergence steps: a generic analysis of convergence 
     of quantities such as N_ij, R_i, k_off, and k_on.
@@ -23,9 +24,10 @@ def converge(model, k_on_state=None, image_directory=None, verbose=False):
     k_on_conv, k_off_conv, N_ij_conv, R_i_conv, max_step_list, \
         timestep_in_ns, data_sample_list \
         = common_converge.check_milestone_convergence(
-            model, k_on_state=k_on_state, verbose=verbose)
+            model, k_on_state=k_on_state, verbose=verbose, 
+            long_converge=long_converge)
     
-    if image_directory is None or image_directory == "":
+    if image_directory is None or image_directory == "" or not long_converge:
         return data_sample_list
     
     k_off_fig, ax = common_converge.plot_scalar_conv(
@@ -152,6 +154,11 @@ if __name__ == "__main__":
         default=100, type=int, help="Enter a minimum number of transitions "\
         "that must be observed per milestone in a given anchor as a criteria "\
         "for the simulations. Default: 100")
+    argparser.add_argument(
+        "-l", "--long_converge", dest="long_converge", default=False, 
+        help="Whether to run a full, long convergence analysis. If set to "\
+        "True, 100 intervals will be sampled for convergence values and "\
+        "plots will be generated. Default: False.", action="store_true")
     
     args = argparser.parse_args() # parse the args into a dictionary
     args = vars(args)
@@ -160,6 +167,7 @@ if __name__ == "__main__":
     image_directory = args["image_directory"]
     cutoff = args["cutoff"]
     minimum_anchor_transitions = args["minimum_anchor_transitions"]
+    long_converge = args["long_converge"]
     
     model = base.load_model(model_file)
     
@@ -197,7 +205,7 @@ if __name__ == "__main__":
                 % k_on_state
     
     data_sample_list = converge(model, k_on_state, image_directory, 
-                                verbose=True)
+                                verbose=True, long_converge=long_converge)
     main_data_sample = data_sample_list[-1]
     rmsd_convergence_results = common_converge.calc_RMSD_conv_amount(
         model, data_sample_list)

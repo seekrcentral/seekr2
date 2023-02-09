@@ -23,7 +23,7 @@ following steps:
 Download Conda, run the script, and fill out the prompts::
 
   wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-  sh Miniconda3-latest-Linux-x86_64.sh
+  bash Miniconda3-latest-Linux-x86_64.sh
 
 Make sure Conda is installed by running:
 

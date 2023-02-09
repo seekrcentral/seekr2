@@ -507,7 +507,7 @@ def check_systems_within_Voronoi_cells(model):
             model.openmm_settings.reference_platform = True
             
         else:
-            # TOOD: remove the need for this inefficient step
+            # TODO: remove the need for this inefficient step
             #   checking for the existence of a starting structure
             traj = load_structure_with_mdtraj(model, anchor)
             if traj is None:
