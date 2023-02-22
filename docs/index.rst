@@ -43,7 +43,7 @@ Cite SEEKR2
 
 If you wish to cite SEEKR2, please cite the following paper:
 
-* Votapka, L. W.; Stokely, A. M.; Ojha, A. A.; Amaro, R. E. SEEKR2: Versatile Multiscale Milestoning Utilizing the OpenMM 7.5 Molecular Dynamics Engine. J. Chem. Inf. Mod. In Review. https://doi.org/10.33774/chemrxiv-2021-pplfs
+* Votapka, L. W.; Stokely, A. M.; Ojha, A. A.; Amaro, R. E. SEEKR2: Versatile Multiscale Milestoning Utilizing the OpenMM Molecular Dynamics Engine. J. Chem. Inf. Mod. 2022 62 (13), 3253-3262. DOI: 10.1021/acs.jcim.2c00501
 
 You may also optionally cite one or more of the following papers:
 
