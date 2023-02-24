@@ -1123,7 +1123,12 @@ def check_output_files_for_stuck_anchors(model):
                     if line.startswith("CHECKPOINT"):
                         cur_time = float(line.strip().split(",")[1])
                     else:
-                        cur_time = float(line.strip().split(",")[2])
+                        try:
+                            cur_time = float(line.strip().split(",")[2])
+                        except IndexError:
+                            print("output_file_name:", output_file_name)
+                            print("line:", line)
+                            exit()
                     if cur_time - last_time <= timestep:
                         sequential_bounces += 1
                     else:

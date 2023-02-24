@@ -170,7 +170,7 @@ def choose_next_simulation_openmm(
         model, instruction, min_total_simulation_length, 
         max_total_simulation_length, convergence_cutoff, 
         minimum_anchor_transitions, force_overwrite, umbrella_restart_mode,
-        load_state_file):
+        load_state_file, cuda_device_index=None):
     """
     Examine the model and all MD simulations that have run so far.
     Using this information, as well as the specified criteria (minimum
@@ -179,6 +179,11 @@ def choose_next_simulation_openmm(
     """
     if (instruction in ["any_bd", "b_surface",]):
         return []
+    
+    if cuda_device_index is not None:
+        assert model.openmm_settings.cuda_platform_settings is not None
+        model.openmm_settings.cuda_platform_settings.cuda_device_index = \
+            cuda_device_index
     
     import seekr2.modules.mmvt_sim_openmm as mmvt_sim_openmm
     import seekr2.modules.elber_sim_openmm as elber_sim_openmm
@@ -612,7 +617,7 @@ def run(model, instruction, min_total_simulation_length=None,
                 model, instruction, min_total_simulation_length, 
                 max_total_simulation_length, convergence_cutoff, 
                 minimum_anchor_transitions, force_overwrite, 
-                umbrella_restart_mode, load_state_file)
+                umbrella_restart_mode, load_state_file, cuda_device_index)
         elif model.namd_settings is not None:
             anchor_info_to_run = choose_next_simulation_namd(
                 model, instruction, min_total_simulation_length, 

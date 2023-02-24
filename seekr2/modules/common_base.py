@@ -408,8 +408,8 @@ class Cuda_platform_settings(Serializer):
         Return a platform properties dictionary which goes into the 
         arguments of an OpenMM's Simulation() object.
         """
-        properties = {'CudaDeviceIndex': self.cuda_device_index, 
-                      'CudaPrecision': self.cuda_precision}
+        properties = {'CudaDeviceIndex': str(self.cuda_device_index), 
+                      'CudaPrecision': str(self.cuda_precision)}
         return properties
     
 class Openmm_settings(Serializer):

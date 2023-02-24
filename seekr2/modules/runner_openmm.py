@@ -231,7 +231,56 @@ def saveCheckpoint(sim_openmm, checkpoint_filename):
     with open(sim_openmm.output_filename, "a") as f:
         f.write("CHECKPOINT,{:.3f}\n".format(sim_time))
     return
-        
+
+def make_lock_string():
+    """
+    Make a string that can be put into the LOCK file to detect race
+    conditions.
+    """
+    pid = os.getpid()
+    timestamp = time.time()
+    lock_string = "{},{:.3f}".format(pid, timestamp)
+    return lock_string
+
+def create_lock(model, anchor, verbose=False):
+    """
+    Create a lock file to prevent running if a SEEKR anchor is currently being
+    run by another process.
+    """
+    lock_filename = os.path.join(
+        model.anchor_rootdir, anchor.directory, anchor.production_directory,
+        "LOCK")
+    if os.path.exists(lock_filename) and verbose:
+        print("Warning: a lock file was detected in anchor {}. "\
+                .format(anchor.index)+"This may happen because the a previous "\
+                "process failed suddenly, or because a process is currently "\
+                "running on this anchor.")
+    lock_string = make_lock_string()
+    with open(lock_filename, "w") as f:
+        f.write(lock_string)
+    return lock_filename, lock_string
+
+def update_lock(lock_filename, lock_string, anchor):
+    """
+    Check the lock file for changes, and update the lock file.
+    """
+    with open(lock_filename, "r") as f:
+        old_lock_string = f.readline()
+    if old_lock_string != lock_string:
+        with open(lock_filename, "w") as f:
+            # kill the other process
+            f.write("ABORT")
+        raise Exception("A lock file modification was detected for anchor {}. "\
+                        .format(anchor.index)+"This means another process was "\
+                        "running on the same anchor at the same time. Both "\
+                        "processes will be killed. You must force this "\
+                        "anchor to restart from the beginning to obtain "\
+                        "correct results.")
+    # otherwise all is well
+    lock_string = make_lock_string()
+    with open(lock_filename, "w") as f:
+        f.write(lock_string)
+    return lock_string
 
 class Runner_openmm():
     """
@@ -498,6 +547,7 @@ class Runner_openmm():
             self.end_chunk = self.start_chunk + 1
             self.steps_per_chunk = calc_settings.num_production_steps
         
+        lock_filename, lock_string = create_lock(self.model, self.anchor)
         for chunk in range(self.start_chunk, self.end_chunk):
             if self.save_one_state_for_all_boundaries:
                 if all_boundaries_have_state(self.state_prefix+"*", 
@@ -528,13 +578,11 @@ class Runner_openmm():
                         preserveState=True)
                     
             saveCheckpoint(self.sim_openmm, self.restart_checkpoint_filename)
-            #self.sim_openmm.simulation.saveCheckpoint(
-            #    self.restart_checkpoint_filename)
             self.sim_openmm.simulation.step(self.steps_per_chunk)
+            lock_string = update_lock(lock_filename, lock_string, self.anchor)
         
         saveCheckpoint(self.sim_openmm, self.restart_checkpoint_filename)
-        #self.sim_openmm.simulation.saveCheckpoint(
-        #    self.restart_checkpoint_filename)
+        os.remove(lock_filename)
         
         return
     
