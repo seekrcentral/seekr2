@@ -54,9 +54,7 @@ def order_files_numerically(file_list, func=int):
     sorted_file_list = []
     numerical_dict = {}
     for i, file_name in enumerate(file_list):
-        base_name = os.path.splitext(file_name)[0]
-        # TODO: remove
-        #numbers = re.findall(r"[-\d\.]+", base_name)
+        base_name = os.path.basename(os.path.splitext(file_name)[0])
         numbers = re.findall(r"(-?\d+(?:\.\d+)?)", base_name)
         numbers = tuple([func(j) for j in numbers])
         numerical_dict[numbers] = i

@@ -322,7 +322,7 @@ class MMVT_tiwary_CV(MMVT_collective_variable):
             com_list = []
             for j in range(order_parameter.get_num_groups()):
                 com = op_com_list[i][j]
-                com_list.append(com)
+                com_list.append(com.value_in_unit(unit.nanometer))
             op_term = order_parameter.get_value(com_list)
             op_weight = self.order_parameter_weights[i]
             op_value += op_weight * op_term

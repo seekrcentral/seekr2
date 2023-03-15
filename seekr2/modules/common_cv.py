@@ -601,7 +601,7 @@ class Tiwary_cv_torsion_order_parameter(Serializer):
         assert len(coms) == 4
         new_coms = []
         for com in coms:
-            new_coms.append(com.value_in_unit(unit.nanometer))
+            new_coms.append(com)
         coms = new_coms
         x1 = coms[0][0]; y1 = coms[0][1]; z1 = coms[0][2]
         x2 = coms[1][0]; y2 = coms[1][1]; z2 = coms[1][2]
