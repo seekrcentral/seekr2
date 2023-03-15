@@ -20,6 +20,7 @@ DEFAULT_Q_IJ = 1.0
 LOW_Q_IJ = 1e-15
 HIGH_FLUX = 1e10
 LOW_PROBABILITY = 1e-25
+from seekr2.modules.common_analyze import GAS_CONSTANT
 
 def flux_matrix_to_K(M):
     """Given a flux matrix M, compute probability transition matrix K."""
@@ -80,15 +81,26 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
                 for counter, line in enumerate(output_file):
                     if line.startswith("#") or len(line.strip()) == 0:
                         continue
+                    line_list = line.strip().split(",")
                     if line.startswith("CHECKPOINT"):
                         no_checkpoints = False
-                        checkpoint_time = float(line.strip().split(",")[1])
+                        if len(line_list) != 2:
+                            continue
+                        if re.match(r"^-?\d+\.\d{3}$", line_list[1]):
+                            checkpoint_time = float(line_list[1])
+                        else:
+                            continue
                         continue
-                    line_list = line.strip().split(",")
-                    file_lines.append(line_list)
+                    if len(line_list) != 3:
+                        continue
                     dest_boundary = int(line_list[0])
                     bounce_index = int(line_list[1])
-                    dest_time = float(line_list[2]) 
+                    if re.match(r"^-?\d+\.\d{3}$", line_list[2]):
+                        dest_time = float(line_list[2]) 
+                    else:
+                        continue
+                    
+                    file_lines.append(line_list)
                     if start_time is None:
                         start_time = dest_time
                     
@@ -689,6 +701,7 @@ class MMVT_data_sample(common_analyze.Data_sample):
         self.p_i = None
         self.p_i_hat = None
         self.free_energy_profile = None
+        self.free_energy_anchors = None
         self.MFPTs = {}
         self.k_off = None
         self.k_ons = {}
@@ -794,7 +807,8 @@ class MMVT_data_sample(common_analyze.Data_sample):
         flux_matrix[pivot_index, pivot_index-1] = HIGH_FLUX
         prob_equil = np.zeros((flux_matrix_dimension,1))
         prob_equil[pivot_index] = 1.0
-        self.pi_alpha = abs(la.solve(flux_matrix.T, prob_equil))
+        pi_alpha = la.solve(flux_matrix.T, prob_equil)
+        self.pi_alpha = abs(pi_alpha)
         
         # refine pi_alpha
         pi_alpha_slice = np.zeros((flux_matrix_dimension-1, 1))
@@ -1025,6 +1039,18 @@ class MMVT_data_sample(common_analyze.Data_sample):
             self.T_alpha[alpha] = new_T_alpha
         
         return
+    
+    def calculate_extra_thermodynamics(self):
+        """
+        Use this data sample's statistics to construct the 
+        anchor free energy profile.
+        """
+        self.free_energy_anchors = np.zeros(self.pi_alpha.shape[0])
+        highest_pi_alpha = max(self.pi_alpha)
+        for i, pi_alpha_val in enumerate(self.pi_alpha):
+            free_energy = -GAS_CONSTANT*self.model.temperature*np.log(
+                pi_alpha_val / highest_pi_alpha)
+            self.free_energy_anchors[i] = free_energy
 
 def find_nonzero_matrix_entries(M):
     """
@@ -1106,6 +1132,7 @@ def monte_carlo_milestoning_error(
     k_off_error = None
     p_i_list = []
     free_energy_profile_list = []
+    free_energy_anchors_list = []
     data_sample_list = []
     if verbose: print("collecting ", num, " MCMC samples from ", 
                       num*(stride) + skip, " total moves")  
@@ -1162,9 +1189,11 @@ def monte_carlo_milestoning_error(
                 new_data_sample.parse_browndye_results(
                     bd_sample_from_normal=True)
             new_data_sample.calculate_thermodynamics()
+            new_data_sample.calculate_extra_thermodynamics()
             new_data_sample.calculate_kinetics()
             p_i_list.append(new_data_sample.p_i)
             free_energy_profile_list.append(new_data_sample.free_energy_profile)
+            free_energy_anchors_list.append(new_data_sample.free_energy_anchors)
             for key in new_data_sample.MFPTs:
                 MFPTs_list[key].append(new_data_sample.MFPTs[key])
             if new_data_sample.k_off is not None:
@@ -1180,6 +1209,8 @@ def monte_carlo_milestoning_error(
     p_i_error = np.zeros(main_data_sample.p_i.shape)
     free_energy_profile_err = np.zeros(
         main_data_sample.free_energy_profile.shape)
+    free_energy_anchors_err = np.zeros(
+        main_data_sample.free_energy_anchors.shape)
     for i in range(p_i_error.shape[0]):
         p_i_val_list = []
         for j in range(len(p_i_list)):
@@ -1191,6 +1222,11 @@ def monte_carlo_milestoning_error(
         for j in range(len(free_energy_profile_list)):
             free_energy_profile_val_list.append(free_energy_profile_list[j][i])
         free_energy_profile_err[i] = np.std(free_energy_profile_val_list)
+    for i in range(free_energy_anchors_err.shape[0]):
+        free_energy_anchors_val_list = []
+        for j in range(len(free_energy_anchors_list)):
+            free_energy_anchors_val_list.append(free_energy_anchors_list[j][i])
+        free_energy_anchors_err[i] = np.std(free_energy_anchors_val_list)
     for key in main_data_sample.MFPTs:
         MFPTs_error[key] = np.std(MFPTs_list[key])    
     if len(k_off_list) > 0:
@@ -1199,5 +1235,5 @@ def monte_carlo_milestoning_error(
         for key in main_data_sample.k_ons:
             k_ons_error[key] = np.std(k_ons_list[key])
     
-    return data_sample_list, p_i_error, free_energy_profile_err, MFPTs_error, \
-        k_off_error, k_ons_error
+    return data_sample_list, p_i_error, free_energy_profile_err, \
+        free_energy_anchors_err, MFPTs_error, k_off_error, k_ons_error

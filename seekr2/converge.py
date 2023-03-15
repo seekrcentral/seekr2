@@ -22,13 +22,13 @@ def converge(model, k_on_state=None, image_directory=None, verbose=False,
     """
     curdir = os.getcwd()
     k_on_conv, k_off_conv, N_ij_conv, R_i_conv, max_step_list, \
-        timestep_in_ns, data_sample_list \
+        timestep_in_ns, data_sample_list, times_dict \
         = common_converge.check_milestone_convergence(
             model, k_on_state=k_on_state, verbose=verbose, 
             long_converge=long_converge)
     
     if image_directory is None or image_directory == "" or not long_converge:
-        return data_sample_list
+        return data_sample_list, times_dict
     
     k_off_fig, ax = common_converge.plot_scalar_conv(
         k_off_conv, max_step_list, title="$k_{off}$ Convergence", 
@@ -38,11 +38,11 @@ def converge(model, k_on_state=None, image_directory=None, verbose=False,
         label="k_{on} (s^{-1} M^{-1})", timestep_in_ns=timestep_in_ns)
     N_ij_fig_list, ax, N_ij_title_list, N_ij_name_list \
         = common_converge.plot_dict_conv(
-        N_ij_conv, max_step_list, label_base="N", 
+        N_ij_conv, max_step_list, label_base="N", unit="",
         timestep_in_ns=timestep_in_ns)
     R_i_fig_list, ax, R_i_title_list, R_i_name_list \
         = common_converge.plot_dict_conv(
-        R_i_conv, max_step_list, label_base="R", 
+        R_i_conv, max_step_list, label_base="R", unit="ps",
         timestep_in_ns=timestep_in_ns)
     
     if k_off_fig is not None:
@@ -64,12 +64,12 @@ def converge(model, k_on_state=None, image_directory=None, verbose=False,
     
     print("All plots have been saved to:", image_directory)
     os.chdir(curdir)
-    return data_sample_list
+    return data_sample_list, times_dict
 
 def print_convergence_results(model, convergence_results, cutoff, 
                               transition_results, transition_time_results,
                               minimum_anchor_transitions, 
-                              bd_transition_counts={}):
+                              bd_transition_counts={}, times_dict={}):
     """
     Print the results of a convergence test.
     """
@@ -105,6 +105,8 @@ def print_convergence_results(model, convergence_results, cutoff,
             +"\n     Milestone transitions:{} ".format(transition_string) \
             +"\n     Milestone avg. transition time (ps):{}"\
                 .format(time_string) + warnstr \
+            +"\n     Time simulated in anchor (ps): {:.3f}"\
+                .format(times_dict[anchor.index]) \
             +"\n     Convergence value: " \
             +"{:.4e}. ".format(convergence_results[alpha]) \
             +"\n     Converged? {}".format(is_converged)
@@ -204,7 +206,7 @@ if __name__ == "__main__":
                 "BD milestone of %d for k_on_state is not available." \
                 % k_on_state
     
-    data_sample_list = converge(model, k_on_state, image_directory, 
+    data_sample_list, times_dict = converge(model, k_on_state, image_directory, 
                                 verbose=True, long_converge=long_converge)
     main_data_sample = data_sample_list[-1]
     rmsd_convergence_results = common_converge.calc_RMSD_conv_amount(
@@ -216,4 +218,4 @@ if __name__ == "__main__":
     print_convergence_results(model, rmsd_convergence_results, cutoff, 
                               transition_prob_results, transition_time_results,
                               minimum_anchor_transitions,
-                              bd_transition_counts)
+                              bd_transition_counts, times_dict)

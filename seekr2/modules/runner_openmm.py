@@ -264,6 +264,10 @@ def update_lock(lock_filename, lock_string, anchor):
     """
     Check the lock file for changes, and update the lock file.
     """
+    if not os.path.exists(lock_filename):
+        raise Exception("The lock file was deleted for anchor {}. "\
+                        .format(anchor.index))
+    
     with open(lock_filename, "r") as f:
         old_lock_string = f.readline()
     if old_lock_string != lock_string:
@@ -271,7 +275,7 @@ def update_lock(lock_filename, lock_string, anchor):
             # kill the other process
             f.write("ABORT")
         raise Exception("A lock file modification was detected for anchor {}. "\
-                        .format(anchor.index)+"This means another process was "\
+                        .format(anchor.index)+"Another SEEKR process was "\
                         "running on the same anchor at the same time. Both "\
                         "processes will be killed. You must force this "\
                         "anchor to restart from the beginning to obtain "\

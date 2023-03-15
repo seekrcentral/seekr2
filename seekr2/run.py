@@ -235,14 +235,6 @@ def choose_next_simulation_openmm(
                 swarm_frame = None
             currentStep = get_current_step_openmm(
                 model, anchor, load_state_file_list, swarm_frame)
-            
-            """ # TODO: remove
-            if currentStep == 0 or force_overwrite or umbrella_restart_mode:
-                restart = False
-                currentStep = 0
-            else:
-                restart = True
-            """
             restart_checkpoint_filename = get_checkpoint_name(
                 model, anchor, swarm_frame)
             if (not os.path.exists(restart_checkpoint_filename)) \

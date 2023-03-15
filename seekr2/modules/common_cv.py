@@ -12,6 +12,7 @@ import numpy as np
 from scipy.spatial import Delaunay, Voronoi
 from scipy.spatial import qhull
 from abserdes import Serializer
+from parmed import unit
 
 import seekr2.modules.common_base as base
 import seekr2.modules.mmvt_cvs.mmvt_cv_base as mmvt_cv_base
@@ -598,6 +599,10 @@ class Tiwary_cv_torsion_order_parameter(Serializer):
         
         """
         assert len(coms) == 4
+        new_coms = []
+        for com in coms:
+            new_coms.append(com.value_in_unit(unit.nanometer))
+        coms = new_coms
         x1 = coms[0][0]; y1 = coms[0][1]; z1 = coms[0][2]
         x2 = coms[1][0]; y2 = coms[1][1]; z2 = coms[1][2]
         x3 = coms[2][0]; y3 = coms[2][1]; z3 = coms[2][2]
@@ -612,6 +617,10 @@ class Tiwary_cv_torsion_order_parameter(Serializer):
         x = np.dot(cross1, cross2)
         y = np.dot(np.cross(cross1, axis/np.linalg.norm(axis)), cross2)
         phi = -np.arctan2(y,x) % (2.0*np.pi)
+        while phi > (np.pi):
+            phi -= 2.0*np.pi
+        while phi < (-np.pi):
+            phi += 2.0*np.pi
         return phi
 
 class Tiwary_cv_input(CV_input):

@@ -6,6 +6,7 @@ convergence of SEEKR2 calculations.
 """
 
 import os
+import re
 import glob
 import math
 from collections import defaultdict
@@ -141,6 +142,7 @@ def get_mmvt_max_steps(model):
     """
     dt = model.get_timestep()
     max_steps = 0.0
+    anchor_max_times = {}
     for anchor in model.anchors:
         output_file_glob = os.path.join(
             model.anchor_rootdir, anchor.directory, 
@@ -160,9 +162,21 @@ def get_mmvt_max_steps(model):
                             # empty output file
                             continue
                         elif last_line.startswith("CHECKPOINT"):
-                            mytime = float(last_line.strip().split(",")[1])
+                            last_line = last_line.strip().split(",")
+                            if len(last_line) != 2:
+                                continue
+                            if re.match(r"^-?\d+\.\d{3}$", last_line[1]):
+                                mytime = float(last_line[1])
+                            else:
+                                continue
                         else:
-                            mytime = float(last_line.strip().split(",")[2])
+                            last_line = last_line.strip().split(",")
+                            if len(last_line) != 3:
+                                continue
+                            if re.match(r"^-?\d+\.\d{3}$", last_line[2]):
+                                mytime = float(last_line[2])
+                            else:
+                                continue
                         step = int(mytime / dt)
                     elif model.namd_settings is not None:
                         step = 0
@@ -184,6 +198,7 @@ def get_mmvt_max_steps(model):
                 if step > max_steps:
                     max_steps = step
                     
+        anchor_max_times[anchor.index] = max_steps * dt
         max_steps = DEFAULT_NUM_POINTS * int(math.ceil(
             max_steps / DEFAULT_NUM_POINTS))
         
@@ -194,16 +209,19 @@ def get_mmvt_max_steps(model):
         conv_intervals = np.arange(conv_stride, max_steps+conv_stride, 
                                    conv_stride)
         conv_intervals = conv_intervals + DEFAULT_SKIP
-    return conv_intervals
+    return conv_intervals, anchor_max_times
 
 def get_elber_max_steps(model):
     """
     Extract the largest simulation step number for all the sims in 
     the anchors.
     """
+    dt = model.get_timestep()
     max_steps = 0.0
+    anchor_max_times = {}
     for anchor in model.anchors:
         steps = 0.0
+        max_steps_this_anchor = 0.0
         output_file_glob = os.path.join(
             model.anchor_rootdir, anchor.directory, 
             anchor.production_directory,
@@ -225,6 +243,10 @@ def get_elber_max_steps(model):
                 
         if steps > max_steps:
             max_steps = steps
+        if steps > max_steps_this_anchor:
+            max_steps_this_anchor = steps
+            
+        anchor_max_times[anchor.index] = max_steps_this_anchor * dt
         
     max_steps = DEFAULT_NUM_POINTS * int(math.ceil(
         max_steps / DEFAULT_NUM_POINTS))
@@ -236,7 +258,7 @@ def get_elber_max_steps(model):
         conv_intervals = np.arange(conv_stride, max_steps+conv_stride, 
                                    conv_stride)
         conv_intervals = conv_intervals + DEFAULT_SKIP
-    return conv_intervals
+    return conv_intervals, anchor_max_times
     
 def check_milestone_convergence(model, k_on_state=None, verbose=False,
                                 long_converge=True):
@@ -292,10 +314,10 @@ def check_milestone_convergence(model, k_on_state=None, verbose=False,
     dt = model.get_timestep()
     timestep_in_ns = (dt * unit.picosecond).value_in_unit(unit.nanoseconds)
     if model.get_type() == "mmvt":
-        max_step_list = get_mmvt_max_steps(model)
+        max_step_list, times_dict = get_mmvt_max_steps(model)
     elif model.get_type() == "elber":
-        max_step_list = get_elber_max_steps(model)
-    
+        max_step_list, times_dict = get_elber_max_steps(model)
+        
     k_off_conv = np.zeros(DEFAULT_NUM_POINTS)
     k_on_conv = np.zeros(DEFAULT_NUM_POINTS)
     # partial allows us to create a defaultdict with values that are
@@ -331,7 +353,7 @@ def check_milestone_convergence(model, k_on_state=None, verbose=False,
             R_i_conv[R_i_key][interval_index] = R_i[R_i_key] / divisor
     
     return k_on_conv, k_off_conv, N_ij_conv, R_i_conv, max_step_list, \
-        timestep_in_ns, data_sample_list
+        timestep_in_ns, data_sample_list, times_dict
 
 def plot_scalar_conv(conv_values, conv_intervals, label, title, timestep_in_ns, 
                      y_axis_logarithmic=True):
@@ -380,7 +402,7 @@ def plot_scalar_conv(conv_values, conv_intervals, label, title, timestep_in_ns,
         plt.yscale("log", nonpositive="mask")
     return fig, ax
 
-def plot_dict_conv(conv_dict, conv_intervals, label_base, timestep_in_ns, 
+def plot_dict_conv(conv_dict, conv_intervals, label_base, unit, timestep_in_ns, 
                    skip_null=True, y_axis_logarithmic=True):
     """
     Plot convergence of N_ij or R_i or other dictionary-based value 
@@ -438,13 +460,13 @@ def plot_dict_conv(conv_dict, conv_intervals, label_base, timestep_in_ns,
             if np.linalg.norm(conv_values) < MIN_PLOT_NORM:
                 continue
         if isinstance(key, tuple):
-            label = "$" + label_base + "_" + "\\rightarrow".join(
-                map(str, key)) + "$"
+            label = "$" + label_base + "_{" + "\\rightarrow".join(
+                map(str, key)) + "}(" + unit +")$"
             title = "$" + label_base + "_{" + "\\rightarrow".join(
                 map(str, key)) + "}$"
             name = label_base + "_" + "_".join(map(str, key))
         elif isinstance(key, int):
-            label = "$" + label_base + "_" + str(key) + "$"
+            label = "$" + label_base + "_" + str(key) + "(" + unit + ")$"
             title = "$" + label_base + "_" + str(key) + "$"
             name = label_base + "_" + str(key)
         else:

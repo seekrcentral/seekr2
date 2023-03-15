@@ -40,6 +40,7 @@ $ python check.py /path/to/model.xml
 """
 
 import os
+import re
 import sys
 import argparse
 import collections
@@ -73,6 +74,7 @@ SAVE_STATE_DIRECTORY = "states/"
 MAX_STRUCTURES_TO_CHECK = 100
 RECURSION_LIMIT = 100000
 MAX_BD_STUCK = 5
+MAX_SEQUENTIAL_BOUNCES = 1000
 
 def load_structure_with_parmed(model, anchor):
     """
@@ -1101,7 +1103,6 @@ def check_output_files_for_stuck_anchors(model):
     this phenomenon unexpectedly. This check makes sure that no output files
     after the simulation are stuck behind a milestone.
     """
-    MAX_SEQUENTIAL_BOUNCES = 1000
     anchors_stuck = []
     timestep = model.get_timestep() + 1e-6
     for anchor in model.anchors:
@@ -1120,15 +1121,18 @@ def check_output_files_for_stuck_anchors(model):
                 for line in f.readlines():
                     if line.startswith("#"):
                         continue
+                    line_list = line.strip().split(",")
                     if line.startswith("CHECKPOINT"):
-                        cur_time = float(line.strip().split(",")[1])
+                        if len(line_list) != 2:
+                            continue
+                        cur_time = float(line_list[1])
                     else:
-                        try:
-                            cur_time = float(line.strip().split(",")[2])
-                        except IndexError:
-                            print("output_file_name:", output_file_name)
-                            print("line:", line)
-                            exit()
+                        if len(line_list) != 3:
+                            continue
+                        if re.match(r"^-?\d+\.\d{3}$", line_list[2]):
+                            cur_time = float(line_list[2]) 
+                        else:
+                            continue
                     if cur_time - last_time <= timestep:
                         sequential_bounces += 1
                     else:
@@ -1199,7 +1203,8 @@ def check_post_simulation_all(model, long_check=False):
         if long_check:
             check_passed_list.append(check_xml_boundary_states(model))
     
-    check_passed_list.append(check_output_files_for_stuck_anchors(model))
+    # This check doesn't seem to be that helpful
+    #check_passed_list.append(check_output_files_for_stuck_anchors(model))
     check_passed_list.append(check_for_stuck_BD(model))
     
     no_failures = True

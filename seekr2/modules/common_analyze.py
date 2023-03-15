@@ -572,6 +572,7 @@ class Data_sample():
             self.k_off = k_off
         
         p_i_hat_normalize = defaultdict(float)
+        
         for end_milestone_dest in end_milestones:
             if end_milestone_dest == bulk_milestone:
                 continue

@@ -13,6 +13,7 @@ import math
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FormatStrFormatter
 
 import seekr2.modules.common_base as base
 import seekr2.modules.common_analyze as common_analyze
@@ -165,6 +166,8 @@ class Analysis:
         self.p_i_error = None
         self.free_energy_profile = None
         self.free_energy_profile_err = None
+        self.free_energy_anchors = None
+        self.free_energy_anchors_err = None
         self.MFPTs = {}
         self.MFPTs_error = {}
         self.k_off = None
@@ -475,17 +478,19 @@ class Analysis:
             self.main_data_sample.parse_browndye_results()
         self.main_data_sample.compute_rate_matrix()
         self.main_data_sample.calculate_thermodynamics()
+        self.main_data_sample.calculate_extra_thermodynamics()
         self.main_data_sample.calculate_kinetics()
         
         self.pi_alpha = self.main_data_sample.pi_alpha
         self.p_i = self.main_data_sample.p_i
         self.free_energy_profile = self.main_data_sample.free_energy_profile
+        self.free_energy_anchors = self.main_data_sample.free_energy_anchors
         self.MFPTs = self.main_data_sample.MFPTs
         self.k_off = self.main_data_sample.k_off
         self.k_ons = self.main_data_sample.k_ons
         if self.num_error_samples > 0:
-            data_sample_list, p_i_error, free_energy_profile_err, MFPTs_error, \
-                k_off_error, k_ons_error \
+            data_sample_list, p_i_error, free_energy_profile_err, \
+                free_energy_anchors_err, MFPTs_error, k_off_error, k_ons_error\
                 = mmvt_analyze.monte_carlo_milestoning_error(
                     self.main_data_sample, num=self.num_error_samples, 
                     stride=self.stride_error_samples,
@@ -494,6 +499,7 @@ class Analysis:
             self.pi_alpha_error = None #pi_alpha_error
             self.p_i_error = p_i_error
             self.free_energy_profile_err = free_energy_profile_err
+            self.free_energy_anchors_err = free_energy_anchors_err
             self.MFPTs_error = MFPTs_error
             self.k_off_error = k_off_error
             self.k_ons_error = k_ons_error
@@ -643,6 +649,23 @@ class Analysis:
                           float(self.MFPTs[key]*1.0e-12), None))
         return
     
+    def make_milestone_value_dict(self):
+        """
+        Make a dictionary with milestone indices as keys, and
+        milestone values as dictionary values.
+        """
+        milestone_value_dict = {}
+        for i, anchor in enumerate(self.model.anchors):
+            for milestone in anchor.milestones:
+                if "radius" in milestone.variables:
+                    value = milestone.variables["radius"]
+                else:
+                    value = milestone.variables["value"]
+                if milestone.index not in milestone_value_dict:
+                    milestone_value_dict[milestone.index] = value
+                    
+        return milestone_value_dict
+    
     def save_plots(self, image_directory):
         """
         Save a potentially useful series of plots of some quantities
@@ -652,37 +675,60 @@ class Analysis:
         depends on the structure of the CVs.
         """
         anchor_indices = np.zeros(len(self.model.anchors), dtype=np.int8)
+        anchor_values = np.zeros(len(self.model.anchors), dtype=np.float64)
+        if len(self.model.anchors[0].variables) > 1:
+            # cannot make plots for multidimensional CVs
+            return
         for i, anchor in enumerate(self.model.anchors):
             anchor_indices[i] = anchor.index
+            anchor_values[i] = list(anchor.variables.values())[0]
         milestone_indices = np.zeros(self.p_i.shape[0], dtype=np.int8)
+        milestone_values = np.zeros(self.p_i.shape[0], dtype=np.float64)
+        milestone_value_dict = self.make_milestone_value_dict()
         for i in range(self.p_i.shape[0]):
             milestone_indices[i] = i
+            milestone_values[i] = milestone_value_dict[i]
         # save pi_alpha
         if self.model.get_type() == "mmvt":
             pi_fig, ax = plt.subplots()
             plt.errorbar(
-                anchor_indices, self.pi_alpha.flatten()[0:len(anchor_indices)],
+                anchor_values, self.pi_alpha.flatten()[0:len(anchor_indices)],
                 yerr=self.pi_alpha_error, ecolor="k", capsize=2)
-            #ax.plot(anchor_indices, self.pi_alpha, linestyle='-', 
-            #        marker="o", markersize = 1)
+            plt.xticks(anchor_values, anchor_values, rotation=90)
             plt.ylabel("\u03C0_\u03B1")
-            plt.xlabel("anchors")
+            plt.xlabel("anchor value")
+            plt.tight_layout()
             pi_fig.savefig(os.path.join(image_directory, "pi_alpha.png"))
             
         # save p_i
         pi_fig, ax = plt.subplots()
-        plt.errorbar(milestone_indices, self.p_i, yerr=self.p_i_error, 
+        plt.errorbar(np.round(milestone_values, 3), self.p_i, yerr=self.p_i_error, 
                      ecolor="k", capsize=2)
+        plt.xticks(np.round(milestone_values, 3), np.round(milestone_values, 3), rotation=90)
         plt.ylabel("p_i")
         plt.xlabel("milestones")
+        plt.tight_layout()
         pi_fig.savefig(os.path.join(image_directory, "p_i.png"))
-        # save free energy profile
+        # save free energy milestone profile
         pi_fig, ax = plt.subplots()
-        plt.errorbar(milestone_indices, self.free_energy_profile, 
+        plt.errorbar(np.round(milestone_values, 3), self.free_energy_profile, 
                  yerr=self.free_energy_profile_err, ecolor="k", capsize=2)
+        plt.xticks(np.round(milestone_values, 3), np.round(milestone_values, 3), rotation=90)
         plt.ylabel("\u0394G(milestone) (kcal/mol)")
         plt.xlabel("milestones")
-        pi_fig.savefig(os.path.join(image_directory, "free_energy_profile.png"))
+        plt.tight_layout()
+        pi_fig.savefig(os.path.join(image_directory, "free_energy_profile_milestones.png"))
+        
+        if self.free_energy_anchors is not None:
+            # save free energy anchor profile
+            pi_fig, ax = plt.subplots()
+            plt.errorbar(anchor_values, self.free_energy_anchors, 
+                     yerr=self.free_energy_anchors_err, ecolor="k", capsize=2)
+            plt.xticks(anchor_values, anchor_values, rotation=90)
+            plt.ylabel("\u0394G(anchor) (kcal/mol)")
+            plt.xlabel("anchor")
+            plt.tight_layout()
+            pi_fig.savefig(os.path.join(image_directory, "free_energy_profile_anchor.png"))
         return
         
 def analyze(model, force_warning=False, num_error_samples=1000, 
