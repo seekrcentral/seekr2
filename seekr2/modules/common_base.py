@@ -36,7 +36,8 @@ def strBool(bool_str):
 def order_files_numerically(file_list, func=int):
     """
     If there is a list of files, order them numerically, not
-    alphabetically and return the sorted list of files.
+    alphabetically and return the sorted list of files. Note that
+    only the base name is sorted, not any part of the directory.
     
     Parameters
     ----------
