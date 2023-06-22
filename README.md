@@ -59,7 +59,7 @@ fill out the prompts.
 With Conda working, install the SEEKR2 OpenMM Plugin:
 
 ```
-conda install -c conda-forge seekr2_openmm_plugin cudatoolkit=10.2
+conda install -c conda-forge seekr2_openmm_plugin cudatoolkit=10.2 openmm=7.7
 ```
 
 Alternatively, NAMD2 may be used for MD if desired. See the NAMD2 section
@@ -174,7 +174,7 @@ You may also optionally cite the following papers:
 
 ### Copyright
 
-Copyright (c) 2021, Lane Votapka
+Copyright (c) 2023, Lane Votapka
 
 
 #### Acknowledgements

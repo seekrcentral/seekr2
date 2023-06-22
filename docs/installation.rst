@@ -69,9 +69,9 @@ One can test the installation by opening a Python terminal and typing:
 ``import seekr2plugin``
 
 If you get an error such as "No module named seekr2plugin", you might
-need to install with CUDA Toolkit version 10.2:
+need to install with CUDA Toolkit version 10.2 and OpenMM 7.7:
 
-``conda install -c conda-forge seekr2_openmm_plugin cudatoolkit=10.2``
+``conda install -c conda-forge seekr2_openmm_plugin cudatoolkit=10.2 openmm=7.7``
 
 Installation of SEEKR2 itself begins with cloning and installing the SEEKR2 
 python API::
