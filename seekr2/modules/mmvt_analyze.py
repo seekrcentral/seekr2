@@ -86,7 +86,7 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
                         no_checkpoints = False
                         if len(line_list) != 2:
                             continue
-                        if re.match(r"^-?\d+\.\d{3}$", line_list[1]):
+                        if re.match(r"^-?\d+\.\d{3,20}$", line_list[1]):
                             checkpoint_time = float(line_list[1])
                         else:
                             continue
@@ -95,7 +95,7 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
                         continue
                     dest_boundary = int(line_list[0])
                     bounce_index = int(line_list[1])
-                    if re.match(r"^-?\d+\.\d{3}$", line_list[2]):
+                    if re.match(r"^-?\d+\.\d{3,20}$", line_list[2]):
                         dest_time = float(line_list[2]) 
                     else:
                         continue
@@ -116,7 +116,7 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
                 checkpoint_times.append(checkpoint_time)
             
             files_lines.append(file_lines)
-            
+                    
         lines = []
         for i, file_lines in enumerate(files_lines):
             if not skip_restart_check and not len(file_lines) == 0:
@@ -162,7 +162,7 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
         
     else:
         lines = existing_lines
-    
+        
     N_i_j_alpha = defaultdict(int)
     R_i_alpha_list = defaultdict(list)
     N_alpha_beta = defaultdict(int)
@@ -200,8 +200,9 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
         directory = None
         if len(output_file_list) > 0:
             directory = os.path.dirname(output_file_list[0])
-            
+                
         if src_boundary != dest_boundary:
+            
             time_diff = dest_time - src_time
             if not skip_restart_check:
                 assert time_diff >= 0.0, "incubation times cannot be "\

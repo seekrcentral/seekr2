@@ -33,7 +33,7 @@ def test_converge_default_md_only_mmvt(toy_mmvt_model):
     image_directory = common_analyze.make_image_directory(
         toy_mmvt_model, None)
     k_on_state = None
-    data_sample_list = converge.converge(
+    data_sample_list, times_dict = converge.converge(
         toy_mmvt_model, k_on_state, image_directory=image_directory,
         verbose=True)
     rmsd_convergence_results = common_converge.calc_RMSD_conv_amount(
@@ -45,7 +45,7 @@ def test_converge_default_md_only_mmvt(toy_mmvt_model):
     converge.print_convergence_results(
         toy_mmvt_model, rmsd_convergence_results, cutoff, 
         transition_prob_results, transition_time_results,
-        minimum_anchor_transitions, bd_transition_counts)
+        minimum_anchor_transitions, bd_transition_counts, times_dict)
     return
 
 def test_converge_default_bd_only_mmvt(host_guest_mmvt_model):
@@ -62,7 +62,7 @@ def test_converge_default_bd_only_mmvt(host_guest_mmvt_model):
     image_directory = common_analyze.make_image_directory(
         host_guest_mmvt_model, None)
     k_on_state = 0
-    data_sample_list = converge.converge(
+    data_sample_list, times_dict = converge.converge(
         host_guest_mmvt_model, k_on_state, image_directory=image_directory,
         verbose=True)
     rmsd_convergence_results = common_converge.calc_RMSD_conv_amount(
@@ -74,7 +74,7 @@ def test_converge_default_bd_only_mmvt(host_guest_mmvt_model):
     converge.print_convergence_results(
         host_guest_mmvt_model, rmsd_convergence_results, cutoff, 
         transition_prob_results, transition_time_results,
-        minimum_anchor_transitions, bd_transition_counts)
+        minimum_anchor_transitions, bd_transition_counts, times_dict)
     return
 
 def test_converge_incomplete_md_only_mmvt(toy_mmvt_model):
@@ -94,7 +94,7 @@ def test_converge_incomplete_md_only_mmvt(toy_mmvt_model):
     image_directory = common_analyze.make_image_directory(
         toy_mmvt_model, None)
     k_on_state = None
-    data_sample_list = converge.converge(
+    data_sample_list, times_dict = converge.converge(
         toy_mmvt_model, k_on_state, image_directory=image_directory,
         verbose=True)
     rmsd_convergence_results = common_converge.calc_RMSD_conv_amount(
@@ -106,7 +106,7 @@ def test_converge_incomplete_md_only_mmvt(toy_mmvt_model):
     converge.print_convergence_results(
         toy_mmvt_model, rmsd_convergence_results, cutoff, 
         transition_prob_results, transition_time_results,
-        minimum_anchor_transitions, bd_transition_counts)
+        minimum_anchor_transitions, bd_transition_counts, times_dict)
     return
 
 def test_converge_default_md_only_elber(toy_elber_model):
@@ -125,7 +125,7 @@ def test_converge_default_md_only_elber(toy_elber_model):
     image_directory = common_analyze.make_image_directory(
         toy_elber_model, None)
     k_on_state = None
-    data_sample_list = converge.converge(
+    data_sample_list, times_dict = converge.converge(
         toy_elber_model, k_on_state, image_directory=image_directory,
         verbose=True)
     rmsd_convergence_results = common_converge.calc_RMSD_conv_amount(
@@ -137,7 +137,7 @@ def test_converge_default_md_only_elber(toy_elber_model):
     converge.print_convergence_results(
         toy_elber_model, rmsd_convergence_results, cutoff, 
         transition_prob_results, transition_time_results,
-        minimum_anchor_transitions, bd_transition_counts)
+        minimum_anchor_transitions, bd_transition_counts, times_dict)
     return
 
 def test_converge_incomplete_md_only_elber(toy_elber_model):
@@ -158,7 +158,7 @@ def test_converge_incomplete_md_only_elber(toy_elber_model):
     image_directory = common_analyze.make_image_directory(
         toy_elber_model, None)
     k_on_state = None
-    data_sample_list = converge.converge(
+    data_sample_list, times_dict = converge.converge(
         toy_elber_model, k_on_state, image_directory=image_directory,
         verbose=True)
     rmsd_convergence_results = common_converge.calc_RMSD_conv_amount(
@@ -170,7 +170,7 @@ def test_converge_incomplete_md_only_elber(toy_elber_model):
     converge.print_convergence_results(
         toy_elber_model, rmsd_convergence_results, cutoff, 
         transition_prob_results, transition_time_results,
-        minimum_anchor_transitions, bd_transition_counts)
+        minimum_anchor_transitions, bd_transition_counts, times_dict)
     return
 
 def test_converge_default_bd_only_elber(host_guest_elber_model):
@@ -187,7 +187,7 @@ def test_converge_default_bd_only_elber(host_guest_elber_model):
     image_directory = common_analyze.make_image_directory(
         host_guest_elber_model, None)
     k_on_state = 0
-    data_sample_list = converge.converge(
+    data_sample_list, times_dict = converge.converge(
         host_guest_elber_model, k_on_state, image_directory=image_directory,
         verbose=True)
     rmsd_convergence_results = common_converge.calc_RMSD_conv_amount(
@@ -199,5 +199,5 @@ def test_converge_default_bd_only_elber(host_guest_elber_model):
     converge.print_convergence_results(
         host_guest_elber_model, rmsd_convergence_results, cutoff, 
         transition_prob_results, transition_time_results,
-        minimum_anchor_transitions, bd_transition_counts)
+        minimum_anchor_transitions, bd_transition_counts, times_dict)
     return

@@ -192,7 +192,7 @@ def choose_next_simulation_openmm(
     if convergence_cutoff is not None \
             or minimum_anchor_transitions is not None:
         using_convergence = True
-        data_sample_list = converge.converge(model)
+        data_sample_list, times_dict = converge.converge(model)
         
     for alpha, anchor in enumerate(model.anchors):
         if anchor.bulkstate:
@@ -371,7 +371,7 @@ def choose_next_simulation_namd(
         if steps_to_go_to_minimum <= 0:
             if convergence_cutoff is not None \
                     or minimum_anchor_transitions is not None:
-                data_sample_list = converge.converge(model)
+                data_sample_list, times_dict = converge.converge(model)
                 steps_to_go_to_minimum = 0
                 transition_results, dummy1, dummy2 \
                         = common_converge.calc_transition_steps(

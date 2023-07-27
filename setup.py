@@ -46,8 +46,8 @@ setup(
 
     # Additional entries you may want simply uncomment the lines you want and fill in the data
     # url='http://www.my_package.com',  # Website
-    install_requires=["numpy", "scipy", "parmed", "pytest", "matplotlib", 
-                       "nptyping", "mdtraj", "abserdes", "PyGT"],  
+    install_requires=["pyparsing", "numpy", "scipy", "parmed", "pytest", 
+                      "matplotlib", "nptyping", "mdtraj", "abserdes", "PyGT"],  
     #                   , "bubblebuster"]     
     platforms=['Linux',
     #            'Mac OS-X',

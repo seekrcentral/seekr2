@@ -5,7 +5,8 @@ seekr2
 [![codecov](https://codecov.io/gh/seekrcentral/seekr2/branch/master/graph/badge.svg)](https://codecov.io/gh/seekrcentral/seekr2/branch/master)
 
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![python](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) 
+[![python](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/)
 
 
 ```

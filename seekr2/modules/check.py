@@ -497,6 +497,12 @@ def check_systems_within_Voronoi_cells(model):
         # only apply to MMVT systems
         return True
     
+    if model.namd_settings is not None:
+        # only apply to OpenMM systems
+        print("Skipping test check_systems_within_Voronoi_cells for NAMD "\
+              "calculation.")
+        return True
+    
     curdir = os.getcwd()
     os.chdir(model.anchor_rootdir)
     

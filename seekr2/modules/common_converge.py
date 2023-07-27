@@ -140,10 +140,11 @@ def get_mmvt_max_steps(model):
     Extract the largest simulation step number for all the sims in 
     the anchors.
     """
+    max_steps_all_anchors = 0
     dt = model.get_timestep()
-    max_steps = 0.0
     anchor_max_times = {}
     for anchor in model.anchors:
+        max_steps = 0
         output_file_glob = os.path.join(
             model.anchor_rootdir, anchor.directory, 
             anchor.production_directory,
@@ -165,7 +166,7 @@ def get_mmvt_max_steps(model):
                             last_line = last_line.strip().split(",")
                             if len(last_line) != 2:
                                 continue
-                            if re.match(r"^-?\d+\.\d{3}$", last_line[1]):
+                            if re.match(r"^-?\d+\.\d{3,20}$", last_line[1]):
                                 mytime = float(last_line[1])
                             else:
                                 continue
@@ -173,11 +174,11 @@ def get_mmvt_max_steps(model):
                             last_line = last_line.strip().split(",")
                             if len(last_line) != 3:
                                 continue
-                            if re.match(r"^-?\d+\.\d{3}$", last_line[2]):
+                            if re.match(r"^-?\d+\.\d{3,20}$", last_line[2]):
                                 mytime = float(last_line[2])
                             else:
                                 continue
-                        step = int(mytime / dt)
+                        step = int(round(mytime / dt))
                     elif model.namd_settings is not None:
                         step = 0
                         for line in output_file:
@@ -198,16 +199,19 @@ def get_mmvt_max_steps(model):
                 if step > max_steps:
                     max_steps = step
                     
+                    
         anchor_max_times[anchor.index] = max_steps * dt
         max_steps = DEFAULT_NUM_POINTS * int(math.ceil(
             max_steps / DEFAULT_NUM_POINTS))
+        if max_steps_all_anchors < max_steps:
+            max_steps_all_anchors = max_steps
         
-    conv_stride = max_steps // DEFAULT_NUM_POINTS
+    conv_stride = max_steps_all_anchors // DEFAULT_NUM_POINTS
     if conv_stride == 0:
         conv_intervals = np.zeros(DEFAULT_NUM_POINTS)
     else:
-        conv_intervals = np.arange(conv_stride, max_steps+conv_stride, 
-                                   conv_stride)
+        conv_intervals = np.arange(
+            conv_stride, max_steps_all_anchors+conv_stride, conv_stride)
         conv_intervals = conv_intervals + DEFAULT_SKIP
     return conv_intervals, anchor_max_times
 
@@ -315,6 +319,7 @@ def check_milestone_convergence(model, k_on_state=None, verbose=False,
     timestep_in_ns = (dt * unit.picosecond).value_in_unit(unit.nanoseconds)
     if model.get_type() == "mmvt":
         max_step_list, times_dict = get_mmvt_max_steps(model)
+        
     elif model.get_type() == "elber":
         max_step_list, times_dict = get_elber_max_steps(model)
         
@@ -582,6 +587,7 @@ def calc_transition_steps(model, data_sample):
         transition_minima.append(transition_quantity)
         transition_prob_details.append(transition_detail)
         transition_time_details.append(transition_time_detail)
+    
     return transition_minima, transition_prob_details, transition_time_details
 
 def calc_window_rmsd(conv_values):

@@ -43,7 +43,8 @@ def test_analyze_bd_only(host_guest_mmvt_model):
     return
 
 def test_mmvt_max_steps(toy_mmvt_model):
-    max_steps = 998000
+    #max_steps = 998000
+    max_time = 997991 * 0.002
     for anchor in toy_mmvt_model.anchors:
         runner_openmm.cleanse_anchor_outputs(toy_mmvt_model, anchor)
     anchor1 = toy_mmvt_model.anchors[1]
@@ -51,12 +52,13 @@ def test_mmvt_max_steps(toy_mmvt_model):
         toy_mmvt_model.anchor_rootdir, anchor1.directory, 
         anchor1.production_directory, "mmvt.restart1.out")
     copyfile(test_output_filename, anchor1_output_filename)
-    assert common_converge.get_mmvt_max_steps(toy_mmvt_model)[-1] \
-        == max_steps
+    anchor_max_times = common_converge.get_mmvt_max_steps(toy_mmvt_model)[-1]
+    assert anchor_max_times[1] == max_time
     return
 
 def test_elber_max_steps(toy_elber_model):
-    max_steps = 100
+    #max_steps = 100
+    max_time = 0.036
     for anchor in toy_elber_model.anchors:
         runner_openmm.cleanse_anchor_outputs(toy_elber_model, anchor)
     anchor1 = toy_elber_model.anchors[1]
@@ -64,8 +66,8 @@ def test_elber_max_steps(toy_elber_model):
         toy_elber_model.anchor_rootdir, anchor1.directory, 
         anchor1.production_directory, "forward.restart1.out")
     copyfile(test_output_filename_elber, anchor1_output_filename)
-    assert common_converge.get_elber_max_steps(toy_elber_model)[-1] \
-        == max_steps
+    anchor_max_times =  common_converge.get_elber_max_steps(toy_elber_model)[-1]
+    assert np.isclose(anchor_max_times[1], max_time)
     return
 
 def test_calc_transition_steps_mmvt(toy_mmvt_model):
@@ -78,9 +80,10 @@ def test_calc_transition_steps_mmvt(toy_mmvt_model):
     copyfile(test_output_filename, anchor1_output_filename)
     image_directory = common_analyze.make_image_directory(
         toy_mmvt_model, None)
-    data_sample_list = converge.converge(
+    data_sample_list, times_dict = converge.converge(
         toy_mmvt_model, 0, image_directory=image_directory,
         verbose=True)
+    print("data_sample_list[-1].N_i_j_alpha[1]:", data_sample_list[-1].N_i_j_alpha[1])
     transition_minima, transition_prob_results, transition_time_results \
         = common_converge.calc_transition_steps(
         toy_mmvt_model, data_sample_list[-1])
@@ -112,7 +115,7 @@ def test_calc_transition_steps_elber(toy_elber_model):
     copyfile(test_output_filename_elber, anchor1_output_filename)
     image_directory = common_analyze.make_image_directory(
         toy_elber_model, None)
-    data_sample_list = converge.converge(
+    data_sample_list, times_dict = converge.converge(
         toy_elber_model, 0, image_directory=image_directory,
         verbose=True)
     transition_minima, transition_prob_results, transition_time_results \
@@ -162,7 +165,7 @@ def test_calc_RMSD_conv_amount_mmvt(toy_mmvt_model):
     copyfile(test_output_filename, anchor1_output_filename)
     image_directory = common_analyze.make_image_directory(
         toy_mmvt_model, None)
-    data_sample_list = converge.converge(
+    data_sample_list, times_dict = converge.converge(
         toy_mmvt_model, 0, image_directory=image_directory,
         verbose=True)
     convergence_results = common_converge.calc_RMSD_conv_amount(
@@ -187,7 +190,7 @@ def test_calc_RMSD_conv_amount_elber(toy_elber_model):
     copyfile(test_output_filename_elber, anchor1_output_filename)
     image_directory = common_analyze.make_image_directory(
         toy_elber_model, None)
-    data_sample_list = converge.converge(
+    data_sample_list, times_dict = converge.converge(
         toy_elber_model, 0, image_directory=image_directory,
         verbose=True)
     convergence_results = common_converge.calc_RMSD_conv_amount(

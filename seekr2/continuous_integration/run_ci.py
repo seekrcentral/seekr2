@@ -31,7 +31,7 @@ def run_short_ci(model_input, cuda_device_index, long_check=True):
     run.run(model, "any", min_b_surface_simulation_length=1000,
             num_rev_launches=10, cuda_device_index=cuda_device_index,
             save_state_file=True)
-    data_sample_list = converge.converge(model, k_on_state=0)
+    data_sample_list, times_dict = converge.converge(model, k_on_state=0)
     rmsd_convergence_results = common_converge.calc_RMSD_conv_amount(
         model, data_sample_list)
     transition_minima, transition_details, transition_times \

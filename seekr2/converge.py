@@ -101,12 +101,16 @@ def print_convergence_results(model, convergence_results, cutoff,
                     "({} ps) ".format(AVG_TRANSITION_TIME_MINIMUM)
             time_string += " {} : {:.3f},".format(
                 key, transition_avg_times[key])
+        if anchor.index in times_dict:
+            anchor_time = times_dict[anchor.index]
+        else:
+            anchor_time = 0.0
         anchor_string = " - Anchor {}: ".format(anchor.index) \
             +"\n     Milestone transitions:{} ".format(transition_string) \
             +"\n     Milestone avg. transition time (ps):{}"\
                 .format(time_string) + warnstr \
             +"\n     Time simulated in anchor (ps): {:.3f}"\
-                .format(times_dict[anchor.index]) \
+                .format(anchor_time) \
             +"\n     Convergence value: " \
             +"{:.4e}. ".format(convergence_results[alpha]) \
             +"\n     Converged? {}".format(is_converged)

@@ -229,6 +229,7 @@ def test_mcmc_3x3_mmvt(tmpdir_factory):
     main_data_sample.fill_out_data_quantities()
     main_data_sample.compute_rate_matrix()
     main_data_sample.calculate_thermodynamics()
+    main_data_sample.calculate_extra_thermodynamics()
     main_data_sample.calculate_kinetics()
     mmvt_Q = main_data_sample.Q
     
@@ -258,8 +259,9 @@ def test_mcmc_3x3_mmvt(tmpdir_factory):
     # Now compare the distributions of both of them
     
     # MMVT matrix sampler
-    data_sample_list, p_i_error, free_energy_profile_err, MFPTs_error, \
-        k_off_error, k_ons_error = mmvt_analyze.monte_carlo_milestoning_error(
+    data_sample_list, p_i_error, free_energy_profile_err, \
+        free_energy_anchors_err, MFPTs_error, k_off_error, k_ons_error \
+        = mmvt_analyze.monte_carlo_milestoning_error(
         main_data_sample, num=num, stride=stride, skip=skip, verbose=True)
     
     mmvt_q1_distribution = []
