@@ -320,6 +320,11 @@ def run_bd_top(browndye_bin_dir, bd_directory, restart=False,
     assert os.path.exists(sim_browndye2.BROWNDYE_INPUT_FILENAME), \
         "Necessary file doesn't exist: %s" % \
         sim_browndye2.BROWNDYE_INPUT_FILENAME
+    print("ls:", os.listdir())
+    print("input.xml lines:")
+    with open(sim_browndye2.BROWNDYE_INPUT_FILENAME, "r") as f:
+        for line in f.readlines():
+            print(line)
     print("running command:", command)
     os.system(command)
     assert os.path.exists(simulation_filename), "Problem occurred running "\

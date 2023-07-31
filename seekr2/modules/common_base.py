@@ -1065,7 +1065,7 @@ def load_model(model_file, directory=None):
     
     """
     assert os.path.exists(model_file), \
-        "A nonexistent model file was specified: {}.".format(model_file)
+        "No such file or directory: {}.".format(model_file)
     model = Model()
     model.deserialize(model_file)
     if directory is not None:
