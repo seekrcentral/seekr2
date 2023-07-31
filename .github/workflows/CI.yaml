@@ -137,8 +137,8 @@ jobs:
       shell: bash -l {0}
       run: |
         sudo apt-get install libexpat1 apbs
-        wget https://browndye.ucsd.edu/downloads/browndye2-ubuntu-20.04-2021-02-07.tar.gz
-        tar -xzf browndye2-ubuntu-20.04-2021-02-07.tar.gz
+        wget https://browndye.ucsd.edu/downloads/browndye2-ubuntu-20.04.tar.gz
+        tar -xzf browndye2-ubuntu-20.04.tar.gz
         cd browndye2/bin
         export PATH="$PWD:$PATH"
         echo "PATH: $PATH"
