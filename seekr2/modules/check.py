@@ -247,7 +247,9 @@ def load_structure_with_mdtraj(model, anchor, mode="pdb", coords_filename=None):
                     anchor.amber_params.pdb_coordinates_filename)
                 traj = mdtraj.load(pdb_filename, top=prmtop_filename)
             else:
-                # anchor has no structure files
+                # anchor has no structure files: at least test that mdtraj
+                #  can load the parm file
+                dummy = mdtraj.load(prmtop_filename)
                 return None
         
         elif mode == "elber_umbrella":
