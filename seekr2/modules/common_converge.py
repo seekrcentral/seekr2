@@ -394,7 +394,7 @@ def plot_scalar_conv(conv_values, conv_intervals, label, title, timestep_in_ns,
     ax : object
         matplotlib Axes object
     """
-    if not np.all(np.isfinite(conv_values)) or np.all(conv_values == 0):
+    if not np.any(np.isfinite(conv_values)) or np.all(conv_values == 0):
         return None, None
     fig, ax = plt.subplots()
     ax.plot(np.multiply(conv_intervals, timestep_in_ns), conv_values, 

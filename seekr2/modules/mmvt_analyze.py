@@ -1148,7 +1148,7 @@ def monte_carlo_milestoning_error(
             mmvt_Qij_alpha[alpha])
         nonzero_indices_Q_alpha_list.append(nonzero_indices_Q_alpha)
     
-    for counter in range(num * (stride) + skip):
+    for counter in range(num * (stride) + skip + 1):
         new_data_sample = MMVT_data_sample(model)
         new_data_sample.N_alpha_beta = main_data_sample.N_alpha_beta
         new_data_sample.N_i_j_alpha = main_data_sample.N_i_j_alpha

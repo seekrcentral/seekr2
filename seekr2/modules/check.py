@@ -233,12 +233,13 @@ def load_structure_with_mdtraj(model, anchor, mode="pdb", coords_filename=None):
         return traj
     
     elif anchor.amber_params is not None:
-        
-        if anchor.amber_params.prmtop_filename is not None:
+        if (anchor.amber_params.prmtop_filename is None) \
+                or (anchor.amber_params.prmtop_filename == ""):
+            return None
+        else:
             prmtop_filename = os.path.join(
                 building_directory, anchor.amber_params.prmtop_filename)
-        else:
-            return None
+            
         if mode == "pdb":
             if anchor.amber_params.pdb_coordinates_filename is not None \
                     and anchor.amber_params.pdb_coordinates_filename != "":
@@ -249,7 +250,16 @@ def load_structure_with_mdtraj(model, anchor, mode="pdb", coords_filename=None):
             else:
                 # anchor has no structure files: at least test that mdtraj
                 #  can load the parm file
-                dummy = mdtraj.load(prmtop_filename)
+                if anchor.amber_params.prmtop_filename is None:
+                    return None
+                my_splitext = os.path.splitext(prmtop_filename)
+                assert len(my_splitext) == 2, \
+                    "File must have '.parm7' or '.prmtop extension: " \
+                    +f"{prmtop_filename}"
+                extension = my_splitext[1]
+                assert extension in [".parm7", ".prmtop"], \
+                    "File must have '.parm7' or '.prmtop' extension: " \
+                    +f"{prmtop_filename}"
                 return None
         
         elif mode == "elber_umbrella":
