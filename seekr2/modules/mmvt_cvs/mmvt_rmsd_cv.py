@@ -79,6 +79,9 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
         self.restraining_expression = "0.5*k_{}*(RMSD - value_{})^2".format(alias_id, alias_id)
         return openmm.CustomCVForce(self.restraining_expression)
     
+    def make_cv_force(self, alias_id):
+        raise Exception("Not yet implemented.")
+    
     def make_voronoi_cv_boundary_forces(self, me_val, neighbor_val, alias_id):
         """
         

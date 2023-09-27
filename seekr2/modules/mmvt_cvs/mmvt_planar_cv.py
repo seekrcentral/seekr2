@@ -82,6 +82,9 @@ class MMVT_planar_CV(MMVT_collective_variable):
         return openmm.CustomCentroidBondForce(
             self.num_groups, self.restraining_expression)
     
+    def make_cv_force(self, alias_id):
+        raise Exception("Not yet implemented.")
+    
     def make_voronoi_cv_boundary_forces(self, me_val, neighbor_val, alias_id):
         """
         

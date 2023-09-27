@@ -75,6 +75,20 @@ class MMVT_spherical_CV(MMVT_collective_variable):
         return openmm.CustomCentroidBondForce(
             self.num_groups, self.restraining_expression)
     
+    def make_cv_force(self, alias_id):
+        """
+        Make a force that is composed only of the cv_expression.
+        Used for metadynamics and potentially other things.
+        """
+        try:
+            import openmm
+        except ImportError:
+            import simtk.openmm as openmm
+            
+        assert self.num_groups == 2
+        return openmm.CustomCentroidBondForce(
+            self.num_groups, self.cv_expression)
+    
     def make_voronoi_cv_boundary_forces(self, me_val, neighbor_val, alias_id):
         """
         

@@ -88,6 +88,9 @@ class MMVT_closest_pair_CV(MMVT_collective_variable):
         return force
         """
     
+    def make_cv_force(self, alias_id):
+        raise Exception("Not yet implemented.")
+    
     def make_voronoi_cv_boundary_forces(self, me_val, neighbor_val, alias_id):
         """
         

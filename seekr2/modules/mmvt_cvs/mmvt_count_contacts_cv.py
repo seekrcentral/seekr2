@@ -77,6 +77,10 @@ class MMVT_count_contacts_CV(MMVT_collective_variable):
         raise Exception("A restraining force cannot be made for a "\
                         "MMVT_count_contacts_CV")
     
+    def make_cv_force(self, alias_id):
+        raise Exception("A cv force cannot be made for a "\
+                        "MMVT_count_contacts_CV")
+    
     def make_voronoi_cv_boundary_forces(self, me_val, neighbor_val, alias_id):
         """
         

@@ -91,6 +91,10 @@ class MMVT_collective_variable(Serializer):
         raise Exception("This base class cannot be used for creating a "\
                         "collective variable restraining force.")
     
+    def make_cv_force(self, alias_id):
+        raise Exception("This base class cannot be used for creating a "\
+                        "collective variable force.")
+    
     def make_voronoi_cv_boundary_force(self):
         raise Exception("This base class cannot be used for creating a "\
                         "collective variable boundary definition.")

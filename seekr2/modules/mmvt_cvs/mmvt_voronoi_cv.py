@@ -99,6 +99,9 @@ class MMVT_Voronoi_CV(MMVT_collective_variable):
         
         return openmm.CustomCVForce(self.restraining_expression)
     
+    def make_cv_force(self, alias_id):
+        raise Exception("Not yet implemented.")
+    
     def make_namd_colvar_string(self):
         """
         This string will be put into a NAMD colvar file for tracking
