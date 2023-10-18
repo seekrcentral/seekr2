@@ -910,6 +910,6 @@ if __name__ == "__main__":
             if num_restart_attempts < restart_attempts:
                 print("Simulation failure. Attempting restart "\
                       f"{num_restart_attempts} of {restart_attempts}")
-                self.num_restart_attempts += 1
+                num_restart_attempts += 1
             else:    
                 raise
