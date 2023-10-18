@@ -21,6 +21,7 @@ MAX_ITER = 999
 # right before the ending time. Do not restart any simulation within this 
 # tolerance.
 STEP_TOLERANCE = 5
+MAX_RESTART_ATTEMPTS = 3
 
 def choose_next_simulation_browndye2(
         model, instruction, min_b_surface_simulation_length, 
@@ -862,6 +863,11 @@ if __name__ == "__main__":
                           "to use the umbrella simulations that already exist "\
                           "in the anchor, and just re-run the reversals and "\
                           "forwards simulations.", action="store_true")
+    argparser.add_argument("-r", "--restart_attempts", dest="restart_attempts",
+                          default=0, help="If the simulation fails during "\
+                          "The course of a single run, attempt to restart the "\
+                          "simulation this many number of times before giving "\
+                          "up. Default: 0.", type=int)
     
     args = argparser.parse_args()
     args = vars(args)
@@ -883,14 +889,27 @@ if __name__ == "__main__":
     min_b_surface_encounters = args["min_b_surface_encounters"]
     num_rev_launches = args["num_rev_launches"]
     umbrella_restart_mode = args["umbrella_restart_mode"]
+    # TODO: set this to an argument? Or disable with argument
+    restart_attempts = args["restart_attempts"]
     
     model = base.load_model(model_file, directory)
     
-    run(model, instruction, min_total_simulation_length, 
-        max_total_simulation_length, convergence_cutoff, 
-        minimum_anchor_transitions, cuda_device_index, 
-        force_overwrite, save_state_file, save_state_for_all_boundaries,
-        namd_command, namd_arguments,minimum_b_surface_trajectories, 
-        min_b_surface_encounters, num_rev_launches, umbrella_restart_mode,
-        load_state_file)
-        
+    num_restart_attempts = 0
+    success = False
+    while not success:
+        try:
+            run(model, instruction, min_total_simulation_length, 
+                max_total_simulation_length, convergence_cutoff, 
+                minimum_anchor_transitions, cuda_device_index, 
+                force_overwrite, save_state_file, save_state_for_all_boundaries,
+                namd_command, namd_arguments,minimum_b_surface_trajectories, 
+                min_b_surface_encounters, num_rev_launches, umbrella_restart_mode,
+                load_state_file)
+            success = True
+        except Exception:
+            if num_restart_attempts < restart_attempts:
+                print("Simulation failure. Attempting restart "\
+                      f"{num_restart_attempts} of {restart_attempts}")
+                self.num_restart_attempts += 1
+            else:    
+                raise

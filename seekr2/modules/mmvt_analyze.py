@@ -57,6 +57,7 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
     Read the output files produced by the plugin (backend) of 
     SEEKR2 and extract transition statistics and times
     """
+    
     MAX_ITER = 1000000000
     NEW_SWARM = "NEW_SWARM"
     swarm_index = 0
@@ -87,7 +88,8 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
                         if len(line_list) != 2:
                             continue
                         if re.match(r"^-?\d+\.\d{3,20}$", line_list[1]):
-                            checkpoint_time = float(line_list[1])
+                            if checkpoint_time is None:
+                                checkpoint_time = float(line_list[1])
                         else:
                             continue
                         continue
@@ -118,6 +120,9 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
             files_lines.append(file_lines)
                     
         lines = []
+        
+        checkpoint_times.append(1e99)
+        
         for i, file_lines in enumerate(files_lines):
             if not skip_restart_check and not len(file_lines) == 0:
                 # make sure that we delete lines that occurred after a
@@ -133,7 +138,7 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
                             next_start_time = start_times[i+1]
                         else:
                             if checkpoint_times[i] is not None:
-                                next_start_time = checkpoint_times[i]
+                                next_start_time = checkpoint_times[i+1]
                             else:
                                 next_start_time = start_times[i+1]
                 else:
@@ -157,7 +162,7 @@ def openmm_read_output_file_list(output_file_list, min_time=None, max_time=None,
                         break
                         
                     counter += 1
-                
+                                    
             lines += file_lines
         
     else:
