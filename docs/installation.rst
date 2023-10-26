@@ -269,7 +269,7 @@ python API::
 At this point, its a good idea to run the SEEKR2 tests. Navigate to where the 
 "seekr2" git repository was cloned. From within the "seekr2/" directory, run:
 
-``python setup.py test``
+``pytest``
 
 If you get an error like "ImportError: libOpenMM.so.7.7: cannot open shared 
 object file: No such file or directory", you will need to point your
