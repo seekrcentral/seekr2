@@ -73,25 +73,19 @@ need to install with CUDA Toolkit version 10.2 and OpenMM 7.7:
 
 ``conda install -c conda-forge seekr2_openmm_plugin cudatoolkit=10.2 openmm=7.7``
 
+
 Installation of SEEKR2 itself begins with cloning and installing the SEEKR2 
 python API::
 
   git clone https://github.com/seekrcentral/seekr2.git
   cd seekr2
-  python setup.py install
+  python -m pip install .
   
   
-If you get an error stating "No module named 'Cython'", this can usually be
-remedied by installing/updating Cython with::
-
-  pip install --upgrade cython
-  
-Then re-run the "python setup.py install" command.
-
 Once OpenMM and the OpenMM SEEKR2 Plugin are installed, it is recommended that 
 you run tests of SEEKR2. From within the "seekr2/" directory, run:
 
-``python setup.py test``
+``pytest``
 
 One or two tests may fail depending on whether NAMD2 and/or Browndye2 have been
 installed, and can be safely ignored if those programs are not needed.
@@ -117,7 +111,7 @@ python API::
 
   git clone https://github.com/seekrcentral/seekr2.git
   cd seekr2
-  python setup.py install
+  python -m pip install .
 
 OpenMM and Plugin Installation from Source on Local Machine (If not using Conda to install OpenMM and Plugin)
 -------------------------------------------------------------------------------------------------------------
@@ -270,7 +264,7 @@ python API::
 
   git clone https://github.com/seekrcentral/seekr2.git
   cd seekr2
-  python setup.py install
+  python -m pip install .
 
 At this point, its a good idea to run the SEEKR2 tests. Navigate to where the 
 "seekr2" git repository was cloned. From within the "seekr2/" directory, run:

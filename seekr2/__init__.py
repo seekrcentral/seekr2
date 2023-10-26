@@ -1,3 +1,8 @@
+__version__ = "{version}"
 
-from . import _version
-__version__ = _version.get_versions()['version']
+__all__ = [
+    "analyze",
+    "converge",
+    "prepare",
+    "run",
+]

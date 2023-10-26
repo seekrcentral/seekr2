@@ -120,12 +120,12 @@ def test_openmm_read_output_file_list_restart():
     return
 
 def test_openmm_read_output_file_list_checkpoint():
+    line_list = [test_output_filename_checkpoint1, 
+                 test_output_filename_checkpoint2]
     N_i_j_alpha, R_i_alpha_total, N_alpha_beta, \
         T_alpha_total, existing_lines \
-            = mmvt_analyze.openmm_read_output_file_list(
-                [test_output_filename_checkpoint1, 
-                 test_output_filename_checkpoint2])
-    assert len(existing_lines) == 10
+            = mmvt_analyze.openmm_read_output_file_list(line_list)
+    assert len(existing_lines) == 11
     return
 
 def test_openmm_read_output_file_list_min_time_max_time():

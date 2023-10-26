@@ -90,14 +90,14 @@ repository and install the package:
 ```
 git clone https://github.com/seekrcentral/seekr2.git
 cd seekr2
-python setup.py install
+python -m pip install .
 ```
 
 ### Testing SEEKR2 (Optional)
 To test SEEKR2, run the following command in the seekr2/ directory:
 
 ```
-python setup.py test
+pytest
 ```
 
 Additional continuous integration tests may be run from the Python scripts in 
