@@ -3,7 +3,7 @@
 version: 2
 
 build:
-  os: ubuntu-18.04
+  os: ubuntu-22.04
   image: latest
   
 sphinx:
