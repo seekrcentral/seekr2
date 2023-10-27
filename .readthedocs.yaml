@@ -1,8 +1,9 @@
-# readthedocs.yml
+# .readthedocs.yml
 
 version: 2
 
 build:
+  os: ubuntu-18.04
   image: latest
   
 sphinx:
