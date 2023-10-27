@@ -516,6 +516,8 @@ def test_run_planar(planar_mmvt_model):
     check.check_post_simulation_all(planar_mmvt_model)
 
 def test_run_rmsd(rmsd_mmvt_model):
+    rmsd_mmvt_model.openmm_settings.reference_platform = True
+    rmsd_mmvt_model.openmm_settings.cuda_platform_settings = None
     check.check_pre_simulation_all(rmsd_mmvt_model)
     run.run(rmsd_mmvt_model, "0", min_total_simulation_length=10,
             force_overwrite=True)
