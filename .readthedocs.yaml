@@ -11,6 +11,7 @@ sphinx:
   configuration: docs/conf.py
 
 python:
+  use_system_site_packages: true
   install:
     - requirements: docs/requirements.yaml
     - method: pip
