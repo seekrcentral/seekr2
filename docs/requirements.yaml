@@ -7,8 +7,6 @@ dependencies:
   - pip
   - cython
 
-
-
     # Pip-only installs
   - pip:
     - sphinx-autoapi
