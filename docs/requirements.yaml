@@ -3,12 +3,14 @@ channels:
   - defaults
 dependencies:
     # Base depends
-  - python=3.10
+  - python=3.12
   - pip
   - cython
 
 
 
     # Pip-only installs
-  #- pip:
+  - pip:
+    - sphinx-autoapi
+    - sphinx-rtd-theme
 
