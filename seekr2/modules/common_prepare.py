@@ -949,6 +949,7 @@ def prepare_model_cvs_and_anchors(model, model_input, force_overwrite):
     anchors = resolve_connections(connection_flag_dict, model, 
                                   associated_input_anchor, 
                                   model_input.root_directory, force_overwrite)
+    
     # check to make sure that anchors don't have repeated milestone aliases
     # or have themselves as neighbors.
     for anchor in anchors:
@@ -962,10 +963,10 @@ def prepare_model_cvs_and_anchors(model, model_input, force_overwrite):
                 assert milestone.neighbor_anchor_index is not anchor.index, \
                     "Milestone neighbor_anchor_index cannot be its own anchor "\
                     "in MMVT. Index: {}".format(anchor.index)
+                    
         
     model.num_anchors = len(anchors)
     common_cv.assign_state_points(model_input, model)
-    
     return
     
 def generate_bd_files(model, rootdir):

@@ -222,6 +222,8 @@ class Spherical_cv_anchor(CV_anchor):
                 "If lower_milestone_radius is defined for anchor "\
                 "{}, the anchor below (number {}).".format(j, j-1)\
                 +" must have a corresponding upper_milestone_radius."
+            assert self.lower_milestone_radius < self.radius, \
+                "lower_milestone_radius must be less than anchor's radius."
                 
         if self.upper_milestone_radius is not None:
             assert j < len(cv_input.input_anchors), \
@@ -236,6 +238,8 @@ class Spherical_cv_anchor(CV_anchor):
                 +" must have a corresponding lower_milestone_radius, "\
                 "current value: {:.3f}.".format(
                     cv_input.input_anchors[j+1].lower_milestone_radius)
+            assert self.upper_milestone_radius > self.radius, \
+                "upper_milestone_radius must be more than anchor's radius."
         return
     
     def get_variable_value(self):
@@ -1839,10 +1843,9 @@ class Voronoi_cv_input(CV_input):
             "Only MMVT models may use Voronoi Tesselation CVs."
         anchors = []
         num_anchors = 1
-        bulkstate = False
-        endstate = False
-        
         for input_anchor_index, input_anchor in enumerate(self.input_anchors):
+            bulkstate = False
+            endstate = False
             input_anchor.check(input_anchor_index, self)
             if isinstance(input_anchor, Voronoi_cv_toy_anchor):
                 anchor = mmvt_cv_base.MMVT_toy_anchor()

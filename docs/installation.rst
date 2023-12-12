@@ -68,6 +68,12 @@ One can test the installation by opening a Python terminal and typing:
 
 ``import seekr2plugin``
 
+If there is a problem related to not being able to find libOpenMM8.1, one
+can try specifying the OpenMM version:
+
+``conda install -c conda-forge seekr2_openmm_plugin openmm=8.1``
+
+
 If you get an error such as "No module named seekr2plugin", you might
 need to install with CUDA Toolkit version 10.2 and OpenMM 7.7:
 

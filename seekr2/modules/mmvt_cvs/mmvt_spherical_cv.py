@@ -271,7 +271,7 @@ colvar {{
         for frame_index in range(traj.n_frames):
             radius = self.get_mdtraj_cv_value(traj, frame_index)
             result = self.check_value_within_boundary(
-                radius, milestone_variables, verbose)
+                radius, milestone_variables, verbose, tolerance=TOL)
             if not result:
                 return False
             

@@ -695,7 +695,7 @@ class Analysis:
                 anchor_values, self.pi_alpha.flatten()[0:len(anchor_indices)],
                 yerr=self.pi_alpha_error, ecolor="k", capsize=2)
             plt.xticks(anchor_values, anchor_values, rotation=90)
-            plt.ylabel("\u03C0_\u03B1")
+            plt.ylabel("\u03C0_{\u03B1}")
             plt.xlabel("anchor value")
             plt.tight_layout()
             pi_fig.savefig(os.path.join(image_directory, "pi_alpha.png"))

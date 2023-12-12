@@ -25,8 +25,6 @@ try:
 except ImportError:
     import simtk.openmm.app as openmm_app
     
-import parmed
-
 class Common_sim_openmm:
     """
     Contain superclass information necessary to run a SEEKR2 

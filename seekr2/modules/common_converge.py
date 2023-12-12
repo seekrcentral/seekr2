@@ -471,9 +471,9 @@ def plot_dict_conv(conv_dict, conv_intervals, label_base, unit, timestep_in_ns,
                 map(str, key)) + "}$"
             name = label_base + "_" + "_".join(map(str, key))
         elif isinstance(key, int):
-            label = "$" + label_base + "_" + str(key) + "(" + unit + ")$"
-            title = "$" + label_base + "_" + str(key) + "$"
-            name = label_base + "_" + str(key)
+            label = "$" + label_base + "_{" + str(key) + "(" + unit + ")}$"
+            title = "$" + label_base + "_{" + str(key) + "}$"
+            name = label_base + "_{" + str(key) + "}"
         else:
             raise Exception("key type not implemented: {}".format(type(key)))
         
