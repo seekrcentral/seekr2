@@ -102,9 +102,13 @@ def test_move_add_delete_input_anchors(tmp_path, host_guest_mmvt_model_input):
     host_guest_mmvt_model_input.cv_inputs[0].input_anchors[-2]\
         .lower_milestone_radius = 1.65
     host_guest_mmvt_model_input.cv_inputs[0].input_anchors[-2]\
+        .radius = 1.75
+    host_guest_mmvt_model_input.cv_inputs[0].input_anchors[-2]\
         .upper_milestone_radius = 1.85
     host_guest_mmvt_model_input.cv_inputs[0].input_anchors[-1]\
         .lower_milestone_radius = 1.85
+    host_guest_mmvt_model_input.cv_inputs[0].input_anchors[-1]\
+        .radius = 1.95
     host_guest_mmvt_model_input.root_directory = os.path.join(
         tmp_path, "host_guest_mmvt_5")
     os.chdir(TEST_DIRECTORY)

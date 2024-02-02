@@ -169,6 +169,7 @@ providing feedback, bug reports, or other comments.
 * Rommie Amaro (principal investigator)
 * Ilker Deveci (developer)
 * Hilliary Frank (contributor)
+* Sasha Heyneman (contributor)
 * Ben Jagger (developer)
 * Anand Ojha (developer)
 * Andy Stokely (developer)
@@ -194,7 +195,7 @@ You may also optionally cite the following papers:
 
 ### Copyright
 
-Copyright (c) 2023, Lane Votapka
+Copyright (c) 2024, Lane Votapka
 
 
 #### Acknowledgements

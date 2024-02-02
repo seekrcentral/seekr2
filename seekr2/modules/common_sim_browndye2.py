@@ -88,7 +88,7 @@ class Solvent():
         self.dielectric = 78.0
         self.relative_viscosity = 1.0
         self.kT = -1.0
-        self.desolvation_parameter = 0.0
+        self.desolvation_parameter = 1.0
         self.ions = []
         return
     

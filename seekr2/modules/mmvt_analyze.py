@@ -700,6 +700,8 @@ class MMVT_data_sample(common_analyze.Data_sample):
         self.pi_alpha = None
         self.N_ij = {}
         self.R_i = {}
+        self.N_ij_unmodified = {}
+        self.R_i_unmodified = {}
         self.T = None
         self.Q = None
         self.K = None
@@ -906,6 +908,8 @@ class MMVT_data_sample(common_analyze.Data_sample):
                 raise Exception("R_i_alpha should always be set.")
         
         # Now we need to try and correct the zero entries
+        self.N_ij_unmodified = deepcopy(self.N_ij)
+        self.R_i_unmodified = deepcopy(self.R_i)
         for key in self.N_ij:
             if self.N_ij[key] == 0.0:
                 i = key[0]
@@ -1051,9 +1055,10 @@ class MMVT_data_sample(common_analyze.Data_sample):
         Use this data sample's statistics to construct the 
         anchor free energy profile.
         """
-        self.free_energy_anchors = np.zeros(self.pi_alpha.shape[0])
+        self.free_energy_anchors = np.zeros(self.model.num_anchors)
         highest_pi_alpha = max(self.pi_alpha)
-        for i, pi_alpha_val in enumerate(self.pi_alpha):
+        for i in range(self.model.num_anchors):
+            pi_alpha_val = self.pi_alpha[i, 0]
             free_energy = -GAS_CONSTANT*self.model.temperature*np.log(
                 pi_alpha_val / highest_pi_alpha)
             self.free_energy_anchors[i] = free_energy
