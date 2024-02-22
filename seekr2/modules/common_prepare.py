@@ -14,6 +14,8 @@ import glob
 import shutil
 from collections import defaultdict
 
+import numpy as np
+
 import seekr2.modules.common_base as base
 import seekr2.modules.mmvt_cvs.mmvt_cv_base as mmvt_cv_base
 import seekr2.modules.mmvt_cvs.mmvt_spherical_cv as mmvt_spherical_cv
@@ -574,8 +576,10 @@ def resolve_connections(connection_flag_dict, model, associated_input_anchor,
                 if input_anchor_discarded.starting_positions is None:
                     input_anchor_discarded.starting_positions \
                         = input_anchor_kept.starting_positions
-                assert (input_anchor_kept.starting_positions \
-                        == input_anchor_discarded.starting_positions).all(), \
+                print("input_anchor_kept.starting_positions:", input_anchor_kept.starting_positions)
+                print("input_anchor_discarded.starting_positions:", input_anchor_discarded.starting_positions)
+                assert input_anchor_kept.starting_positions \
+                      == input_anchor_discarded.starting_positions, \
                     "The anchors connected by connection flag {} ".format(key) \
                     +"have inconsistent starting positions defined."
             else:
@@ -951,7 +955,9 @@ def prepare_model_cvs_and_anchors(model, model_input, force_overwrite):
                                   model_input.root_directory, force_overwrite)
     
     # check to make sure that anchors don't have repeated milestone aliases
-    # or have themselves as neighbors.
+    # or have themselves as neighbors. Also check that bulk anchors are at
+    # the end of the list
+    iterated_through_bulk_anchors = False
     for anchor in anchors:
         alias_indices = set()
         for milestone in anchor.milestones:
@@ -963,8 +969,15 @@ def prepare_model_cvs_and_anchors(model, model_input, force_overwrite):
                 assert milestone.neighbor_anchor_index is not anchor.index, \
                     "Milestone neighbor_anchor_index cannot be its own anchor "\
                     "in MMVT. Index: {}".format(anchor.index)
-                    
         
+        if anchor.bulkstate:
+            iterated_through_bulk_anchors = True
+        else:
+            assert not iterated_through_bulk_anchors, \
+                f"Non-bulk anchor {anchor.index} found after previous bulk "\
+                "anchor. Make sure all bulk input anchors are listed after "\
+                "non-bulk input anchors."
+            
     model.num_anchors = len(anchors)
     common_cv.assign_state_points(model_input, model)
     return

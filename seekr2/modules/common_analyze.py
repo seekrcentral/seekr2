@@ -10,6 +10,7 @@ import glob
 import xml.etree.ElementTree as ET
 import subprocess
 from collections import defaultdict
+from copy import deepcopy
 
 import numpy as np
 from scipy import linalg as la
@@ -60,6 +61,49 @@ def minor2d(array2d, i, j):
     range1 = list(range(i)) + list(range(i+1, array2d.shape[0]))
     range2 = list(range(j)) + list(range(j+1,array2d.shape[1]))
     return array2d[np.array(range1)[:,np.newaxis], np.array(range2)]
+
+def combine_dest_states(Q, src_indices, dest_indices):
+    """
+    When multiple milestones represent a given destination state, then
+    adjust the rate matrix to consider all states, with fluxes into them,
+    as a single state (single row and column in the matrix).
+    """
+    newQ = deepcopy(Q)
+    new_src_indices = deepcopy(src_indices)
+    new_dest_indices = deepcopy(dest_indices)
+    n = newQ.shape[0]
+    # insert a new row and column at the very end
+    newQ = np.insert(newQ, n, np.zeros(n), 0)
+    newQ = np.insert(newQ, n, np.zeros(n+1), 1)
+    for i in range(len(dest_indices)):
+        dest_index = new_dest_indices[i]
+        dest_row = np.delete(newQ[dest_index,:], dest_index, 0)
+        dest_column = np.delete(newQ[:,dest_index], dest_index, 0)
+        newQ = np.delete(newQ, dest_index, 0)
+        newQ = np.delete(newQ, dest_index, 1)
+        newQ[-1,:] += dest_row
+        newQ[:,-1] += dest_column
+        
+        for j in range(len(new_src_indices)):
+            old_src_index = new_src_indices[j]
+            if old_src_index > dest_index:
+                new_src_indices[j] = old_src_index - 1
+            else:
+                new_src_indices[j] = old_src_index
+        
+        for j in range(len(new_dest_indices)):
+            old_dest_index = new_dest_indices[j]
+            if old_dest_index > dest_index:
+                new_dest_indices[j] = old_dest_index - 1
+            else:
+                new_dest_indices[j] = old_dest_index
+        
+    n = newQ.shape[0]
+    for i in range(n):
+        newQ[i,i] = 0.0
+        newQ[i,i] = -np.sum(newQ[i,:])
+    
+    return newQ, new_src_indices, n-1
 
 def pretty_string_value_error(value, error, error_digits=2, use_unicode=True):
     """
@@ -513,8 +557,10 @@ class Data_sample():
         out all kinetics quantities.
         """
         end_milestones = {}
+        end_states = defaultdict(list)
+        end_milestone_list = []
         bulk_milestones = []
-        MFPTs = {}
+        MFPTs = defaultdict(float)
         MFPTs_anchors_to_bulk_milestones = defaultdict(float)
         k_off = 0.0
         k_ons = {}
@@ -526,6 +572,8 @@ class Data_sample():
                             # TODO: hacky
                             continue
                     end_milestones[milestone_id] = anchor.name
+                    end_states[anchor.name].append(milestone_id)
+                    end_milestone_list.append(milestone_id)
             if anchor.bulkstate:
                 for milestone_id in anchor.get_ids():
                     if self.model.get_type() == "elber":
@@ -546,101 +594,77 @@ class Data_sample():
             If this problem persists, please contact the developers.""".format(
                 problem_milestone)
             raise Exception(error_msg)
-        B, tau = PyGT.tools.load_CTMC(self.Q.T)
-        #assert len(bulk_milestones) <= 1, \
-        #    "There cannot be more than one bulk milestone."
-        #if bulk_milestone is not None:
-        p_i_hat_normalize_per_anchor = defaultdict(float)
+        
+        prob_marginalized_per_anchor = defaultdict(float)
+        prob_marginalized_all_anchors = 0.0
         for end_milestone_src in end_milestones:
-            src_anchor_index = end_milestones[end_milestone_src]
-            p_i_hat_normalize_per_anchor[src_anchor_index] \
+            src_anchor_name = end_milestones[end_milestone_src]
+            prob_marginalized_per_anchor[src_anchor_name] \
                     += self.p_i[end_milestone_src]
-                
-        n = self.Q.shape[0]
-        for bulk_milestone in bulk_milestones:
+            prob_marginalized_all_anchors += self.p_i[end_milestone_src]
+            
+        if len(bulk_milestones) > 0:
+            bulk_combined_Q, new_end_milestone_list, bulk_index \
+                = combine_dest_states(self.Q, end_milestone_list, bulk_milestones)
+            B, tau = PyGT.tools.load_CTMC(bulk_combined_Q.T)
+            MFPTs_end_milestones_to_bulk = {}
+            for i, end_milestone_src in enumerate(end_milestones):
+                new_end_milestone_index = new_end_milestone_list[i]
+                mfpt_ij, mfpt_ji = PyGT.mfpt.compute_MFPT(
+                    new_end_milestone_index, bulk_index, B, tau)
+                mfpt = mfpt_ji
+                MFPTs_end_milestones_to_bulk[end_milestone_src] = mfpt
+            
+            MFPT_to_bulk = 0.0
             for end_milestone_src in end_milestones:
-                
                 if end_milestone_src in bulk_milestones:
                     continue
-                
-                mfpt_ij, mfpt_ji = PyGT.mfpt.compute_MFPT(
-                    end_milestone_src, bulk_milestone, B, tau)
-                mfpt = mfpt_ji
-                src_anchor_index = end_milestones[end_milestone_src]
-                weighted_mfpt = mfpt * self.p_i[end_milestone_src] \
-                    / p_i_hat_normalize_per_anchor[src_anchor_index]
-                #MFPTs[(src_anchor_index, "bulk")] += weighted_mfpt
-                MFPTs_anchors_to_bulk_milestones[(src_anchor_index, bulk_milestone)] \
-                    += weighted_mfpt
-        
-        for (mfpt_key, mfpt_value) in MFPTs_anchors_to_bulk_milestones.items():
-            (src_anchor_index, bulk_milestone) = mfpt_key
-            if src_anchor_index not in MFPTs:
-                MFPTs[(src_anchor_index, "bulk")] = mfpt_value
-            elif mfpt_value < MFPTs[src_anchor]:
-                MFPTs[(src_anchor_index, "bulk")] = mfpt_value
-                
-        MFPTs_to_bulk_dict = {}
-        for bulk_milestone in bulk_milestones:
-            for i in range(self.model.num_milestones):
-                mfpt_ij, mfpt_ji = PyGT.mfpt.compute_MFPT(
-                    i, bulk_milestone, B, tau)
-                mfpt = mfpt_ji
-                if i not in MFPTs_to_bulk_dict:
-                    MFPTs_to_bulk_dict[i] = mfpt
-                elif mfpt < MFPTs_to_bulk_dict[i]:
-                    MFPTs_to_bulk_dict[i] = mfpt
-                
-        if len(bulk_milestones) > 0:
-            MFPT_to_bulk = 0
-            for i in range(self.model.num_milestones):
-                mfpt = MFPTs_to_bulk_dict[i]
-                MFPT_to_bulk += mfpt * self.p_i[i]
+                src_anchor_name = end_milestones[end_milestone_src]
+                mftp_milestone_to_bulk = MFPTs_end_milestones_to_bulk[end_milestone_src]
+                prob_milestone_in_anchor = self.p_i[end_milestone_src] \
+                    / prob_marginalized_per_anchor[src_anchor_name]
+                prob_milestone_all_anchors = self.p_i[end_milestone_src] \
+                    / prob_marginalized_all_anchors
+                MFPTs[(src_anchor_name, "bulk")] += prob_milestone_in_anchor \
+                    * mftp_milestone_to_bulk
+                MFPT_to_bulk += prob_milestone_all_anchors * mftp_milestone_to_bulk
             
-            # convert to 1/s
             k_off = 1.0e12 / MFPT_to_bulk
             self.k_off = k_off
         
         # Next, compute the MFPTs between different states
-        possible_MFPTs = defaultdict(float)
-        for end_milestone_dest in end_milestones:
-            dest_anchor_index = end_milestones[end_milestone_dest]
-            if end_milestone_dest in bulk_milestones:
-                continue
+        
+        milestone_src_to_anchor_dest_MFPTs = {}
+        for dest_state_name, dest_milestones in end_states.items():
+            for dest_milestone in dest_milestones:
+                assert dest_milestone not in bulk_milestones
             
-            for end_milestone_src in end_milestones:
-                src_anchor_index = end_milestones[end_milestone_src]
-                if dest_anchor_index == src_anchor_index:
-                    # don't get the MFPT from a milestone to itself
+            for src_state_name, src_milestone_list in end_states.items():
+                if src_state_name == dest_state_name:
                     continue
-                if end_milestone_src in bulk_milestones:
-                    # a bulk milestone will never be a source
+                dest_combined_Q, new_src_milestone_list, dest_index \
+                    = combine_dest_states(self.Q, src_milestone_list, dest_milestones)
+                B, tau = PyGT.tools.load_CTMC(dest_combined_Q.T)
+                for i, src_milestone_index in enumerate(src_milestone_list):
+                    new_src_milestone_index = new_src_milestone_list[i]
+                    mfpt_ij, mfpt_ji = PyGT.mfpt.compute_MFPT(
+                        new_src_milestone_index, dest_index, B, tau)
+                    mfpt = mfpt_ji
+                    milestone_src_to_anchor_dest_MFPTs[
+                        (src_milestone_index, dest_state_name)] = mfpt
+            
+            for src_state_name, src_milestone_list in end_states.items():
+                if src_state_name == dest_state_name:
                     continue
-                
-                mfpt_ij, mfpt_ji = PyGT.mfpt.compute_MFPT(
-                    end_milestone_src, end_milestone_dest, B, tau)
-                mfpt = mfpt_ji
-                possible_MFPTs[(src_anchor_index, end_milestone_dest)] += mfpt \
-                       * self.p_i[end_milestone_src] \
-                       / p_i_hat_normalize_per_anchor[src_anchor_index]
-        
-        # TODO: verify if correct: this finds the destination with the 
-        # fastest MFPT and just uses that, although the sources are
-        # statistically weighed.
-        for end_milestone_src in end_milestones:
-            src_anchor_index = end_milestones[end_milestone_src]
-            for end_milestone_dest in end_milestones:
-                dest_anchor_index = end_milestones[end_milestone_dest]
-                key = (src_anchor_index, end_milestone_dest)
-                full_key = (src_anchor_index, dest_anchor_index)
-                if key in possible_MFPTs:
-                    if full_key in MFPTs:
-                        # Get the minimum MFPT
-                        if possible_MFPTs[key] < MFPTs[full_key]:
-                            MFPTs[full_key] = possible_MFPTs[key]
-                    else:
-                        MFPTs[full_key] = possible_MFPTs[key]
-        
+                for src_milestone_index in src_milestone_list:
+                    mftp_milestone_to_dest \
+                        = milestone_src_to_anchor_dest_MFPTs[
+                            (src_milestone_index, dest_state_name)]
+                    prob_milestone_in_anchor = self.p_i[src_milestone_index] \
+                        / prob_marginalized_per_anchor[src_state_name]
+                    MFPTs[(src_state_name, dest_state_name)] \
+                        += prob_milestone_in_anchor * mftp_milestone_to_dest
+            
         if self.model.using_bd():
             K_hat = self.K[:,:]
             for end_milestone in end_milestones:
@@ -651,7 +675,7 @@ class Data_sample():
             source_vec = np.zeros((n,1))
             
             if len(self.bd_transition_counts) > 0:
-                if bulk_milestone is not None:
+                if len(bulk_milestones) > 0:
                     for bd_milestone in self.model.k_on_info.bd_milestones:
                         source_index = bd_milestone.outer_milestone.index
                         if self.b_surface_k_ons_src is None:

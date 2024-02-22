@@ -754,24 +754,25 @@ class MMVT_data_sample(common_analyze.Data_sample):
         # The "pivot" is the entry in the flux_matrix that 
         
         # TODO: replace with model.get_bulk_index() function
-        bulk_index = None
+        bulk_indices = []
+        found_bulk = False
         for alpha, anchor in enumerate(self.model.anchors):
             if anchor.bulkstate:
-                assert bulk_index is None, "Only one bulk state is allowed "\
-                    "in model"
-                bulk_index = alpha
+                bulk_indices.append(alpha)
+                found_bulk = True
+            else:
+                assert not found_bulk, \
+                "The bulk anchors must be the last ones in the model."
         
-        if bulk_index is None:
+        if len(bulk_indices) == 0:
             # Then we have a model without a bulk anchor: we need to make our
             # own pivot
             pivot_index = self.model.num_anchors
             flux_matrix_dimension = self.model.num_anchors + 1
         else:
-            # If a bulk anchor exists, we can use it as the pivot
-            assert bulk_index == self.model.num_anchors - 1, "The bulk "\
-                "anchor must be the last one in the model."
-            pivot_index = bulk_index
-            flux_matrix_dimension = self.model.num_anchors
+            # If bulk anchors exist, we can use them as the pivot
+            pivot_index = bulk_indices[0]
+            flux_matrix_dimension = self.model.num_anchors-len(bulk_indices)+1
         
         self.pi_alpha = np.zeros(flux_matrix_dimension)
         flux_matrix = np.zeros((flux_matrix_dimension, flux_matrix_dimension))
@@ -780,7 +781,7 @@ class MMVT_data_sample(common_analyze.Data_sample):
         for alpha, anchor1 in enumerate(self.model.anchors):
             flux_matrix[alpha, pivot_index] = 1.0
             if anchor1.bulkstate:
-                continue
+                break
             id_alias = anchor1.alias_from_neighbor_id(pivot_index)
             flux_matrix[pivot_index, alpha] = 0.0
             dead_end_anchor = False
@@ -788,7 +789,7 @@ class MMVT_data_sample(common_analyze.Data_sample):
                 dead_end_anchor = True
             for beta, anchor2 in enumerate(self.model.anchors):
                 if beta == pivot_index:
-                    continue
+                    break
                 if alpha == beta:
                     pass 
                 else:
@@ -830,7 +831,7 @@ class MMVT_data_sample(common_analyze.Data_sample):
             self.pi_alpha[i,0] = -stationary_dist[i,0] / flux_matrix[i,i]
         for alpha, anchor1 in enumerate(self.model.anchors):
             if anchor1.bulkstate:
-                continue
+                break
             # Set low probabilities to anchors with no transitions observed.
             if self.k_alpha[alpha] == 0:
                 self.pi_alpha[alpha,0] = LOW_PROBABILITY
@@ -855,7 +856,7 @@ class MMVT_data_sample(common_analyze.Data_sample):
         sum_pi_alpha_over_T_alpha = 0.0
         for alpha, anchor in enumerate(self.model.anchors):
             if anchor.bulkstate:
-                continue
+                break
             if self.T_alpha[alpha] == 0.0:
                 continue
             this_anchor_pi_alpha = self.pi_alpha[alpha]
@@ -866,7 +867,7 @@ class MMVT_data_sample(common_analyze.Data_sample):
         assert self.T >= 0.0, "self.T should be positive: {}".format(self.T)
         for alpha, anchor in enumerate(self.model.anchors):
             if anchor.bulkstate:
-                continue
+                break
             this_anchor_pi_alpha = float(self.pi_alpha[alpha])
             T_alpha = self.T_alpha[alpha]
             assert T_alpha >= 0.0, \
@@ -1033,7 +1034,7 @@ class MMVT_data_sample(common_analyze.Data_sample):
             if self.N_i_j_alpha is None or self.R_i_alpha is None:
                 continue
             if anchor.bulkstate:
-                continue
+                break
             new_T_alpha = 0.0
             N_i_j_alpha_keys = list(self.N_i_j_alpha[alpha].keys())
             R_i_alpha_keys = list(self.R_i_alpha[alpha].keys())
@@ -1057,11 +1058,15 @@ class MMVT_data_sample(common_analyze.Data_sample):
         """
         self.free_energy_anchors = np.zeros(self.model.num_anchors)
         highest_pi_alpha = max(self.pi_alpha)
-        for i in range(self.model.num_anchors):
-            pi_alpha_val = self.pi_alpha[i, 0]
+        for alpha in range(self.model.num_anchors):
+            if self.model.anchors[alpha].bulkstate:
+                pi_alpha_val = self.pi_alpha[-1, 0]
+            else:
+                pi_alpha_val = self.pi_alpha[alpha, 0]
             free_energy = -GAS_CONSTANT*self.model.temperature*np.log(
                 pi_alpha_val / highest_pi_alpha)
-            self.free_energy_anchors[i] = free_energy
+            self.free_energy_anchors[alpha] = free_energy
+            
 
 def find_nonzero_matrix_entries(M):
     """

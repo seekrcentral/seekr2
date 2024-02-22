@@ -47,6 +47,8 @@ def assign_state_point(state_point, model):
     already_found_anchor = False
     for anchor in model.anchors:
         in_all_milestones = True
+        if len(anchor.milestones) == 0:
+            continue
         for milestone in anchor.milestones:
             cv = model.collective_variables[milestone.cv_index]
             if model.using_toy() and isinstance(cv, mmvt_external_cv.MMVT_external_CV):
@@ -60,6 +62,7 @@ def assign_state_point(state_point, model):
                 break
         
         if in_all_milestones:
+            print("found in anchor.index:", anchor.index)
             assert not already_found_anchor, \
                 "State point named {} found in multiple anchors.".format(
                     state_point.name)
@@ -1892,7 +1895,9 @@ class Voronoi_cv_input(CV_input):
             neighbor_anchor_alphas = neighbor_anchor_indices[alpha]
             for neighbor_anchor_alpha in neighbor_anchor_alphas:
                 neighbor_anchor = anchors[neighbor_anchor_alpha]
-                
+                #if anchor.bulkstate and neighbor_anchor.bulkstate:
+                #    # Don't draw a milestone between two bulk states
+                #    continue
                 #milestone_index = self.make_mmvt_milestone_between_two_anchors(
                 #    anchor, alpha, neighbor_anchor, neighbor_anchor_alpha, milestone_index)
                 milestone_index \
@@ -1900,9 +1905,8 @@ class Voronoi_cv_input(CV_input):
                         anchor, alpha, neighbor_anchor, neighbor_anchor_alpha, 
                         milestone_index, self.index, len(self.cv_inputs))
                     
-            if anchor.bulkstate:
-                connection_flag_dict["bulk"].append(anchor)
-            
+            #if anchor.bulkstate:
+            #    connection_flag_dict["bulk"].append(anchor)
         return anchors, anchor_index, milestone_index, connection_flag_dict,\
             associated_input_anchor
     
