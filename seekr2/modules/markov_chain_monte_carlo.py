@@ -30,7 +30,7 @@ def irreversible_stochastic_matrix_algorithm_sample(
         i = random.choice(range(m))
         j = random.choice(range(m))
         counter = 0
-        while (Q[i,j] == 0.0) or (Q[i,i] == 0.0) or (N[i,j] == 0) \
+        while (Q[i,j] == 0.0) or (Q[i,i] == 0.0) or (N[i,j] <= 1) \
                 or (R[i,0] == 0) or (i==j):
             i = random.choice(range(m))
             j = random.choice(range(m))

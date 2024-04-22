@@ -11,56 +11,53 @@ distributed computing systems, such as supercomputers or clusters which use
 large numbers of CPU cores. If you are uncertain which to choose, OpenMM is 
 a good default choice.
 
-Install Conda
+Install Mamba
 -------------
 
-It is recommended, though not mandatory, that you install Conda to use with 
-SEEKR2. Without Conda, all dependencies will need to be installed by hand.
+It is recommended, though not mandatory, that you install Mamba to use with 
+SEEKR2. Without Mamba, all dependencies will need to be installed by hand.
 
-If you do not already have Conda, it can be easily installed by completing the
+If you do not already have Mamba, it can be easily installed by completing the
 following steps:
 
-Download Conda, run the script, and fill out the prompts::
+Download Mamba, run the script, and fill out the prompts::
 
-  wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-  bash Miniconda3-latest-Linux-x86_64.sh
+  wget https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh
+  bash Mambaforge-Linux-x86_64.sh
 
-Make sure Conda is installed by running:
+1. When asked for an install destination, choose a directory owned by your user
+account. 
+2. When asked if you'd like to initialize MambaForce, answer "yes".
+3. Close and reopen the window
 
-``which conda``
+Make sure Mamba is installed by running:
 
-You will want to use Python 3.8, so you can see which version you are with
-the command:
+``which mamba``
 
-``python -V``
 
-If it says any other version besides Python 3.8, then enter:
+If you want you can create a Mamba environment, 
 
-``conda install python=3.8``
-
-If you want you can create a conda environment, 
-
-``conda create --name SEEKR python=3.8``
+``mamba create --name SEEKR``
 
 but you can also just install all packages straight to the base environment
 if you wish to. If using an environment, whenever you're installing or running 
 anything involving OpenMM or SEEKR2, make sure that you have activated your 
 environment by running ``conda activate SEEKR``.
 
-Install OpenMM and Plugin with Conda
+Install OpenMM and Plugin with Mamba
 ------------------------------------
 This section describes the fasted and easiest way to get SEEKR2 working.
 
-If you desire to use OpenMM, you must install OpenMM either from conda or from 
+If you desire to use OpenMM, you must install OpenMM either from Mamba or from 
 source. If you wish to install from source, see the "Installing OpenMM from
 Source" sections below.
 
 If you desire to use NAMD, then see the "Install NAMD" section below.
 
-With Conda working, You may create and activate any environment you wish, 
+With Mamba working, You may create and activate any environment you wish, 
 or use the base environment. Install the SEEKR2 OpenMM Plugin:
 
-``conda install -c conda-forge seekr2_openmm_plugin``
+``mamba install seekr2_openmm_plugin``
 
 OpenMM will be installed automatically alongside the plugin.
 
@@ -71,13 +68,13 @@ One can test the installation by opening a Python terminal and typing:
 If there is a problem related to not being able to find libOpenMM8.1, one
 can try specifying the OpenMM version:
 
-``conda install -c conda-forge seekr2_openmm_plugin openmm=8.1``
+``mamba install seekr2_openmm_plugin openmm=8.1``
 
 
-If you get an error such as "No module named seekr2plugin", you might
-need to install with CUDA Toolkit version 10.2 and OpenMM 7.7:
+If you get an error such as "CUDA_ERROR_UNSUPPORTED_PTX_VERSION", you might
+need to install with a different CUDA Toolkit version:
 
-``conda install -c conda-forge seekr2_openmm_plugin cudatoolkit=10.2 openmm=7.7``
+``conda install seekr2_openmm_plugin cudatoolkit=11.7``
 
 
 Installation of SEEKR2 itself begins with cloning and installing the SEEKR2 
@@ -119,9 +116,9 @@ python API::
   cd seekr2
   python -m pip install .
 
-OpenMM and Plugin Installation from Source on Local Machine (If not using Conda to install OpenMM and Plugin)
--------------------------------------------------------------------------------------------------------------
-Compiling OpenMM from source is tricky, but may be desirable if the Conda 
+OpenMM and Plugin Installation from Source on Local Machine (If not using CondaForge to install OpenMM and Plugin)
+------------------------------------------------------------------------------------------------------------------
+Compiling OpenMM from source is tricky, but may be desirable if the Mamba/Conda 
 installation doesn't work, or if you wish to optimize OpenMM's performance.
 
 Please see the official 
@@ -166,7 +163,8 @@ Obviously, you'll need to modify "/path/to/nvcc" with the actual path. The
 program "nvcc" will exist in your CUDA installation, and might be discoverable 
 by typing ``which nvcc``.
 
-Next, install the necessary programs and packages into Conda.
+Next, install the necessary programs and packages into Mamba/Conda. (Replace
+"conda" with "mamba" wherever necessary)
 
 ``conda install numpy scipy netcdf4 mpi4py swig``
 
@@ -315,3 +313,92 @@ Some tips and advice:
 * If 'ccmake' is not available, you can still use 'cmake' to install OpenMM,
   you just must provide any arguments using '-D'. For instance: 
   ``cmake -DCMAKE_INSTALL_PREFIX=/path/to/openmm -DCMAKE_LIBRARY_PATH=/path/to/cuda/lib64/stubs ..``
+
+Install With Conda (Deprecated)
+-------------------------------
+
+One may use Conda to install SEEKR2, although installation with Mamba may be
+preferable, due to the speed of Mamba.
+
+If you do not already have Conda, it can be easily installed by completing the
+following steps:
+
+Download Conda, run the script, and fill out the prompts::
+
+  wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+  bash Miniconda3-latest-Linux-x86_64.sh
+
+Make sure Conda is installed by running:
+
+``which conda``
+
+You will want to use Python 3.8, so you can see which version you are with
+the command:
+
+``python -V``
+
+If it says any other version besides Python 3.8, then enter:
+
+``conda install python=3.8``
+
+If you want you can create a conda environment, 
+
+``conda create --name SEEKR python=3.8``
+
+but you can also just install all packages straight to the base environment
+if you wish to. If using an environment, whenever you're installing or running 
+anything involving OpenMM or SEEKR2, make sure that you have activated your 
+environment by running ``conda activate SEEKR``.
+
+This section describes the fasted and easiest way to get SEEKR2 working.
+
+If you desire to use OpenMM, you must install OpenMM either from conda or from 
+source. If you wish to install from source, see the "Installing OpenMM from
+Source" sections below.
+
+If you desire to use NAMD, then see the "Install NAMD" section below.
+
+With Conda working, You may create and activate any environment you wish, 
+or use the base environment. Install the SEEKR2 OpenMM Plugin:
+
+``conda install -c conda-forge seekr2_openmm_plugin``
+
+OpenMM will be installed automatically alongside the plugin.
+
+One can test the installation by opening a Python terminal and typing:
+
+``import seekr2plugin``
+
+If there is a problem related to not being able to find libOpenMM8.1, one
+can try specifying the OpenMM version:
+
+``conda install -c conda-forge seekr2_openmm_plugin openmm=8.1``
+
+
+If you get an error such as "No module named seekr2plugin", you might
+need to install with CUDA Toolkit version 10.2 and OpenMM 7.7:
+
+``conda install -c conda-forge seekr2_openmm_plugin cudatoolkit=10.2 openmm=7.7``
+
+
+Installation of SEEKR2 itself begins with cloning and installing the SEEKR2 
+python API::
+
+  git clone https://github.com/seekrcentral/seekr2.git
+  cd seekr2
+  python -m pip install .
+  
+  
+Once OpenMM and the OpenMM SEEKR2 Plugin are installed, it is recommended that 
+you run tests of SEEKR2. From within the "seekr2/" directory, run:
+
+``pytest``
+
+One or two tests may fail depending on whether NAMD2 and/or Browndye2 have been
+installed, and can be safely ignored if those programs are not needed.
+
+Additional continuous integration tests may be run from the Python scripts in
+the seekr2/seekr2/continuous_integration/ directory if extra testing is
+desired.
+
+You should now be able to use SEEKR2.

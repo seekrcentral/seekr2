@@ -144,12 +144,21 @@ def get_box_vectors_from_pdb(pdb_filename):
     """
     Extract the box_vectors from the CRYST line in a pdb file.
     """
-    pdb_structure = parmed.load_file(pdb_filename)
+    pdb_structure = parmed.load_file(pdb_filename, skip_bonds=True)
     assert pdb_structure.box_vectors is not None, "No box vectors "\
     "found in {}. ".format(pdb_filename) \
     + "Box vectors for an anchor must be defined with a CRYST "\
     "line within the PDB file, or explicitly set in the model "\
     "input XML file."
+    length1 = np.linalg.norm(pdb_structure.box_vectors[0]\
+                             .value_in_unit(unit.nanometers))
+    length2 = np.linalg.norm(pdb_structure.box_vectors[1]\
+                             .value_in_unit(unit.nanometers))
+    length3 = np.linalg.norm(pdb_structure.box_vectors[2]\
+                             .value_in_unit(unit.nanometers))
+    assert (length1 > 0.0) and (length2 > 0.0) and (length3 > 0.0), \
+        "Box vector length(s) of zero detected. Please check box vectors in " \
+        "input PDB."
     return pdb_structure.box_vectors
 
 def convert_openmm_to_python_expr(old_function_str):

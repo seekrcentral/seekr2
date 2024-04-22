@@ -203,8 +203,8 @@ def create_openmm_system(sim_openmm, model, anchor, frame=0,
                            box_6_vector[4]*unit.degrees,
                            box_6_vector[5]*unit.degrees)
             else:
-                psf.setBox(2*unit.nanometers, 2*unit.nanometers, 
-                           2*unit.nanometers)
+                psf.setBox(4.0*unit.nanometers, 4.0*unit.nanometers, 
+                           4.0*unit.nanometers)
             topology = psf.topology
         
         else:

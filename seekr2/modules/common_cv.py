@@ -62,7 +62,6 @@ def assign_state_point(state_point, model):
                 break
         
         if in_all_milestones:
-            print("found in anchor.index:", anchor.index)
             assert not already_found_anchor, \
                 "State point named {} found in multiple anchors.".format(
                     state_point.name)
@@ -184,7 +183,7 @@ class Spherical_cv_anchor(CV_anchor):
         
     upper_milestone_radius : float
         Optionally define the locations of the milestones for each
-        anchor. This is the radius of the lower milestone.
+        anchor. This is the radius of the upper milestone.
     
     starting_amber_params : Amber_params or None
         If Amber inputs are used for this anchor, this object contains
@@ -1528,7 +1527,220 @@ class Toy_cv_input(CV_input):
             .make_mmvt_milestone_between_two_anchors(
                 anchor1, anchor2, input_anchor1, input_anchor2, milestone_index)
         return milestone_index
+
+class Z_distance_cv_anchor(CV_anchor):
+    """
+    This object represents an anchor within the z-coordinate
+    CV. Used for input purposes only.
     
+    Attributes:
+    -----------
+    value : float
+        The value of this z-distance anchor in units of nanometers.
+    
+    lower_milestone_value : float
+        Optionally define the locations of the milestones for each
+        anchor. This is the value of the lower milestone.
+        
+    upper_milestone_value : float
+        Optionally define the locations of the milestones for each
+        anchor. This is the value of the upper milestone.
+    
+    starting_amber_params : Amber_params or None
+        If Amber inputs are used for this anchor, this object contains
+        the necessary inputs to start a new simulation.
+        
+    starting_forcefield_params : Forcefield_params or None
+        If Forcefield XML inputs are used for this anchor, this object
+        contains the necessary inputs to start a new simulation.
+        
+    bound_state : bool
+        Whether this anchor represents the bound state of a ligand-
+        receptor system.
+        
+    bulk_anchor : bool
+        Whether this anchor acts as a bulk state of a ligand-receptor
+        system.
+    """
+    
+    def __init__(self):
+        self.name = None
+        self.value = 0.0
+        self.lower_milestone_value = None
+        self.upper_milestone_value = None
+        self.starting_amber_params = None
+        self.starting_forcefield_params = None
+        self.starting_charmm_params = None
+        self.bound_state = False
+        self.bulk_anchor = False
+        self.connection_flags = []
+        return
+        
+    def check(self, j, cv_input):
+        if self.lower_milestone_value is not None:
+            assert j > 0, "lower_milestone_value must be None for lowest "\
+                "anchor in cv."
+            assert self.lower_milestone_value \
+                == cv_input.input_anchors[j-1].upper_milestone_value,\
+                "If lower_milestone_value is defined for anchor "\
+                "{}, the anchor below (number {}).".format(j, j-1)\
+                +" must have a corresponding upper_milestone_value."
+            assert self.lower_milestone_value < self.value, \
+                "lower_milestone_value must be less than anchor's value."
+                
+        if self.upper_milestone_value is not None:
+            assert j < len(cv_input.input_anchors), \
+                "upper_milestone_value must be None for highest anchor "\
+                "in cv."
+            assert self.upper_milestone_value \
+                == cv_input.input_anchors[j+1].lower_milestone_value,\
+                "If upper_milestone_value is defined for anchor "\
+                "{} at value {:.3f}, the anchor above ".format(j, 
+                self.upper_milestone_value)\
+                +"(number {}).".format(j+1)\
+                +" must have a corresponding lower_milestone_value, "\
+                "current value: {:.3f}.".format(
+                    cv_input.input_anchors[j+1].lower_milestone_value)
+            assert self.upper_milestone_value > self.value, \
+                "upper_milestone_value must be more than anchor's value."
+        return
+    
+    def get_variable_value(self):
+        return self.value
+        
+class Z_distance_cv_input(CV_input):
+    """
+    Inputs by the user resulting in z-distance anchors
+    with milestones and the collective variable (CV).
+    
+    Attributes:
+    -----------
+    index : int
+        The index of this CV input object in the Model_input object.
+        
+    group1 : list
+        A list of ints representing atom indices whose center of mass
+        is one end of the CV z-distance vector.
+        
+    group2 : list
+        A list of ints representing atom indices whose center of mass
+        is the other end of the CV z-distance vector.
+        
+    input_anchors : list
+        A list of Spherical_cv_anchor objects which specify inputs for
+        the z-distance anchors.
+    """
+    
+    def __init__(self):
+        self.index = 0
+        self.group1 = []
+        self.group2 = []
+        self.bd_group1 = []
+        self.bd_group2 = []
+        self.input_anchors = []
+        self.variable_name = "v"
+        self.state_points = []
+        return
+        
+    def check(self):
+        """
+        Check user inputs to ensure they have been entered properly.
+        """
+        found_bulk_anchor = False
+        
+        if self.input_anchors is None:
+            return
+        
+        assert len(self.group1) > 0, "Any input CV groups must contain atoms."
+        assert len(self.group2) > 0, "Any input CV groups must contain atoms."
+        
+        if self.input_anchors[1].value > self.input_anchors[0].value:
+            rising = True
+            last_value = -1e9
+        else:
+            rising = False
+            last_value = 1e9
+        
+        for i, input_anchor in enumerate(self.input_anchors):
+            assert input_anchor.__class__.__name__ == "Z_distance_cv_anchor"
+            value = input_anchor.value
+            if rising:
+                assert value > last_value, "Each subsequent anchor "\
+                    "value must be uniformly increasing or decreasing (sorted)."
+            else:
+                assert value < last_value, "Each subsequent anchor "\
+                    "value must be uniformly increasing or decreasing (sorted)."
+            
+            if input_anchor.bound_state is None:
+                input_anchor.bound_state = False
+            
+            assert input_anchor.bound_state in [True, False], \
+                "bound_state must be a boolean"
+                
+            if input_anchor.bulk_anchor is None:
+                input_anchor.bulk_anchor = False
+                
+            assert input_anchor.bulk_anchor in [True, False], \
+                "bulk_anchor must be a boolean"
+            
+            if input_anchor.bulk_anchor:
+                assert not found_bulk_anchor, "Only one bulk anchor allowed "\
+                    "per set of anchors in a CV."
+                found_bulk_anchor = False
+            else:
+                assert not found_bulk_anchor, "Only the outermost anchor "\
+                    "should be the bulk anchor."
+            
+            if i > 0:
+                assert not input_anchor.bound_state, "Only the lowest"\
+                    "anchor can be the bound state."
+                    
+            assert len(self.input_anchors) > 1, "A CV must contain "\
+                "more than one anchor."
+                
+            last_value = value
+        
+        return
+    
+    def make_mmvt_milestone_between_two_anchors(
+            self, anchor1, anchor2, input_anchor1, input_anchor2, 
+            milestone_index):
+        neighbor_index1 = anchor2.index
+        neighbor_index2 = anchor1.index        
+        milestone1 = base.Milestone()
+        milestone1.index = milestone_index
+        milestone1.neighbor_anchor_index = neighbor_index1
+        milestone1.alias_index = len(anchor1.milestones)+1
+        milestone1.cv_index = self.index
+        if input_anchor1.upper_milestone_value is None:
+            value = 0.5 * (input_anchor1.value + input_anchor2.value)
+        else:
+            value = input_anchor2.upper_milestone_value
+        milestone2 = base.Milestone()
+        milestone2.index = milestone_index
+        milestone2.neighbor_anchor_index = neighbor_index2
+        milestone2.alias_index = len(anchor2.milestones)+1
+        milestone2.cv_index = self.index
+        if input_anchor2.lower_milestone_value is None:
+            value = 0.5 * (input_anchor1.value + input_anchor2.value)
+        else:
+            value = input_anchor2.lower_milestone_value
+        # assign k
+        if value > input_anchor1.value:
+            milestone1.variables = {"k": 1.0, "value": value}
+            milestone2.variables = {"k": -1.0, "value": value}
+        else:
+            milestone1.variables = {"k": -1.0, "value": value}
+            milestone2.variables = {"k": 1.0, "value": value}
+        for milestone in anchor1.milestones:
+            if milestone.neighbor_anchor_index == neighbor_index1:
+                # Then anchor1 already has this milestone added to it
+                return milestone_index
+        anchor1.milestones.append(milestone1)
+        anchor2.milestones.append(milestone2)
+        milestone_index += 1
+        return milestone_index
+
 class Combo(Serializer):
     """
     A combo superclass - a way to combine CVs in a multidimensional
