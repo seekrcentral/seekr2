@@ -160,6 +160,7 @@ def test_mcmc_3x3_mmvt(tmpdir_factory):
     model = base.Model()
     model.num_milestones = n_milestones
     model.num_anchors = n_anchors
+    model.calculation_type = "mmvt"
     anchor0 = mmvt_cv_base.MMVT_toy_anchor()
     anchor0.index = 0
     milestone_0_0 = base.Milestone()
@@ -167,6 +168,7 @@ def test_mcmc_3x3_mmvt(tmpdir_factory):
     milestone_0_0.neighbor_anchor_index = 1
     milestone_0_0.alias_index = 1
     anchor0.milestones = [milestone_0_0]
+    anchor0.endstate = True
     
     anchor1 = mmvt_cv_base.MMVT_toy_anchor()
     anchor1.index = 1
@@ -199,6 +201,7 @@ def test_mcmc_3x3_mmvt(tmpdir_factory):
     milestone_3_0.neighbor_anchor_index = 2
     milestone_3_0.alias_index = 1
     anchor3.milestones = [milestone_3_0]
+    anchor3.endstate = True
     
     model.anchors = [anchor0, anchor1, anchor2, anchor3]
     

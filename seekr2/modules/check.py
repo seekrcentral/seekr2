@@ -942,7 +942,9 @@ def check_pre_simulation_all(model):
         # Skipping MD/BD salt conc. check because the best results seem to 
         # come from using no salt in BD.
         #check_passed_list.append(check_pre_sim_MD_and_BD_salt_concentration(model))
-        check_passed_list.append(check_atom_selections_dont_contain_hydrogen(model))
+        # Skipping this test because doesn't actually cause numerical 
+        # instabilities...
+        #check_passed_list.append(check_atom_selections_dont_contain_hydrogen(model))
         check_passed_list.append(check_atom_selections_on_same_molecule(model))
         check_passed_list.append(check_atom_selections_MD_BD(model))
         check_passed_list.append(check_pqr_residues(model))
