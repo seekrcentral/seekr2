@@ -74,7 +74,7 @@ can try specifying the OpenMM version:
 If you get an error such as "CUDA_ERROR_UNSUPPORTED_PTX_VERSION", you might
 need to install with a different CUDA Toolkit version:
 
-``conda install seekr2_openmm_plugin cudatoolkit=11.7``
+``mamba install seekr2_openmm_plugin cudatoolkit=11.7``
 
 
 Installation of SEEKR2 itself begins with cloning and installing the SEEKR2 

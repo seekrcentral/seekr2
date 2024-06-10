@@ -29,7 +29,7 @@ def converge(model, k_on_state=None, image_directory=None, verbose=False,
     
     if image_directory is None or image_directory == "" or not long_converge:
         return data_sample_list, times_dict
-        
+    
     k_off_fig, ax = common_converge.plot_scalar_conv(
         k_off_conv, max_step_list, title="$k_{off}$ Convergence", 
         label="k_{off} (s^{-1})", timestep_in_ns=timestep_in_ns)

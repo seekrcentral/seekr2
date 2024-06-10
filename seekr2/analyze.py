@@ -697,27 +697,32 @@ class Analysis:
             plt.xticks(anchor_values, anchor_values, rotation=90)
             plt.ylabel("\u03C0_{\u03B1}")
             plt.xlabel("anchor value")
+            plt.yscale("log", nonpositive="mask")
             plt.tight_layout()
             pi_fig.savefig(os.path.join(image_directory, "pi_alpha.png"))
             
         # save p_i
         pi_fig, ax = plt.subplots()
-        plt.errorbar(np.round(milestone_values, 3), self.p_i, yerr=self.p_i_error, 
-                     ecolor="k", capsize=2)
-        plt.xticks(np.round(milestone_values, 3), np.round(milestone_values, 3), rotation=90)
+        plt.errorbar(np.round(milestone_values, 3), self.p_i, 
+                     yerr=self.p_i_error, ecolor="k", capsize=2)
+        plt.xticks(np.round(milestone_values, 3), np.round(milestone_values, 3),
+                   rotation=90)
         plt.ylabel("p_i")
         plt.xlabel("milestones")
+        plt.yscale("log", nonpositive="mask")
         plt.tight_layout()
         pi_fig.savefig(os.path.join(image_directory, "p_i.png"))
         # save free energy milestone profile
         pi_fig, ax = plt.subplots()
         plt.errorbar(np.round(milestone_values, 3), self.free_energy_profile, 
                  yerr=self.free_energy_profile_err, ecolor="k", capsize=2)
-        plt.xticks(np.round(milestone_values, 3), np.round(milestone_values, 3), rotation=90)
+        plt.xticks(np.round(milestone_values, 3), np.round(milestone_values, 3),
+                   rotation=90)
         plt.ylabel("\u0394G(milestone) (kcal/mol)")
         plt.xlabel("milestones")
         plt.tight_layout()
-        pi_fig.savefig(os.path.join(image_directory, "free_energy_profile_milestones.png"))
+        pi_fig.savefig(os.path.join(
+            image_directory, "free_energy_profile_milestones.png"))
         
         if self.free_energy_anchors is not None:
             # save free energy anchor profile
@@ -728,7 +733,8 @@ class Analysis:
             plt.ylabel("\u0394G(anchor) (kcal/mol)")
             plt.xlabel("anchor")
             plt.tight_layout()
-            pi_fig.savefig(os.path.join(image_directory, "free_energy_profile_anchor.png"))
+            pi_fig.savefig(os.path.join(
+                image_directory, "free_energy_profile_anchor.png"))
         return
         
 def analyze(model, force_warning=False, num_error_samples=1000, 

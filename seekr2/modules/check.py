@@ -606,6 +606,37 @@ def recurse_atoms(atom, _visited_indices=set()):
             _visited_indices.update(branch_indices)
     return _visited_indices
 
+def check_atom_selections_dont_contain_hydrogen(model):
+    """
+    It has been observed that atom selections (for use as CVs) that
+    include hydrogen often cause numerical instabilities. This 
+    check will raise an error if any CV atom selections include
+    hydrogen atoms.
+    """
+    warnstr = """CHECK FAILURE: the atom selection for collective variable
+    (CV) number {} contains hydrogens, including atom index {}. It has
+    been observed that CV atom selections including hydrogen are often
+    unintentional, and tend to produce numerical instabilities, causing 
+    the simulations to blow up. Please ensure that this CV was defined 
+    by the intended atom selection and consider using selections that do 
+    not include any hydrogens.
+    """
+    for anchor in model.anchors:
+        structure = load_structure_with_parmed(model, anchor)
+        if structure is None:
+            continue
+        for cv in model.collective_variables:
+            atom_groups = cv.get_atom_groups()
+            for atom_group in atom_groups:
+                for atom_index in atom_group:
+                    atom = structure.atoms[atom_index]
+                    if atom.element == 1:
+                        # Then it's a hydrogen
+                        print(warnstr.format(cv.index, atom_index))
+                        return False
+                    
+    return True
+
 def check_atom_selections_on_same_molecule(model):
     """
     The user might accidentally define atom selections that span
@@ -621,7 +652,8 @@ def check_atom_selections_on_same_molecule(model):
     check the structure for anchor {} to ensure that atom indexing 
     is correct. Keep in mind: SEEKR2 atom indexing starts at 0 (but 
     PDB files often start with a different atom serial index, such
-    as 1 or another number)."""
+    as 1 or another number). This might also be caused by multimeric 
+    sites or unclosed loops."""
     warnstr2 = """CHECK FAILURE: the atom index {} for collective variable
     (CV) number {} does not exist in the structure for anchor {}."""
     for anchor in model.anchors:
@@ -910,6 +942,7 @@ def check_pre_simulation_all(model):
         # Skipping MD/BD salt conc. check because the best results seem to 
         # come from using no salt in BD.
         #check_passed_list.append(check_pre_sim_MD_and_BD_salt_concentration(model))
+        check_passed_list.append(check_atom_selections_dont_contain_hydrogen(model))
         check_passed_list.append(check_atom_selections_on_same_molecule(model))
         check_passed_list.append(check_atom_selections_MD_BD(model))
         check_passed_list.append(check_pqr_residues(model))

@@ -1055,6 +1055,7 @@ def modify_model(old_model, new_model, root_directory, force_overwrite=False):
                 break
         if not alpha_paired:
             new_anchors_to_create.append(alpha)
+        
     for beta, anchor2 in enumerate(old_model.anchors):
         if anchor2.bulkstate:
             continue
@@ -1065,7 +1066,7 @@ def modify_model(old_model, new_model, root_directory, force_overwrite=False):
                 break
         if not beta_paired:
             old_anchors_to_delete.append(beta)
-    
+        
     # Now check all the paired anchors to see if anyone's milestones
     # have changed
     old_anchors_with_changed_milestones = []

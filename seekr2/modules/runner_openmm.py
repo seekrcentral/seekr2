@@ -522,7 +522,9 @@ class Runner_openmm():
         if trajectory_reporter_interval is not None:
             simulation.reporters.append(traj_reporter(
                 traj_filename, trajectory_reporter_interval, 
-                enforcePeriodicBox=False))
+                #enforcePeriodicBox=False))
+                # Turning this on
+                enforcePeriodicBox=None))
             if self.restart_checkpoint_interval is not None:
                 assert trajectory_reporter_interval >= \
                     self.restart_checkpoint_interval
@@ -609,7 +611,8 @@ class Runner_openmm():
                 and not self.umbrellas_already_exist_mode:
             umbrella_simulation.reporters.append(umbrella_traj_reporter(
                 umbrella_traj_filename, umbrella_trajectory_reporter_interval, 
-                enforcePeriodicBox=False))
+                #enforcePeriodicBox=False))
+                enforcePeriodicBox=None))
             if calc_settings.num_umbrella_stage_steps \
                     < umbrella_trajectory_reporter_interval:
                 umbrella_trajectory_reporter_interval \
@@ -748,7 +751,8 @@ class Runner_openmm():
                     print("rev_traj_filename", rev_traj_filename)
                     rev_simulation.reporters = [rev_traj_reporter(
                         rev_traj_filename, rev_trajectory_reporter_interval, 
-                        enforcePeriodicBox=False)]
+                        #enforcePeriodicBox=False)]
+                        enforcePeriodicBox=None)]
                 if rev_energy_reporter_interval is not None:
                     rev_simulation.reporters.append(
                         self.sim_openmm.rev_energy_reporter(
@@ -806,7 +810,8 @@ class Runner_openmm():
                             "forward_%d.dcd" % crossing_counter)
                         fwd_simulation.reporters = [fwd_traj_reporter(
                             fwd_traj_filename, fwd_trajectory_reporter_interval, 
-                            enforcePeriodicBox=False)]
+                            #enforcePeriodicBox=False)]
+                            enforcePeriodicBox=None)]
                     if fwd_energy_reporter_interval is not None:
                         fwd_simulation.reporters.append(
                             self.sim_openmm.fwd_energy_reporter(

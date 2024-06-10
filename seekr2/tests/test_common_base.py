@@ -50,6 +50,13 @@ def test_order_files_numerically():
     for item1, item2 in zip(ordered_list, desired_list):
         assert item1==item2
     
+    string_list = ["/path/to/anchor_0.1/output0_0", 
+                   "/path/to/anchor_0.2/output0_1"]
+    
+    desired_list = string_list[:]
+    random.shuffle(string_list)
+    ordered_list = base.order_files_numerically(string_list)
+    
     return
 
 def test_box_vectors():

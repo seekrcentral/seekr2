@@ -52,15 +52,14 @@ OpenMM is recommended for the molecular dynamics (MD) stage of SEEKR2. SEEKR2
 also needs the SEEKR2 OpenMM Plugin in order to use OpenMM for MD simulations.
 
 The easiest, quickest way to install the SEEKR2 OpenMM Plugin is to use
-Conda. If you don't already have Conda installed, Download Conda with 
-Python version 3.8 from 
-https://conda.io/en/latest/miniconda.html and run the downloaded script and 
-fill out the prompts. 
+Mamba. If you don't already have Mamba installed, Download Mamba from 
+https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh 
+and run the downloaded script and fill out the prompts. 
 
-With Conda working, install the SEEKR2 OpenMM Plugin:
+With Mamba working, install the SEEKR2 OpenMM Plugin:
 
 ```
-conda install -c conda-forge seekr2_openmm_plugin
+mamba install seekr2_openmm_plugin
 ```
 One can test the installation by opening a Python terminal and typing:
 
@@ -72,14 +71,21 @@ If there is a problem related to not being able to find libOpenMM8.1, one
 can try specifying the OpenMM version:
 
 ```
-conda install -c conda-forge seekr2_openmm_plugin openmm=8.1
+mamba install seekr2_openmm_plugin openmm=8.1
+```
+
+If there is an error such as "CUDA_ERROR_UNSUPPORTED_PTX_VERSION", one can 
+see if a different version of CudaToolKit will work:
+
+```
+mamba install seekr2_openmm_plugin cudatoolkit=11.7
 ```
 
 If there is an error such as "No module named seekr2plugin", one can always 
 try installing an older version of OpenMM and CUDA:
 
 ```
-conda install -c conda-forge seekr2_openmm_plugin cudatoolkit=10.2 openmm=7.7
+mamba install seekr2_openmm_plugin cudatoolkit=10.2 openmm=7.7
 ```
 
 Alternatively, NAMD2 may be used for MD if desired. See the NAMD2 section

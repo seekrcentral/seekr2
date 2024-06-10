@@ -28,7 +28,7 @@ DEFAULT_NUM_POINTS = 100
 DEFAULT_SKIP = 0
 
 # The threshold beneath which to skip plotting the convergence
-MIN_PLOT_NORM = 1e-8
+MIN_PLOT_NORM = 1e-18
 
 # The interval between which to update the user on convergence script progress
 PROGRESS_UPDATE_INTERVAL = DEFAULT_NUM_POINTS // 10
@@ -394,8 +394,12 @@ def plot_scalar_conv(conv_values, conv_intervals, label, title, timestep_in_ns,
     ax : object
         matplotlib Axes object
     """
-    if not np.any(np.isfinite(conv_values)) or np.all(conv_values == 0):
-        return None, None
+    #if not np.any(np.isfinite(conv_values)) or np.all(conv_values == 0):
+    #    return None, None
+    for i, conv_value in enumerate(conv_values):
+        if not np.isfinite(conv_value) or conv_value == 0:
+            conv_values[i] = np.NAN
+    
     fig, ax = plt.subplots()
     ax.plot(np.multiply(conv_intervals, timestep_in_ns), conv_values, 
             linestyle="-", marker="o", markersize=1)
@@ -460,9 +464,11 @@ def plot_dict_conv(conv_dict, conv_intervals, label_base, unit, timestep_in_ns,
     for key in conv_dict:
         conv_values = conv_dict[key]
         if not np.all(np.isfinite(conv_values)):
+            print("skipping key:", key, "because values aren't finite")
             continue
         if skip_null:
             if np.linalg.norm(conv_values) < MIN_PLOT_NORM:
+                print("Skipping key:", key, "because values are too low")
                 continue
         if isinstance(key, tuple):
             label = "$" + label_base + "_{" + "\\rightarrow".join(
@@ -473,7 +479,7 @@ def plot_dict_conv(conv_dict, conv_intervals, label_base, unit, timestep_in_ns,
         elif isinstance(key, int):
             label = "$" + label_base + "_{" + str(key) + "(" + unit + ")}$"
             title = "$" + label_base + "_{" + str(key) + "}$"
-            name = label_base + "_{" + str(key) + "}"
+            name = label_base + "_" + str(key) + ""
         else:
             raise Exception("key type not implemented: {}".format(type(key)))
         
@@ -490,6 +496,7 @@ def plot_dict_conv(conv_dict, conv_intervals, label_base, unit, timestep_in_ns,
         ax_list.append(ax)
         title_list.append(title)
         name_list.append(name)
+        
     return fig_list, ax_list, title_list, name_list
 
 def calc_transition_steps(model, data_sample):

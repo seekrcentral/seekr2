@@ -582,7 +582,10 @@ class Data_sample():
                             continue
                     bulk_milestones.append(milestone_id)
                     #bulk_milestone = milestone_id
-
+        
+        assert len(end_milestones) > 0, "No end (bound or otherwise) states "\
+            "defined in this model. Kinetics calculations will not work."
+        
         if np.any(self.Q.sum(axis=1) > 1.E-10):
             problem_milestone = np.argmin(self.Q.T.sum(axis=1))
             error_msg = """The rate matrix Q has a numerically overflowed row 
