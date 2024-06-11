@@ -69,8 +69,7 @@ jobs:
     - name: Get NAMD
       shell: bash -l {0}
       env:
-        # NAMD_ACCESS_TOKEN: ${{ secrets.NAMD_ACCESS_TOKEN }}
-        NAMD_ACCESS_TOKEN2: ${{ secrets.NAMD_ACCESS_TOKEN2 }}
+        NAMD_ACCESS_TOKEN3: ${{ secrets.NAMD_ACCESS_TOKEN3 }}
       run: |
         
         git clone https://github.com/UIUC-PPL/charm
@@ -93,6 +92,8 @@ jobs:
         #mkdir fftw
         #mv linux-x86_64 fftw
         #export FFTWDIR=${PWD}/fftw/linux-x86_64
+        
+        # DON'T FORGET TO MODIFY NAMD_ACCESS_TOKEN3 REFERENCE ABOVE
         
         git clone https://oauth2:${NAMD_ACCESS_TOKEN3}@gitlab.com/tcbgUIUC/namd.git
         cd namd
