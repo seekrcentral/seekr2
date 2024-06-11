@@ -97,6 +97,7 @@ jobs:
         
         git clone https://oauth2:${NAMD_ACCESS_TOKEN3}@gitlab.com/tcbgUIUC/namd.git
         cd namd
+        git checkout master
         ./config Linux-x86_64-g++ --charm-base $CHRMDIR --tcl-prefix $TCLDIR --without-fftw #--fftw-prefix ${FFTWDIR}
         cd Linux-x86_64-g++
         make
