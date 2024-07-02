@@ -128,7 +128,7 @@ def host_guest_mmvt_model_input_persistent_forcefield(tmpdir_factory):
     Create a model object that is persistent across the tests in this file.
     Uses an OpenMM forcefield input.
     """
-    rootdir = tmpdir_factory.mktemp("hostguest_mmvt")
+    rootdir = tmpdir_factory.mktemp("hostguest_mmvt_forcefield")
     host_guest_mmvt_model_input_persisent_obj \
         = create_model_input.create_host_guest_mmvt_model_input(
             rootdir, bd=False, ff="forcefield")
@@ -170,6 +170,56 @@ def host_guest_mmvt_model_forcefield(
     Uses an OpenMM forcefield input.
     """
     host_guest_mmvt_model = copy.deepcopy(host_guest_mmvt_model_persistent_forcefield)
+    return host_guest_mmvt_model
+
+@pytest.fixture(scope="session")
+def host_guest_mmvt_model_input_persistent_system(tmpdir_factory):
+    """
+    Create a model object that is persistent across the tests in this file.
+    Uses an OpenMM forcefield system input.
+    """
+    rootdir = tmpdir_factory.mktemp("hostguest_mmvt_system")
+    host_guest_mmvt_model_input_persisent_obj \
+        = create_model_input.create_host_guest_mmvt_model_input(
+            rootdir, bd=False, ff="system")
+    return host_guest_mmvt_model_input_persisent_obj
+
+@pytest.fixture()
+def host_guest_mmvt_model_input_system(
+        host_guest_mmvt_model_input_persistent_system):
+    """
+    Create a copy of the model input that is not persistent. But this 
+    at least doesn't require us to generate an entirely new model 
+    input. Uses an OpenMM forcefield system input.
+    """
+    host_guest_mmvt_model_input_obj = copy.deepcopy(
+        host_guest_mmvt_model_input_persistent_system)
+    return host_guest_mmvt_model_input_obj
+
+@pytest.fixture(scope="session")
+def host_guest_mmvt_model_persistent_system(
+        host_guest_mmvt_model_input_persistent_system):
+    """
+    Create a model object that is persistent across the tests in this file.
+    Uses an OpenMM forcefield system input.
+    """
+    os.chdir(TEST_DIRECTORY)
+    host_guest_mmvt_model_obj, model_xml_path \
+        = prepare.prepare(host_guest_mmvt_model_input_persistent_system, 
+                          force_overwrite=False)
+    model_dir = os.path.dirname(model_xml_path)
+    host_guest_mmvt_model_obj.anchor_rootdir = os.path.abspath(model_dir)
+    return host_guest_mmvt_model_obj
+
+@pytest.fixture
+def host_guest_mmvt_model_system(
+        host_guest_mmvt_model_persistent_system):
+    """
+    Create a copy of the model that is not persistent. But this at least
+    doesn't require us to generate an entirely new model. 
+    Uses an OpenMM forcefield systeminput.
+    """
+    host_guest_mmvt_model = copy.deepcopy(host_guest_mmvt_model_persistent_system)
     return host_guest_mmvt_model
 
 @pytest.fixture(scope="session")

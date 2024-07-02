@@ -205,3 +205,30 @@ def test_calc_RMSD_conv_amount_elber(toy_elber_model):
             assert convergence_results[alpha] == 1e99
     
     return
+
+def test_array_to_dict():
+    a1 = np.array([1.0, 2.0, 3.0])
+    d1 = common_converge.array_to_dict(a1)
+    assert d1[(0,)] == 1.0
+    assert d1[(1,)] == 2.0
+    assert d1[(2,)] == 3.0
+    
+    a2 = np.array([[5.0, 6.0],
+                   [7.0, 8.0]])
+    d2 = common_converge.array_to_dict(a2)
+    assert d2[(0,0)] == 5.0
+    assert d2[(0,1)] == 6.0
+    assert d2[(1,0)] == 7.0
+    assert d2[(1,1)] == 8.0
+    return
+
+def test_collapse_list_of_dicts():
+    L1 = [{(1,2):1.0}, 
+          {(2,3):2.0},
+          {(3,4):3.0}]
+    d1 = common_converge.collapse_list_of_dicts(L1)
+    assert d1[(1,2,0)] ==  1.0
+    assert d1[(2,3,1)] ==  2.0
+    assert d1[(3,4,2)] ==  3.0
+    return
+

@@ -161,8 +161,14 @@ def create_openmm_system(sim_openmm, model, anchor, frame=0,
             pdb_filename = os.path.join(building_directory, 
                                    anchor.forcefield_params.pdb_coordinates_filename)
             pdb = openmm_app.PDBFile(pdb_filename)
-            forcefield = openmm_app.ForceField(
-                *forcefield_filenames)
+            system_filename = anchor.forcefield_params.system_filename
+            if system_filename != "":
+                full_system_filename = os.path.join(building_directory, 
+                                                    system_filename)
+            else:
+                full_system_filename = None
+                
+                
             box_vectors = anchor.forcefield_params.box_vectors
             
             topology = pdb.topology
@@ -274,11 +280,23 @@ def create_openmm_system(sim_openmm, model, anchor, frame=0,
                 rigidWater=rigidWater)
         
         elif anchor.forcefield_params is not None:
-            system = forcefield.createSystem(
-                pdb.topology, nonbondedMethod=nonbondedMethod, 
-                nonbondedCutoff=model.openmm_settings.nonbonded_cutoff, 
-                constraints=constraints, hydrogenMass=hydrogenMass, 
-                rigidWater=rigidWater)
+            if len(forcefield_filenames) > 0:
+                assert system_filename == "", "If Forcefield files are "\
+                    "defined, then a system_filename must not be defined."
+                forcefield = openmm_app.ForceField(
+                    *forcefield_filenames)
+                system = forcefield.createSystem(
+                    pdb.topology, nonbondedMethod=nonbondedMethod, 
+                    nonbondedCutoff=model.openmm_settings.nonbonded_cutoff, 
+                    constraints=constraints, hydrogenMass=hydrogenMass, 
+                    rigidWater=rigidWater)
+                
+            else:
+                assert full_system_filename is not None, \
+                    "If no forcefield files are a defined, a system file must "\
+                    "be."
+                with open(full_system_filename) as input:
+                    system = openmm.XmlSerializer.deserialize(input.read())
         
         elif anchor.charmm_params is not None:
             system = psf.createSystem(

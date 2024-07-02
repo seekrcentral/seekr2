@@ -114,11 +114,22 @@ def load_structure_with_parmed(model, anchor):
                 anchor.forcefield_params.custom_forcefield_filenames:
             forcefield_filenames.append(os.path.join(
                 building_directory, forcefield_filename))
-        parameter_set = parmed.openmm.parameters.OpenMMParameterSet(
-            forcefield_filenames)
+        system_filename = anchor.forcefield_params.system_filename
+        if system_filename != "" or system_filename is not None:
+            assert len(forcefield_filenames) == 0, "Either a set of "\
+                "forcefield files or a serialized System() filename must be "\
+                "defined, but not both."
+            full_system_filename = os.path.join(
+                building_directory, system_filename)
+            structure = parmed.load_file(full_system_filename)
+            
+        if len(forcefield_filenames) > 0:
+            parameter_set = parmed.openmm.parameters.OpenMMParameterSet(
+                forcefield_filenames)
+            structure = parmed.load_file(parameter_set)
+        
         pdb_filename = os.path.join(building_directory, 
                                anchor.forcefield_params.pdb_filename)
-        structure = parmed.load_file(parameter_set)
         pdb_structure = parmed.load_file(pdb_filename)
         structure.coordinates = pdb_structure.coordinates
         if anchor.forcefield_params.box_vectors is not None:
@@ -802,13 +813,17 @@ def check_atom_selections_MD_BD(model):
                 if md_atomic_name_dict != bd_atomic_name_dict:
                     bd_err_str = ""
                     for key in bd_atomic_name_dict:
-                        this_str = "{} atoms with atomic number {}".format(
+                        this_str = "{} atoms with atomic name {}".format(
                             bd_atomic_name_dict[key], key)
+                        if bd_err_str != "":
+                            bd_err_str += " and "
                         bd_err_str += this_str
                     md_err_str = ""
                     for key in md_atomic_name_dict:
-                        this_str = "{} atoms with atomic number {}".format(
+                        this_str = "{} atoms with atomic name {}".format(
                             md_atomic_name_dict[key], key)
+                        if md_err_str != "":
+                            md_err_str += " and "
                         md_err_str += this_str
                     print(warnstr2.format(bd_err_str, md_err_str))
                     return False

@@ -71,6 +71,42 @@ def analyze_bd_only(model, data_sample):
     data_sample.bd_transition_counts = get_bd_transition_counts(model)
     return
 
+def array_to_dict(my_array):
+    """
+    Convert a numpy.array object into a dictionary for convergence
+    plotting.
+    """
+    new_dict = {}
+    if my_array is None:
+        return new_dict
+    
+    if isinstance(my_array, list):
+        my_array = np.array(my_array)
+    
+    it = np.nditer(my_array, flags=["multi_index"])
+    for x in it:
+        new_dict[it.multi_index] = float(x)
+    
+    return new_dict
+
+def collapse_list_of_dicts(my_list_of_dicts):
+    """
+    if there is a list of dictionaries, then collapse into a single 
+    dictionary with 3-tuple keys.
+    """
+    new_dict = {}
+    for i, old_dict in enumerate(my_list_of_dicts):
+        for key in old_dict:
+            if isinstance(key, tuple):
+                new_key = (*key, i)
+            elif isinstance(key, int):
+                new_key = (key, i)
+            else:
+                raise Exception(f"Not supported key type: {key}")
+            new_dict[new_key] = old_dict[key]
+            
+    return new_dict
+
 def analyze_kinetics(model, analysis, max_step, k_on_state=None):
     """
     Extract relevant analysis quantities from sub-sections of the 
@@ -127,13 +163,24 @@ def analyze_kinetics(model, analysis, max_step, k_on_state=None):
             k_on = 0.0
         k_off = analysis.k_off
         main_data_sample = analysis.main_data_sample
-        return k_on, k_off, main_data_sample.N_ij, main_data_sample.R_i
+        if main_data_sample.pi_alpha is None:
+            pi_alpha = None
+        else:
+            pi_alpha = main_data_sample.pi_alpha.flatten()
+            
+        return k_on, k_off, main_data_sample.N_alpha_beta, \
+            array_to_dict(main_data_sample.T_alpha),\
+            main_data_sample.k_alpha_beta, array_to_dict(pi_alpha), \
+            collapse_list_of_dicts(main_data_sample.N_i_j_alpha), \
+            collapse_list_of_dicts(main_data_sample.R_i_alpha), \
+            main_data_sample.N_ij, main_data_sample.R_i
+    
     except (common_analyze.MissingStatisticsError, np.linalg.LinAlgError,
             AssertionError, ValueError) as e:
         if model.using_bd():
             analyze_bd_only(model, analysis.main_data_sample)
             
-        return 0.0, 0.0, {}, {}
+        return 0.0, 0.0, {}, {}, {}, {}, {}, {}, {}, {}
 
 def get_mmvt_max_steps(model):
     """
@@ -327,6 +374,12 @@ def check_milestone_convergence(model, k_on_state=None, verbose=False,
     k_on_conv = np.zeros(DEFAULT_NUM_POINTS)
     # partial allows us to create a defaultdict with values that are
     # empty arrays of a certain size DEFAULT_NUM_POINTS
+    N_alpha_beta_conv = defaultdict(functools.partial(np.zeros, DEFAULT_NUM_POINTS))
+    T_alpha_conv = defaultdict(functools.partial(np.zeros, DEFAULT_NUM_POINTS))
+    k_alpha_beta_conv = defaultdict(functools.partial(np.zeros, DEFAULT_NUM_POINTS))
+    pi_alpha_conv = defaultdict(functools.partial(np.zeros, DEFAULT_NUM_POINTS))
+    N_ij_alpha_conv = defaultdict(functools.partial(np.zeros, DEFAULT_NUM_POINTS))
+    R_i_alpha_conv = defaultdict(functools.partial(np.zeros, DEFAULT_NUM_POINTS))
     N_ij_conv = defaultdict(functools.partial(np.zeros, DEFAULT_NUM_POINTS))
     R_i_conv = defaultdict(functools.partial(np.zeros, DEFAULT_NUM_POINTS))
     analysis = analyze.Analysis(model, force_warning=False)
@@ -341,24 +394,45 @@ def check_milestone_convergence(model, k_on_state=None, verbose=False,
             print("Processing interval {} of {}".format(interval_index, 
                                                         DEFAULT_NUM_POINTS))
         max_step = max_step_list[interval_index]
-        
-        k_on, k_off, N_ij, R_i = analyze_kinetics(
-            model, analysis, max_step, k_on_state)
+        interval_fraction = interval_index / DEFAULT_NUM_POINTS
+        k_on, k_off, N_alpha_beta, T_alpha, k_alpha_beta, pi_alpha, \
+            N_ij_alpha, R_i_alpha, N_ij, R_i = analyze_kinetics(
+                model, analysis, max_step, k_on_state)
         data_sample_list.append(analysis.main_data_sample)
         k_on_conv[interval_index] = k_on
         k_off_conv[interval_index] = k_off
         if interval_index == 0:
-            divisor = 1
+            divisor = 0.5 * max_step_list[1]
         else:
-            divisor = interval_index
+            divisor = max_step
         
+        for N_alpha_beta_key in N_alpha_beta:
+            N_alpha_beta_conv[N_alpha_beta_key][interval_index] \
+                = N_alpha_beta[N_alpha_beta_key] #/ divisor
+        for T_alpha_key in T_alpha:
+            T_alpha_conv[T_alpha_key][interval_index] \
+                = T_alpha[T_alpha_key] #/ divisor
+        for k_alpha_beta_key in k_alpha_beta:
+            k_alpha_beta_conv[k_alpha_beta_key][interval_index] \
+                = k_alpha_beta[k_alpha_beta_key]
+        for pi_alpha_key in pi_alpha:
+            pi_alpha_conv[pi_alpha_key][interval_index] \
+                = pi_alpha[pi_alpha_key]
+        for N_ij_alpha_key in N_ij_alpha:
+            N_ij_alpha_conv[N_ij_alpha_key][interval_index] \
+                = N_ij_alpha[N_ij_alpha_key] #/ divisor
+        for R_i_alpha_key in R_i_alpha:
+            R_i_alpha_conv[R_i_alpha_key][interval_index] \
+                = R_i_alpha[R_i_alpha_key] #/ divisor
         for N_ij_key in N_ij:
-            N_ij_conv[N_ij_key][interval_index] = N_ij[N_ij_key] / divisor
+            N_ij_conv[N_ij_key][interval_index] = N_ij[N_ij_key] #/ divisor
         for R_i_key in R_i:
-            R_i_conv[R_i_key][interval_index] = R_i[R_i_key] / divisor
+            R_i_conv[R_i_key][interval_index] = R_i[R_i_key] #/ divisor
     
-    return k_on_conv, k_off_conv, N_ij_conv, R_i_conv, max_step_list, \
-        timestep_in_ns, data_sample_list, times_dict
+    return k_on_conv, k_off_conv, N_alpha_beta_conv, T_alpha_conv, \
+        k_alpha_beta_conv, pi_alpha_conv, N_ij_alpha_conv, R_i_alpha_conv, \
+        N_ij_conv, R_i_conv, max_step_list, timestep_in_ns, data_sample_list, \
+        times_dict
 
 def plot_scalar_conv(conv_values, conv_intervals, label, title, timestep_in_ns, 
                      y_axis_logarithmic=True):
@@ -400,6 +474,10 @@ def plot_scalar_conv(conv_values, conv_intervals, label, title, timestep_in_ns,
         if not np.isfinite(conv_value) or conv_value == 0:
             conv_values[i] = np.NAN
     
+    if not np.any(np.isfinite(conv_values)):
+        #print("skipping key:", key, "because values aren't finite")
+        return None, None
+    
     fig, ax = plt.subplots()
     ax.plot(np.multiply(conv_intervals, timestep_in_ns), conv_values, 
             linestyle="-", marker="o", markersize=1)
@@ -409,10 +487,12 @@ def plot_scalar_conv(conv_values, conv_intervals, label, title, timestep_in_ns,
     plt.title(title)
     if y_axis_logarithmic:
         plt.yscale("log", nonpositive="mask")
+    plt.tight_layout()
     return fig, ax
 
 def plot_dict_conv(conv_dict, conv_intervals, label_base, unit, timestep_in_ns, 
-                   skip_null=True, y_axis_logarithmic=True):
+                   skip_null=True, y_axis_logarithmic=True, title_suffix="",
+                   name_base=None, draw_double=True):
     """
     Plot convergence of N_ij or R_i or other dictionary-based value 
     as a function of simulation time.
@@ -461,41 +541,67 @@ def plot_dict_conv(conv_dict, conv_intervals, label_base, unit, timestep_in_ns,
     ax_list = []
     title_list = []
     name_list = []
+    if name_base is None:
+        name_base = label_base
+        
     for key in conv_dict:
         conv_values = conv_dict[key]
         if not np.all(np.isfinite(conv_values)):
-            print("skipping key:", key, "because values aren't finite")
+            #print("skipping key:", key, "because values aren't finite")
             continue
         if skip_null:
             if np.linalg.norm(conv_values) < MIN_PLOT_NORM:
-                print("Skipping key:", key, "because values are too low")
+                #print("Skipping key:", key, "because values are too low")
                 continue
+        if unit == "":
+            unitstr = ""
+        else:
+            unitstr = "(" + unit +")"
         if isinstance(key, tuple):
-            label = "$" + label_base + "_{" + "\\rightarrow".join(
-                map(str, key)) + "}(" + unit +")$"
-            title = "$" + label_base + "_{" + "\\rightarrow".join(
-                map(str, key)) + "}$"
-            name = label_base + "_" + "_".join(map(str, key))
+            # If right arrow is preferred
+            #label = "$" + label_base + "_{" + "\\rightarrow".join(
+            #    map(str, key)) + "}(" + unit +")$"
+            #title = "$" + label_base + "_{" + "\\rightarrow".join(
+            #    map(str, key)) + "}$" + title_suffix
+            
+            label = "$" + label_base + "_{" + ",".join(
+                map(str, key)) + "}" + unitstr + "$"
+            title = "$" + label_base + "_{" + ",".join(
+                map(str, key)) + "}$" + title_suffix
+            name = name_base + "_" + "_".join(map(str, key))
         elif isinstance(key, int):
-            label = "$" + label_base + "_{" + str(key) + "(" + unit + ")}$"
-            title = "$" + label_base + "_{" + str(key) + "}$"
-            name = label_base + "_" + str(key) + ""
+            label = "$" + label_base + "_{" + str(key) + "}" + unitstr + "$"
+            title = "$" + label_base + "_{" + str(key) + "}$" + title_suffix
+            name = name_base + "_" + str(key) + ""
         else:
             raise Exception("key type not implemented: {}".format(type(key)))
         
-        fig, ax = plt.subplots()
-        ax.plot(np.multiply(conv_intervals, timestep_in_ns), conv_values, 
-                linestyle='-', marker="o", markersize = 1)
-        plt.ylabel(label)
-        # TODO: change this to plotting over time
-        plt.xlabel("time per anchor (ns)")
+        fig, ax1 = plt.subplots()
+        x_data = np.multiply(conv_intervals, timestep_in_ns)
+        ax1.plot(x_data, conv_values, 
+                linestyle='-', marker="o", color="r", markersize = 1)
+        ax1.set_ylabel(label, color="r")
+        ax1.set_xlabel("time per anchor (ns)")
         if y_axis_logarithmic:
             plt.yscale("log", nonpositive="mask")
+        ax_list.append(ax1)
+        if draw_double:
+            ax2 = ax1.twinx()
+            ax2.set_ylabel(label + "/time(ps)", color="b")
+            data_per_time = np.zeros(conv_intervals.shape)
+            for i in range(len(conv_intervals)):
+                data_per_time[i] = conv_values[i] / x_data[i]
+            ax2.plot(x_data, data_per_time, 
+                linestyle='-', marker="o", color="b", markersize = 1)
+            if y_axis_logarithmic:
+                plt.yscale("log", nonpositive="mask")
+            ax_list.append(ax2)
+        
         plt.title(title)
         fig_list.append(fig)
-        ax_list.append(ax)
         title_list.append(title)
         name_list.append(name)
+        plt.tight_layout()
         
     return fig_list, ax_list, title_list, name_list
 

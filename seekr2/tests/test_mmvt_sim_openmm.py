@@ -78,6 +78,17 @@ def test_mmvt_sim_openmm_forcefield(tmp_path, host_guest_mmvt_model_forcefield):
     assert my_sim_openmm.simulation is not None
     return
 
+def test_mmvt_sim_openmm_system(tmp_path, host_guest_mmvt_model_system):
+    
+    myanchor = host_guest_mmvt_model_system.anchors[1]
+    output_file = os.path.join(tmp_path, "output.txt")
+    my_sim_openmm = mmvt_sim_openmm.create_sim_openmm(
+        host_guest_mmvt_model_system, myanchor, output_file)
+    assert my_sim_openmm.system is not None
+    assert my_sim_openmm.integrator is not None
+    assert my_sim_openmm.simulation is not None
+    return
+
 def test_make_mmvt_boundary_definitions(toy_mmvt_model):
     myanchor = toy_mmvt_model.anchors[1]
     mymilestone = myanchor.milestones[0]

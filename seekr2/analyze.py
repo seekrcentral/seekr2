@@ -10,6 +10,7 @@ import warnings
 import glob
 from collections import defaultdict
 import math
+from copy import deepcopy
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -21,7 +22,7 @@ import seekr2.modules.mmvt_analyze as mmvt_analyze
 import seekr2.modules.elber_analyze as elber_analyze
 import seekr2.modules.check as check
 
-LOW_FLUX = 1e-10
+LOW_FLUX = 1e-19
 FAST_FLUX = 1e6
 
 def check_graph_connected(graph, state_index1, state_index2):
@@ -50,7 +51,7 @@ def check_graph_connected(graph, state_index1, state_index2):
     if state_index1 == state_index2:
         return True
     explored_nodes = [state_index1]
-    edge_nodes = graph[state_index1]
+    edge_nodes = deepcopy(graph[state_index1])
     counter = 0
     while len(edge_nodes) > 0:
         edge_node = edge_nodes.pop()
@@ -263,6 +264,7 @@ class Analysis:
                 existing_alias_transitions.append(key)
             
             for milestone in anchor.milestones:
+                
                 if milestone.alias_index in existing_alias_ids:
                     connection_graph[anchor.index].append(
                         milestone.neighbor_anchor_index)
@@ -695,7 +697,7 @@ class Analysis:
                 anchor_values, self.pi_alpha.flatten()[0:len(anchor_indices)],
                 yerr=self.pi_alpha_error, ecolor="k", capsize=2)
             plt.xticks(anchor_values, anchor_values, rotation=90)
-            plt.ylabel("\u03C0_{\u03B1}")
+            plt.ylabel("$\u03C0_{\u03B1}$")
             plt.xlabel("anchor value")
             plt.yscale("log", nonpositive="mask")
             plt.tight_layout()

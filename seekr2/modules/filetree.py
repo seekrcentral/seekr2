@@ -242,6 +242,19 @@ def copy_building_files_by_anchor(anchor, input_anchor, rootdir):
                 anchor.forcefield_params.box_vectors.from_quantity(
                     box_vectors)
                 
+        if forcefield.system_filename is not None and \
+                forcefield.system_filename != "":
+            forcefield.system_filename = os.path.expanduser(
+                forcefield.system_filename)
+            assert os.path.exists(forcefield.pdb_coordinates_filename), \
+                "Provided file does not exist: {}".format(
+                    forcefield.pdb_coordinates_filename)
+            system_filename = os.path.basename(forcefield.system_filename)
+            new_system_filename = os.path.join(anchor_building_dir, 
+                                               system_filename)
+            copyfile(forcefield.system_filename, new_system_filename)
+            anchor.forcefield_params.system_filename = system_filename
+                
     charmm = input_anchor.starting_charmm_params
     new_psf_filename = None
     if charmm is not None:

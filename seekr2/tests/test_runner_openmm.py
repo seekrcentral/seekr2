@@ -242,7 +242,24 @@ def test_Runner_openmm_forcefield(tmp_path, host_guest_mmvt_model_forcefield):
     mymodel = host_guest_mmvt_model_forcefield
     myanchor = mymodel.anchors[1]
     mmvt_output_filename = os.path.join(
-                    tmp_path, myanchor.directory, "prod", 
+                    mymodel.anchor_rootdir, myanchor.directory, "prod", 
+                    "%s%d.%s" % (mmvt_cv_base.OPENMMVT_BASENAME, 1, 
+                                         mmvt_cv_base.OPENMMVT_EXTENSION))
+    runner = runner_openmm.Runner_openmm(mymodel, myanchor)
+    default_output_file, state_file_prefix, restart_index = runner.prepare(
+        force_overwrite=True)
+    my_sim_openmm = mmvt_sim_openmm.create_sim_openmm(mymodel, myanchor, 
+                                                      mmvt_output_filename)
+    runner.run(my_sim_openmm, False)
+    assert os.path.exists(mmvt_output_filename)
+    
+def test_Runner_openmm_system(tmp_path, host_guest_mmvt_model_system):
+    if not os.path.exists(tmp_path):
+        os.mkdir(tmp_path)
+    mymodel = host_guest_mmvt_model_system
+    myanchor = mymodel.anchors[1]
+    mmvt_output_filename = os.path.join(
+                    mymodel.anchor_rootdir, myanchor.directory, "prod", 
                     "%s%d.%s" % (mmvt_cv_base.OPENMMVT_BASENAME, 1, 
                                          mmvt_cv_base.OPENMMVT_EXTENSION))
     runner = runner_openmm.Runner_openmm(mymodel, myanchor)

@@ -682,7 +682,11 @@ class Forcefield_params(Serializer):
         
     pdb_filename : str
         The PDB input coordinates and box vectors for the system.
-        
+    
+    system_filename : str
+        The System() serialized object that can be used to reconstruct a
+        complete OpenMM simulation.
+    
     box_vectors : None or Box_vectors
         The 3 vectors which describe the shape of the simulation box.
         If None, then the box vectors are taken from the 
@@ -693,6 +697,7 @@ class Forcefield_params(Serializer):
         self.built_in_forcefield_filenames = []
         self.custom_forcefield_filenames = []
         self.pdb_coordinates_filename = ""
+        self.system_filename = ""
         self.box_vectors = None
         return
 

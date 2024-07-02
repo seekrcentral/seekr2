@@ -8,6 +8,8 @@ SEEKR2 simulation outputs and results.
 import os
 import argparse
 
+import matplotlib.pyplot as plt
+
 import seekr2.modules.common_base as base
 import seekr2.modules.common_analyze as common_analyze
 import seekr2.modules.common_converge as common_converge
@@ -21,8 +23,10 @@ def converge(model, k_on_state=None, image_directory=None, verbose=False,
     of quantities such as N_ij, R_i, k_off, and k_on.
     """
     curdir = os.getcwd()
-    k_on_conv, k_off_conv, N_ij_conv, R_i_conv, max_step_list, \
-        timestep_in_ns, data_sample_list, times_dict \
+    k_on_conv, k_off_conv, N_alpha_beta_conv, T_alpha_conv, \
+        k_alpha_beta_conv, pi_alpha_conv, N_ij_alpha_conv, R_i_alpha_conv, \
+        N_ij_conv, R_i_conv, max_step_list, timestep_in_ns, data_sample_list, \
+        times_dict \
         = common_converge.check_milestone_convergence(
             model, k_on_state=k_on_state, verbose=verbose, 
             long_converge=long_converge)
@@ -33,34 +37,120 @@ def converge(model, k_on_state=None, image_directory=None, verbose=False,
     k_off_fig, ax = common_converge.plot_scalar_conv(
         k_off_conv, max_step_list, title="$k_{off}$ Convergence", 
         label="k_{off} (s^{-1})", timestep_in_ns=timestep_in_ns)
+    if k_off_fig is not None:
+        k_off_fig.savefig(os.path.join(image_directory, "k_off_convergence.png"))
+        plt.close(k_off_fig)
+        
     k_on_fig, ax = common_converge.plot_scalar_conv(
         k_on_conv, max_step_list, title="$k_{on}$ Convergence", 
         label="k_{on} (s^{-1} M^{-1})", timestep_in_ns=timestep_in_ns)
+    if k_on_fig is not None:
+        k_on_fig.savefig(os.path.join(image_directory, "k_on_convergence.png"))
+        plt.close(k_on_fig)
+    
+    N_alpha_beta_fig_list, ax, N_alpha_beta_title_list, N_alpha_beta_name_list \
+        = common_converge.plot_dict_conv(
+        N_alpha_beta_conv, max_step_list, label_base="N", unit="",
+        timestep_in_ns=timestep_in_ns, y_axis_logarithmic=False, 
+        title_suffix="", draw_double=True)
+    for i, name in enumerate(N_alpha_beta_name_list):
+        N_alpha_beta_fig = N_alpha_beta_fig_list[i]
+        if N_alpha_beta_fig is not None:
+            N_alpha_beta_filename = os.path.join(
+                image_directory, common_analyze.N_ALPHA_BETA_DIR, name+".png")
+            N_alpha_beta_fig.savefig(N_alpha_beta_filename)
+            plt.close(N_alpha_beta_fig)
+    
+    T_alpha_fig_list, ax, T_alpha_title_list, T_alpha_name_list \
+        = common_converge.plot_dict_conv(
+        T_alpha_conv, max_step_list, label_base="T", unit="ps",
+        timestep_in_ns=timestep_in_ns, y_axis_logarithmic=False, 
+        title_suffix="", draw_double=True)
+    
+    for i, name in enumerate(T_alpha_name_list):
+        T_alpha_fig = T_alpha_fig_list[i]
+        if T_alpha_fig is not None:
+            T_alpha_filename = os.path.join(
+                image_directory, common_analyze.T_ALPHA_DIR, name+".png")
+            T_alpha_fig.savefig(T_alpha_filename)
+            plt.close(T_alpha_fig)
+    
+    k_alpha_beta_fig_list, ax, k_alpha_beta_title_list, k_alpha_beta_name_list \
+        = common_converge.plot_dict_conv(
+        k_alpha_beta_conv, max_step_list, label_base="k", unit="",
+        timestep_in_ns=timestep_in_ns, title_suffix="")
+    for i, name in enumerate(k_alpha_beta_name_list):
+        k_alpha_beta_fig = k_alpha_beta_fig_list[i]
+        if k_alpha_beta_fig is not None:
+            k_alpha_beta_filename = os.path.join(
+                image_directory, common_analyze.K_ALPHA_BETA_DIR, name+".png")
+            k_alpha_beta_fig.savefig(k_alpha_beta_filename)
+            plt.close(k_alpha_beta_fig)
+    
+    pi_alpha_fig_list, ax, pi_alpha_title_list, pi_alpha_name_list \
+        = common_converge.plot_dict_conv(
+        pi_alpha_conv, max_step_list, label_base="\pi", unit="",
+        timestep_in_ns=timestep_in_ns, title_suffix="", name_base="pi",
+        draw_double=False)
+    for i, name in enumerate(pi_alpha_name_list):
+        pi_alpha_fig = pi_alpha_fig_list[i]
+        if pi_alpha_fig is not None:
+            pi_alpha_filename = os.path.join(
+                image_directory, common_analyze.PI_ALPHA_DIR, name+".png")
+            pi_alpha_fig.savefig(pi_alpha_filename)
+            plt.close(pi_alpha_fig)
+            
+    N_ij_alpha_fig_list, ax, N_ij_alpha_title_list, N_ij_alpha_name_list \
+        = common_converge.plot_dict_conv(
+        N_ij_alpha_conv, max_step_list, label_base="N", unit="",
+        timestep_in_ns=timestep_in_ns, y_axis_logarithmic=False, 
+        title_suffix="", draw_double=True)
+    for i, name in enumerate(N_ij_alpha_name_list):
+        N_ij_alpha_fig = N_ij_alpha_fig_list[i]
+        if N_ij_alpha_fig is not None:
+            N_ij_alpha_filename = os.path.join(
+                image_directory, common_analyze.N_IJ_ALPHA_DIR, name+".png")
+            N_ij_alpha_fig.savefig(N_ij_alpha_filename)
+            plt.close(N_ij_alpha_fig)
+    
+    R_i_alpha_fig_list, ax, R_i_alpha_title_list, R_i_alpha_name_list \
+        = common_converge.plot_dict_conv(
+        R_i_alpha_conv, max_step_list, label_base="R", unit="ps",
+        timestep_in_ns=timestep_in_ns, title_suffix="", 
+        y_axis_logarithmic=False, draw_double=True)
+    for i, name in enumerate(R_i_alpha_name_list):
+        R_i_alpha_fig = R_i_alpha_fig_list[i]
+        if R_i_alpha_fig is not None:
+            R_i_alpha_filename = os.path.join(
+                image_directory, common_analyze.R_I_ALPHA_DIR, name+".png")
+            R_i_alpha_fig.savefig(R_i_alpha_filename)
+            plt.close(R_i_alpha_fig)
+    
     N_ij_fig_list, ax, N_ij_title_list, N_ij_name_list \
         = common_converge.plot_dict_conv(
         N_ij_conv, max_step_list, label_base="N", unit="",
-        timestep_in_ns=timestep_in_ns)
-    R_i_fig_list, ax, R_i_title_list, R_i_name_list \
-        = common_converge.plot_dict_conv(
-        R_i_conv, max_step_list, label_base="R", unit="ps",
-        timestep_in_ns=timestep_in_ns)
-    
-    if k_off_fig is not None:
-        k_off_fig.savefig(os.path.join(image_directory, "k_off_convergence.png"))
-    if k_on_fig is not None:
-        k_on_fig.savefig(os.path.join(image_directory, "k_on_convergence.png"))
+        timestep_in_ns=timestep_in_ns, y_axis_logarithmic=False, 
+        draw_double=True)
     for i, name in enumerate(N_ij_name_list):
         N_ij_fig = N_ij_fig_list[i]
         if N_ij_fig is not None:
             N_ij_filename = os.path.join(
                 image_directory, common_analyze.N_IJ_DIR, name+".png")
             N_ij_fig.savefig(N_ij_filename)
+            plt.close(N_ij_fig)
+    
+    R_i_fig_list, ax, R_i_title_list, R_i_name_list \
+        = common_converge.plot_dict_conv(
+        R_i_conv, max_step_list, label_base="R", unit="ps",
+        timestep_in_ns=timestep_in_ns, y_axis_logarithmic=False, 
+        title_suffix="", draw_double=True)
     for i, name in enumerate(R_i_name_list):
         R_i_fig = R_i_fig_list[i]
         if R_i_fig is not None:
             R_i_filename = os.path.join(
                 image_directory, common_analyze.R_I_DIR, name+".png")
             R_i_fig.savefig(R_i_filename)
+            plt.close(R_i_fig)
     
     print("All plots have been saved to:", image_directory)
     os.chdir(curdir)

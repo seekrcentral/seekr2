@@ -24,6 +24,12 @@ MATRIX_EXPONENTIAL = 9999999
 GAS_CONSTANT = 0.0019872 # in kcal/mol*K
 DEFAULT_IMAGE_DIR = "images_and_plots/"
 
+N_ALPHA_BETA_DIR = "N_alpha_beta/"
+T_ALPHA_DIR = "T_alpha/"
+K_ALPHA_BETA_DIR = "k_alpha_beta/"
+PI_ALPHA_DIR = "pi_alpha/"
+N_IJ_ALPHA_DIR = "N_ij_alpha/"
+R_I_ALPHA_DIR = "R_i_alpha/"
 N_IJ_DIR = "N_ij/"
 R_I_DIR = "R_i/"
 
@@ -189,6 +195,24 @@ def make_image_directory(model, image_directory):
     
     if image_directory != "" and not os.path.exists(image_directory):
         os.mkdir(image_directory)
+    
+    if not os.path.exists(os.path.join(image_directory, N_ALPHA_BETA_DIR)):
+        os.mkdir(os.path.join(image_directory, N_ALPHA_BETA_DIR))
+        
+    if not os.path.exists(os.path.join(image_directory, T_ALPHA_DIR)):
+        os.mkdir(os.path.join(image_directory, T_ALPHA_DIR))
+        
+    if not os.path.exists(os.path.join(image_directory, K_ALPHA_BETA_DIR)):
+        os.mkdir(os.path.join(image_directory, K_ALPHA_BETA_DIR))
+        
+    if not os.path.exists(os.path.join(image_directory, PI_ALPHA_DIR)):
+        os.mkdir(os.path.join(image_directory, PI_ALPHA_DIR))
+        
+    if not os.path.exists(os.path.join(image_directory, N_IJ_ALPHA_DIR)):
+        os.mkdir(os.path.join(image_directory, N_IJ_ALPHA_DIR))
+        
+    if not os.path.exists(os.path.join(image_directory, R_I_ALPHA_DIR)):
+        os.mkdir(os.path.join(image_directory, R_I_ALPHA_DIR))
     
     if not os.path.exists(os.path.join(image_directory, N_IJ_DIR)):
         os.mkdir(os.path.join(image_directory, N_IJ_DIR))
@@ -564,16 +588,8 @@ class Data_sample():
         MFPTs_anchors_to_bulk_milestones = defaultdict(float)
         k_off = 0.0
         k_ons = {}
+        
         for anchor in self.model.anchors:
-            if anchor.endstate:
-                for milestone_id in anchor.get_ids():
-                    if self.model.get_type() == "elber":
-                        if anchor.alias_from_id(milestone_id) == 3: 
-                            # TODO: hacky
-                            continue
-                    end_milestones[milestone_id] = anchor.name
-                    end_states[anchor.name].append(milestone_id)
-                    end_milestone_list.append(milestone_id)
             if anchor.bulkstate:
                 for milestone_id in anchor.get_ids():
                     if self.model.get_type() == "elber":
@@ -582,6 +598,19 @@ class Data_sample():
                             continue
                     bulk_milestones.append(milestone_id)
                     #bulk_milestone = milestone_id
+                    
+        for anchor in self.model.anchors:
+            if anchor.endstate:
+                for milestone_id in anchor.get_ids():
+                    if self.model.get_type() == "elber":
+                        if anchor.alias_from_id(milestone_id) == 3: 
+                            # TODO: hacky
+                            continue
+                        
+                    if milestone_id not in bulk_milestones:
+                        end_milestones[milestone_id] = anchor.name
+                        end_states[anchor.name].append(milestone_id)
+                        end_milestone_list.append(milestone_id)
         
         assert len(end_milestones) > 0, "No end (bound or otherwise) states "\
             "defined in this model. Kinetics calculations will not work."

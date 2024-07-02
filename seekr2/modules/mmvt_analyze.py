@@ -13,7 +13,7 @@ import seekr2.modules.common_analyze as common_analyze
 import seekr2.modules.markov_chain_monte_carlo as markov_chain_monte_carlo
 
 FLUX_MATRIX_K_EXPONENT = 1000
-LOW_N_IJ = 1e-10
+LOW_N_IJ = 1e-19
 HIGH_N_IJ = 1e3
 DEFAULT_R_I = 1.0
 DEFAULT_Q_IJ = 1.0

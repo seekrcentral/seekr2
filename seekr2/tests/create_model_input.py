@@ -31,6 +31,14 @@ def assign_forcefield_params(input_anchor, built_in_ff_list, custom_ff_list,
         = pdb_filename
     return
 
+def assign_system_params(input_anchor, system_filename, pdb_filename):
+    input_anchor.starting_forcefield_params = base.Forcefield_params()
+    input_anchor.starting_forcefield_params.system_filename \
+        = system_filename
+    input_anchor.starting_forcefield_params.pdb_coordinates_filename \
+        = pdb_filename
+    return
+
 def assign_charmm_params(input_anchor, psf_filename, charmm_ff_filenames, 
                          pdb_filename):
     input_anchor.starting_charmm_params = base.Charmm_params()
@@ -71,6 +79,8 @@ def create_host_guest_mmvt_model_input(root_dir, bd=True, ff="amber"):
     forcefield_built_in_ff_list = ["amber14/tip3pfb.xml"]
     forcefield_custom_ff_list = [os.path.abspath(
         "../data/hostguest_files/hostguest.xml")]
+    system_filename = os.path.abspath(
+        "../data/hostguest_files/hostguest_system.xml")
     pdb_filenames = [os.path.abspath(
         "../data/hostguest_files/hostguest_at0.5.pdb"),
                      os.path.abspath(
@@ -108,6 +118,9 @@ def create_host_guest_mmvt_model_input(root_dir, bd=True, ff="amber"):
             print("test pdb_filename:", pdb_filename)
             assign_forcefield_params(input_anchor, forcefield_built_in_ff_list, 
                                      forcefield_custom_ff_list, pdb_filename)
+        elif ff == "system":
+            print("test pdb_filename:", pdb_filename)
+            assign_system_params(input_anchor, system_filename, pdb_filename)
         else:
             raise Exception("ff type not supported: {}".format(ff))
         
