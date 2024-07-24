@@ -22,7 +22,7 @@ process under interest is obtained.
 
 Two versions of milestoning theory are available to use in SEEKR2:
 
-1. **Markovian milestoning with Voronoi Tesselations (MMVT)**:  Vanden-Eijnden, E.; Venturoli, M. Markovian Milestoning with Voronoi Tessellations. J. Chem. Phys. 2009, 130 (19), 194101. https://doi.org/10.1063/1.3129843
+1. **Markovian milestoning with Voronoi Tessellations (MMVT)**:  Vanden-Eijnden, E.; Venturoli, M. Markovian Milestoning with Voronoi Tessellations. J. Chem. Phys. 2009, 130 (19), 194101. https://doi.org/10.1063/1.3129843
 
 2. **The original formulation of milestoning theory (Elber milestoning)**: Faradjian, A. K.; Elber, R. Computing Time Scales from Reaction Coordinates by Milestoning. J. Chem. Phys. 2004, 120 (23), 10880–10889. https://doi.org/10.1063/1.1738640
 

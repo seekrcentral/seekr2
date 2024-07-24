@@ -21,7 +21,7 @@ import seekr2.modules.mmvt_cvs.mmvt_external_cv as mmvt_external_cv
 class MMVT_Voronoi_CV(MMVT_collective_variable):
     """
     A Voronoi collective variable which contains multidimensional functions
-    to produce a Voronoi Tesselation.
+    to produce a Voronoi Tessellation.
     
     """+MMVT_collective_variable.__doc__
     
