@@ -1966,7 +1966,7 @@ def find_voronoi_anchor_neighbors(anchors):
     
     try:
         triangulation = Delaunay(points)
-        vor = Voronoi(points)
+        voronoi = Voronoi(points)
         
         # TODO: need a way to find the closest point to every Voronoi
         # ridge
