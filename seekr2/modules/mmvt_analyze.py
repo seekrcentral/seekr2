@@ -1090,7 +1090,7 @@ def monte_carlo_milestoning_error(
         main_data_sample, num=100, stride=None, skip=None, verbose=False):
     """
     Calculates an error estimate by sampling a distribution of rate 
-    matrices assumming a Poisson (gamma) distribution with 
+    matrices assuming a Poisson (gamma) distribution with 
     parameters Nij and Ri using Markov chain Monte Carlo.
         
     Enforces detailed Balance-- using a modified version of 
@@ -1111,7 +1111,7 @@ def monte_carlo_milestoning_error(
         number of rate matrix (Q) samples to be generated
         
     skip : int, default None
-        number of inital rate matrix samples to skip for "burn in". If
+        number of initial rate matrix samples to skip for "burn in". If
         None, it will be assigned 10 * N**2, where N is the size of the
         rate matrix Q
         
