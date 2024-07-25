@@ -419,6 +419,7 @@ class Data_sample():
         self.p_i = None
         self.free_energy_profile = None
         self.MFPTs = None
+        self.state_to_state_energies = None
         self.k_off = None
         self.k_ons = {}
         self.b_surface_k_ons_src = None
@@ -582,12 +583,14 @@ class Data_sample():
         """
         end_milestones = {}
         end_states = defaultdict(list)
+        end_anchor_indices = []
         end_milestone_list = []
         bulk_milestones = []
         MFPTs = defaultdict(float)
         MFPTs_anchors_to_bulk_milestones = defaultdict(float)
         k_off = 0.0
         k_ons = {}
+        bulk_free_energy = 0.0
         
         for anchor in self.model.anchors:
             if anchor.bulkstate:
@@ -597,8 +600,11 @@ class Data_sample():
                             # TODO: hacky
                             continue
                     bulk_milestones.append(milestone_id)
-                    #bulk_milestone = milestone_id
-                    
+                    bulk_free_energy += self.free_energy_profile[milestone_id]
+        
+        if len(bulk_milestones) > 0:
+            bulk_free_energy /= len(bulk_milestones)
+        
         for anchor in self.model.anchors:
             if anchor.endstate:
                 for milestone_id in anchor.get_ids():
@@ -667,6 +673,7 @@ class Data_sample():
         # Next, compute the MFPTs between different states
         
         milestone_src_to_anchor_dest_MFPTs = {}
+        milestone_src_to_anchor_dest_energies = {}
         for dest_state_name, dest_milestones in end_states.items():
             for dest_milestone in dest_milestones:
                 assert dest_milestone not in bulk_milestones
@@ -684,7 +691,11 @@ class Data_sample():
                     mfpt = mfpt_ji
                     milestone_src_to_anchor_dest_MFPTs[
                         (src_milestone_index, dest_state_name)] = mfpt
-            
+                    milestone_src_to_anchor_dest_energies[
+                        (src_milestone_index, dest_state_name)] \
+                            = self.free_energy_profile[dest_index] \
+                            - self.free_energy_profile[src_milestone_index]
+                   
             for src_state_name, src_milestone_list in end_states.items():
                 if src_state_name == dest_state_name:
                     continue
@@ -692,11 +703,14 @@ class Data_sample():
                     mftp_milestone_to_dest \
                         = milestone_src_to_anchor_dest_MFPTs[
                             (src_milestone_index, dest_state_name)]
+                    energy_milestone_to_dest \
+                        = milestone_src_to_anchor_dest_energies[
+                            (src_milestone_index, dest_state_name)]
                     prob_milestone_in_anchor = self.p_i[src_milestone_index] \
                         / prob_marginalized_per_anchor[src_state_name]
                     MFPTs[(src_state_name, dest_state_name)] \
                         += prob_milestone_in_anchor * mftp_milestone_to_dest
-            
+        
         if self.model.using_bd():
             K_hat = self.K[:,:]
             for end_milestone in end_milestones:

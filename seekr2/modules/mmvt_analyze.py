@@ -712,6 +712,7 @@ class MMVT_data_sample(common_analyze.Data_sample):
         self.free_energy_profile = None
         self.free_energy_anchors = None
         self.MFPTs = {}
+        self.state_to_state_energies = {}
         self.k_off = None
         self.k_ons = {}
         self.b_surface_k_ons_src = None
@@ -1057,6 +1058,8 @@ class MMVT_data_sample(common_analyze.Data_sample):
         Use this data sample's statistics to construct the 
         anchor free energy profile.
         """
+        state_to_state_energies = defaultdict(float)
+        end_anchor_indices = []
         self.free_energy_anchors = np.zeros(self.model.num_anchors)
         highest_pi_alpha = max(self.pi_alpha)
         for alpha in range(self.model.num_anchors):
@@ -1068,6 +1071,24 @@ class MMVT_data_sample(common_analyze.Data_sample):
                 pi_alpha_val / highest_pi_alpha)
             self.free_energy_anchors[alpha] = free_energy
             
+        for i, anchor in enumerate(self.model.anchors):
+            if anchor.endstate and not anchor.bulkstate:
+                end_anchor_indices.append(i)
+        
+        for src_anchor_index in end_anchor_indices:
+            for dest_anchor_index in end_anchor_indices:
+                if src_anchor_index == dest_anchor_index:
+                    continue
+                
+                energy_diff = self.free_energy_anchors[dest_anchor_index] \
+                    - self.free_energy_anchors[src_anchor_index]
+                src_anchor_name = self.model.anchors[src_anchor_index].name
+                dest_anchor_name = self.model.anchors[dest_anchor_index].name
+                state_to_state_energies[(src_anchor_name, dest_anchor_name)] \
+                    = energy_diff
+                    
+        self.state_to_state_energies = state_to_state_energies
+        return  
 
 def find_nonzero_matrix_entries(M):
     """
@@ -1143,6 +1164,8 @@ def monte_carlo_milestoning_error(
         = main_data_sample.make_mcmc_quantities()
     MFPTs_list = defaultdict(list)
     MFPTs_error = defaultdict(float)
+    state_to_state_energies_list = defaultdict(list)
+    state_to_state_energies_error = defaultdict(float)
     k_off_list = []
     k_ons_list = defaultdict(list)
     k_ons_error = defaultdict(float)
@@ -1170,7 +1193,7 @@ def monte_carlo_milestoning_error(
         new_data_sample.N_i_j_alpha = main_data_sample.N_i_j_alpha
         new_data_sample.R_i_alpha = main_data_sample.R_i_alpha
         new_data_sample.T_alpha = main_data_sample.T_alpha
-        k_alpha_beta_matrix_new = markov_chain_monte_carlo\
+        k_alpha_beta_matrix = markov_chain_monte_carlo\
             .irreversible_stochastic_matrix_algorithm_sample(
                 k_alpha_beta_matrix, N_alpha_beta_matrix, T_alpha_matrix,
                 nonzero_indices_k_alpha_beta_matrix)
@@ -1193,7 +1216,7 @@ def monte_carlo_milestoning_error(
                     mmvt_Qnew_list[alpha], mmvt_Ri_alpha[alpha])
                 mmvt_Nij_list.append(new_mmvt_Nij_alpha)
                 
-            new_data_sample.fill_k_from_matrices(k_alpha_beta_matrix_new)
+            new_data_sample.fill_k_from_matrices(k_alpha_beta_matrix)
             new_data_sample.calculate_pi_alpha()
             new_data_sample.fill_N_R_alpha_from_matrices(
                 mmvt_Nij_list, mmvt_Ri_alpha)
@@ -1213,6 +1236,9 @@ def monte_carlo_milestoning_error(
             free_energy_anchors_list.append(new_data_sample.free_energy_anchors)
             for key in new_data_sample.MFPTs:
                 MFPTs_list[key].append(new_data_sample.MFPTs[key])
+            for key in new_data_sample.state_to_state_energies:
+                state_to_state_energies_list[key].append(
+                    new_data_sample.state_to_state_energies[key])
             if new_data_sample.k_off is not None:
                 k_off_list.append(new_data_sample.k_off)
             if model.using_bd():
@@ -1245,7 +1271,10 @@ def monte_carlo_milestoning_error(
             free_energy_anchors_val_list.append(free_energy_anchors_list[j][i])
         free_energy_anchors_err[i] = np.std(free_energy_anchors_val_list)
     for key in main_data_sample.MFPTs:
-        MFPTs_error[key] = np.std(MFPTs_list[key])    
+        MFPTs_error[key] = np.std(MFPTs_list[key])
+    for key in main_data_sample.state_to_state_energies:
+        state_to_state_energies_error[key] = np.std(
+            state_to_state_energies_list[key]) 
     if len(k_off_list) > 0:
         k_off_error = np.std(k_off_list)
     if main_data_sample.model.using_bd():
@@ -1253,4 +1282,5 @@ def monte_carlo_milestoning_error(
             k_ons_error[key] = np.std(k_ons_list[key])
     
     return data_sample_list, p_i_error, free_energy_profile_err, \
-        free_energy_anchors_err, MFPTs_error, k_off_error, k_ons_error
+        free_energy_anchors_err, MFPTs_error, state_to_state_energies_error, \
+        k_off_error, k_ons_error

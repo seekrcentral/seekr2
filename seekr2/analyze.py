@@ -21,9 +21,16 @@ import seekr2.modules.common_analyze as common_analyze
 import seekr2.modules.mmvt_analyze as mmvt_analyze
 import seekr2.modules.elber_analyze as elber_analyze
 import seekr2.modules.check as check
+from seekr2.modules.due import due, Doi
 
 LOW_FLUX = 1e-19
 FAST_FLUX = 1e6
+
+# Provide a generic reference for SEEKR2
+due.cite(Doi("10.1021/acs.jcim.2c00501"),
+         description="Multiscale molecular kinetics and "\
+            "thermodynamics with milestoning.",
+         path="seekr2/modules", cite_module=True)
 
 def check_graph_connected(graph, state_index1, state_index2):
     """
@@ -171,6 +178,8 @@ class Analysis:
         self.free_energy_anchors_err = None
         self.MFPTs = {}
         self.MFPTs_error = {}
+        self.state_to_state_energies = {}
+        self.state_to_state_energies_error = {}
         self.k_off = None
         self.k_off_error = None
         self.k_ons = {}
@@ -237,11 +246,12 @@ class Analysis:
         path_not_connected_string = "Insufficient statistics were found "\
             "to create a path between end states \"{0}\" and \"{1}\"."
         error_warning_string = ""
-        anchors_missing_alpha_beta_statistics = []
+        anchors_missing_alpha_beta_stats = []
         anchors_missing_i_j_statistics = []
         connection_graph = defaultdict(list)
         endstate_list = []
         bulk_anchor_index = None
+        counter = 0
         for i, anchor in enumerate(self.model.anchors):
             if anchor.bulkstate:
                 # we want the bulk state to indicate all connections because
@@ -253,7 +263,7 @@ class Analysis:
                 continue
             if anchor.endstate:
                 endstate_list.append(anchor.index)
-            anchor_stats = self.anchor_stats_list[i]
+            anchor_stats = self.anchor_stats_list[counter]
             existing_alias_ids = []
             existing_alias_transitions = []
             for key in anchor_stats.k_alpha_beta:
@@ -269,8 +279,8 @@ class Analysis:
                     connection_graph[anchor.index].append(
                         milestone.neighbor_anchor_index)
                 else:
-                    if anchor.index not in anchors_missing_alpha_beta_statistics:
-                        anchors_missing_alpha_beta_statistics.append(anchor.index)
+                    if anchor.index not in anchors_missing_alpha_beta_stats:
+                        anchors_missing_alpha_beta_stats.append(anchor.index)
                 
                 for milestone2 in anchor.milestones:
                     if milestone.alias_index == milestone2.alias_index:
@@ -280,35 +290,44 @@ class Analysis:
                         if anchor.index not in anchors_missing_i_j_statistics:
                             anchors_missing_i_j_statistics.append(anchor.index)
                         break
+                    
+            counter += 1
         
         # Check a graph connectivity
         missing_path = False
         for endstate_index in endstate_list:
             if bulk_anchor_index is not None:
-                states_connected = check_graph_connected(connection_graph, endstate_index, bulk_anchor_index)
+                states_connected = check_graph_connected(
+                    connection_graph, endstate_index, bulk_anchor_index)
                 if not states_connected:
                     if not silent:
-                        print(path_not_connected_string.format(self.model.anchors[endstate_index].name, "Bulk"))
+                        print(path_not_connected_string.format(
+                            self.model.anchors[endstate_index].name, "Bulk"))
                     missing_path = True
                 
-                states_connected = check_graph_connected(connection_graph, bulk_anchor_index, endstate_index)
+                states_connected = check_graph_connected(
+                    connection_graph, bulk_anchor_index, endstate_index)
                 if not states_connected:
                     if not silent:
-                        print(path_not_connected_string.format("Bulk", self.model.anchors[endstate_index].name))
+                        print(path_not_connected_string.format(
+                            "Bulk", self.model.anchors[endstate_index].name))
                     missing_path = True
             
             for endstate_index2 in endstate_list:
                 if endstate_index == endstate_index2:
                     continue
-                states_connected = check_graph_connected(connection_graph, endstate_index, endstate_index2)
+                states_connected = check_graph_connected(
+                    connection_graph, endstate_index, endstate_index2)
                 if not states_connected:
                     if not silent:
-                        print(path_not_connected_string.format(self.model.anchors[endstate_index].name, self.model.anchors[endstate_index2].name))
+                        print(path_not_connected_string.format(
+                            self.model.anchors[endstate_index].name, 
+                            self.model.anchors[endstate_index2].name))
                     missing_path = True
             
         if missing_path:
             error_warning_string = error_warning_base.format(
-                anchors_missing_alpha_beta_statistics)
+                anchors_missing_alpha_beta_stats)
         
         if error_warning_string != "":
             if silent:
@@ -488,11 +507,14 @@ class Analysis:
         self.free_energy_profile = self.main_data_sample.free_energy_profile
         self.free_energy_anchors = self.main_data_sample.free_energy_anchors
         self.MFPTs = self.main_data_sample.MFPTs
+        self.state_to_state_energies \
+            = self.main_data_sample.state_to_state_energies
         self.k_off = self.main_data_sample.k_off
         self.k_ons = self.main_data_sample.k_ons
         if self.num_error_samples > 0:
             data_sample_list, p_i_error, free_energy_profile_err, \
-                free_energy_anchors_err, MFPTs_error, k_off_error, k_ons_error\
+                free_energy_anchors_err, MFPTs_error, \
+                state_to_state_energies_error, k_off_error, k_ons_error\
                 = mmvt_analyze.monte_carlo_milestoning_error(
                     self.main_data_sample, num=self.num_error_samples, 
                     stride=self.stride_error_samples,
@@ -503,6 +525,7 @@ class Analysis:
             self.free_energy_profile_err = free_energy_profile_err
             self.free_energy_anchors_err = free_energy_anchors_err
             self.MFPTs_error = MFPTs_error
+            self.state_to_state_energies_error = state_to_state_energies_error
             self.k_off_error = k_off_error
             self.k_ons_error = k_ons_error
             
@@ -649,6 +672,21 @@ class Analysis:
                 print("  MFPT from", state1, "to", state2, ":",
                       common_analyze.pretty_string_value_error(
                           float(self.MFPTs[key]*1.0e-12), None))
+        
+        if self.state_to_state_energies is not None:
+            print("Free energy differences (kcal/mol):")
+            for key in self.state_to_state_energies:
+                state1 = key[0]
+                state2 = key[1]
+                if key in self.state_to_state_energies_error:
+                    print("  Energy from", state1, "to", state2, ":",
+                          common_analyze.pretty_string_value_error(
+                              float(self.state_to_state_energies[key]), 
+                              float(self.state_to_state_energies_error[key])))
+                else:
+                    print("  Energy from", state1, "to", state2, ":",
+                          common_analyze.pretty_string_value_error(
+                              float(self.state_to_state_energies[key]), None))
         return
     
     def make_milestone_value_dict(self):
@@ -668,6 +706,8 @@ class Analysis:
                     
         return milestone_value_dict
     
+    @due.dcite(Doi("10.5281/zenodo.2893252"), description="Matplotlib 3.1.0")
+    @due.dcite(Doi("10.1109/MCSE.2007.55"), description="Matplotlib ref")
     def save_plots(self, image_directory):
         """
         Save a potentially useful series of plots of some quantities

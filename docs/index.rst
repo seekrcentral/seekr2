@@ -37,15 +37,32 @@ Two versions of milestoning theory are available to use in SEEKR2:
    program_options
    api
    faq
+   citations
 
 Cite SEEKR2
 ===========
+
+For BibTex files of any or all of the following citations, please visit: LINK
 
 If you wish to cite SEEKR2, please cite the following paper:
 
 * Votapka, L. W.; Stokely, A. M.; Ojha, A. A.; Amaro, R. E. SEEKR2: Versatile Multiscale Milestoning Utilizing the OpenMM Molecular Dynamics Engine. J. Chem. Inf. Mod. 2022 62 (13), 3253-3262. DOI: 10.1021/acs.jcim.2c00501
 
-You may also optionally cite one or more of the following papers:
+One should also cite SEEKR2's dependencies:
+
+* Van Der Walt, S., Colbert, S.C. & Varoquaux, G., 2011. The NumPy array: a structure for efficient numerical computation. Computing in Science & Engineering, 13(2), pp.22–30.
+
+* Jones, E. et al., 2001. SciPy: Open source scientific tools for Python.
+
+* Hunter, J.D., 2007. Matplotlib: A 2D graphics environment. Computing in Science & Engineering, 9(3), pp.90–95.
+
+* T.D. Swinburne and D.J. Wales, Defining, Calculating, and Converging Observables of a Kinetic Transition Network, J. Chemical Theory and Computation (2020), https://doi.org/10.1021/acs.jctc.9b01211
+
+One may also optionally cite one or more of the following papers:
+
+* Ojha, A. A., Votapka L. W., Amaro, R. E. QMrebind: incorporating quantum mechanical force field reparameterization at the ligand binding site for improved drug-target kinetics through milestoning simulations. Chemical Science 14 (45), 13159-13175
+
+* Ojha A. A., Srivastava A., Votapka L. W., and Amaro R. E. Selectivity and Ranking of Tight-Binding JAK-STAT Inhibitors Using Markovian Milestoning with Voronoi Tessellations. Journal of Chemical Information and Modeling 2023 63 (8), 2469-2482. DOI: 10.1021/acs.jcim.2c01589
 
 * Votapka, L. W.; Jagger, B. R.; Heyneman, A. L.; Amaro, R. E. SEEKR: Simulation Enabled Estimation of Kinetic Rates, A Computational Tool to Estimate Molecular Kinetics and Its Application to Trypsin–Benzamidine Binding. J. Phys. Chem. B 2017, 121 (15), 3597–3606. https://doi.org/10.1021/acs.jpcb.6b09388. 
 
