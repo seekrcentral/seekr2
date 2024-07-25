@@ -42,7 +42,7 @@ Two versions of milestoning theory are available to use in SEEKR2:
 Cite SEEKR2
 ===========
 
-For BibTex files of any or all of the following citations, please visit: LINK
+For BibTex files of any or all of the following citations, please visit: https://seekr2.readthedocs.io/en/latest/citations.html
 
 If you wish to cite SEEKR2, please cite the following paper:
 
