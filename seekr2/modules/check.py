@@ -105,15 +105,19 @@ def load_structure_with_parmed(model, anchor):
         return structure
         
     elif anchor.forcefield_params is not None:
+        """ # TODO: remove
         forcefield_filenames = []
-        for forcefield_filename in \
-                anchor.forcefield_params.built_in_forcefield_filenames:
-            forcefield_filenames.append(forcefield_filename)
-        for forcefield_filename in \
-                anchor.forcefield_params.custom_forcefield_filenames:
-            forcefield_filenames.append(os.path.join(
-                building_directory, forcefield_filename))
+        if anchor.forcefield_params.built_in_forcefield_filenames is not None:
+            for forcefield_filename in \
+                    anchor.forcefield_params.built_in_forcefield_filenames:
+                forcefield_filenames.append(forcefield_filename)
+        if anchor.forcefield_params.custom_forcefield_filenames is not None:
+            for forcefield_filename in \
+                    anchor.forcefield_params.custom_forcefield_filenames:
+                forcefield_filenames.append(os.path.join(
+                    building_directory, forcefield_filename))
         system_filename = anchor.forcefield_params.system_filename
+
         if system_filename != "" or system_filename is not None:
             assert len(forcefield_filenames) == 0, "Either a set of "\
                 "forcefield files or a serialized System() filename must be "\
@@ -126,11 +130,17 @@ def load_structure_with_parmed(model, anchor):
             parameter_set = parmed.openmm.parameters.OpenMMParameterSet(
                 forcefield_filenames)
             structure = parmed.load_file(parameter_set)
+        """
+
+        if anchor.forcefield_params.pdb_coordinates_filename is not None \
+            and anchor.forcefield_params.pdb_coordinates_filename != "":
+            pdb_filename = os.path.join(building_directory, 
+                                anchor.forcefield_params.pdb_coordinates_filename)
+            structure = parmed.load_file(pdb_filename)
         
-        pdb_filename = os.path.join(building_directory, 
-                               anchor.forcefield_params.pdb_filename)
-        pdb_structure = parmed.load_file(pdb_filename)
-        structure.coordinates = pdb_structure.coordinates
+        else:
+            return None
+
         if anchor.forcefield_params.box_vectors is not None:
                 structure.box_vectors \
                     = anchor.forcefield_params.box_vectors.to_quantity()
@@ -290,18 +300,12 @@ def load_structure_with_mdtraj(model, anchor, mode="pdb", coords_filename=None):
         return traj
         
     elif anchor.forcefield_params is not None:
-        forcefield_filenames = []
-        for forcefield_filename in \
-                anchor.forcefield_params.built_in_forcefield_filenames:
-            forcefield_filenames.append(forcefield_filename)
-        for forcefield_filename in \
-                anchor.forcefield_params.custom_forcefield_filenames:
-            forcefield_filenames.append(os.path.join(
-                building_directory, forcefield_filename))
-        parameter_set = parmed.openmm.parameters.OpenMMParameterSet(
-            forcefield_filenames)
-        pdb_filename = os.path.join(building_directory, 
-                               anchor.forcefield_params.pdb_filename)
+        if anchor.forcefield_params.pdb_coordinates_filename == "" \
+                or anchor.forcefield_params.pdb_coordinates_filename is None:
+            return None
+
+        pdb_filename = os.path.join(
+            building_directory, anchor.forcefield_params.pdb_coordinates_filename)
         if mode == "pdb":
             traj = mdtraj.load(pdb_filename)
         elif mode == "elber_umbrella":

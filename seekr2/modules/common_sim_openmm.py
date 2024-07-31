@@ -150,6 +150,7 @@ def create_openmm_system(sim_openmm, model, anchor, frame=0,
             topology = prmtop.topology
         
         elif anchor.forcefield_params is not None:
+            print("using forcefield params")
             forcefield_filenames = []
             if anchor.forcefield_params.built_in_forcefield_filenames is not None:
                 for forcefield_filename in \
@@ -161,9 +162,19 @@ def create_openmm_system(sim_openmm, model, anchor, frame=0,
                         anchor.forcefield_params.custom_forcefield_filenames:
                     forcefield_filenames.append(os.path.join(
                         building_directory, forcefield_filename))
-            pdb_filename = os.path.join(building_directory, 
-                                   anchor.forcefield_params.pdb_coordinates_filename)
-            pdb = openmm_app.PDBFile(pdb_filename)
+            if anchor.forcefield_params.pdb_coordinates_filename is None \
+                    or anchor.forcefield_params.pdb_coordinates_filename == "":
+                positions_obj = None
+                positions = None
+                sim_openmm.try_to_load_state = True
+                topology = None
+            else:
+                pdb_coordinates_filename = os.path.join(
+                    building_directory, 
+                    anchor.forcefield_params.pdb_coordinates_filename)
+                positions_obj = openmm_app.PDBFile(pdb_coordinates_filename)
+                topology = positions_obj.topology
+            
             system_filename = anchor.forcefield_params.system_filename
             if system_filename != "":
                 full_system_filename = os.path.join(building_directory, 
@@ -173,10 +184,6 @@ def create_openmm_system(sim_openmm, model, anchor, frame=0,
                 
                 
             box_vectors = anchor.forcefield_params.box_vectors
-            
-            topology = pdb.topology
-            positions_obj = pdb
-            positions = None
         
         elif anchor.charmm_params is not None:
             psf_filename = os.path.join(
