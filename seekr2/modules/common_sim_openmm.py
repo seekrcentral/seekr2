@@ -151,13 +151,16 @@ def create_openmm_system(sim_openmm, model, anchor, frame=0,
         
         elif anchor.forcefield_params is not None:
             forcefield_filenames = []
-            for forcefield_filename in \
-                    anchor.forcefield_params.built_in_forcefield_filenames:
-                forcefield_filenames.append(forcefield_filename)
-            for forcefield_filename in \
-                    anchor.forcefield_params.custom_forcefield_filenames:
-                forcefield_filenames.append(os.path.join(
-                    building_directory, forcefield_filename))
+            if anchor.forcefield_params.built_in_forcefield_filenames is not None:
+                for forcefield_filename in \
+                        anchor.forcefield_params.built_in_forcefield_filenames:
+                    forcefield_filenames.append(forcefield_filename)
+            
+            if anchor.forcefield_params.custom_forcefield_filenames is not None:
+                for forcefield_filename in \
+                        anchor.forcefield_params.custom_forcefield_filenames:
+                    forcefield_filenames.append(os.path.join(
+                        building_directory, forcefield_filename))
             pdb_filename = os.path.join(building_directory, 
                                    anchor.forcefield_params.pdb_coordinates_filename)
             pdb = openmm_app.PDBFile(pdb_filename)

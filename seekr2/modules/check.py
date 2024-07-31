@@ -81,11 +81,10 @@ def load_structure_with_parmed(model, anchor):
     Given the simulation inputs, load an anchor's structure for one of
     the checks and return the parmed structure object.
     """
-    
+    building_directory = os.path.join(
+        model.anchor_rootdir, anchor.directory, 
+        anchor.building_directory)
     if anchor.amber_params is not None:
-        building_directory = os.path.join(
-            model.anchor_rootdir, anchor.directory, 
-            anchor.building_directory)
         if anchor.amber_params.prmtop_filename is not None:
             prmtop_filename = os.path.join(
                 building_directory, anchor.amber_params.prmtop_filename)
@@ -138,9 +137,6 @@ def load_structure_with_parmed(model, anchor):
         return structure
     
     elif anchor.charmm_params is not None:
-        building_directory = os.path.join(
-            model.anchor_rootdir, anchor.directory, 
-            anchor.building_directory)
         if anchor.charmm_params.psf_filename is not None:
             psf_filename = os.path.join(
                 building_directory, anchor.charmm_params.psf_filename)

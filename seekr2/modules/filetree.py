@@ -246,9 +246,9 @@ def copy_building_files_by_anchor(anchor, input_anchor, rootdir):
                 forcefield.system_filename != "":
             forcefield.system_filename = os.path.expanduser(
                 forcefield.system_filename)
-            assert os.path.exists(forcefield.pdb_coordinates_filename), \
+            assert os.path.exists(forcefield.system_filename), \
                 "Provided file does not exist: {}".format(
-                    forcefield.pdb_coordinates_filename)
+                    forcefield.system_filename)
             system_filename = os.path.basename(forcefield.system_filename)
             new_system_filename = os.path.join(anchor_building_dir, 
                                                system_filename)
