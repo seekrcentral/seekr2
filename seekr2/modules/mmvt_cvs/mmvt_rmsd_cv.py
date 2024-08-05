@@ -22,9 +22,10 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
     
     """+MMVT_collective_variable.__doc__
     
-    def __init__(self, index, group, ref_structure):
+    def __init__(self, index, group,  ref_structure, align_group=None):
         self.index = index
         self.group = group
+        self.align_group = align_group
         self.ref_structure = ref_structure
         self.name = "mmvt_rmsd"
         self.openmm_expression = None
@@ -102,8 +103,24 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
             import simtk.openmm.app as openmm_app
             
         pdb_file = openmm_app.PDBFile(self.ref_structure)
-        rmsd_me_force = openmm.RMSDForce(pdb_file.positions, self.group)
-        rmsd_neighbor_force = openmm.RMSDForce(pdb_file.positions, self.group)
+        
+        if self.align_group is None:
+            rmsd_me_force = openmm.RMSDForce(pdb_file.positions, self.group)
+            rmsd_neighbor_force = openmm.RMSDForce(pdb_file.positions, self.group)
+        else:
+            try:
+                import rmsdplusforceplugin
+            except ImportError:
+                print("Unable to load RMSDPlusForcePlugin. Please install "\
+                      "from: https://github.com/seekrcentral/"\
+                      "rmsdplusforceplugin.git")
+                exit()
+            
+            rmsd_me_force = rmsdplusforceplugin.RMSDPlusForce(
+                pdb_file.positions, self.group, self.align_group)
+            rmsd_neighbor_force = rmsdplusforceplugin.RMSDPlusForce(
+                pdb_file.positions, self.group, self.align_group)
+        
         
         me_expr = "(me_val_{}_alias_{} - {})^2".format(self.index, alias_id, self.cv_expression)
         me_force = openmm.CustomCVForce(me_expr)
@@ -161,7 +178,20 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
             import simtk.openmm.app as openmm_app
             
         pdb_file = openmm_app.PDBFile(self.ref_structure)
-        rmsd_force = openmm.RMSDForce(pdb_file.positions, self.group)
+        if self.align_group is None:
+            rmsd_force = openmm.RMSDForce(pdb_file.positions, self.group)
+        else:
+            try:
+                import rmsdplusforceplugin
+            except ImportError:
+                print("Unable to load RMSDPlusForcePlugin. Please install "\
+                      "from: https://github.com/seekrcentral/"\
+                      "rmsdplusforceplugin.git")
+                exit()
+            
+            rmsd_force = rmsdplusforceplugin.RMSDPlusForce(
+                pdb_file.positions, self.group, self.align_group)
+            
         force.addCollectiveVariable("RMSD", rmsd_force)
         
         return
@@ -367,7 +397,8 @@ def make_mmvt_RMSD_cv_object(RMSD_cv_input, index, root_directory):
     """
     RMSD_ref_pdb = "rmsd_reference_cv_{}.pdb".format(index)
     group = base.parse_xml_list(RMSD_cv_input.group)
+    align_group = base.parse_xml_list(RMSD_cv_input.align_group)
     absolute_RMSD_ref_pdb = os.path.join(root_directory, RMSD_ref_pdb)
     shutil.copyfile(RMSD_cv_input.ref_structure, absolute_RMSD_ref_pdb)
-    cv = MMVT_RMSD_CV(index, group, RMSD_ref_pdb)
+    cv = MMVT_RMSD_CV(index, group, RMSD_ref_pdb, align_group)
     return cv

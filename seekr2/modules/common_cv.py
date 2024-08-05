@@ -988,6 +988,7 @@ class RMSD_cv_input(CV_input):
     def __init__(self):
         self.index = 0
         self.group = []
+        self.align_group = None
         self.ref_structure = ""
         self.input_anchors = []
         self.variable_name = "v"

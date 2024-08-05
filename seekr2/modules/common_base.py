@@ -1125,6 +1125,8 @@ def parse_xml_list(variable):
         else:
             raise Exception("Invalid XML input: {}. ".format(variable) \
                             +"Available command(s): range(a[,b][,c]).")
+    elif variable is None:
+        return None
     else:
         raise Exception("Invalid XML input: {}".format(variable))
     
