@@ -20,6 +20,8 @@ from parmed import unit
 import seekr2.analyze as analyze
 import seekr2.modules.common_base as base
 import seekr2.modules.common_analyze as common_analyze
+import seekr2.modules.mmvt_analyze as mmvt_analyze
+import seekr2.modules.elber_analyze as elber_analyze
 
 # The default number of points to include in convergence plots
 DEFAULT_NUM_POINTS = 100
@@ -163,17 +165,23 @@ def analyze_kinetics(model, analysis, max_step, k_on_state=None):
             k_on = 0.0
         k_off = analysis.k_off
         main_data_sample = analysis.main_data_sample
-        if main_data_sample.pi_alpha is None:
-            pi_alpha = None
+        if isinstance(main_data_sample, mmvt_analyze.MMVT_data_sample):
+            if main_data_sample.pi_alpha is None:
+                pi_alpha = None
+            else:
+                pi_alpha = main_data_sample.pi_alpha.flatten()
+                
+            return k_on, k_off, main_data_sample.N_alpha_beta, \
+                array_to_dict(main_data_sample.T_alpha),\
+                main_data_sample.k_alpha_beta, array_to_dict(pi_alpha), \
+                collapse_list_of_dicts(main_data_sample.N_i_j_alpha), \
+                collapse_list_of_dicts(main_data_sample.R_i_alpha), \
+                main_data_sample.N_ij, main_data_sample.R_i
+        
         else:
-            pi_alpha = main_data_sample.pi_alpha.flatten()
-            
-        return k_on, k_off, main_data_sample.N_alpha_beta, \
-            array_to_dict(main_data_sample.T_alpha),\
-            main_data_sample.k_alpha_beta, array_to_dict(pi_alpha), \
-            collapse_list_of_dicts(main_data_sample.N_i_j_alpha), \
-            collapse_list_of_dicts(main_data_sample.R_i_alpha), \
-            main_data_sample.N_ij, main_data_sample.R_i
+            return k_on, k_off, {}, {}, {}, {}, {}, {}, main_data_sample.N_ij, \
+                main_data_sample.R_i
+        
     
     except (common_analyze.MissingStatisticsError, np.linalg.LinAlgError,
             AssertionError, ValueError) as e:

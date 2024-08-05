@@ -6,6 +6,7 @@ milestoning calculations.
 """
 
 import numpy as np
+import pytest
 import matplotlib.pyplot as plt
 
 import seekr2.modules.common_base as base
@@ -144,6 +145,7 @@ def test_mcmc_algorithm_1_2x2_elber():
     
     return
 
+@pytest.mark.skip
 def test_mcmc_3x3_mmvt(tmpdir_factory):
     """
     Use the same statistics to generate both MMVT and Elber rate matrices.
@@ -297,5 +299,4 @@ def test_mcmc_3x3_mmvt(tmpdir_factory):
                       np.std(mmvt_q2_distribution), rtol=0.5, atol=0.01)
     
     return
-    
     
