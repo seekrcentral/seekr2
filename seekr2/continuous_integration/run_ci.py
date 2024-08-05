@@ -50,14 +50,16 @@ def run_short_ci(model_input, cuda_device_index, long_check=True):
     return
 
 def run_generic_hostguest_ci(cuda_device_index):
-    #FF = "system"
-    FF = "amber"
+    FF = "system"
+    #FF = "amber"
+    TIMESTEP = 0.002
+    #TIMESTEP = 0.004
     with tempfile.TemporaryDirectory() as temp_dir:
         host_guest_model_input \
             = create_model_input.create_host_guest_mmvt_model_input(
                 temp_dir, ff=FF)
         host_guest_model_input.integrator_type = "langevin"
-        host_guest_model_input.timestep = 0.004
+        host_guest_model_input.timestep = TIMESTEP
         host_guest_model_input.hydrogenMass = 3.0
         host_guest_model_input.calculation_settings.md_output_interval = 2000
         host_guest_model_input.calculation_settings.md_steps_per_anchor = 20000

@@ -78,6 +78,7 @@ def test_mmvt_sim_openmm_forcefield(tmp_path, host_guest_mmvt_model_forcefield):
     assert my_sim_openmm.simulation is not None
     return
 
+@pytest.mark.needs_cuda
 def test_mmvt_sim_openmm_system(tmp_path, host_guest_mmvt_model_system):
     
     myanchor = host_guest_mmvt_model_system.anchors[1]
