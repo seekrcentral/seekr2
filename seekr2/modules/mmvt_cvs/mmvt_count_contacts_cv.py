@@ -276,7 +276,7 @@ class MMVT_count_contacts_CV(MMVT_collective_variable):
                 dist = np.linalg.norm(com2-com1)
                 if dist <= self.cutoff_distance * unit.nanometers:
                     count += 1
-        
+        assert np.isfinite(count), "Non-finite value detected."
         return count
         
     def check_openmm_context_within_boundary(

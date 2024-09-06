@@ -225,6 +225,7 @@ class MMVT_Voronoi_CV(MMVT_collective_variable):
         for i, child_cv in enumerate(self.child_cvs):
             cv_value = child_cv.get_cv_value(positions=positions)
             values.append(cv_value)
+            assert np.isfinite(cv_value), "Non-finite value detected."
             
         return values
     

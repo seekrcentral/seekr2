@@ -179,7 +179,7 @@ def test_mmvt_spherical_restraint(tmp_path):
     # Test get_mdtraj_cv_value for this cv
     pdbtraj1 = mdtraj.load(pdb_filename1)
     value = my_cv.get_mdtraj_cv_value(pdbtraj1, frame_index=0)
-    assert np.isclose(value, 0.0)
+    assert np.isclose(value, 0.0, atol=1e-6)
     
     # Move system and re-simulate at a different radius
     my_cv.update_groups_and_variables(
@@ -285,3 +285,51 @@ def test_mmvt_spherical_voronoi_boundary(tmp_path):
     
     return
     
+def test_mmvt_rmsd_cv_value_align_vs_rmsd(tmp_path):
+    try:
+        import rmsdplusforceplugin
+    except ImportError:
+        return
+    
+    # Set initial variables
+    my_variables1 = [1.0, 90000.0, 0.0]
+    ref_positions = [[-0.1, 0.0, 1.0], 
+                     [0.1, 0.0, 1.0],
+                     [0.0, -0.1, 1.0], 
+                     [0.0, 0.1, 1.0],
+                     [0.0, 0.0, -0.1], 
+                     [0.0, 0.0, 1.1]]
+    positions1 = [[-0.0, 0.1, 1.1], 
+                  [0.2, 0.1, 1.1],
+                  [0.1, -0.0, 1.1], 
+                  [0.1, 0.2, 1.1],
+                  [0.1, 0.1, 1.0], 
+                  [0.1, 0.1, 1.2]]
+    ref_pdb_filename = os.path.join(tmp_path, "rmsd_ref.pdb")
+    # Initialize the toy system with boundary force
+    toy_system, toy_topology = create_toy_system.make_toy_system_and_topology(6)
+    common_sim_openmm.write_toy_pdb_file(toy_topology, ref_positions, 
+                                         ref_pdb_filename)
+    my_cv = mmvt_rmsd_cv.MMVT_RMSD_CV(
+        index=0, align_group=[0, 1, 2], group=[3, 4, 5], 
+        ref_structure=ref_pdb_filename)
+    
+    # Move system and re-simulate at a different radius
+    restraint_force1 = my_cv.make_restraining_force(alias_id=1)
+    restraint_force1.setForceGroup(1)
+    my_cv.add_parameters(restraint_force1)
+    my_cv.add_groups_and_variables(
+        force=restraint_force1, variables=my_variables1, alias_id=1)
+    toy_system.addForce(restraint_force1)
+    toy_simulation = create_toy_system.make_toy_simulation_and_context(
+        toy_system, toy_topology, positions1)
+    pdb_filename1 = os.path.join(tmp_path, "rmsd_mmvt_toy1.pdb")
+    common_sim_openmm.write_toy_pdb_file(toy_topology, positions1, pdb_filename1)
+    
+    traj1 = mdtraj.load(pdb_filename1)
+    value = my_cv.get_mdtraj_cv_value(traj1, frame_index=0)
+    assert np.isclose(value, np.sqrt(1.0/3.0))
+    
+    # Test get_openmm_context_cv_value before running steps
+    value_context = my_cv.get_openmm_context_cv_value(toy_simulation.context)
+    assert np.isclose(value_context, np.sqrt(1.0/3.0))

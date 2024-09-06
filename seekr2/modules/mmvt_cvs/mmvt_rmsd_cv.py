@@ -22,7 +22,7 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
     
     """+MMVT_collective_variable.__doc__
     
-    def __init__(self, index, group,  ref_structure, align_group=None):
+    def __init__(self, index, group, ref_structure, align_group=None):
         self.index = index
         self.group = group
         self.align_group = align_group
@@ -247,17 +247,27 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
         """
         Determine the current CV value for an mdtraj object.
         """
-        traj1 = traj.atom_slice(self.group)
+        if self.align_group is None:
+            align_group = self.group
+        else:
+            align_group = self.align_group
         assert os.path.exists(self.ref_structure), \
             "File {} does not exist. Make sure ".format(self.ref_structure) \
             +"that any programs using the get_mdtraj_cv_value() method " \
             "within an API is performed in the model directory."
         ref_traj = mdtraj.load(self.ref_structure)
-        ref_traj1 = ref_traj.atom_slice(self.group)
-        traj1.superpose(ref_traj1)
-        my_rmsd = mdtraj.rmsd(traj1, ref_traj1)
-        value = float(my_rmsd[frame_index])
-        return value
+        traj.superpose(ref_traj, atom_indices=align_group)
+        ref_xyz = ref_traj.xyz[0]
+        traj_xyz = traj.xyz[frame_index]
+        value = 0.0
+        for i in self.group:
+            increment = (traj_xyz[i,0] - ref_xyz[i,0])**2 \
+                + (traj_xyz[i,1] - ref_xyz[i,1])**2 \
+                + (traj_xyz[i,2] - ref_xyz[i,2])**2
+            value += increment
+        
+        rmsd = np.sqrt(value/len(self.group))
+        return rmsd
     
     def check_mdtraj_within_boundary(self, traj, milestone_variables, 
                                      verbose=False, TOL=0.001):
@@ -298,13 +308,25 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
             ref_positions = pdb_file.positions
         
         pos_subset = []
+        pos_subset_rmsd = []
         ref_subset = []
-        for atom_index in self.group:
+        ref_subset_rmsd = []
+        if self.align_group is None:
+            align_group = self.group
+        else:
+            align_group = self.align_group
+        for atom_index in align_group:
             pos_subset.append(positions[atom_index].value_in_unit(unit.nanometers))
             ref_subset.append(ref_positions[atom_index].value_in_unit(unit.nanometers))
         
+        for atom_index in self.group:
+            pos_subset_rmsd.append(positions[atom_index].value_in_unit(unit.nanometers))
+            ref_subset_rmsd.append(ref_positions[atom_index].value_in_unit(unit.nanometers))
+        
         pos_subset = np.array(pos_subset)
         ref_subset = np.array(ref_subset)
+        pos_subset_rmsd = np.array(pos_subset_rmsd)
+        ref_subset_rmsd = np.array(ref_subset_rmsd)
         
         avg_pos = np.array([float(np.mean(pos_subset[:,0])), 
                             float(np.mean(pos_subset[:,1])), 
@@ -314,9 +336,21 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
                             np.mean(ref_subset[:,2])])        
         pos_subset_centered = pos_subset - avg_pos
         ref_subset_centered = ref_subset - avg_ref
-        rotation, value = transform.Rotation.align_vectors(
+        pos_subset_rmsd_centered = pos_subset_rmsd - avg_pos
+        ref_subset_rmsd_centered = ref_subset_rmsd - avg_ref
+        rotation, rssd_align = transform.Rotation.align_vectors(
             pos_subset_centered, ref_subset_centered)
-        rmsd = value / np.sqrt(len(self.group))
+        new_pos_subset_rmsd = rotation.apply(pos_subset_rmsd_centered)
+        
+        value = 0.0
+        for i in range(len(self.group)):
+            increment = (new_pos_subset_rmsd[i,0] - ref_subset_rmsd_centered[i,0])**2 \
+                + (new_pos_subset_rmsd[i,1] - ref_subset_rmsd_centered[i,1])**2 \
+                + (new_pos_subset_rmsd[i,2] - ref_subset_rmsd_centered[i,2])**2
+            value += increment
+            
+        rmsd = np.sqrt(value / len(self.group))
+        assert np.isfinite(rmsd), "Non-finite value detected."
         return rmsd
     
     def check_openmm_context_within_boundary(
