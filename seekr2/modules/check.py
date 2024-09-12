@@ -274,9 +274,9 @@ def load_structure_with_mdtraj(model, anchor, mode="pdb", coords_filename=None):
                     "File must have '.parm7' or '.prmtop extension: " \
                     +f"{prmtop_filename}"
                 extension = my_splitext[1]
-                assert extension in [".parm7", ".prmtop"], \
-                    "File must have '.parm7' or '.prmtop' extension: " \
-                    +f"{prmtop_filename}"
+                assert extension in [".parm7", ".prmtop", ".top"], \
+                    "File must have '.parm7', '.prmtop', or '.top' " \
+                    +f"extension: {prmtop_filename}"
                 return None
         
         elif mode == "elber_umbrella":
