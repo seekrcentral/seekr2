@@ -274,8 +274,10 @@ def load_structure_with_mdtraj(model, anchor, mode="pdb", coords_filename=None):
                     "File must have '.parm7' or '.prmtop extension: " \
                     +f"{prmtop_filename}"
                 extension = my_splitext[1]
-                assert extension in [".parm7", ".prmtop", ".top"], \
-                    "File must have '.parm7', '.prmtop', or '.top' " \
+                # NOTE: do not enable '.top' extension - mdtraj cannot handle
+                # the extension.
+                assert extension in [".parm7", ".prmtop"], \
+                    "File must have '.parm7', '.prmtop', or " \
                     +f"extension: {prmtop_filename}"
                 return None
         

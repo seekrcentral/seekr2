@@ -8,6 +8,8 @@ MMVT and Elber milestoning.
 import os
 import re
 import math
+import glob
+from shutil import copyfile
 
 import numpy as np
 import parmed
@@ -1097,6 +1099,43 @@ def save_model(model, model_file):
         "should not be modified by hand. Instead, modify the input XML and "\
         "re-run prepare.py."
     model.serialize(model_file, xml_header=dont_modify_warning)
+    return
+
+def save_new_model(model, model_glob, model_base, save_old_model=True):
+    """
+    Generate a new model file. The old model file(s) will be renamed with a 
+    numerical index.
+    
+    Parameters
+    ----------
+    model : Model()
+        The unfilled Seekr2 Model object.
+        
+    """
+    if model.openmm_settings.cuda_platform_settings is not None:
+        cuda_device_index = model.openmm_settings.cuda_platform_settings\
+            .cuda_device_index
+        model.openmm_settings.cuda_platform_settings.cuda_device_index = "0"
+        
+    model_path = os.path.join(model.anchor_rootdir, "model.xml")
+    if os.path.exists(model_path) and save_old_model:
+        # This is expected, because this old model was loaded
+        full_model_glob = os.path.join(model.anchor_rootdir, model_glob)
+        num_globs = len(glob.glob(full_model_glob))
+        new_pre_model_filename = model_base.format(num_globs)
+        new_pre_model_path = os.path.join(model.anchor_rootdir, 
+                                               new_pre_model_filename)
+        print("Renaming model.xml to {}".format(new_pre_model_filename))
+        copyfile(model_path, new_pre_model_path)
+        
+    print("Saving new model.xml")
+    old_rootdir = model.anchor_rootdir
+    model.anchor_rootdir = "."
+    save_model(model, model_path)
+    model.anchor_rootdir = old_rootdir
+    if model.openmm_settings.cuda_platform_settings is not None:
+        model.openmm_settings.cuda_platform_settings.cuda_device_index\
+            = cuda_device_index
     return
 
 def parse_xml_list(variable):

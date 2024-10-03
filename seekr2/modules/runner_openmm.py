@@ -582,8 +582,10 @@ class Runner_openmm():
                     self.sim_openmm.integrator.setBounceCounter(bounce_counter)
                     self.sim_openmm.simulation.context.reinitialize(
                         preserveState=True)
-                    
-            saveCheckpoint(self.sim_openmm, self.restart_checkpoint_filename)
+            
+            if chunk > 0:    
+                saveCheckpoint(self.sim_openmm, self.restart_checkpoint_filename)
+            
             self.sim_openmm.simulation.step(self.steps_per_chunk)
             lock_string = update_lock(lock_filename, lock_string, self.anchor)
         

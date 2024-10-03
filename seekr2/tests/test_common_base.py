@@ -180,3 +180,23 @@ def test_parse_xml_list():
     with pytest.raises(Exception):
         base.parse_xml_list("balderdash")
     return
+
+def test_save_new_model(host_guest_mmvt_model):
+    """
+    
+    """
+    MODEL_GLOB = "model_pre_test_*.xml"
+    MODEL_BASE = "model_pre_test_{}.xml"
+    root = host_guest_mmvt_model.anchor_rootdir
+    base.save_new_model(host_guest_mmvt_model, MODEL_GLOB, MODEL_BASE)
+    old_model_path = os.path.join(root, MODEL_BASE.format(0))
+    print("old_model_path:", old_model_path)
+    assert(os.path.exists(old_model_path))
+    new_model_path = os.path.join(root, "model.xml")
+    assert(os.path.exists(new_model_path))
+    
+    old_model_path2 = os.path.join(root, MODEL_BASE.format(1))
+    base.save_new_model(host_guest_mmvt_model, MODEL_GLOB, MODEL_BASE)
+    assert(os.path.exists(old_model_path2))
+    assert(os.path.exists(new_model_path))
+    return

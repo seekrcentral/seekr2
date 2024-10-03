@@ -22,7 +22,7 @@ following steps:
 
 Download Mamba, run the script, and fill out the prompts::
 
-  wget https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh
+  wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
   bash Mambaforge-Linux-x86_64.sh
 
 1. When asked for an install destination, choose a directory owned by your user
@@ -90,8 +90,11 @@ you run tests of SEEKR2. From within the "seekr2/" directory, run:
 
 ``pytest``
 
-One or two tests may fail depending on whether NAMD2 and/or Browndye2 have been
+Many tests may fail depending on whether NAMD2 and/or Browndye2 have been
 installed, and can be safely ignored if those programs are not needed.
+
+If the program "make_apbs_inputs" fails, it is because Browndye2 is not
+installed.
 
 Additional continuous integration tests may be run from the Python scripts in
 the seekr2/seekr2/continuous_integration/ directory if extra testing is
