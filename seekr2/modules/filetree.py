@@ -9,8 +9,6 @@ import os
 import shutil
 from shutil import copyfile
 
-import parmed
-
 import seekr2.modules.common_base as base
 
 class Filetree():

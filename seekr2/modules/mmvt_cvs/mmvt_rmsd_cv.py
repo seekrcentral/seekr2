@@ -33,7 +33,7 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
         self.cv_expression = "RMSD"
         self.num_groups = 1
         self.per_dof_variables = []
-        self.global_variables = [] #["k", "value"]
+        self.global_variables = ["k", "value"]
         self._mygroup_list = None
         self.variable_name = "v"
         return
@@ -85,8 +85,28 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
             import openmm
         except ImportError:
             import simtk.openmm as openmm
-        return openmm.CustomCentroidBondForce(
-            self.num_groups, self.cv_expression)
+            
+        try:
+            import openmm.app as openmm_app
+        except ImportError:
+            import simtk.openmm.app as openmm_app
+            
+        pdb_file = openmm_app.PDBFile(self.ref_structure)
+        if self.align_group is None:
+            rmsd_force = openmm.RMSDForce(pdb_file.positions, self.group)
+        else:
+            try:
+                import rmsdplusforceplugin
+            except ImportError:
+                print("Unable to load RMSDPlusForcePlugin. Please install "\
+                      "from: https://github.com/seekrcentral/"\
+                      "rmsdplusforceplugin.git")
+                exit()
+            
+            rmsd_force = rmsdplusforceplugin.RMSDPlusForce(
+                pdb_file.positions, self.group, self.align_group)
+                
+        return rmsd_force
     
     def make_voronoi_cv_boundary_forces(self, me_val, neighbor_val, alias_id):
         """
@@ -202,9 +222,11 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
         which includes a list of the groups of atoms involved with the
         CV, as well as a list of the variables' *values*.
         """
-        force.addGlobalParameter("bitcode_{}".format(alias_id), variables[0])
-        force.addGlobalParameter("k_{}".format(alias_id), variables[1])
-        force.addGlobalParameter("value_{}".format(alias_id), variables[2])
+        if len(variables) >= 3:
+            force.addGlobalParameter("bitcode_{}".format(alias_id), variables[0])
+            force.addGlobalParameter("k_{}".format(alias_id), variables[1])
+            force.addGlobalParameter("value_{}".format(alias_id), variables[2])
+        
         return
     
     def update_groups_and_variables(self, force, variables, alias_id, context):
@@ -214,9 +236,11 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
         #force.setGlobalParameterDefaultValue(0, variables[0])
         #force.setGlobalParameterDefaultValue(1, variables[1])
         #force.setGlobalParameterDefaultValue(2, variables[2])
-        context.setParameter("bitcode_{}".format(alias_id), variables[0])
-        context.setParameter("k_{}".format(alias_id), variables[1])
-        context.setParameter("value_{}".format(alias_id), variables[2])
+        if len(variables) >= 3:
+            context.setParameter("bitcode_{}".format(alias_id), variables[0])
+            context.setParameter("k_{}".format(alias_id), variables[1])
+            context.setParameter("value_{}".format(alias_id), variables[2])
+            
         return
     
     def get_variable_values_list(self, milestone):

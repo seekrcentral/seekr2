@@ -156,6 +156,9 @@ def add_simulation(sim_openmm, model, topology, positions, box_vectors,
         sim_openmm.integrator, sim_openmm.platform, 
         sim_openmm.properties)
     
+    state = sim_openmm.simulation.context.getState(getPositions=True)
+    old_positions = state.getPositions()
+    
     if positions is not None:
         sim_openmm.simulation.context.setPositions(positions)
     

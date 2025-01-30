@@ -42,7 +42,7 @@ If you want you can create a Mamba environment,
 but you can also just install all packages straight to the base environment
 if you wish to. If using an environment, whenever you're installing or running 
 anything involving OpenMM or SEEKR2, make sure that you have activated your 
-environment by running ``conda activate SEEKR``.
+environment by running ``mamba activate SEEKR``.
 
 Install OpenMM and Plugin with Mamba
 ------------------------------------
@@ -167,13 +167,13 @@ program "nvcc" will exist in your CUDA installation, and might be discoverable
 by typing ``which nvcc``.
 
 Next, install the necessary programs and packages into Mamba/Conda. (Replace
-"conda" with "mamba" wherever necessary)
+"mamba" with "conda" wherever necessary)
 
-``conda install numpy scipy netcdf4 mpi4py swig``
+``mamba install numpy scipy netcdf4 mpi4py swig``
 
 Make sure 'git' is installed, if not already.
 
-``conda install git``
+``mamba install git``
 
 Make sure 'ccmake' is installed
 
@@ -186,7 +186,7 @@ ccmake or you can install it yourself if you have sudo privileges:
 
 Make sure 'doxygen' is installed.
 
-``conda install -c conda-forge doxygen``
+``mamba install -c conda-forge doxygen``
 
 Upgrade Cython:
 
@@ -306,7 +306,7 @@ Some tips and advice:
   clogging up the login nodes. Consider using the debug or development queue,
   if available.
 
-* Use "wget" to obtain miniconda: ``wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh``
+* Use "wget" to obtain mamba: ``wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh``
 
 * If the cluster or shared resource has GPU computing capabilities, the 
   administrators have likely made CUDA available. You should consult the 
