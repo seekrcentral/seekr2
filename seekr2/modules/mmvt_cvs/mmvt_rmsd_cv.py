@@ -36,6 +36,7 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
         self.global_variables = ["k", "value"]
         self._mygroup_list = None
         self.variable_name = "v"
+        self._ref_positions = None
         return
 
     def __name__(self):
@@ -319,17 +320,22 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
             import openmm.app as openmm_app
         except ImportError:
             import simtk.openmm.app as openmm_app
-            
+        
         if system is None:
             system = context.getSystem()
+            
         if positions is None:
             state = context.getState(getPositions=True)
             positions = state.getPositions()
-            
+        
         if ref_positions is None:
-            pdb_filename = self.ref_structure
-            pdb_file = openmm_app.PDBFile(pdb_filename)
-            ref_positions = pdb_file.positions
+            if self._ref_positions is None:
+                pdb_filename = self.ref_structure
+                pdb_file = openmm_app.PDBFile(pdb_filename)
+                ref_positions = pdb_file.positions
+                self._ref_positions = ref_positions
+            else:
+                ref_positions = self._ref_positions
         
         pos_subset = []
         pos_subset_rmsd = []
@@ -366,6 +372,7 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
             pos_subset_centered, ref_subset_centered)
         new_pos_subset_rmsd = rotation.apply(pos_subset_rmsd_centered)
         
+        
         value = 0.0
         for i in range(len(self.group)):
             increment = (new_pos_subset_rmsd[i,0] - ref_subset_rmsd_centered[i,0])**2 \
@@ -375,6 +382,7 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
             
         rmsd = np.sqrt(value / len(self.group))
         assert np.isfinite(rmsd), "Non-finite value detected."
+        
         return rmsd
     
     def check_openmm_context_within_boundary(
