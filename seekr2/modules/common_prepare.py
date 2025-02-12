@@ -1110,7 +1110,7 @@ def modify_model(old_model, new_model, root_directory, force_overwrite=False):
                 old_anchors_with_starting_pdbs_to_keep)\
             +"have been given new starting structures (from HIDR or elsewhere) "\
             "and the entered command mismatches the new structure file names. "\
-            "If you desire to ignore this  message, then use the "\
+            "If you desire to ignore this message, then use the "\
             "--force_overwrite (-f) option, and the existing structures from HIDR "\
             "will be kept in the new model. If you wish to overwrite these, you "\
             "will need to change the model.xml file or write the root directory "\

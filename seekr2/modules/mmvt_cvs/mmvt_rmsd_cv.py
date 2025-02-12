@@ -3,6 +3,7 @@ Structures, methods, and functions for handling RMSD CVs.
 """
 
 import os
+import time
 import shutil
 
 import numpy as np
@@ -38,7 +39,14 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
         self.variable_name = "v"
         self._ref_positions = None
         return
-
+    
+    @classmethod
+    def update_blacklist(cls, attr_name):
+        """Dynamically update the class blacklist to include a new attribute."""
+        blacklist = list(getattr(cls, "_Serializer__blacklist", ()))
+        blacklist.append(attr_name)
+        cls._Serializer__blacklist = tuple(blacklist)
+    
     def __name__(self):
         return "MMVT_RMSD_CV"
     
@@ -327,16 +335,19 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
         if positions is None:
             state = context.getState(getPositions=True)
             positions = state.getPositions()
-        
+            
         if ref_positions is None:
             if self._ref_positions is None:
                 pdb_filename = self.ref_structure
                 pdb_file = openmm_app.PDBFile(pdb_filename)
                 ref_positions = pdb_file.positions
                 self._ref_positions = ref_positions
+                self.update_blacklist("_ref_positions")
+                
             else:
                 ref_positions = self._ref_positions
-        
+            
+            
         pos_subset = []
         pos_subset_rmsd = []
         ref_subset = []
@@ -371,7 +382,6 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
         rotation, rssd_align = transform.Rotation.align_vectors(
             pos_subset_centered, ref_subset_centered)
         new_pos_subset_rmsd = rotation.apply(pos_subset_rmsd_centered)
-        
         
         value = 0.0
         for i in range(len(self.group)):
