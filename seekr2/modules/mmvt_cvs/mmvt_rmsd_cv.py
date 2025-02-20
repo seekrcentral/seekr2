@@ -113,7 +113,7 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
                 exit()
             
             rmsd_force = rmsdplusforceplugin.RMSDPlusForce(
-                pdb_file.positions, self.group, self.align_group)
+                pdb_file.positions, self.align_group, self.group)
                 
         return rmsd_force
     
@@ -146,9 +146,9 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
                 exit()
             
             rmsd_me_force = rmsdplusforceplugin.RMSDPlusForce(
-                pdb_file.positions, self.group, self.align_group)
+                pdb_file.positions, self.align_group, self.group)
             rmsd_neighbor_force = rmsdplusforceplugin.RMSDPlusForce(
-                pdb_file.positions, self.group, self.align_group)
+                pdb_file.positions, self.align_group, self.group)
         
         
         me_expr = "(me_val_{}_alias_{} - {})^2".format(self.index, alias_id, self.cv_expression)
@@ -219,7 +219,7 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
                 exit()
             
             rmsd_force = rmsdplusforceplugin.RMSDPlusForce(
-                pdb_file.positions, self.group, self.align_group)
+                pdb_file.positions, self.align_group, self.group)
             
         force.addCollectiveVariable("RMSD", rmsd_force)
         
