@@ -545,7 +545,6 @@ def check_systems_within_Voronoi_cells(model):
             traj = load_structure_with_mdtraj(model, anchor)
             if traj is None:
                 continue
-            pass
         
         tmp_path = tempfile.NamedTemporaryFile()
         output_file = tmp_path.name

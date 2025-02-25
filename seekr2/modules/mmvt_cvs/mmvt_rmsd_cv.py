@@ -384,13 +384,16 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
         new_pos_subset_rmsd = rotation.apply(pos_subset_rmsd_centered)
         
         value = 0.0
+        total_mass = 0.0
         for i in range(len(self.group)):
+            mass = system.getParticleMass(self.group[i])
             increment = (new_pos_subset_rmsd[i,0] - ref_subset_rmsd_centered[i,0])**2 \
                 + (new_pos_subset_rmsd[i,1] - ref_subset_rmsd_centered[i,1])**2 \
                 + (new_pos_subset_rmsd[i,2] - ref_subset_rmsd_centered[i,2])**2
-            value += increment
+            value += mass * increment
+            total_mass += mass
             
-        rmsd = np.sqrt(value / len(self.group))
+        rmsd = np.sqrt(value / (total_mass * len(self.group)))
         assert np.isfinite(rmsd), "Non-finite value detected."
         
         return rmsd

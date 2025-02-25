@@ -1189,3 +1189,50 @@ def get_anchor_pdb_filename(anchor):
         return anchor.charmm_params.pdb_coordinates_filename
     
     return ""
+
+def mdtraj_hmr_masses(model, traj):
+    """
+    Return a list of the masses of the atoms in the mdtraj trajectory, masses
+    reweighted by the hydrogen mass repartitioning scheme. This is
+    necessary because HMR is not supported by mdtraj.
+    
+    Parameters
+    ----------
+    model : Model()
+        The SEEKR2 model object which contains the hydrogen masses
+    traj : mdtraj.Trajectory
+        The trajectory object for which to reweight the masses
+    """
+    old_masses = []
+    hydrogen_indices = []
+    for atom in traj.topology.atoms:
+        old_masses.append(atom.element.mass)
+        if atom.element.symbol == "H":
+            hydrogen_indices.append(atom.index)
+
+    new_hydrogen_mass = model.openmm_settings.hydrogenMass
+    if new_hydrogen_mass is None:
+        return old_masses
+    
+    new_masses = old_masses.copy()
+    
+    for bond in traj.topology.bonds:
+        atom1 = bond[0]
+        atom2 = bond[1]
+        if atom1.element.symbol == "H":
+            new_masses[atom1.index] = new_hydrogen_mass
+            mass_shift = new_hydrogen_mass - old_masses[atom1.index]
+            new_masses[atom1.index] = new_hydrogen_mass
+            new_masses[atom2.index] -= mass_shift
+
+        if atom2.element.symbol == "H":
+            new_masses[atom2.index] = new_hydrogen_mass
+            mass_shift = new_hydrogen_mass - old_masses[atom2.index]
+            new_masses[atom2.index] = new_hydrogen_mass
+            new_masses[atom1.index] -= mass_shift
+
+    assert np.isclose(np.sum(new_masses), np.sum(old_masses)), \
+        "Masses were not conserved in the hydrogen mass"\
+        "repartitioning scheme."
+
+    return new_masses
