@@ -46,6 +46,7 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
         blacklist = list(getattr(cls, "_Serializer__blacklist", ()))
         blacklist.append(attr_name)
         cls._Serializer__blacklist = tuple(blacklist)
+        return
     
     def __name__(self):
         return "MMVT_RMSD_CV"
@@ -337,6 +338,9 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
             positions = state.getPositions()
             
         if ref_positions is None:
+            if not hasattr(self, '_ref_positions'):
+                self._ref_positions = None
+
             if self._ref_positions is None:
                 pdb_filename = self.ref_structure
                 pdb_file = openmm_app.PDBFile(pdb_filename)
@@ -356,14 +360,30 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
             align_group = self.group
         else:
             align_group = self.align_group
+        
+        total_align_mass = 0.0
         for atom_index in align_group:
-            pos_subset.append(positions[atom_index].value_in_unit(unit.nanometers))
-            ref_subset.append(ref_positions[atom_index].value_in_unit(unit.nanometers))
-        
+            mass = system.getParticleMass(atom_index).value_in_unit(unit.amu)
+            total_align_mass += mass
+
+        for atom_index in align_group:
+            mass = system.getParticleMass(atom_index).value_in_unit(unit.amu)
+            mass_fraction = mass / total_align_mass
+            pos_subset.append(mass_fraction * positions[atom_index].value_in_unit(unit.nanometers))
+            ref_subset.append(mass_fraction * ref_positions[atom_index].value_in_unit(unit.nanometers))
+            
+
+        total_rmsd_mass = 0.0
         for atom_index in self.group:
-            pos_subset_rmsd.append(positions[atom_index].value_in_unit(unit.nanometers))
-            ref_subset_rmsd.append(ref_positions[atom_index].value_in_unit(unit.nanometers))
-        
+            mass_rmsd = system.getParticleMass(atom_index).value_in_unit(unit.amu)
+            total_rmsd_mass += mass_rmsd
+
+        for atom_index in self.group:
+            mass_rmsd = system.getParticleMass(atom_index).value_in_unit(unit.amu)
+            mass_fraction_rmsd = mass_rmsd / total_rmsd_mass
+            pos_subset_rmsd.append(mass_fraction_rmsd * positions[atom_index].value_in_unit(unit.nanometers))
+            ref_subset_rmsd.append(mass_fraction_rmsd * ref_positions[atom_index].value_in_unit(unit.nanometers))
+
         pos_subset = np.array(pos_subset)
         ref_subset = np.array(ref_subset)
         pos_subset_rmsd = np.array(pos_subset_rmsd)
@@ -379,21 +399,19 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
         ref_subset_centered = ref_subset - avg_ref
         pos_subset_rmsd_centered = pos_subset_rmsd - avg_pos
         ref_subset_rmsd_centered = ref_subset_rmsd - avg_ref
-        rotation, rssd_align = transform.Rotation.align_vectors(
+        rotation, rmsd_align = transform.Rotation.align_vectors(
             pos_subset_centered, ref_subset_centered)
         new_pos_subset_rmsd = rotation.apply(pos_subset_rmsd_centered)
         
         value = 0.0
-        total_mass = 0.0
+        
         for i in range(len(self.group)):
-            mass = system.getParticleMass(self.group[i])
             increment = (new_pos_subset_rmsd[i,0] - ref_subset_rmsd_centered[i,0])**2 \
                 + (new_pos_subset_rmsd[i,1] - ref_subset_rmsd_centered[i,1])**2 \
                 + (new_pos_subset_rmsd[i,2] - ref_subset_rmsd_centered[i,2])**2
-            value += mass * increment
-            total_mass += mass
+            value += increment
             
-        rmsd = np.sqrt(value / (total_mass * len(self.group)))
+        rmsd = np.sqrt(value / len(self.group))
         assert np.isfinite(rmsd), "Non-finite value detected."
         
         return rmsd
