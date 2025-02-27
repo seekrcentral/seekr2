@@ -400,7 +400,7 @@ class MMVT_RMSD_CV(MMVT_collective_variable):
         pos_subset_rmsd_centered = pos_subset_rmsd - avg_pos
         ref_subset_rmsd_centered = ref_subset_rmsd - avg_ref
         rotation, rmsd_align = transform.Rotation.align_vectors(
-            pos_subset_centered, ref_subset_centered)
+            ref_subset_centered, pos_subset_centered)
         new_pos_subset_rmsd = rotation.apply(pos_subset_rmsd_centered)
         
         value = 0.0

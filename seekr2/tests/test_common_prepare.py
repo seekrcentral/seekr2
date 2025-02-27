@@ -49,8 +49,8 @@ def test_move_add_delete_input_anchors(tmp_path, host_guest_mmvt_model_input):
     model_dir = os.path.dirname(model2_xml_path)
     model2.anchor_rootdir = os.path.abspath(model_dir)
     assert model2.anchors[0].variables["r_0"] == 0.06
-    assert model2.anchors[0].milestones[0].variables['radius'] == 0.11
-    assert model2.anchors[1].milestones[0].variables['radius'] == 0.11
+    assert model2.anchors[0].milestones[0].variables["radius"] == 0.11
+    assert model2.anchors[1].milestones[0].variables["radius"] == 0.11
     assert len(model2.anchors) == 14
     assert model2.num_anchors == 14
     assert len(glob.glob(os.path.join(model2.anchor_rootdir, "anchor_*"))) == 13
@@ -73,8 +73,8 @@ def test_move_add_delete_input_anchors(tmp_path, host_guest_mmvt_model_input):
     model_dir = os.path.dirname(model3_xml_path)
     model3.anchor_rootdir = os.path.abspath(model_dir)
     assert model3.anchors[1].variables["r_0"] == 0.1
-    assert model3.anchors[1].milestones[0].variables['radius'] == 0.08
-    assert model3.anchors[1].milestones[1].variables['radius'] == 0.125
+    assert model3.anchors[1].milestones[0].variables["radius"] == 0.08
+    assert model3.anchors[1].milestones[1].variables["radius"] == 0.125
     assert len(model3.anchors) == 15
     assert model3.num_anchors == 15
     assert len(glob.glob(os.path.join(model3.anchor_rootdir, "anchor_*"))) == 14
@@ -89,9 +89,9 @@ def test_move_add_delete_input_anchors(tmp_path, host_guest_mmvt_model_input):
         = prepare.prepare(host_guest_mmvt_model_input, force_overwrite=False)
     model_dir = os.path.dirname(model4_xml_path)
     model4.anchor_rootdir = os.path.abspath(model_dir)
-    assert model4.anchors[0].milestones[0].variables['radius'] == 0.105
-    assert model4.anchors[1].milestones[0].variables['radius'] == 0.105
-    assert model4.anchors[1].milestones[1].variables['radius'] == 0.2
+    assert model4.anchors[0].milestones[0].variables["radius"] == 0.105
+    assert model4.anchors[1].milestones[0].variables["radius"] == 0.105
+    assert model4.anchors[1].milestones[1].variables["radius"] == 0.2
     assert len(model4.anchors) == 14
     assert model4.num_anchors == 14
     assert len(glob.glob(os.path.join(model4.anchor_rootdir, "anchor_*"))) == 13
