@@ -177,6 +177,7 @@ providing feedback, bug reports, or other comments.
 * Hilliary Frank (contributor)
 * Sasha Heyneman (contributor)
 * Ben Jagger (developer)
+* Abraham Muniz-Chicharro (developer)
 * Anand Ojha (developer)
 * Andy Stokely (developer)
 * Natalie Timms (contributor)

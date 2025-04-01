@@ -70,10 +70,10 @@ def write_toy_pdb_file(topology, positions, out_file_name):
     """
     positions_nm = np.array(positions) * unit.nanometers
     writing_positions = positions_nm.value_in_unit(unit.angstroms)
-    out_file = open(out_file_name, "w")
-    openmm_app.PDBFile.writeHeader(topology, out_file)
-    openmm_app.PDBFile.writeModel(topology, writing_positions, out_file)
-    openmm_app.PDBFile.writeFooter(topology, out_file)
+    with open(out_file_name, "w") as out_file:
+        openmm_app.PDBFile.writeHeader(topology, out_file)
+        openmm_app.PDBFile.writeModel(topology, writing_positions, out_file)
+        openmm_app.PDBFile.writeFooter(topology, out_file)
     return
 
 def make_toy_system_object(model):
