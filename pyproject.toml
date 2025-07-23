@@ -26,7 +26,7 @@ dependencies = [
     "matplotlib",
     "nptyping",
     "parmed",
-    "mdtraj",
+    "mdtraj<=1.9.9",
     "pytest",
     "abserdes",
     "PyGT",
