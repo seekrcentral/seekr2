@@ -1967,7 +1967,7 @@ def find_voronoi_anchor_neighbors(anchors):
     
     try:
         triangulation = Delaunay(points)
-        vor = Voronoi(points)
+        voronoi = Voronoi(points)
         
         # TODO: need a way to find the closest point to every Voronoi
         # ridge
@@ -2044,7 +2044,7 @@ def make_mmvt_milestone_between_two_voronoi_anchors(
 class Voronoi_cv_input(CV_input):
     """
     An object for the input to define when input CVs should be combined to
-    make a Voronoi tesselation from multiple CVs.
+    make a Voronoi tessellation from multiple CVs.
     """
     def __init__(self):
         self.index = None
@@ -2056,7 +2056,7 @@ class Voronoi_cv_input(CV_input):
     def make_anchors(self, model, anchor_index, milestone_index, 
                      connection_flag_dict, associated_input_anchor):
         assert model.get_type() == "mmvt", \
-            "Only MMVT models may use Voronoi Tesselation CVs."
+            "Only MMVT models may use Voronoi Tessellation CVs."
         anchors = []
         num_anchors = 1
         for input_anchor_index, input_anchor in enumerate(self.input_anchors):
