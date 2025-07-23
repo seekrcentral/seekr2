@@ -293,6 +293,7 @@ colvar {{
         com2 = base.get_openmm_center_of_mass_com(
             system, positions, self.group2)
         radius = np.linalg.norm(com2-com1)
+        assert np.isfinite(radius), "Non-finite value detected."
         return radius
         
     def check_openmm_context_within_boundary(

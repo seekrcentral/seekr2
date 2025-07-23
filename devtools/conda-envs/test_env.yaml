@@ -21,6 +21,5 @@ dependencies:
   - pip:
     - codecov
     - parmed
-    - mdtraj
-    - bubblebuster
+    - mdtraj<=1.9.9
 

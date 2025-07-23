@@ -8,6 +8,8 @@ MMVT and Elber milestoning.
 import os
 import re
 import math
+import glob
+from shutil import copyfile
 
 import numpy as np
 import parmed
@@ -1099,6 +1101,43 @@ def save_model(model, model_file):
     model.serialize(model_file, xml_header=dont_modify_warning)
     return
 
+def save_new_model(model, model_glob, model_base, save_old_model=True):
+    """
+    Generate a new model file. The old model file(s) will be renamed with a 
+    numerical index.
+    
+    Parameters
+    ----------
+    model : Model()
+        The unfilled Seekr2 Model object.
+        
+    """
+    if model.openmm_settings.cuda_platform_settings is not None:
+        cuda_device_index = model.openmm_settings.cuda_platform_settings\
+            .cuda_device_index
+        model.openmm_settings.cuda_platform_settings.cuda_device_index = "0"
+        
+    model_path = os.path.join(model.anchor_rootdir, "model.xml")
+    if os.path.exists(model_path) and save_old_model:
+        # This is expected, because this old model was loaded
+        full_model_glob = os.path.join(model.anchor_rootdir, model_glob)
+        num_globs = len(glob.glob(full_model_glob))
+        new_pre_model_filename = model_base.format(num_globs)
+        new_pre_model_path = os.path.join(model.anchor_rootdir, 
+                                               new_pre_model_filename)
+        print("Renaming model.xml to {}".format(new_pre_model_filename))
+        copyfile(model_path, new_pre_model_path)
+        
+    print("Saving new model.xml")
+    old_rootdir = model.anchor_rootdir
+    model.anchor_rootdir = "."
+    save_model(model, model_path)
+    model.anchor_rootdir = old_rootdir
+    if model.openmm_settings.cuda_platform_settings is not None:
+        model.openmm_settings.cuda_platform_settings.cuda_device_index\
+            = cuda_device_index
+    return
+
 def parse_xml_list(variable):
     """
     Take 'variable', and if it's a list, then return as-is, but if it's
@@ -1150,3 +1189,50 @@ def get_anchor_pdb_filename(anchor):
         return anchor.charmm_params.pdb_coordinates_filename
     
     return ""
+
+def mdtraj_hmr_masses(model, traj):
+    """
+    Return a list of the masses of the atoms in the mdtraj trajectory, masses
+    reweighted by the hydrogen mass repartitioning scheme. This is
+    necessary because HMR is not supported by mdtraj.
+    
+    Parameters
+    ----------
+    model : Model()
+        The SEEKR2 model object which contains the hydrogen masses
+    traj : mdtraj.Trajectory
+        The trajectory object for which to reweight the masses
+    """
+    old_masses = []
+    hydrogen_indices = []
+    for atom in traj.topology.atoms:
+        old_masses.append(atom.element.mass)
+        if atom.element.symbol == "H":
+            hydrogen_indices.append(atom.index)
+
+    new_hydrogen_mass = model.openmm_settings.hydrogenMass
+    if new_hydrogen_mass is None:
+        return old_masses
+    
+    new_masses = old_masses.copy()
+    
+    for bond in traj.topology.bonds:
+        atom1 = bond[0]
+        atom2 = bond[1]
+        if atom1.element.symbol == "H":
+            new_masses[atom1.index] = new_hydrogen_mass
+            mass_shift = new_hydrogen_mass - old_masses[atom1.index]
+            new_masses[atom1.index] = new_hydrogen_mass
+            new_masses[atom2.index] -= mass_shift
+
+        if atom2.element.symbol == "H":
+            new_masses[atom2.index] = new_hydrogen_mass
+            mass_shift = new_hydrogen_mass - old_masses[atom2.index]
+            new_masses[atom2.index] = new_hydrogen_mass
+            new_masses[atom1.index] -= mass_shift
+
+    assert np.isclose(np.sum(new_masses), np.sum(old_masses)), \
+        "Masses were not conserved in the hydrogen mass"\
+        "repartitioning scheme."
+
+    return new_masses

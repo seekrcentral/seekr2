@@ -168,10 +168,10 @@ def get_current_step_openmm(model, anchor, load_state_file_list=None,
     return currentStep
 
 def choose_next_simulation_openmm(
-        model, instruction, min_total_simulation_length, 
-        max_total_simulation_length, convergence_cutoff, 
-        minimum_anchor_transitions, force_overwrite, umbrella_restart_mode,
-        load_state_file, cuda_device_index=None):
+        model, instruction, min_total_simulation_length=None, 
+        max_total_simulation_length=None, convergence_cutoff=None, 
+        minimum_anchor_transitions=None, force_overwrite=False, umbrella_restart_mode=False,
+        load_state_file=None, cuda_device_index=None):
     """
     Examine the model and all MD simulations that have run so far.
     Using this information, as well as the specified criteria (minimum
@@ -433,7 +433,7 @@ def choose_next_simulation_namd(
         key=lambda item: (min_total_simulation_length-item[0], item[1]))
     return anchor_info_to_run
 
-def run_browndye2(model, bd_milestone_index, restart, n_trajectories, 
+def run_browndye2(model, bd_milestone_index, restart, n_trajectories, n_threads=None,
                   force_overwrite=False):
     """Run a Browndye2 simulation."""
     import seekr2.modules.runner_browndye2 as runner_browndye2
@@ -453,7 +453,7 @@ def run_browndye2(model, bd_milestone_index, restart, n_trajectories,
                 n_trajectories_per_output = n_trajectories
         runner_browndye2.modify_variables(
             bd_directory, model.k_on_info.bd_output_glob, n_trajectories, 
-            restart=restart, n_trajectories_per_output\
+            n_threads=n_threads, restart=restart, n_trajectories_per_output\
             =n_trajectories_per_output)
         runner_browndye2.run_nam_simulation(
             model.browndye_settings.browndye_bin_dir, bd_directory, 
@@ -583,7 +583,8 @@ def run(model, instruction, min_total_simulation_length=None,
         cuda_device_index=None, force_overwrite=False, save_state_file=False,
         save_state_boundaries=False, namd_command="namd2", namd_arguments="", 
         min_b_surface_simulation_length=None, min_b_surface_encounters=None, 
-        num_rev_launches=1, umbrella_restart_mode=False, load_state_file=None):
+        num_rev_launches=1, umbrella_restart_mode=False, load_state_file=None,
+        n_threads=None):
     """
     Run all simulations, both MD and BD, as specified by the user 
     inputs.
@@ -710,7 +711,7 @@ def run(model, instruction, min_total_simulation_length=None,
                   "number of transitions", num_transitions)
             run_browndye2(
                 model, bd_milestone_index, restart, steps_to_go_to_minimum, 
-                force_overwrite=bd_force_overwrite)
+                n_threads=n_threads, force_overwrite=bd_force_overwrite)
         if len(bd_milestone_info_to_run) > 0:
             bd_complete = False
             ran_nothing = False
@@ -868,6 +869,10 @@ if __name__ == "__main__":
                           "The course of a single run, attempt to restart the "\
                           "simulation this many number of times before giving "\
                           "up. Default: 0.", type=int)
+    argparser.add_argument("-N", "--n_threads", dest="n_threads",
+                          default=None, help="Assign the number of compute threads "\
+                          "to use for Browndye. If left at None, the amount assigned "\
+                          "by the model input will be used. Default: None.", type=int)
     
     args = argparser.parse_args()
     args = vars(args)
@@ -891,6 +896,7 @@ if __name__ == "__main__":
     umbrella_restart_mode = args["umbrella_restart_mode"]
     # TODO: set this to an argument? Or disable with argument
     restart_attempts = args["restart_attempts"]
+    n_threads = args["n_threads"]
     
     model = base.load_model(model_file, directory)
     
@@ -904,7 +910,7 @@ if __name__ == "__main__":
                 force_overwrite, save_state_file, save_state_for_all_boundaries,
                 namd_command, namd_arguments,minimum_b_surface_trajectories, 
                 min_b_surface_encounters, num_rev_launches, umbrella_restart_mode,
-                load_state_file)
+                load_state_file, n_threads)
             success = True
         except Exception:
             if num_restart_attempts < restart_attempts:

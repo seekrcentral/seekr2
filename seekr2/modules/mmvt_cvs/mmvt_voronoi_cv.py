@@ -2,6 +2,8 @@
 Structures, methods, and functions for handling Voronoi CVs.
 """
 
+import time
+
 import numpy as np
 
 from parmed import unit
@@ -225,6 +227,7 @@ class MMVT_Voronoi_CV(MMVT_collective_variable):
         for i, child_cv in enumerate(self.child_cvs):
             cv_value = child_cv.get_cv_value(positions=positions)
             values.append(cv_value)
+            assert np.isfinite(cv_value), "Non-finite value detected."
             
         return values
     
@@ -236,7 +239,6 @@ class MMVT_Voronoi_CV(MMVT_collective_variable):
         within the expected anchor. Return True if passed, return
         False if failed.
         """
-        
         values = self.get_openmm_context_cv_value(context, positions)
         result = self.check_value_within_boundary(
             values, milestone_variables, tolerance=tolerance)

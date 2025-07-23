@@ -334,6 +334,7 @@ class MMVT_tiwary_CV(MMVT_collective_variable):
             op_term = order_parameter.get_value(com_list)
             op_weight = self.order_parameter_weights[i]
             op_value += op_weight * op_term
+        assert np.isfinite(op_value), "Non-finite value detected."
         return op_value
     
     def check_openmm_context_within_boundary(

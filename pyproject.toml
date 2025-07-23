@@ -26,7 +26,7 @@ dependencies = [
     "matplotlib",
     "nptyping",
     "parmed",
-    "mdtraj",
+    "mdtraj<=1.9.9",
     "pytest",
     "abserdes",
     "PyGT",
@@ -64,7 +64,7 @@ where = ["."]
 
 # Ref https://setuptools.pypa.io/en/latest/userguide/datafiles.html#package-data
 [tool.setuptools.package-data]
-qmrebind = [
+seekr2 = [
     "py.typed",
 # Commenting these so that other packages can easily import seekr2 test data.
 #    "*.dat",

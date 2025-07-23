@@ -274,9 +274,11 @@ def load_structure_with_mdtraj(model, anchor, mode="pdb", coords_filename=None):
                     "File must have '.parm7' or '.prmtop extension: " \
                     +f"{prmtop_filename}"
                 extension = my_splitext[1]
+                # NOTE: do not enable '.top' extension - mdtraj cannot handle
+                # the extension.
                 assert extension in [".parm7", ".prmtop"], \
-                    "File must have '.parm7' or '.prmtop' extension: " \
-                    +f"{prmtop_filename}"
+                    "File must have '.parm7', '.prmtop', or " \
+                    +f"extension: {prmtop_filename}"
                 return None
         
         elif mode == "elber_umbrella":
@@ -543,7 +545,6 @@ def check_systems_within_Voronoi_cells(model):
             traj = load_structure_with_mdtraj(model, anchor)
             if traj is None:
                 continue
-            pass
         
         tmp_path = tempfile.NamedTemporaryFile()
         output_file = tmp_path.name

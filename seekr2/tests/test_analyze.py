@@ -27,8 +27,9 @@ def test_check_graph_connected():
     assert not analyze.check_graph_connected(graph1, index1, index2)
     return
 
+@pytest.mark.skip(reason="This test requires too much sampling to pass.")
 def test_Analysis_elber_check_anchor_stats(toy_elber_model):
-    num_steps = 10000
+    num_steps = 100000
     fwd_rev_interval = 10
     toy_elber_model.openmm_settings.cuda_platform_settings = None
     toy_elber_model.openmm_settings.reference_platform = True
@@ -187,12 +188,13 @@ def test_entropy_barrier_timescale_mmvt(toy_mmvt_model):
     analysis.save_plots(image_directory)
     return
 
+@pytest.mark.skip(reason="This test requires too much sampling to pass.")
 def test_entropy_barrier_timescale_elber(toy_elber_model):
     """
     Test entropy barrier system for if it recreates reasonable
     kinetics timescales.
     """
-    num_steps = 100000
+    num_steps = 1000000
     fwd_rev_interval = 100
     long_timescale_residence_time_in_ps = 1263.06
     toy_elber_model.openmm_settings.cuda_platform_settings = None

@@ -236,6 +236,7 @@ class MMVT_external_CV(MMVT_collective_variable):
             positions = state.getPositions()
         
         value = self.get_cv_value(positions)
+        assert np.isfinite(value), "Non-finite value detected."
         return value
     
     def check_openmm_context_within_boundary(

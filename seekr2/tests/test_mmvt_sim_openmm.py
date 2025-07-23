@@ -80,7 +80,6 @@ def test_mmvt_sim_openmm_forcefield(tmp_path, host_guest_mmvt_model_forcefield):
 
 @pytest.mark.needs_cuda
 def test_mmvt_sim_openmm_system(tmp_path, host_guest_mmvt_model_system):
-    
     myanchor = host_guest_mmvt_model_system.anchors[1]
     output_file = os.path.join(tmp_path, "output.txt")
     my_sim_openmm = mmvt_sim_openmm.create_sim_openmm(

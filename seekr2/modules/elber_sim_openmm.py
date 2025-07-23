@@ -85,7 +85,11 @@ def add_integrators(sim_openmm, model, state_prefix=None):
         
         if integrator_type == "langevin":
             umbrella_integrator_object = openmm.LangevinIntegrator
-            fwd_rev_integrator_object = seekr2plugin.ElberLangevinIntegrator
+            # The original Langevin integrator, which is not supported
+            # in OpenMM 8.2 and later.
+            #fwd_rev_integrator_object = seekr2plugin.ElberLangevinIntegrator
+            fwd_rev_integrator_object \
+                = seekr2plugin.ElberLangevinMiddleIntegrator
         elif integrator_type == "langevinMiddle":
             umbrella_integrator_object = openmm.LangevinMiddleIntegrator
             fwd_rev_integrator_object \

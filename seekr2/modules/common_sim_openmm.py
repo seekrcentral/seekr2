@@ -70,10 +70,10 @@ def write_toy_pdb_file(topology, positions, out_file_name):
     """
     positions_nm = np.array(positions) * unit.nanometers
     writing_positions = positions_nm.value_in_unit(unit.angstroms)
-    out_file = open(out_file_name, "w")
-    openmm_app.PDBFile.writeHeader(topology, out_file)
-    openmm_app.PDBFile.writeModel(topology, writing_positions, out_file)
-    openmm_app.PDBFile.writeFooter(topology, out_file)
+    with open(out_file_name, "w") as out_file:
+        openmm_app.PDBFile.writeHeader(topology, out_file)
+        openmm_app.PDBFile.writeModel(topology, writing_positions, out_file)
+        openmm_app.PDBFile.writeFooter(topology, out_file)
     return
 
 def make_toy_system_object(model):
@@ -150,7 +150,6 @@ def create_openmm_system(sim_openmm, model, anchor, frame=0,
             topology = prmtop.topology
         
         elif anchor.forcefield_params is not None:
-            print("using forcefield params")
             forcefield_filenames = []
             if anchor.forcefield_params.built_in_forcefield_filenames is not None:
                 for forcefield_filename in \
@@ -296,7 +295,7 @@ def create_openmm_system(sim_openmm, model, anchor, frame=0,
                 forcefield = openmm_app.ForceField(
                     *forcefield_filenames)
                 system = forcefield.createSystem(
-                    pdb.topology, nonbondedMethod=nonbondedMethod, 
+                    positions_obj.topology, nonbondedMethod=nonbondedMethod, 
                     nonbondedCutoff=model.openmm_settings.nonbonded_cutoff, 
                     constraints=constraints, hydrogenMass=hydrogenMass, 
                     rigidWater=rigidWater)
