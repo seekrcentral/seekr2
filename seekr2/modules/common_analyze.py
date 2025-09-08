@@ -34,7 +34,10 @@ N_IJ_DIR = "N_ij/"
 R_I_DIR = "R_i/"
 
 class MissingStatisticsError(Exception):
-    """Catch a very specific type of error in analysis stage."""
+    """
+    Catch an error in analysis stage where statistics are missing for a 
+    particular anchor or systemwide situation.
+    """
     pass
 
 def Q_to_K(Q):

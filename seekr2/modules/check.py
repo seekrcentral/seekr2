@@ -53,6 +53,8 @@ import tempfile
 import numpy as np
 import parmed
 import mdtraj
+import openmm
+import openmm.unit as unit
 
 import seekr2.modules.common_base as base
 import seekr2.modules.elber_cvs.elber_cv_base as elber_cv_base
@@ -316,12 +318,23 @@ def load_structure_with_mdtraj(model, anchor, mode="pdb", coords_filename=None):
                 "checks by using the --skip_checks (-s) argument"
             traj = mdtraj.load(umbrella_traj_filenames, top=pdb_filename)
         elif mode == "state_xml":
-            traj = mdtraj.load_xml(coords_filename, top=prmtop_filename)
+            traj = mdtraj.load_xml(coords_filename, top=pdb_filename)
         elif mode == "mmvt_traj":
             assert len(mmvt_traj_filenames) > 0, "Only empty mmvt " \
                 "trajectories were found. You can force SEEKR to skip these "\
                 "checks by using the --skip_checks (-s) argument"
             traj = mdtraj.load(mmvt_traj_filenames, top=pdb_filename)
+        
+        if anchor.forcefield_params.system_filename is not None:
+            full_system_filename = os.path.join(
+                building_directory, anchor.forcefield_params.system_filename)
+            with open(full_system_filename) as input:
+                system = openmm.XmlSerializer.deserialize(input.read())
+            for i, atom in enumerate(traj.top.atoms):
+                particle_mass = system.getParticleMass(i)
+                # Must create a new imaginary element to be sure to assign the correct mass
+                new_element = mdtraj.element.Element(symbol=f"X{i}", name=f"X{i}", number=200+i, radius=atom.element.radius, mass=particle_mass.value_in_unit(unit.daltons))
+                atom.element = new_element
         
         return traj
     
@@ -1086,6 +1099,7 @@ def check_mmvt_in_Voronoi_cell(model):
         traj = load_structure_with_mdtraj(model, anchor, mode="mmvt_traj")
         if traj is None:
             continue
+            
         for milestone in anchor.milestones:
             cv = model.collective_variables[milestone.cv_index]
             curdir = os.getcwd()
@@ -1095,8 +1109,7 @@ def check_mmvt_in_Voronoi_cell(model):
             os.chdir(curdir)
             if result == False:
                 warnstr = """CHECK FAILURE: The MMVT trajectory(ies)
-    for anchor {} do not lie within the 
-    anchor boundaries. This could be caused by
+    for anchor {} do not lie within the anchor boundaries. This could be caused by
     incorrect modification of files or the model.xml
     file, or possibly a bug.""".format(anchor.index)
                 print(warnstr)
