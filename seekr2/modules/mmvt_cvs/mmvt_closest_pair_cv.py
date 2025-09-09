@@ -255,12 +255,16 @@ class MMVT_closest_pair_CV(MMVT_collective_variable):
         """
         Determine the current CV value for an mdtraj object.
         """
-        atom_set_list = []
-        for index in self.group1:
-            atom_set_list.append(set([traj.topology.atom(index)]))
+        #atom_set_list = []
+        #for index in self.group1:
+        #    atom_set_list.append(set([traj.topology.atom(index)]))
         #for index in self.group2:
         #    atom_set_list.append(set([traj.topology.atom(index)]))
-        traj.image_molecules(inplace=True, anchor_molecules=atom_set_list)
+        anchor_molecules = []
+        for index in self.group1:
+            anchor_molecules.append(traj.topology.atom(index))
+        traj.image_molecules(inplace=True, anchor_molecules=[set(anchor_molecules)])
+        #traj.image_molecules(inplace=True)
         sum = (1.0 / self.cutoff_distance) ** self.exponent
         for atom_index1 in self.group1:
             for atom_index2 in self.group2:

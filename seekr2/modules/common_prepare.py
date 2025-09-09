@@ -563,13 +563,6 @@ def resolve_connections(connection_flag_dict, model, associated_input_anchor,
             # defined
             if anchor.__class__.__name__ \
                     in ["MMVT_toy_anchor", "Elber_toy_anchor"]:
-                """ # TODO: marked for removal
-                assert len(anchor_kept.starting_positions) == 0 or \
-                        len(anchor_discarded.starting_positions) == 0, \
-                    "The anchors connected by connection flag {} ".format(key) \
-                    +"may not both have starting positions defined. One or both " \
-                    "must be left blank."
-                """
                 if input_anchor_kept.starting_positions is None:
                     input_anchor_kept.starting_positions \
                         = input_anchor_discarded.starting_positions
@@ -579,19 +572,12 @@ def resolve_connections(connection_flag_dict, model, associated_input_anchor,
                         = input_anchor_kept.starting_positions
                 print("input_anchor_kept.starting_positions:", input_anchor_kept.starting_positions)
                 print("input_anchor_discarded.starting_positions:", input_anchor_discarded.starting_positions)
-                assert input_anchor_kept.starting_positions \
-                      == input_anchor_discarded.starting_positions, \
+                assert (input_anchor_kept.starting_positions \
+                      == input_anchor_discarded.starting_positions).all(), \
                     "The anchors connected by connection flag {} ".format(key) \
                     +"have inconsistent starting positions defined."
             else:
                 # TODO: this will need to be handled for charmm and other inputs
-                """ # TODO: marked for removal
-                assert anchor_kept.amber_params is None or \
-                        anchor_discarded.amber_params is None, \
-                    "The anchors connected by connection flag {} ".format(key) \
-                    +"may not both have starting structures defined. One or both " \
-                    "must be left blank."
-                """
                 if input_anchor_kept.starting_amber_params is None \
                         or input_anchor_kept.starting_amber_params\
                         .pdb_coordinates_filename == "":

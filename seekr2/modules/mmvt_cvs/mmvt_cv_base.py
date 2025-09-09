@@ -21,10 +21,12 @@ def traj_center_of_mass(traj):
     Returns a center of mass array by frames for a traj. Avoids NaN
     errors that come when using mdtraj's .
     """
+    
     if traj.xyz.shape[1] == 1:
         com_array = traj.xyz[:,0,:]
     else:
         com_array = mdtraj.compute_center_of_mass(traj)
+        
     return com_array
 
 class MMVT_settings(Serializer):

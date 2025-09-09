@@ -228,10 +228,14 @@ class MMVT_count_contacts_CV(MMVT_collective_variable):
         """
         Determine the current CV value for an mdtraj object.
         """
-        atom_set_list = []
+        #atom_set_list = []
+        #for index in self.group1:
+        #    atom_set_list.append(set([traj.topology.atom(index)]))
+        anchor_molecules = []
         for index in self.group1:
-            atom_set_list.append(set([traj.topology.atom(index)]))
-        traj.image_molecules(inplace=True, anchor_molecules=atom_set_list)
+            anchor_molecules.append(traj.topology.atom(index))
+        traj.image_molecules(inplace=True, anchor_molecules=[set(anchor_molecules)])
+        #traj.image_molecules(inplace=True)
         count = 0
         for atom_index1 in self.group1:
             for atom_index2 in self.group2:

@@ -6,7 +6,7 @@ seekr2
 
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) 
-[![python](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/)
+[![python](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/)
 
 
 ```
@@ -177,6 +177,7 @@ providing feedback, bug reports, or other comments.
 * Hilliary Frank (contributor)
 * Sasha Heyneman (contributor)
 * Ben Jagger (developer)
+* Abraham Muniz-Chicharro (developer)
 * Anand Ojha (developer)
 * Andy Stokely (developer)
 * Natalie Timms (contributor)

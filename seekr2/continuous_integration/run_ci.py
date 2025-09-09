@@ -50,8 +50,8 @@ def run_short_ci(model_input, cuda_device_index, long_check=True):
     return
 
 def run_generic_hostguest_ci(cuda_device_index):
-    FF = "system"
-    #FF = "amber"
+    #FF = "system"
+    FF = "amber"
     TIMESTEP = 0.002
     #TIMESTEP = 0.004
     with tempfile.TemporaryDirectory() as temp_dir:
