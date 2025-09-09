@@ -77,6 +77,7 @@ MAX_STRUCTURES_TO_CHECK = 100
 RECURSION_LIMIT = 100000
 MAX_BD_STUCK = 5
 MAX_SEQUENTIAL_BOUNCES = 1000
+ELEMENT_MASS_TOLERANCE = 0.1 # in daltons
 
 def load_structure_with_parmed(model, anchor):
     """
@@ -331,10 +332,21 @@ def load_structure_with_mdtraj(model, anchor, mode="pdb", coords_filename=None):
             with open(full_system_filename) as input:
                 system = openmm.XmlSerializer.deserialize(input.read())
             for i, atom in enumerate(traj.top.atoms):
-                particle_mass = system.getParticleMass(i)
-                # Must create a new imaginary element to be sure to assign the correct mass
-                new_element = mdtraj.element.Element(symbol=f"X{i}", name=f"X{i}", number=200+i, radius=atom.element.radius, mass=particle_mass.value_in_unit(unit.daltons))
-                atom.element = new_element
+                sys_particle_mass = system.getParticleMass(i).value_in_unit(unit.daltons)
+                md_element_mass = atom.element.mass
+                if not np.isclose(sys_particle_mass, 
+                                  md_element_mass, atol=ELEMENT_MASS_TOLERANCE):
+                    # Choose the closest element by mass
+                    md_closest_element = mdtraj.element.Element.getByMass(
+                        sys_particle_mass)
+                    mass_diff = abs(md_closest_element.mass - sys_particle_mass)
+                    if mass_diff < ELEMENT_MASS_TOLERANCE:
+                        atom.element = md_closest_element
+                    else:
+                        # Create a new element with the correct mass
+                        particle_mass = sys_particle_mass
+                        new_element = mdtraj.element.Element(symbol=f"X{i}", name=f"X{i}", number=200+i, radius=atom.element.radius, mass=particle_mass)
+                        atom.element = new_element
         
         return traj
     
