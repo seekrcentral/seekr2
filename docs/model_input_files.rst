@@ -9,7 +9,7 @@ to their own systems.
 <calculation_type>
   The type of milestoning model to employ. At present,
   the only available options are 1) "mmvt" for Markovian milestoning with
-  Voronoi Tesselations, and 2) "elber" for the original version of milestoning
+  Voronoi Tessellations, and 2) "elber" for the original version of milestoning
   proposed by Elber et. al.
   
 <calculation_settings>
@@ -169,9 +169,9 @@ The following are attributes of spherical anchor inputs:
 
 **<radius>**
   The radius (in nm) of the *anchor* (between the milestones). 
-  The significance of this variables comes from Voronoi tesselation (VT) 
+  The significance of this variables comes from Voronoi tessellation (VT) 
   definitions where the milestones are drawn exactly halfway between anchor 
-  points. The strict definition of surfaces in Voronoi tesselations don't need
+  points. The strict definition of surfaces in Voronoi tessellations don't need
   to be enforced. In the absence of *<lower_milestone_radius>* and 
   *<upper_milestone_radius>*, the *<radius>* parameter will be used to define 
   the milestones - the milestones will lie exactly halfway between adjacent 

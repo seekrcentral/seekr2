@@ -107,7 +107,7 @@ class Analysis:
     p_i : numpy.array
         The probability vector p_i, which appears in MMVT theory as 
         well as classical milestoning theory. p_i represents 
-        the probabilites of finding the system within the vicinity of
+        the probabilities of finding the system within the vicinity of
         milestone i. Therefore, p_i can be used to obtain thermodynamic
         quantities such as the free energy of milestone i.
         
@@ -142,7 +142,7 @@ class Analysis:
         
     k_ons : dict
         The k-ons predicted to the various end states within the
-        system. The keys are the indeces of the end state milestones
+        system. The keys are the indices of the end state milestones
         and the values are the k-ons.
         
     k_on_errors : dict
