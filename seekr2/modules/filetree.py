@@ -320,23 +320,34 @@ def copy_bd_files(model, input_model, rootdir):
         A path to the model's root directory.
     
     """
+    k_on_info = model.k_on_info
+    b_surface_dir = os.path.join(rootdir, k_on_info.b_surface_directory)
     if model.using_bd():
-        bd_settings = model.browndye_settings
-        bd_input_settings = input_model.browndye_settings_input
-        k_on_info = model.k_on_info
-        b_surface_dir = os.path.join(rootdir, k_on_info.b_surface_directory)
-        
-        ligand_pqr_filename = os.path.basename(bd_settings.ligand_pqr_filename)
-        ligand_pqr_dest_filename = os.path.join(
-            b_surface_dir, ligand_pqr_filename)
-        copyfile(os.path.expanduser(bd_input_settings.ligand_pqr_filename), 
-                 ligand_pqr_dest_filename)
-        
-        receptor_pqr_filename = os.path.basename(
-            bd_settings.receptor_pqr_filename)
-        receptor_pqr_dest_filename = os.path.join(
-            b_surface_dir, receptor_pqr_filename)
-        copyfile(os.path.expanduser(bd_input_settings.receptor_pqr_filename), 
-                 receptor_pqr_dest_filename)
-    
+        if model.browndye_settings is not None:
+            bd_settings = model.browndye_settings
+            bd_input_settings = input_model.browndye_settings_input
+            ligand_pqr_filename = os.path.basename(bd_settings.ligand_pqr_filename)
+            ligand_pqr_dest_filename = os.path.join(
+                b_surface_dir, ligand_pqr_filename)
+            copyfile(os.path.expanduser(bd_input_settings.ligand_pqr_filename), 
+                    ligand_pqr_dest_filename)
+            
+            receptor_pqr_filename = os.path.basename(
+                bd_settings.receptor_pqr_filename)
+            receptor_pqr_dest_filename = os.path.join(
+                b_surface_dir, receptor_pqr_filename)
+            copyfile(os.path.expanduser(bd_input_settings.receptor_pqr_filename), 
+                    receptor_pqr_dest_filename)
+
+        elif model.sda_settings is not None:
+            bd_settings = model.sda_settings
+            bd_input_settings = input_model.sda_settings_input
+            for solute in bd_input_settings.solutes:
+                solute_pqr_ori_filename = os.path.expanduser(
+                    solute.pqr_filename)
+                solute_pqr_filename = os.path.basename(
+                    solute.pqr_filename)
+                solute_pqr_dest_filename = os.path.join(
+                    b_surface_dir, solute_pqr_filename)
+                copyfile(solute_pqr_ori_filename, solute_pqr_dest_filename)
     return
