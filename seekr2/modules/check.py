@@ -764,12 +764,30 @@ def check_atom_selections_MD_BD(model):
     each molecular structure input file, but PDB and PQR files
     might start their numbering at 1 or another number."""
     if model.using_bd():
-        b_surface_dir = os.path.join(
-            model.anchor_rootdir, model.k_on_info.b_surface_directory)
-        rec_pqr_path = os.path.join(
-            b_surface_dir, model.browndye_settings.receptor_pqr_filename)
-        lig_pqr_path = os.path.join(
-            b_surface_dir, model.browndye_settings.ligand_pqr_filename)
+        if model.browndye_settings is not None:
+            b_surface_dir = os.path.join(
+                model.anchor_rootdir, model.k_on_info.b_surface_directory)
+            rec_pqr_path = os.path.join(
+                b_surface_dir, model.browndye_settings.receptor_pqr_filename)
+            lig_pqr_path = os.path.join(
+                b_surface_dir, model.browndye_settings.ligand_pqr_filename)
+        elif model.sda_settings is not None:
+            b_surface_dir = os.path.join(
+                model.anchor_rootdir, model.k_on_info.b_surface_directory)
+            #rec_pqr_path = os.path.join(
+            #    b_surface_dir, model.sda_settings.receptor_pqr_filename)
+            #lig_pqr_path = os.path.join(
+            #    b_surface_dir, model.sda_settings.ligand_pqr_filename)
+            found_rec = False
+            for solute in model.sda_settings.solutes:
+                if solute.type.lower() == "protein":
+                    rec_pqr_path = os.path.join(
+                        b_surface_dir, solute.pqr_filename)
+                    found_rec = True
+                if found_rec or solute.type.lower() != "protein":
+                    lig_pqr_path = os.path.join(
+                        b_surface_dir, solute.pqr_filename)
+            
         rec_pqr_structure = parmed.load_file(rec_pqr_path)
         lig_pqr_structure = parmed.load_file(lig_pqr_path)
         for bd_index, bd_milestone in enumerate(model.k_on_info.bd_milestones):
@@ -862,12 +880,29 @@ def check_pqr_residues(model):
     atoms into individual residues to increase accuracy.
     """
     if model.using_bd():
-        b_surface_dir = os.path.join(
-            model.anchor_rootdir, model.k_on_info.b_surface_directory)
-        rec_pqr_path = os.path.join(
-            b_surface_dir, model.browndye_settings.receptor_pqr_filename)
-        lig_pqr_path = os.path.join(
-            b_surface_dir, model.browndye_settings.ligand_pqr_filename)
+        if model.browndye_settings is not None:
+            b_surface_dir = os.path.join(
+                model.anchor_rootdir, model.k_on_info.b_surface_directory)
+            rec_pqr_path = os.path.join(
+                b_surface_dir, model.browndye_settings.receptor_pqr_filename)
+            lig_pqr_path = os.path.join(
+                b_surface_dir, model.browndye_settings.ligand_pqr_filename)
+        elif model.sda_settings is not None:
+            b_surface_dir = os.path.join(
+                model.anchor_rootdir, model.k_on_info.b_surface_directory)
+            #rec_pqr_path = os.path.join(
+            #    b_surface_dir, model.sda_settings.receptor_pqr_filename)
+            #lig_pqr_path = os.path.join(
+            #    b_surface_dir, model.sda_settings.ligand_pqr_filename)
+            found_rec = False
+            for solute in model.sda_settings.solutes:
+                if solute.type.lower() == "protein":
+                    rec_pqr_path = os.path.join(
+                        b_surface_dir, solute.pqr_filename)
+                    found_rec = True
+                if found_rec or solute.type.lower() != "protein":
+                    lig_pqr_path = os.path.join(
+                        b_surface_dir, solute.pqr_filename)
         rec_pqr_structure = parmed.load_file(rec_pqr_path)
         lig_pqr_structure = parmed.load_file(lig_pqr_path)
         rec_residues = []

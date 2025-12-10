@@ -11,6 +11,7 @@ calculation.
 import os
 import re
 import glob
+import copy
 import shutil
 from collections import defaultdict
 
@@ -34,6 +35,8 @@ import seekr2.modules.common_cv as common_cv
 import seekr2.modules.filetree as filetree
 import seekr2.modules.common_sim_browndye2 as sim_browndye2
 import seekr2.modules.runner_browndye2 as runner_browndye2
+import seekr2.modules.common_sim_sda as sim_sda
+import seekr2.modules.runner_sda as runner_sda
 from abserdes import Serializer
 
 KEEP_ANCHOR_RE = "hidr*|string*"
@@ -148,6 +151,78 @@ class Browndye_settings_input(Serializer):
         self.ligand_indices = []
         self.n_threads = 1
 
+class SDA_settings_input(Serializer):
+    """
+    Read and parse the inputs for the SDA program, which runs
+    the BD stage of the SEEKR2 calculation
+    
+    Attributes:
+    -----------
+    sda_bin_dir : str
+        A path to the SDA binary directory. Can be left as an
+        empty string if the $PATH environmental variable points to
+        SDA's directory.
+    
+    sda_auxi_dir : str
+        A path to the SDA auxiliary directory. Can be left as an
+        empty string if the $PATH environmental variable points to
+        SDA's directory.
+
+    hydropro_dir : str
+        A path to the HYDROpro program directory. Can be left as an
+        empty string if the $PATH environmental variable points to
+        HYDROpro's bin/ directory.
+
+    solutes : list
+        A list of common_sim_sda.Solute_grid() objects which will be
+        parsed to the SDA input file
+        
+    apbs_grid_spacing : float
+        The resolution (in Angstroms) of the APBS (electrostatics) 
+        grid.
+        
+    ions : list
+        A list of common_base.Ion() objects which will be passed to
+        APBS.
+    
+    num_b_surface_trajectories : int
+        The number of trajectories to run with the ligand starting at
+        the b-surface.
+    
+    receptor_indices : list
+        The indices of the atoms (numbered starting from zero) within 
+        the receptor whose center of mass will be calculated and used
+        to represent the binding site.
+        
+    ligand_indices : list
+        The indices of the atoms (numbered starting from zero) within 
+        the ligand whose center of mass will be calculated and used
+        to represent the binding site.
+
+    geometry : string
+        Type of geometry to run SDA calculations. Options:
+            - Sphere: runs in a sphere
+            - Box : runs in a box
+            - Nambox : NAM algorithm applied in a box. Activates sphere 
+            and box objects.
+    atoms : list
+        List of Atom() objects to modify VdW radius and test charges
+        properites.
+    """
+    
+    def __init__(self):
+        self.sda_bin_dir = ""
+        self.sda_auxi_dir = ""
+        self.hydropro_dir = ""
+        self.solutes = []
+        self.apbs_grid_spacing = -1.0
+        self.ions = []
+        self.num_b_surface_trajectories = -1
+        self.receptor_indices = []
+        self.ligand_indices = []
+        self.geometry = ""
+        self.atoms = []
+        
 class Toy_settings_input(Serializer):
     """
     Read and parse the inputs for a toy simulation.
@@ -315,6 +390,11 @@ class Model_input(Serializer):
         The Browndye_settings_input() object for this model. It 
         contains all the settings that could be used within a Browndye
         simulation.
+
+    sda_settings_input : SDA_settings_input or None
+        The SDA_settings_input() object for this model. It 
+        contains all the settings that could be used within a SDA
+        simulation.
         
     toy_settings_input : Toy_settings_input or None
         The Toy_settings_input() object for this model. It 
@@ -342,6 +422,7 @@ class Model_input(Serializer):
         self.timestep = 0.002
         self.nonbonded_cutoff = 0.9
         self.browndye_settings_input = None
+        self.sda_settings_input = None
         self.toy_settings_input = None
         self.cv_inputs = []
         
@@ -505,6 +586,35 @@ def model_factory(model_input, use_absolute_directory=False):
         model.browndye_settings.n_threads \
             = model_input.browndye_settings_input.n_threads
         model.k_on_info = k_on_info
+
+    elif model_input.sda_settings_input is not None:
+        k_on_info = base.K_on_info()
+        if model_input.sda_settings_input.ions is None:
+            model_input.sda_settings_input.ions = []
+        k_on_info.ions = model_input.sda_settings_input.ions
+        k_on_info.b_surface_num_trajectories \
+            = model_input.sda_settings_input.num_b_surface_trajectories
+        model.sda_settings = base.SDA_settings()
+        model.sda_settings.sda_bin_dir \
+            = model_input.sda_settings_input.sda_bin_dir
+        model.sda_settings.sda_auxi_dir \
+            = model_input.sda_settings_input.sda_auxi_dir
+        model.sda_settings.hydropro_dir = \
+            model_input.sda_settings_input.hydropro_dir
+        model.sda_settings.solutes = copy.deepcopy(model_input.sda_settings_input.solutes)
+        for solute in model.sda_settings.solutes:
+            solute.pqr_filename = os.path.basename(solute.pqr_filename)
+            if isinstance(solute.solute_grid.surface, str):
+                assert solute.solute_grid.surface.lower() in ["yes", "no"], \
+                    "Surface option " + solute.solute_grid.surface + " not recognized."
+                if solute.solute_grid.surface.lower() == "yes":
+                    solute.solute_grid.surface = 1
+                else:
+                    solute.solute_grid.surface = 0
+        model.sda_settings.apbs_grid_spacing \
+            = model_input.sda_settings_input.apbs_grid_spacing
+        model.k_on_info = k_on_info
+        model.sda_settings.atoms = model_input.sda_settings_input.atoms
     
     if model_input.toy_settings_input is not None:
         assert model_input.md_program.lower() == "openmm", \
@@ -886,18 +996,28 @@ def create_bd_milestones(model, model_input):
                 bd_milestone.receptor_indices \
                     = base.parse_xml_list(cv_input.bd_group1)
             else:
-                bd_milestone.receptor_indices  \
-                    = base.parse_xml_list(
-                        model_input.browndye_settings_input.receptor_indices)
+                if model_input.browndye_settings_input is not None:
+                    bd_milestone.receptor_indices  \
+                        = base.parse_xml_list(
+                            model_input.browndye_settings_input.receptor_indices)
+                elif model_input.sda_settings_input is not None:
+                    bd_milestone.receptor_indices  \
+                        = base.parse_xml_list(
+                            model_input.sda_settings_input.receptor_indices)
             
             if len(cv_input.bd_group2)>0:
                 bd_milestone.ligand_indices \
                     = base.parse_xml_list(cv_input.bd_group2)
             else:
-                bd_milestone.ligand_indices \
-                    = base.parse_xml_list(
-                        model_input.browndye_settings_input.ligand_indices)
-            
+                if model_input.browndye_settings_input is not None:
+                    bd_milestone.ligand_indices \
+                        = base.parse_xml_list(
+                            model_input.browndye_settings_input.ligand_indices)
+                elif model_input.sda_settings_input is not None:
+                    bd_milestone.ligand_indices \
+                        = base.parse_xml_list(
+                            model_input.sda_settings_input.ligand_indices)
+
             model.k_on_info.bd_milestones.append(bd_milestone)
             bd_milestone_counter += 1
             
@@ -936,7 +1056,8 @@ def prepare_model_cvs_and_anchors(model, model_input, force_overwrite):
                 anchor.md_output_glob = elber_cv_base.NAMD_ELBER_GLOB
         model.num_milestones = num_milestones-1
         
-    if model_input.browndye_settings_input is not None:
+    if model_input.browndye_settings_input is not None \
+            or model_input.sda_settings_input is not None:
         create_bd_milestones(model, model_input)
     
     anchors = resolve_connections(connection_flag_dict, model, 
@@ -980,37 +1101,85 @@ def generate_bd_files(model, rootdir):
     if model.using_bd():
         b_surface_dir = os.path.join(
             rootdir, model.k_on_info.b_surface_directory)
-        receptor_pqr_filename = os.path.join(
-            b_surface_dir, model.browndye_settings.receptor_pqr_filename)
-        ligand_pqr_filename = os.path.join(
-            b_surface_dir, model.browndye_settings.ligand_pqr_filename)
+        bd_engine = None
+        if model.browndye_settings is not None:
+            receptor_pqr_filename = os.path.join(
+                b_surface_dir, model.browndye_settings.receptor_pqr_filename)
+            ligand_pqr_filename = os.path.join(
+                b_surface_dir, model.browndye_settings.ligand_pqr_filename)
+            bd_engine = "browndye2"
+        elif model.sda_settings is not None:
+            receptor_pqr_filename = os.path.join(
+                b_surface_dir, model.sda_settings.solutes[0].pqr_filename)
+            ligand_pqr_filename = os.path.join(
+                b_surface_dir, model.sda_settings.solutes[1].pqr_filename)
+            bd_engine = "sda"
+            receptor = None
+            ligand = None
+            for solute in model.sda_settings.solutes:
+                #if solute.solute_grid.surface != None and solute.solute_grid.surface == "yes":
+                #    continue
+                if receptor == None:
+                    receptor = solute
+                    receptor_pqr_filename = os.path.join(
+                        b_surface_dir, os.path.basename(receptor.pqr_filename))
+                elif ligand == None:
+                    ligand = solute
+                    ligand_pqr_filename = os.path.join(
+                        b_surface_dir, os.path.basename(ligand.pqr_filename))
+        
+            hydropro_dir = os.path.expanduser(model.sda_settings.hydropro_dir)
+
         ghost_indices_rec = []
         ghost_indices_lig = []
+        ghost_atoms_rec = []
+        ghost_atoms_lig = []
         for bd_milestone in model.k_on_info.bd_milestones:
             #print("adding ghost atom to file:", receptor_pqr_filename)
-            ghost_index_rec = \
-                sim_browndye2.add_ghost_atom_to_pqr_from_atoms_center_of_mass(
-                    receptor_pqr_filename, bd_milestone.receptor_indices)
-            #print("adding ghost atom to file:", ligand_pqr_filename)
-            ghost_index_lig = \
-                sim_browndye2.add_ghost_atom_to_pqr_from_atoms_center_of_mass(
-                    ligand_pqr_filename, bd_milestone.ligand_indices)
-            ghost_indices_rec.append(ghost_index_rec)
-            ghost_indices_lig.append(ghost_index_lig)
-            
-        model.browndye_settings.ghost_indices_rec = ghost_indices_rec
-        model.browndye_settings.ghost_indices_lig = ghost_indices_lig
-        receptor_xml_filename = sim_browndye2.make_pqrxml(
-            receptor_pqr_filename, 
-            browndye2_bin=model.browndye_settings.browndye_bin_dir)
-        ligand_xml_filename = sim_browndye2.make_pqrxml(ligand_pqr_filename)
-        debye_length, reaction_filename = \
-            runner_browndye2.make_browndye_input_xml(
-            model, rootdir, receptor_xml_filename, ligand_xml_filename,
-            model.k_on_info.b_surface_num_trajectories)
-        model.browndye_settings.debye_length = debye_length
-        abs_reaction_path = os.path.join(b_surface_dir, reaction_filename)
-        runner_browndye2.make_browndye_reaction_xml(model, abs_reaction_path)
+            if bd_engine == "browndye2":
+                ghost_index_rec = \
+                    sim_browndye2.add_ghost_atom_to_pqr_from_atoms_center_of_mass(
+                        receptor_pqr_filename, bd_milestone.receptor_indices)
+                ghost_indices_rec.append(ghost_index_rec)
+                #print("adding ghost atom to file:", ligand_pqr_filename)
+                ghost_index_lig = \
+                    sim_browndye2.add_ghost_atom_to_pqr_from_atoms_center_of_mass(
+                        ligand_pqr_filename, bd_milestone.ligand_indices)
+                ghost_indices_lig.append(ghost_index_lig)
+                
+            elif bd_engine == "sda":
+                ghost_atom_rec = \
+                    sim_sda.create_ghost_atom_from_atoms_center_of_mass(receptor_pqr_filename,
+                        bd_milestone.receptor_indices)
+                #print("adding ghost atom to file:", ligand_pqr_filename)
+                ghost_atom_lig = \
+                    sim_sda.create_ghost_atom_from_atoms_center_of_mass(ligand_pqr_filename,
+                        bd_milestone.ligand_indices)
+                ghost_atoms_rec.append(ghost_atom_rec)
+                ghost_atoms_lig.append(ghost_atom_lig)
+        
+        if bd_engine == "browndye2":
+            model.browndye_settings.ghost_indices_rec = ghost_indices_rec
+            model.browndye_settings.ghost_indices_lig = ghost_indices_lig
+            receptor_xml_filename = sim_browndye2.make_pqrxml(
+                receptor_pqr_filename, 
+                browndye2_bin=model.browndye_settings.browndye_bin_dir)
+            ligand_xml_filename = sim_browndye2.make_pqrxml(ligand_pqr_filename)
+            debye_length, reaction_filename = \
+                runner_browndye2.make_browndye_input_xml(
+                model, rootdir, receptor_xml_filename, ligand_xml_filename,
+                model.k_on_info.b_surface_num_trajectories)
+            model.browndye_settings.debye_length = debye_length
+            abs_reaction_path = os.path.join(b_surface_dir, reaction_filename)
+            runner_browndye2.make_browndye_reaction_xml(model, abs_reaction_path)
+        elif bd_engine == "sda":
+            runner_sda.make_sda_reaction(model, rootdir, ghost_atoms_rec, ghost_atoms_lig)
+            runner_sda.make_pdb_noh(model, rootdir)
+            runner_sda.run_hydropro(model, rootdir, hydropro_dir)
+            runner_sda.make_sda_grids(model, rootdir, model.sda_settings.sda_bin_dir, 
+                                    model.sda_settings.sda_auxi_dir)
+            runner_sda.make_add_atoms(model, rootdir)
+            runner_sda.make_sda_input(model, rootdir, model.k_on_info.b_surface_num_trajectories)
         return
     
 def modify_model(old_model, new_model, root_directory, force_overwrite=False):
@@ -1278,8 +1447,12 @@ def modify_model(old_model, new_model, root_directory, force_overwrite=False):
                     continue
         
         if len(bd_milestones_to_check) > 0:
-            b_surface_files_present = runner_browndye2.cleanse_bd_outputs(
-                b_surface_directory, check_mode=True)
+            if old_model.browndye_settings is not None:
+                b_surface_files_present = runner_browndye2.cleanse_bd_outputs(
+                    b_surface_directory, check_mode=True)
+            elif old_model.sda_settings is not None:
+                b_surface_files_present = runner_sda.cleanse_bd_outputs(
+                    b_surface_directory, check_mode=True)
             
             if b_surface_files_present:
                 if not force_overwrite:
@@ -1289,7 +1462,11 @@ def modify_model(old_model, new_model, root_directory, force_overwrite=False):
             b_surface_directory = os.path.join(
                 old_model.anchor_rootdir, 
                 old_model.k_on_info.b_surface_directory)
-            runner_browndye2.cleanse_bd_outputs(b_surface_directory, 
+            if old_model.browndye_settings is not None:
+                runner_browndye2.cleanse_bd_outputs(b_surface_directory, 
+                                                    check_mode=False)
+            elif old_model.sda_settings is not None:
+                runner_sda.cleanse_bd_outputs(b_surface_directory, 
                                                 check_mode=False)
         
     return new_anchors_with_starting_pdbs_to_keep

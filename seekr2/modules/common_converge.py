@@ -45,16 +45,19 @@ def get_bd_transition_counts(model):
         model.k_on_info.bd_output_glob)
     output_file_list = glob.glob(output_file_glob)
     output_file_list = base.order_files_numerically(output_file_list)
-    compute_rate_constant_program = os.path.join(
-        model.browndye_settings.browndye_bin_dir, "compute_rate_constant")
     bd_transition_counts = {}
-    if len(output_file_list) > 0:
-        k_ons_src, k_on_errors_src, reaction_probabilities, \
-            reaction_probability_errors, transition_counts = \
-            common_analyze.browndye_run_compute_rate_constant(
-                compute_rate_constant_program, output_file_list, 
-                sample_error_from_normal=False)
-        bd_transition_counts["b_surface"] = transition_counts
+    if model.browndye_settings is not None:
+        compute_rate_constant_program = os.path.join(
+            model.browndye_settings.browndye_bin_dir, "compute_rate_constant")
+        
+        if len(output_file_list) > 0:
+            k_ons_src, k_on_errors_src, reaction_probabilities, \
+                reaction_probability_errors, transition_counts = \
+                common_analyze.browndye_run_compute_rate_constant(
+                    compute_rate_constant_program, output_file_list, 
+                    sample_error_from_normal=False)
+            bd_transition_counts["b_surface"] = transition_counts
+    
     return bd_transition_counts
 
 def analyze_bd_only(model, data_sample):

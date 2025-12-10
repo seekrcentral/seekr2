@@ -20,6 +20,8 @@ from abserdes import Serializer
 
 # A glob for BrownDye output files
 BROWNDYE_OUTPUT = "results*.xml"
+SDA_OUTPUT = "sda*.out"
+REACTION_FILENAME = "rxns.xml"
 
 def strBool(bool_str):
     """
@@ -618,6 +620,37 @@ class Browndye_settings(Serializer):
         self.ghost_indices_rec = []
         self.ghost_indices_lig = []
         return
+
+class SDA_settings(Serializer):
+    """
+    Read and parse the outputs from the SDA program, which runs
+    the BD stage of the SEEKR2 calculation
+    
+    Attributes:
+    -----------
+    sda_bin_dir : str, Default ""
+        A path to the SDA binary files. If SDA's directory 
+        has been added to system $PATH, then this string can be empty.
+    sda_auxi_dir : str, Default ""
+        A path to the SDA auxiliary files. If SDA's directory 
+        has been added to system $PATH, then this string can be empty.
+    solutes : list
+        A list of Solute() objects that contains the properties of the 
+        brownian solutes.
+    solvent : Solvent()
+        Solvent object that contains the properties of the solvent such as
+        temperature, dielectric constant, ions...
+    atoms : list
+        List of Atom() objects to modify VdW radius and test charges
+        properites.
+    """
+    
+    def __init__(self):
+        self.sda_bin_dir = ""
+        self.sda_auxi_dir = ""
+        self.solutes = []
+        self.atoms = []
+        return
     
 class Amber_params(Serializer):
     """
@@ -796,6 +829,10 @@ class K_on_info(Serializer):
     bd_output_glob : str
         A glob which can be used to select the output XML files
         produced by Browndye within the directory argument above.
+
+    sda_output_glob : str
+        A glob which can be used to select the output files
+        produced by SDA within the directory argument above.
         
     ions : list
         A list of Ion() objects which will be provided for APBS
@@ -807,6 +844,8 @@ class K_on_info(Serializer):
         self.b_surface_directory = "b_surface"
         self.b_surface_num_trajectories = -1
         self.bd_output_glob = BROWNDYE_OUTPUT
+        self.sda_output_glob = SDA_OUTPUT
+        self.reactions_filename = REACTION_FILENAME
         self.ions = []
         return
 
@@ -1005,6 +1044,7 @@ class Model(Serializer):
         self.namd_settings = None
         self.toy_settings = None
         self.browndye_settings = None
+        self.sda_settings = None
         self.k_on_info = None
         self.collective_variables = []
         self.anchors = []

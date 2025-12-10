@@ -171,7 +171,7 @@ def choose_next_simulation_openmm(
         model, instruction, min_total_simulation_length=None, 
         max_total_simulation_length=None, convergence_cutoff=None, 
         minimum_anchor_transitions=None, force_overwrite=False, umbrella_restart_mode=False,
-        load_state_file=None, cuda_device_index=None):
+        load_state_file=None, cuda_device_index=None, silent=False):
     """
     Examine the model and all MD simulations that have run so far.
     Using this information, as well as the specified criteria (minimum
@@ -269,8 +269,9 @@ def choose_next_simulation_openmm(
                         if convergence < float(convergence_cutoff):
                             continue
                         else:
-                            print("anchor", alpha, "has not reached the point of "\
-                                  "convergence:", convergence, "of", convergence_cutoff)
+                            if not silent:
+                                print("anchor", alpha, "has not reached the point of "\
+                                      "convergence:", convergence, "of", convergence_cutoff)
                             total_simulation_length \
                                 = (currentStep // CONVERGENCE_INTERVAL + 1) \
                                 * CONVERGENCE_INTERVAL
@@ -285,9 +286,10 @@ def choose_next_simulation_openmm(
                         if num_transitions >= minimum_anchor_transitions:
                             continue
                         else:
-                            print("anchor", alpha, "has not had the minimum number of "\
-                                  "transitions:", num_transitions, "of", 
-                                  minimum_anchor_transitions)
+                            if not silent:
+                                print("anchor", alpha, "has not had the minimum number of "\
+                                      "transitions:", num_transitions, "of", 
+                                      minimum_anchor_transitions)
                             total_simulation_length = (
                                 currentStep // CONVERGENCE_INTERVAL + 1) \
                                 * (CONVERGENCE_INTERVAL)
@@ -297,9 +299,10 @@ def choose_next_simulation_openmm(
                             anchor_info_to_run_unsorted.append(anchor_info)
                         
             else:
-                print("anchor", alpha, "has not run the minimum number of steps",
-                      currentStep, "of", min_total_simulation_length, 
-                      "in swarm index", swarm_frame)
+                if not silent:
+                    print("anchor", alpha, "has not run the minimum number of steps",
+                          currentStep, "of", min_total_simulation_length, 
+                          "in swarm index", swarm_frame)
                 total_simulation_length = min_total_simulation_length
                 num_transitions = 0
                 anchor_info = [steps_to_go_to_minimum, num_transitions, 
@@ -459,6 +462,27 @@ def run_browndye2(model, bd_milestone_index, restart, n_trajectories, n_threads=
             model.browndye_settings.browndye_bin_dir, bd_directory, 
             model.k_on_info.bd_output_glob)
     
+    return
+
+def run_sda(model, bd_milestone_index, restart, n_trajectories, 
+                  force_overwrite=False):
+    """Run a SDA simulation."""
+    import seekr2.modules.runner_sda as runner_sda
+    
+    sda_bin_dir = model.sda_settings.sda_bin_dir
+
+    if bd_milestone_index == "b_surface":
+        bd_milestone_directory = os.path.join(
+            model.anchor_rootdir, model.k_on_info.b_surface_directory)
+        bd_directory_list = [bd_milestone_directory]
+        
+    for bd_directory in bd_directory_list:
+        runner_sda.modify_variables(
+            bd_directory, model.k_on_info.sda_output_glob, n_trajectories, 
+            restart=restart)
+        runner_sda.run_nam_simulation(
+            sda_bin_dir, bd_directory, 
+            model.k_on_info.sda_output_glob)
     return
 
 def run_openmm(model, anchor_index, restart, total_simulation_length, 
@@ -696,31 +720,49 @@ def run(model, instruction, min_total_simulation_length=None,
         if not model.using_bd():
             break
         
-        bd_milestone_info_to_run = choose_next_simulation_browndye2(
-            model, instruction, min_b_surface_simulation_length, 
-            bd_force_overwrite, min_b_surface_encounters)
-        
-        for bd_milestone_info in bd_milestone_info_to_run:
-            steps_to_go_to_minimum, num_transitions, bd_milestone_index, \
-                restart, total_num_trajs = bd_milestone_info
-            if bd_force_overwrite and restart:
-                restart = False
-            print("running BD:", bd_milestone_index, "restart:", 
-                  restart, "trajectories to run:", steps_to_go_to_minimum, 
-                  "trajectories so far:", total_num_trajs, 
-                  "number of transitions", num_transitions)
-            run_browndye2(
-                model, bd_milestone_index, restart, steps_to_go_to_minimum, 
-                n_threads=n_threads, force_overwrite=bd_force_overwrite)
-        if len(bd_milestone_info_to_run) > 0:
-            bd_complete = False
+        if model.browndye_settings is not None:
+            bd_milestone_info_to_run = choose_next_simulation_browndye2(
+                model, instruction, min_b_surface_simulation_length, 
+                bd_force_overwrite, min_b_surface_encounters)
+            
+            for bd_milestone_info in bd_milestone_info_to_run:
+                steps_to_go_to_minimum, num_transitions, bd_milestone_index, \
+                    restart, total_num_trajs = bd_milestone_info
+                if bd_force_overwrite and restart:
+                    restart = False
+                print("running BD:", bd_milestone_index, "restart:", 
+                    restart, "trajectories to run:", steps_to_go_to_minimum, 
+                    "trajectories so far:", total_num_trajs, 
+                    "number of transitions", num_transitions)
+                run_browndye2(
+                    model, bd_milestone_index, restart, steps_to_go_to_minimum, 
+                    n_threads=n_threads, force_overwrite=bd_force_overwrite)
+            if len(bd_milestone_info_to_run) > 0:
+                bd_complete = False
+                ran_nothing = False
+            else:
+                bd_complete = True
+            bd_force_overwrite = False
+            counter += 1
+            if counter > MAX_ITER:
+                raise Exception("BD while loop appears to be stuck.")
+            
+        elif model.sda_settings is not None:
+            print("running BD:", "b_surface", "restart:", 
+                      False, "trajectories to run:", 
+                      model.k_on_info.b_surface_num_trajectories)
+            run_sda(model, "b_surface", False, 
+                    model.k_on_info.b_surface_num_trajectories, 
+                    force_overwrite=True)
+            
             ran_nothing = False
-        else:
             bd_complete = True
-        bd_force_overwrite = False
-        counter += 1
-        if counter > MAX_ITER:
-            raise Exception("BD while loop appears to be stuck.")
+            
+            
+        else:
+            print("BD simulations did not run because the program "\
+                  "indicated is not implemented.")
+            break
     
     os.chdir(curdir)
     if ran_nothing:
