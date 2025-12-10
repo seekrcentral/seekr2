@@ -722,17 +722,15 @@ class Data_sample():
             
             n = K_hat.shape[0]
             source_vec = np.zeros((n,1))
-            
             if len(self.bd_transition_counts) > 0:
                 if len(bulk_milestones) > 0:
                     for bd_milestone in self.model.k_on_info.bd_milestones:
                         source_index = bd_milestone.outer_milestone.index
                         if self.b_surface_k_ons_src is None:
                             raise Exception("Missing b-surface simulations.")
-                            
+                        assert source_index < n
                         source_vec[source_index] \
                             = self.b_surface_k_ons_src[source_index]
-                        
                         if bd_milestone.index \
                                 not in self.bd_transition_probabilities:
                             break

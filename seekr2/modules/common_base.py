@@ -21,6 +21,7 @@ from abserdes import Serializer
 # A glob for BrownDye output files
 BROWNDYE_OUTPUT = "results*.xml"
 SDA_OUTPUT = "sda*.out"
+REACTION_FILENAME = "rxns.xml"
 
 def strBool(bool_str):
     """
@@ -844,6 +845,7 @@ class K_on_info(Serializer):
         self.b_surface_num_trajectories = -1
         self.bd_output_glob = BROWNDYE_OUTPUT
         self.sda_output_glob = SDA_OUTPUT
+        self.reactions_filename = REACTION_FILENAME
         self.ions = []
         return
 

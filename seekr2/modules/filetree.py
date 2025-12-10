@@ -321,8 +321,8 @@ def copy_bd_files(model, input_model, rootdir):
     
     """
     k_on_info = model.k_on_info
-    b_surface_dir = os.path.join(rootdir, k_on_info.b_surface_directory)
     if model.using_bd():
+        b_surface_dir = os.path.join(rootdir, k_on_info.b_surface_directory)
         if model.browndye_settings is not None:
             bd_settings = model.browndye_settings
             bd_input_settings = input_model.browndye_settings_input
