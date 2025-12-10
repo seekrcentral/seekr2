@@ -88,7 +88,7 @@ class Solvent():
         self.dielectric = 78.0
         self.relative_viscosity = 1.0
         self.kT = -1.0
-        self.desolvation_parameter = 1.0
+        self.desolvation_parameter = 0.07957747
         self.ions = []
         return
     
@@ -835,7 +835,6 @@ class Reaction_root():
         assert self.first_state
         xmlFirstState = ET.SubElement(xmlRoot, "first_state")
         xmlFirstState.text = self.first_state
-        assert len(self.reaction_list) > 0
         xmlReactions = ET.SubElement(xmlRoot, "reactions")
         for reaction in self.reaction_list:
             xmlReaction_i = ET.SubElement(xmlReactions, "reaction")

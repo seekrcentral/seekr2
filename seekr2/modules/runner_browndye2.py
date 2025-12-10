@@ -12,7 +12,6 @@ import glob
 import seekr2.modules.common_base as base
 import seekr2.modules.common_sim_browndye2 as sim_browndye2
 
-REACTION_FILENAME = "rxns.xml"
 DEFAULT_N_TRAJ_PER_OUT = 1000
 
 def make_empty_pqrxml(directory, filename="empty.pqrxml"):
@@ -32,7 +31,7 @@ def make_empty_pqrxml(directory, filename="empty.pqrxml"):
         f.write(empty_pqrxml_string)
     return empty_pqrxml_path
 
-def cleanse_bd_outputs(directory, check_mode=True):
+def cleanse_bd_outputs(directory, check_mode=True, results_file_glob=base.BROWNDYE_OUTPUT):
     """
     Check for simulation outputs in an existing directory, optionally
     delete them to make way for new outputs. If 'check_mode' is
@@ -55,7 +54,7 @@ def cleanse_bd_outputs(directory, check_mode=True):
         present, will return True, will return False otherwise.
     """
     files_will_be_removed = False
-    output_files_glob = os.path.join(directory, base.BROWNDYE_OUTPUT)
+    output_files_glob = os.path.join(directory, results_file_glob)
     output_files_list = glob.glob(output_files_glob)
     for output_file in output_files_list:
         files_will_be_removed = True
@@ -129,7 +128,7 @@ def make_browndye_input_xml(model, rootdir, receptor_xml_filename,
     if root.n_trajectories_per_output > root.n_trajectories:
         root.n_trajectories_per_output = root.n_trajectories
     root.n_threads = model.browndye_settings.n_threads
-    root.system.reaction_file = REACTION_FILENAME
+    root.system.reaction_file = model.k_on_info.reactions_filename
     reaction_filename = root.system.reaction_file
     if make_apbs_mode:
         root.system.solvent.debye_length = "-1.0"
@@ -330,7 +329,9 @@ def run_bd_top(browndye_bin_dir, bd_directory, restart=False,
 def modify_variables(bd_milestone_directory, bd_output_glob, 
                      n_trajectories, n_threads=None, seed=None, 
                      output_file=None, restart=False, 
-                     n_trajectories_per_output=None):
+                     n_trajectories_per_output=None, 
+                     n_steps_per_output=None,
+                     desolvation_parameter=None):
     """
     Modify several variables within the *_simulation.xml file at 
     runtime based on user inputs.
@@ -394,11 +395,21 @@ def modify_variables(bd_milestone_directory, bd_output_glob,
         + sim_browndye2.BROWNDYE_LIGAND + "_simulation.xml"
     simulation_filename = os.path.join(bd_milestone_directory, 
                                        simulation_filename_base)
+    solvent_filename_base = sim_browndye2.BROWNDYE_RECEPTOR + "_" \
+        + sim_browndye2.BROWNDYE_LIGAND + "_solvent.xml"
+    solvent_filename = os.path.join(bd_milestone_directory, 
+                                       solvent_filename_base)
     sim_file_old_lines = []
     sim_file_new_lines = []
     with open(simulation_filename, 'r') as f:
         for line in f.readlines():
             sim_file_old_lines.append(line)
+            
+    sol_file_old_lines = []
+    sol_file_new_lines = []
+    with open(solvent_filename, 'r') as f:
+        for line in f.readlines():
+            sol_file_old_lines.append(line)
             
     results_file_glob = os.path.join(bd_milestone_directory, bd_output_glob)
     results_file_list = glob.glob(results_file_glob)
@@ -412,7 +423,7 @@ def modify_variables(bd_milestone_directory, bd_output_glob,
             seed += restart
     else:
         restart_index = 1
-        cleanse_bd_outputs(bd_milestone_directory, check_mode=False)
+        cleanse_bd_outputs(bd_milestone_directory, check_mode=False, results_file_glob=results_file_glob)
         
     trajectory_file = "traj%d_" % restart_index
     
@@ -438,6 +449,10 @@ def modify_variables(bd_milestone_directory, bd_output_glob,
         if n_threads is not None:
             new_line = re.sub(r"(?is)<n_threads>.+</n_threads>", 
                    "<n_threads> %d </n_threads>" % n_threads, new_line)
+                   
+        if n_steps_per_output is not None:
+            new_line = re.sub(r"(?is)<n_steps_per_output>.+</n_steps_per_output>", 
+                   "<n_steps_per_output> %d </n_steps_per_output>" % n_steps_per_output, new_line)
             
         if seed is not None:
             new_line = re.sub(r"(?is)<seed>.+</seed>", 
@@ -455,6 +470,18 @@ def modify_variables(bd_milestone_directory, bd_output_glob,
     
     with open(simulation_filename, 'w') as f:
         for line in sim_file_new_lines:
+            f.write(line)
+            
+    for line in sol_file_old_lines:
+        new_line = line
+        if desolvation_parameter is not None:
+            new_line = re.sub(r"(?is)<desolvation_parameter>.+</desolvation_parameter>", 
+                   "<desolvation_parameter> %f </desolvation_parameter>" % desolvation_parameter, new_line)
+            
+        sol_file_new_lines.append(new_line)
+    
+    with open(solvent_filename, 'w') as f:
+        for line in sol_file_new_lines:
             f.write(line)
             
     return
